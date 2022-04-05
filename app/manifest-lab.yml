@@ -9,7 +9,7 @@ applications:
       - nodejs_buildpack
     command: node app/server.js
     env:
-      NODE_ENV: development
+      NODE_ENV: development-lab
       LOGGER_LEVEL: DEBUG
       OPTIMIZE_MEMORY: true
       S3_PUB_BIND_NAME: s3-priv-tots-dev

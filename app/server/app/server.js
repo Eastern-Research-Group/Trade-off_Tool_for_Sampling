@@ -58,11 +58,13 @@ app.use(function (req, res, next) {
 ****************************************************************/
 var isLocal = false;
 var isDevelopment = false;
+var isDevelopmentLab = false;
 var isStaging = false;
 
 if (process.env.NODE_ENV) {
   isLocal = 'local' === process.env.NODE_ENV.toLowerCase();
   isDevelopment = 'development' === process.env.NODE_ENV.toLowerCase();
+  isDevelopmentLab = 'development-lab' === process.env.NODE_ENV.toLowerCase();
   isStaging = 'staging' === process.env.NODE_ENV.toLowerCase();
 }
 
@@ -71,8 +73,9 @@ if (isLocal) {
   app.enable('isLocal');
 }
 if (isDevelopment) log.info('Environment = development');
+if (isDevelopmentLab) log.info('Environment = development-lab');
 if (isStaging) log.info('Environment = staging');
-if (!isLocal && !isDevelopment && !isStaging)
+if (!isLocal && !isDevelopment && !isDevelopmentLab && !isStaging)
   log.info('Environment = staging or production');
 
 /****************************************************************
