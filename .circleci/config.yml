@@ -130,9 +130,7 @@ jobs:
           name: Deploy application to Cloud.gov
           command: |
             cd server
-            cf push --no-start $APP_NAME-green -f ../manifest-lab.yml -p . -n $APP_NAME-green 
-            cf set-env $APP_NAME-green TOTS_BASIC_USER_NAME "$TOTS_BASIC_USER_NAME"
-            cf set-env $APP_NAME-green TOTS_BASIC_USER_PWD "$TOTS_BASIC_USER_PWD"
+            cf push --no-start $APP_NAME-green -f ../manifest-lab.yml -p . -n $APP_NAME-green
       - run:
           name: Start application on Cloud.gov and clean routes
           command: |
