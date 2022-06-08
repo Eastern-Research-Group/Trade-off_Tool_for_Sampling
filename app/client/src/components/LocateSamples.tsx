@@ -1177,7 +1177,9 @@ function LocateSamples() {
 
   // Initialize the local user defined type symbol. Also updates this variable
   // when the user changes the user defined sample type selection.
-  const [udtSymbol, setUdtSymbol] = React.useState<PolygonSymbol | null>(null);
+  const [udtSymbol, setUdtSymbol] = React.useState<PolygonSymbol>(
+    defaultSymbols.symbols['Samples'],
+  );
   React.useEffect(() => {
     if (!userDefinedSampleType) return;
 
@@ -2404,11 +2406,7 @@ function LocateSamples() {
                   {editingStatus && (
                     <div>
                       <ColorPicker
-                        symbol={
-                          editingStatus === 'create' || !udtSymbol
-                            ? defaultSymbols.symbols['Samples']
-                            : udtSymbol
-                        }
+                        symbol={udtSymbol}
                         onChange={(symbol: PolygonSymbol) => {
                           setUdtSymbol(symbol);
                         }}
