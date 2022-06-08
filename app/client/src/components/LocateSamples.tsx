@@ -1582,7 +1582,7 @@ function LocateSamples() {
                                   ...editsScenario.layers.slice(0, layerIndex),
                                   ...editsScenario.layers.slice(layerIndex + 1),
                                 ];
-                                if (editsScenario.status === 'published') {
+                                if(editsScenario.status === 'published') {
                                   editsScenario.status = 'edited';
                                 }
 
