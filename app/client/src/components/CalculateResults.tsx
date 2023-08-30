@@ -345,7 +345,7 @@ function CalculateResults() {
       // add the header
       summarySheet.getCell(1, 1).font = sheetTitleFont;
       summarySheet.getCell(1, 1).value =
-        'Trade-off Tool for Sampling (TOTS) Summary';
+        'Trade-off Tool for Decontamination Strategies (TODS) Summary';
       summarySheet.getCell(2, 1).font = defaultFont;
       summarySheet.getCell(2, 1).value = 'Version: 2.0.0';
       summarySheet.getCell(4, 1).font = underlinedLabelFont;

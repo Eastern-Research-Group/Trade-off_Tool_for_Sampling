@@ -153,12 +153,12 @@ function SplashScreen() {
     >
       <DialogContent
         css={dialogStyles}
-        aria-label="Welcome to EPA’s Trade-off Tool for Sampling (TOTS)"
+        aria-label="Welcome to EPA’s Trade-off Tool for Decontamination Strategies (TODS)"
       >
         <img css={logoStyles} src={epaLogo} alt="EPA Logo" />
 
         <h2 css={headingStyles}>
-          Welcome to EPA’s Trade-off Tool for Sampling (TOTS)
+          Welcome to EPA’s Trade-off Tool for Decontamination Strategies (TODS)
         </h2>
 
         <p>
@@ -169,7 +169,7 @@ function SplashScreen() {
           BR incident. To better understand the impacts sampling designs can
           have on the resource demand, especially when considering large-scale
           sampling campaigns, EPA’s Homeland Security Research Program (HSRP)
-          developed the Trade-Off Tool for Sampling (TOTS).
+          developed the Trade-Off Tool for Decontamination Strategies (TODS).
         </p>
 
         <p>

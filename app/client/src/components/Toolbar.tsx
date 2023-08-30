@@ -907,7 +907,8 @@ function Toolbar() {
   return (
     <div css={toolBarStyles} data-testid="tots-toolbar">
       <h2 css={toolBarTitle}>
-        Trade-off Tool for Sampling (TOTS) {trainingMode && ' - TRAINING MODE'}
+        Trade-off Tool for Decontamination Strategies (TODS){' '}
+        {trainingMode && ' - TRAINING MODE'}
       </h2>
       <div css={toolBarButtonsStyles}>
         <div>
