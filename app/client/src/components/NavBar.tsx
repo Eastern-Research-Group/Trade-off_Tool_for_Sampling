@@ -18,7 +18,7 @@ import LoadingSpinner from 'components/LoadingSpinner';
 import LocateSamples from 'components/LocateSamples';
 import Publish from 'components/Publish';
 import Search from 'components/Search';
-import GettingStarted from 'components/GettingStarted';
+// import GettingStarted from 'components/GettingStarted';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 import { NavigationContext } from 'contexts/Navigation';
@@ -129,21 +129,21 @@ function NavButton({
 }
 
 // --- styles (NavBar) ---
-const helpOkContainerStyles = css`
-  display: flex;
-  justify-content: flex-end;
-`;
+// const helpOkContainerStyles = css`
+//   display: flex;
+//   justify-content: flex-end;
+// `;
 
-const helpOkButtonStyles = css`
-  padding: 0.625rem 1.25rem;
-  border: 0;
-  border-radius: 3px;
-  font-family: inherit;
-  font-weight: bold;
-  font-size: 0.875rem;
-  line-height: 1;
-  cursor: pointer;
-`;
+// const helpOkButtonStyles = css`
+//   padding: 0.625rem 1.25rem;
+//   border: 0;
+//   border-radius: 3px;
+//   font-family: inherit;
+//   font-weight: bold;
+//   font-size: 0.875rem;
+//   line-height: 1;
+//   cursor: pointer;
+// `;
 
 const navPanelStyles = (height: number) => {
   return css`
@@ -202,18 +202,18 @@ const resourceTallySeparator = css`
   border-bottom: 1px solid ${buttonVisitedColor};
 `;
 
-const helpIconStyles = css`
-  font-size: 18px;
-  padding: 7px;
-  margin-left: 8px;
-  margin-right: 10px;
-  border-radius: 50%;
-  color: ${buttonColor};
-  background-color: white;
-  width: 30px;
-  height: 30px;
-  text-align: center;
-`;
+// const helpIconStyles = css`
+//   font-size: 18px;
+//   padding: 7px;
+//   margin-left: 8px;
+//   margin-right: 10px;
+//   border-radius: 50%;
+//   color: ${buttonColor};
+//   background-color: white;
+//   width: 30px;
+//   height: 30px;
+//   text-align: center;
+// `;
 
 const floatPanelStyles = ({
   width,
@@ -323,8 +323,8 @@ function NavBar({ height }: Props) {
     setCurrentPanel,
     goTo,
     setGoTo,
-    gettingStartedOpen,
-    setGettingStartedOpen,
+    // gettingStartedOpen,
+    // setGettingStartedOpen,
     latestStepIndex,
     setLatestStepIndex,
     panelExpanded,
@@ -412,7 +412,7 @@ function NavBar({ height }: Props) {
 
   return (
     <Fragment>
-      <GettingStarted isOpen={gettingStartedOpen}>
+      {/* <GettingStarted isOpen={gettingStartedOpen}>
         <div css={helpOkContainerStyles}>
           <button
             className="btn"
@@ -422,7 +422,7 @@ function NavBar({ height }: Props) {
             Close
           </button>
         </div>
-      </GettingStarted>
+      </GettingStarted> */}
       <div css={navPanelStyles(height)}>
         <div css={navPanelContainerStyles}>
           <div>
@@ -453,7 +453,7 @@ function NavBar({ height }: Props) {
                 <div css={subTallyStyles}>
                   <i className="fas fa-users fa-fw" /> $
                   {Math.round(
-                    calculateResults.data['Total Sampling Cost'],
+                    calculateResults.data['Total Decon Cost'],
                   ).toLocaleString()}
                 </div>
                 <div css={subTallyStyles}>
@@ -470,7 +470,7 @@ function NavBar({ height }: Props) {
                   <i className="fas fa-users fa-fw" />{' '}
                   {(
                     Math.round(
-                      calculateResults.data['Time to Complete Sampling'] * 10,
+                      calculateResults.data['Time to Complete Decon'] * 10,
                     ) / 10
                   ).toLocaleString()}
                 </div>
@@ -489,7 +489,7 @@ function NavBar({ height }: Props) {
                   <span css={mainTallyStyles}>Limiting Factor</span>
                   <br />
                   {calculateResults.data['Limiting Time Factor'] ===
-                    'Sampling' && <i className="fas fa-users fa-fw" />}
+                    'Decon' && <i className="fas fa-users fa-fw" />}
                   {calculateResults.data['Limiting Time Factor'] ===
                     'Analysis' && <i className="fas fa-flask fa-fw" />}{' '}
                   <span>{calculateResults.data['Limiting Time Factor']}</span>
@@ -498,13 +498,13 @@ function NavBar({ height }: Props) {
             </div>
           )}
 
-          <button
+          {/* <button
             onClick={(ev) => setGettingStartedOpen(!gettingStartedOpen)}
             css={navButtonStyles(false)}
           >
             <i className="fas fa-question" css={helpIconStyles} />
             Help
-          </button>
+          </button> */}
         </div>
       </div>
       {currentPanel && (

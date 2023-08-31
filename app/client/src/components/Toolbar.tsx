@@ -19,7 +19,7 @@ import Switch from 'components/Switch';
 // contexts
 import { AuthenticationContext } from 'contexts/Authentication';
 import { CalculateContext } from 'contexts/Calculate';
-import { NavigationContext } from 'contexts/Navigation';
+// import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // utils
 import { getEnvironmentStringParam } from 'utils/arcGisRestUtils';
@@ -101,7 +101,7 @@ function buildLegendListItem(event: any) {
     });
   }
   if (layer?.layerType === 'Samples' || layer?.layerType === 'VSP') {
-    subtitle = 'Sample Type';
+    subtitle = 'Decon Technology';
 
     (window as any).totsAllSampleOptions?.forEach(
       (option: SampleSelectType) => {
@@ -417,7 +417,7 @@ const navIconStyles = css`
 // --- components (Toolbar) ---
 function Toolbar() {
   const { setContaminationMap } = useContext(CalculateContext);
-  const { trainingMode, setTrainingMode } = useContext(NavigationContext);
+  // const { trainingMode, setTrainingMode } = useContext(NavigationContext);
   const {
     autoZoom,
     setAutoZoom,
@@ -908,7 +908,7 @@ function Toolbar() {
     <div css={toolBarStyles} data-testid="tots-toolbar">
       <h2 css={toolBarTitle}>
         Trade-off Tool for Decontamination Strategies (TODS){' '}
-        {trainingMode && ' - TRAINING MODE'}
+        {/* {trainingMode && ' - TRAINING MODE'} */}
       </h2>
       <div css={toolBarButtonsStyles}>
         <div>
@@ -932,7 +932,7 @@ function Toolbar() {
                   cssStyles={infoIconStyles}
                   id="3d-view-switch"
                   tooltip={
-                    'Switches between “2D” and “3D” viewing modes. <br/>If you plan to use the “3D” feature, it is best to plot<br/>your samples in “3D” mode. Samples plotted in “2D”<br/>mode can be obscured by 3D geometry, such as 3D <br/>reference layers, when viewing in “3D” mode. '
+                    'Switches between “2D” and “3D” viewing modes. <br/>If you plan to use the “3D” feature, it is best to plot<br/>your decon applications in “3D” mode. Decon applications plotted in “2D”<br/>mode can be obscured by 3D geometry, such as 3D <br/>reference layers, when viewing in “3D” mode. '
                   }
                   place="bottom"
                 />
@@ -969,7 +969,7 @@ function Toolbar() {
                   cssStyles={infoIconStyles}
                   id="poly-points-switch"
                   tooltip={
-                    'The "Polygons" view displays samples on the map as their<br/>exact size which do not scale as you zoom out on the map.<br/>The "Points" view displays the samples as icons that scale<br/>as you zoom in/out and may be useful for viewing many<br/>samples over a large geographic area. The "Hybrid" view<br/>displays point based samples as points and polygon based<br/>samples as polygons. The "Hybrid" view may be useful for<br/>viewing in "3D".'
+                    'The "Polygons" view displays decon applications on the map as their<br/>exact size which do not scale as you zoom out on the map.<br/>The "Points" view displays the decon applications as icons that scale<br/>as you zoom in/out and may be useful for viewing many<br/>decon applications over a large geographic area. The "Hybrid" view<br/>displays point based decon applications as points and polygon based<br/>decon applications as polygons. The "Hybrid" view may be useful for<br/>viewing in "3D".'
                   }
                   place="bottom"
                 />
@@ -1044,7 +1044,7 @@ function Toolbar() {
               </Fragment>
             )}
 
-            <label css={switchLabelContainer}>
+            {/* <label css={switchLabelContainer}>
               <span css={switchLabel}>Training Mode</span>
               <Switch
                 checked={trainingMode}
@@ -1053,7 +1053,7 @@ function Toolbar() {
                 onColor="#90ee90"
                 onHandleColor="#129c12"
               />
-            </label>
+            </label> */}
 
             <label css={switchLabelContainer}>
               <span css={switchLabel}>Auto Zoom</span>

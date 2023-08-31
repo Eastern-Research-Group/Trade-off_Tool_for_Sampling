@@ -843,29 +843,29 @@ export function useCalculatePlan() {
     // Get limiting time factor (will be undefined if they are equal)
     let limitingFactor: CalculateResultsDataType['Limiting Time Factor'] = '';
     if (timeCompleteSampling > labThroughput) {
-      limitingFactor = 'Sampling';
+      limitingFactor = 'Decon';
     } else {
       limitingFactor = 'Analysis';
     }
 
     const resultObject: CalculateResultsDataType = {
       // assign input parameters
-      'User Specified Number of Available Teams for Sampling': numSamplingTeams,
-      'User Specified Personnel per Sampling Team': numSamplingPersonnel,
-      'User Specified Sampling Team Hours per Shift': numSamplingHours,
-      'User Specified Sampling Team Shifts per Day': numSamplingShifts,
-      'User Specified Sampling Team Labor Cost': samplingLaborCost,
+      'User Specified Number of Available Teams for Decon': numSamplingTeams,
+      'User Specified Personnel per Decon Team': numSamplingPersonnel,
+      'User Specified Decon Team Hours per Shift': numSamplingHours,
+      'User Specified Decon Team Shifts per Day': numSamplingShifts,
+      'User Specified Decon Team Labor Cost': samplingLaborCost,
       'User Specified Number of Available Labs for Analysis': numLabs,
       'User Specified Analysis Lab Hours per Day': numLabHours,
       'User Specified Surface Area': surfaceArea,
-      'Total Number of User-Defined Samples': calcGraphics.length,
+      'Total Number of User-Defined Decon Technologies': calcGraphics.length,
 
       // assign counts
-      'Total Number of Samples': totals.ac,
+      'Total Number of Decon Applications': totals.ac,
       'Total Sampled Area': totalArea,
       'Time to Prepare Kits': totals.ttpk,
       'Time to Collect': totals.ttc,
-      'Sampling Material Cost': totals.mcps,
+      'Decon Technology Material Cost': totals.mcps,
       'Time to Analyze': totals.tta,
       'Analysis Labor Cost': totals.alc,
       'Analysis Material Cost': totals.amc,
@@ -877,13 +877,13 @@ export function useCalculatePlan() {
       'Percent of Area Sampled': percentAreaSampled,
 
       // sampling
-      'Total Required Sampling Time': samplingTimeHours,
-      'Sampling Hours per Day': samplingHours,
-      'Sampling Personnel hours per Day': samplingPersonnelHoursPerDay,
-      'Sampling Personnel Labor Cost': samplingPersonnelLaborCost,
-      'Time to Complete Sampling': timeCompleteSampling,
-      'Total Sampling Labor Cost': totalSamplingLaborCost,
-      'Total Sampling Cost': totalSamplingCost,
+      'Total Required Decon Time': samplingTimeHours,
+      'Decon Hours per Day': samplingHours,
+      'Decon Personnel hours per Day': samplingPersonnelHoursPerDay,
+      'Decon Personnel Labor Cost': samplingPersonnelLaborCost,
+      'Time to Complete Decon': timeCompleteSampling,
+      'Total Decon Labor Cost': totalSamplingLaborCost,
+      'Total Decon Cost': totalSamplingCost,
       'Total Analysis Cost': totalAnalysisCost,
 
       // analysis
@@ -1011,7 +1011,7 @@ export function useDynamicPopup() {
       const actions = new Collection<any>();
       actions.addMany([
         {
-          title: 'Delete Sample',
+          title: 'Delete Decon Technology',
           id: 'delete',
           className: 'esri-icon-trash',
         },
@@ -1058,35 +1058,38 @@ export function useDynamicPopup() {
     if (type === 'Samples' || type === 'VSP') {
       const fieldInfos = [
         { fieldName: 'DECISIONUNIT', label: 'Layer' },
-        { fieldName: 'TYPE', label: 'Sample Type' },
+        { fieldName: 'TYPE', label: 'Decon Technology' },
         { fieldName: 'SA', label: 'Reference Surface Area (sq inch)' },
         { fieldName: 'AA', label: 'Actual Surface Area (sq inch)' },
-        { fieldName: 'AC', label: 'Equivalent TOTS Samples' },
+        { fieldName: 'AC', label: 'Equivalent TODS Decon Applications' },
         // {
         //   fieldName: 'TCPS',
-        //   label: 'Total Cost Per Sample (Labor + Material + Waste)',
+        //   label: 'Total Cost Per Decon Application (Labor + Material + Waste)',
         // },
         { fieldName: 'Notes', label: 'Notes' },
         { fieldName: 'ALC', label: 'Analysis Labor Cost ($)' },
         { fieldName: 'AMC', label: 'Analysis Material Cost ($)' },
-        { fieldName: 'MCPS', label: 'Sampling Material Cost ($/sample)' },
+        {
+          fieldName: 'MCPS',
+          label: 'Decon Technology Material Cost ($/decon)',
+        },
         {
           fieldName: 'TTPK',
-          label: 'Time to Prepare Kits (person hrs/sample)',
+          label: 'Time to Prepare Kits (person hrs/application)',
         },
-        { fieldName: 'TTC', label: 'Time to Collect (person hrs/sample)' },
-        { fieldName: 'TTA', label: 'Time to Analyze (person hrs/sample)' },
+        { fieldName: 'TTC', label: 'Time to Collect (person hrs/application)' },
+        { fieldName: 'TTA', label: 'Time to Analyze (person hrs/application)' },
         // {
         //   fieldName: 'TTPS',
-        //   label: 'Total Time per Sample (person hrs/sample)',
+        //   label: 'Total Time per Decon Application (person hrs/application)',
         // },
         { fieldName: 'LOD_P', label: 'Limit of Detection (CFU) Porous' },
         {
           fieldName: 'LOD_NON',
           label: 'Limit of Detection (CFU) Nonporous',
         },
-        { fieldName: 'WVPS', label: 'Waste Volume (L/sample)' },
-        { fieldName: 'WWPS', label: 'Waste Weight (lbs/sample)' },
+        { fieldName: 'WVPS', label: 'Waste Volume (L/application)' },
+        { fieldName: 'WWPS', label: 'Waste Weight (lbs/application)' },
       ];
 
       // add the contamination map related fields if necessary
@@ -1102,7 +1105,7 @@ export function useDynamicPopup() {
       const actions = new Collection<any>();
       actions.addMany([
         {
-          title: 'Delete Sample',
+          title: 'Delete Decon',
           id: 'delete',
           className: 'esri-icon-trash',
         },
@@ -1165,34 +1168,34 @@ function useGraphicColor() {
   }, [defaultSymbols, localPolygonInitialized, setOptions]);
 }
 
-// Uses browser storage for holding the training mode selection.
-function useTrainingModeStorage() {
-  const key = 'tots_training_mode';
+// // Uses browser storage for holding the training mode selection.
+// function useTrainingModeStorage() {
+//   const key = 'tots_training_mode';
 
-  const { setOptions } = useContext(DialogContext);
-  const { trainingMode, setTrainingMode } = useContext(NavigationContext);
+//   const { setOptions } = useContext(DialogContext);
+//   const { trainingMode, setTrainingMode } = useContext(NavigationContext);
 
-  // Retreives training mode data from browser storage when the app loads
-  const [localTrainingModeInitialized, setLocalTrainingModeInitialized] =
-    useState(false);
-  useEffect(() => {
-    if (localTrainingModeInitialized) return;
+//   // Retreives training mode data from browser storage when the app loads
+//   const [localTrainingModeInitialized, setLocalTrainingModeInitialized] =
+//     useState(false);
+//   useEffect(() => {
+//     if (localTrainingModeInitialized) return;
 
-    setLocalTrainingModeInitialized(true);
+//     setLocalTrainingModeInitialized(true);
 
-    const trainingModeStr = readFromStorage(key);
-    if (!trainingModeStr) return;
+//     const trainingModeStr = readFromStorage(key);
+//     if (!trainingModeStr) return;
 
-    const trainingMode = JSON.parse(trainingModeStr);
-    setTrainingMode(trainingMode);
-  }, [localTrainingModeInitialized, setTrainingMode]);
+//     const trainingMode = JSON.parse(trainingModeStr);
+//     setTrainingMode(trainingMode);
+//   }, [localTrainingModeInitialized, setTrainingMode]);
 
-  useEffect(() => {
-    if (!localTrainingModeInitialized) return;
+//   useEffect(() => {
+//     if (!localTrainingModeInitialized) return;
 
-    writeToStorage(key, trainingMode, setOptions);
-  }, [trainingMode, localTrainingModeInitialized, setOptions]);
-}
+//     writeToStorage(key, trainingMode, setOptions);
+//   }, [trainingMode, localTrainingModeInitialized, setOptions]);
+// }
 
 // Uses browser storage for holding any editable layers.
 function useEditsLayerStorage() {
@@ -2479,7 +2482,7 @@ function useDisplayModeStorage() {
 
 // Saves/Retrieves data to browser storage
 export function useSessionStorage() {
-  useTrainingModeStorage();
+  // useTrainingModeStorage();
   useGraphicColor();
   useEditsLayerStorage();
   useReferenceLayerStorage();

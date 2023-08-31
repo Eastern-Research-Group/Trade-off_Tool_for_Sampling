@@ -334,7 +334,7 @@ function MapPopup({
               maxLength={notesCharacterLimit}
               placeholder={
                 !allNotesEmpty && !allNotesSame && fieldInfos.length === 0
-                  ? 'Samples have different notes...'
+                  ? 'Decon applicatiosn have different notes...'
                   : ''
               }
               onChange={(ev) => {
@@ -354,7 +354,7 @@ function MapPopup({
                 <MessageBox
                   severity="warning"
                   title="Notes will be overwritten"
-                  message="Some selected samples already have notes. Saving will overwrite those existing notes."
+                  message="Some selected decon applications already have notes. Saving will overwrite those existing notes."
                 />
               </div>
             )}

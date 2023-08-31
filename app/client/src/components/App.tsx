@@ -17,7 +17,7 @@ import AlertMessage from 'components/AlertMessage';
 import ErrorBoundary from 'components/ErrorBoundary';
 import NavBar from 'components/NavBar';
 import Toolbar from 'components/Toolbar';
-import SplashScreen from 'components/SplashScreen';
+// import SplashScreen from 'components/SplashScreen';
 import TestingToolbar from 'components/TestingToolbar';
 import Map from 'components/Map';
 import { ReactTable } from 'components/ReactTable';
@@ -264,7 +264,7 @@ function App() {
     setTablePanelExpanded,
     tablePanelHeight,
     setTablePanelHeight,
-    trainingMode,
+    // trainingMode,
   } = useContext(NavigationContext);
   const {
     displayDimensions,
@@ -481,7 +481,7 @@ function App() {
       <div className="tots" ref={totsRef}>
         <ErrorBoundary>
           <Fragment>
-            <SplashScreen />
+            {/* <SplashScreen /> */}
             <AlertDialog />
             <AlertMessage />
             <div css={appStyles(offset)}>
@@ -636,7 +636,7 @@ function App() {
                       >
                         <div css={tablePanelHeaderStyles}>
                           <span css={sampleTableHeaderStyles}>
-                            Samples (Count: {sampleData.length})
+                            Decon Applications (Count: {sampleData.length})
                           </span>
                         </div>
                         <div>
@@ -744,7 +744,7 @@ function App() {
                                       >
                                         <i className="fas fa-search-plus" />
                                         <span className="sr-only">
-                                          Zoom to sample
+                                          Zoom to decon application
                                         </span>
                                       </button>
                                     </div>
@@ -752,7 +752,7 @@ function App() {
                                 },
                                 ...getSampleTableColumns({
                                   tableWidth,
-                                  includeContaminationFields: trainingMode,
+                                  includeContaminationFields: true, // trainingMode,
                                 }),
                               ];
                             }}

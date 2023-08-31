@@ -127,7 +127,7 @@ const webMapContainerCheckboxStyles = css`
 `;
 
 // --- components (Publish) ---
-function Publish() {
+export function PublishFull() {
   const { oAuthInfo, portal, setSignedIn, setPortal, signedIn } = useContext(
     AuthenticationContext,
   );
@@ -1864,7 +1864,7 @@ function Publish() {
   ]);
 
   ///////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////// END - Publish Sample Types ///////////////////////////////
+  //////////////////////////// END - Publish Decon Technologies /////////////////////////
   ///////////////////////////////////////////////////////////////////////////////////////
 
   // count the number of samples of the selected sampling plan
@@ -1926,10 +1926,10 @@ function Publish() {
       <h2>Publish Output</h2>
       <div css={sectionContainer}>
         <p>
-          Publish the configured TOTS output to your ArcGIS Online account. A
+          Publish the configured TODS output to your ArcGIS Online account. A
           summary of the selections made on the Configure Output step is below.
           By default, only you and the ArcGIS Online administrator can access
-          content created. Provide other collaborators access to TOTS content by{' '}
+          content created. Provide other collaborators access to TODS content by{' '}
           <a
             href="https://doc.arcgis.com/en/arcgis-online/share-maps/share-items.htm"
             target="_blank"
@@ -2011,7 +2011,7 @@ function Publish() {
             ) : (
               <i className="fas fa-times" css={unCheckedStyles}></i>
             )}
-            Include Tailored TOTS Output Files:
+            Include Tailored TODS Output Files:
           </strong>
           {includePartialPlan && (
             <div>
@@ -2066,14 +2066,14 @@ function Publish() {
 
         {includeCustomSampleTypes && (
           <div>
-            <strong>Include Custom Sample Types:</strong>
+            <strong>Include Custom Decon Technologies:</strong>
             <ul>
               {sampleTypeSelections.map((item, index) => {
                 return <li key={index}>{item.label}</li>;
               })}
             </ul>
             <p>
-              <strong>Publish Custom Sample Types to:</strong>
+              <strong>Publish Custom Decon Technologies to:</strong>
               <br />
               {selectedService ? (
                 <Fragment>
@@ -2183,6 +2183,21 @@ function Publish() {
             </button>
           </div>
         )}
+    </div>
+  );
+}
+
+function Publish() {
+  return (
+    <div css={panelContainer}>
+      <h2>Publish Output</h2>
+      <div css={sectionContainer}>
+        <MessageBox
+          severity="warning"
+          title="Feature Not Yet Available"
+          message="This feature is not available yet."
+        />
+      </div>
     </div>
   );
 }

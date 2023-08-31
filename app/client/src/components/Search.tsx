@@ -119,10 +119,10 @@ function Search() {
       <div>
         <h2>Locate</h2>
         <p>
-          Start here to zoom to a location on the map to create a sampling
-          design for an outdoor area. Otherwise, proceed to the{' '}
-          <strong>Add Data</strong> step if you have existing sampling designs
-          that you would like to add to the tool or have indoor environment
+          Start here to zoom to a location on the map to create a decon design
+          for an outdoor area. Otherwise, proceed to the{' '}
+          <strong>Add Data</strong> step if you have existing decon designs that
+          you would like to add to the tool or have indoor environment
           representations to add to support designing a plan for an indoor
           environment.
         </p>

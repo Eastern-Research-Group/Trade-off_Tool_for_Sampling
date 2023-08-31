@@ -361,19 +361,22 @@ function CalculateResults() {
       summarySheet.mergeCells(7, 1, 7, 2);
       summarySheet.getCell(7, 1).alignment = columnTitleAlignment;
       summarySheet.getCell(7, 1).font = columnTitleFont;
-      summarySheet.getCell(7, 1).value = 'Sampling Plan';
+      summarySheet.getCell(7, 1).value = 'Decon Plan';
 
       summarySheet.getCell(8, 1).font = labelFont;
-      summarySheet.getCell(8, 1).value = 'Total Number of User-Defined Samples';
+      summarySheet.getCell(8, 1).value =
+        'Total Number of User-Defined Decon Technologies';
       summarySheet.getCell(8, 2).font = defaultFont;
       summarySheet.getCell(8, 2).value =
-        calculateResults.data['Total Number of User-Defined Samples'];
+        calculateResults.data[
+          'Total Number of User-Defined Decon Technologies'
+        ];
 
       summarySheet.getCell(9, 1).font = labelFont;
-      summarySheet.getCell(9, 1).value = 'Total Number of Samples';
+      summarySheet.getCell(9, 1).value = 'Total Number of Decon Applications';
       summarySheet.getCell(9, 2).font = defaultFont;
       summarySheet.getCell(9, 2).value =
-        calculateResults.data['Total Number of Samples'];
+        calculateResults.data['Total Number of Decon Applications'];
 
       summarySheet.getCell(10, 1).font = labelFont;
       summarySheet.getCell(10, 1).value = 'Total Cost';
@@ -396,34 +399,34 @@ function CalculateResults() {
       summarySheet.mergeCells(7, 3, 7, 4);
       summarySheet.getCell(7, 3).alignment = columnTitleAlignment;
       summarySheet.getCell(7, 3).font = columnTitleFont;
-      summarySheet.getCell(7, 3).value = 'Sampling Operation';
+      summarySheet.getCell(7, 3).value = 'Decon Operation';
 
       summarySheet.getCell(8, 3).font = labelFont;
-      summarySheet.getCell(8, 3).value =
-        'Total Required Sampling Time (team hrs)';
+      summarySheet.getCell(8, 3).value = 'Total Required Decon Time (team hrs)';
       summarySheet.getCell(8, 4).font = defaultFont;
       summarySheet.getCell(8, 4).value =
-        calculateResults.data['Total Required Sampling Time'];
+        calculateResults.data['Total Required Decon Time'];
 
       summarySheet.getCell(9, 3).font = labelFont;
-      summarySheet.getCell(9, 3).value = 'Time to Complete Sampling (days)';
+      summarySheet.getCell(9, 3).value = 'Time to Complete Decon (days)';
       summarySheet.getCell(9, 4).font = defaultFont;
       summarySheet.getCell(9, 4).value =
-        calculateResults.data['Time to Complete Sampling'];
+        calculateResults.data['Time to Complete Decon'];
 
       summarySheet.getCell(10, 3).font = labelFont;
-      summarySheet.getCell(10, 3).value = 'Total Sampling Labor Cost';
+      summarySheet.getCell(10, 3).value = 'Total Decon Labor Cost';
       summarySheet.getCell(10, 4).font = defaultFont;
       summarySheet.getCell(10, 4).numFmt = currencyNumberFormat;
       summarySheet.getCell(10, 4).value =
-        calculateResults.data['Total Sampling Labor Cost'];
+        calculateResults.data['Total Decon Labor Cost'];
 
       summarySheet.getCell(11, 3).font = labelFont;
-      summarySheet.getCell(11, 3).value = 'Total Sampling Material Cost';
+      summarySheet.getCell(11, 3).value =
+        'Total Decon Technology Material Cost';
       summarySheet.getCell(11, 4).font = defaultFont;
       summarySheet.getCell(11, 4).numFmt = currencyNumberFormat;
       summarySheet.getCell(11, 4).value =
-        calculateResults.data['Sampling Material Cost'];
+        calculateResults.data['Decon Technology Material Cost'];
 
       // col 5 & 6
       summarySheet.mergeCells(7, 5, 7, 6);
@@ -486,37 +489,37 @@ function CalculateResults() {
       // col 1 & 2
       parameterSheet.getCell(3, 1).font = labelFont;
       parameterSheet.getCell(3, 1).value =
-        'Number of Available Teams for Sampling';
+        'Number of Available Teams for Decon';
       parameterSheet.getCell(3, 2).font = defaultFont;
       parameterSheet.getCell(3, 2).value =
         calculateResults.data[
-          'User Specified Number of Available Teams for Sampling'
+          'User Specified Number of Available Teams for Decon'
         ];
 
       parameterSheet.getCell(4, 1).font = labelFont;
-      parameterSheet.getCell(4, 1).value = 'Personnel per Sampling Team';
+      parameterSheet.getCell(4, 1).value = 'Personnel per Decon Team';
       parameterSheet.getCell(4, 2).font = defaultFont;
       parameterSheet.getCell(4, 2).value =
-        calculateResults.data['User Specified Personnel per Sampling Team'];
+        calculateResults.data['User Specified Personnel per Decon Team'];
 
       parameterSheet.getCell(5, 1).font = labelFont;
-      parameterSheet.getCell(5, 1).value = 'Sampling Team Hours per Shift';
+      parameterSheet.getCell(5, 1).value = 'Decon Team Hours per Shift';
       parameterSheet.getCell(5, 2).font = defaultFont;
       parameterSheet.getCell(5, 2).value =
-        calculateResults.data['User Specified Sampling Team Hours per Shift'];
+        calculateResults.data['User Specified Decon Team Hours per Shift'];
 
       parameterSheet.getCell(6, 1).font = labelFont;
-      parameterSheet.getCell(6, 1).value = 'Sampling Team Shifts per Day';
+      parameterSheet.getCell(6, 1).value = 'Decon Team Shifts per Day';
       parameterSheet.getCell(6, 2).font = defaultFont;
       parameterSheet.getCell(6, 2).value =
-        calculateResults.data['User Specified Sampling Team Shifts per Day'];
+        calculateResults.data['User Specified Decon Team Shifts per Day'];
 
       parameterSheet.getCell(7, 1).font = labelFont;
-      parameterSheet.getCell(7, 1).value = 'Sampling Team Labor Cost';
+      parameterSheet.getCell(7, 1).value = 'Decon Team Labor Cost';
       parameterSheet.getCell(7, 2).font = defaultFont;
       parameterSheet.getCell(7, 2).numFmt = currencyNumberFormat;
       parameterSheet.getCell(7, 2).value =
-        calculateResults.data['User Specified Sampling Team Labor Cost'];
+        calculateResults.data['User Specified Decon Team Labor Cost'];
 
       parameterSheet.getCell(8, 1).font = labelFont;
       parameterSheet.getCell(8, 1).value =
@@ -612,26 +615,25 @@ function CalculateResults() {
       resultsSheet.mergeCells(3, 3, 3, 4);
       resultsSheet.getCell(3, 3).alignment = columnTitleAlignment;
       resultsSheet.getCell(3, 3).font = columnTitleFont;
-      resultsSheet.getCell(3, 3).value = 'Sampling';
+      resultsSheet.getCell(3, 3).value = 'Decon';
 
       resultsSheet.getCell(4, 3).font = labelFont;
-      resultsSheet.getCell(4, 3).value = 'Sampling Hours per Day';
+      resultsSheet.getCell(4, 3).value = 'Decon Hours per Day';
       resultsSheet.getCell(4, 4).font = defaultFont;
       resultsSheet.getCell(4, 4).value =
-        calculateResults.data['Sampling Hours per Day'];
+        calculateResults.data['Decon Hours per Day'];
 
       resultsSheet.getCell(5, 3).font = labelFont;
-      resultsSheet.getCell(5, 3).value = 'Sampling Personnel Hours per Day';
+      resultsSheet.getCell(5, 3).value = 'Decon Personnel Hours per Day';
       resultsSheet.getCell(5, 4).font = defaultFont;
       resultsSheet.getCell(5, 4).value =
-        calculateResults.data['Sampling Personnel hours per Day'];
+        calculateResults.data['Decon Personnel hours per Day'];
 
       resultsSheet.getCell(6, 3).font = labelFont;
-      resultsSheet.getCell(6, 3).value =
-        'User Specified Sampling Team Labor Cost';
+      resultsSheet.getCell(6, 3).value = 'User Specified Decon Team Labor Cost';
       resultsSheet.getCell(6, 4).font = defaultFont;
       resultsSheet.getCell(6, 4).value =
-        calculateResults.data['User Specified Sampling Team Labor Cost'];
+        calculateResults.data['User Specified Decon Team Labor Cost'];
 
       resultsSheet.getCell(7, 3).font = labelFont;
       resultsSheet.getCell(7, 3).value = 'Time to Prepare Kits (person hours)';
@@ -646,31 +648,31 @@ function CalculateResults() {
         calculateResults.data['Time to Collect'];
 
       resultsSheet.getCell(9, 3).font = labelFont;
-      resultsSheet.getCell(9, 3).value = 'Sampling Material Cost';
+      resultsSheet.getCell(9, 3).value = 'Decon Technology Material Cost';
       resultsSheet.getCell(9, 4).font = defaultFont;
       resultsSheet.getCell(9, 4).numFmt = currencyNumberFormat;
       resultsSheet.getCell(9, 4).value =
-        calculateResults.data['Sampling Material Cost'];
+        calculateResults.data['Decon Technology Material Cost'];
 
       resultsSheet.getCell(10, 3).font = labelFont;
-      resultsSheet.getCell(10, 3).value = 'Sampling Personnel Labor Cost';
+      resultsSheet.getCell(10, 3).value = 'Decon Personnel Labor Cost';
       resultsSheet.getCell(10, 4).font = defaultFont;
       resultsSheet.getCell(10, 4).numFmt = currencyNumberFormat;
       resultsSheet.getCell(10, 4).value =
-        calculateResults.data['Sampling Personnel Labor Cost'];
+        calculateResults.data['Decon Personnel Labor Cost'];
 
       resultsSheet.getCell(11, 3).font = labelFont;
-      resultsSheet.getCell(11, 3).value = 'Time to Complete Sampling (days)';
+      resultsSheet.getCell(11, 3).value = 'Time to Complete Decon (days)';
       resultsSheet.getCell(11, 4).font = defaultFont;
       resultsSheet.getCell(11, 4).value =
-        calculateResults.data['Time to Complete Sampling'];
+        calculateResults.data['Time to Complete Decon'];
 
       resultsSheet.getCell(12, 3).font = labelFont;
-      resultsSheet.getCell(12, 3).value = 'Total Sampling Labor Cost';
+      resultsSheet.getCell(12, 3).value = 'Total Decon Labor Cost';
       resultsSheet.getCell(12, 4).font = defaultFont;
       resultsSheet.getCell(12, 4).numFmt = currencyNumberFormat;
       resultsSheet.getCell(12, 4).value =
-        calculateResults.data['Total Sampling Labor Cost'];
+        calculateResults.data['Total Decon Labor Cost'];
 
       // col 5 & 6
       resultsSheet.mergeCells(3, 5, 3, 6);
@@ -729,7 +731,7 @@ function CalculateResults() {
       if (!scenarioGroupLayer) return;
 
       // add the sheet
-      const samplesSheet = workbook.addWorksheet('Sample Details');
+      const samplesSheet = workbook.addWorksheet('Decon Plan Details');
 
       // setup column widths
       samplesSheet.columns = [
@@ -744,7 +746,7 @@ function CalculateResults() {
 
       // add the header
       samplesSheet.getCell(1, 1).font = sheetTitleFont;
-      samplesSheet.getCell(1, 1).value = 'Sample Details';
+      samplesSheet.getCell(1, 1).value = 'Decon Plan Details';
 
       // add in column headers
       samplesSheet.getCell(3, 1).font = labelFont;
@@ -752,9 +754,9 @@ function CalculateResults() {
       samplesSheet.getCell(3, 2).font = labelFont;
       samplesSheet.getCell(3, 2).value = 'Layer ID';
       samplesSheet.getCell(3, 3).font = labelFont;
-      samplesSheet.getCell(3, 3).value = 'Sample ID';
+      samplesSheet.getCell(3, 3).value = 'Decon ID';
       samplesSheet.getCell(3, 4).font = labelFont;
-      samplesSheet.getCell(3, 4).value = 'Sample Type';
+      samplesSheet.getCell(3, 4).value = 'Decon Technology';
       samplesSheet.getCell(3, 5).font = labelFont;
       samplesSheet.getCell(3, 5).value = 'Measured Contamination';
       samplesSheet.getCell(3, 6).font = labelFont;
@@ -837,8 +839,8 @@ function CalculateResults() {
       )}
       {calculateResults.status === 'no-graphics' && (
         <p>
-          There are no samples to run calculations on. Please add samples and
-          try again.
+          There are no decon applications to run calculations on. Please add
+          decon applications and try again.
         </p>
       )}
       {calculateResults.status === 'success' && calculateResults.data && (
@@ -855,16 +857,20 @@ function CalculateResults() {
             />
             <br />
 
-            <h4>Sampling Plan</h4>
+            <h4>Decon Plan</h4>
             <LabelValue
-              label="Total Number of User-Defined Samples"
+              label="Total Number of User-Defined Decon Technologies"
               value={
-                calculateResults.data['Total Number of User-Defined Samples']
+                calculateResults.data[
+                  'Total Number of User-Defined Decon Technologies'
+                ]
               }
             />
             <LabelValue
-              label="Total Number of Samples"
-              value={calculateResults.data['Total Number of Samples']}
+              label="Total Number of Decon Applications"
+              value={
+                calculateResults.data['Total Number of Decon Applications']
+              }
             />
             <LabelValue
               label="Total Cost ($)"
@@ -881,23 +887,23 @@ function CalculateResults() {
             />
             <hr css={resourceTallySeparator} />
 
-            <h4>Sampling Operation</h4>
+            <h4>Decon Operation</h4>
             <LabelValue
-              label="Total Required Sampling Time (team hrs)"
-              value={calculateResults.data['Total Required Sampling Time']}
+              label="Total Required Decon Time (team hrs)"
+              value={calculateResults.data['Total Required Decon Time']}
             />
             <LabelValue
-              label="Time to Complete Sampling (days)"
-              value={calculateResults.data['Time to Complete Sampling']}
+              label="Time to Complete Decon (days)"
+              value={calculateResults.data['Time to Complete Decon']}
             />
             <LabelValue
-              label="Total Sampling Labor Cost ($)"
-              value={calculateResults.data['Total Sampling Labor Cost']}
+              label="Total Decon Labor Cost ($)"
+              value={calculateResults.data['Total Decon Labor Cost']}
               isMonetary={true}
             />
             <LabelValue
-              label="Total Sampling Material Cost ($)"
-              value={calculateResults.data['Sampling Material Cost']}
+              label="Total Decon Material Cost ($)"
+              value={calculateResults.data['Decon Technology Material Cost']}
               isMonetary={true}
             />
             <hr css={resourceTallySeparator} />
@@ -947,19 +953,19 @@ function CalculateResults() {
             />
             <hr css={resourceTallySeparator} />
 
-            <h4>Sampling</h4>
+            <h4>Decon</h4>
             <LabelValue
-              label="Sampling Hours per Day"
-              value={calculateResults.data['Sampling Hours per Day']}
+              label="Decon Hours per Day"
+              value={calculateResults.data['Decon Hours per Day']}
             />
             <LabelValue
-              label="Sampling Personnel Hours per Day"
-              value={calculateResults.data['Sampling Personnel hours per Day']}
+              label="Decon Personnel Hours per Day"
+              value={calculateResults.data['Decon Personnel hours per Day']}
             />
             <LabelValue
-              label="User Specified Sampling Team Labor Cost ($)"
+              label="User Specified Decon Team Labor Cost ($)"
               value={
-                calculateResults.data['User Specified Sampling Team Labor Cost']
+                calculateResults.data['User Specified Decon Team Labor Cost']
               }
               isMonetary={true}
             />
@@ -972,22 +978,22 @@ function CalculateResults() {
               value={calculateResults.data['Time to Collect']}
             />
             <LabelValue
-              label="Sampling Material Cost ($)"
-              value={calculateResults.data['Sampling Material Cost']}
+              label="Decon Material Cost ($)"
+              value={calculateResults.data['Decon Technology Material Cost']}
               isMonetary={true}
             />
             <LabelValue
-              label="Sampling Personnel Labor Cost ($)"
-              value={calculateResults.data['Sampling Personnel Labor Cost']}
+              label="Decon Personnel Labor Cost ($)"
+              value={calculateResults.data['Decon Personnel Labor Cost']}
               isMonetary={true}
             />
             <LabelValue
-              label="Time to Complete Sampling (days)"
-              value={calculateResults.data['Time to Complete Sampling']}
+              label="Time to Complete Decon (days)"
+              value={calculateResults.data['Time to Complete Decon']}
             />
             <LabelValue
-              label="Total Sampling Labor Cost ($)"
-              value={calculateResults.data['Total Sampling Labor Cost']}
+              label="Total Decon Labor Cost ($)"
+              value={calculateResults.data['Total Decon Labor Cost']}
               isMonetary={true}
             />
             <hr css={resourceTallySeparator} />

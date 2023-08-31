@@ -7,6 +7,7 @@ import { DialogOverlay, DialogContent } from '@reach/dialog';
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import { EditCustomSampleTypesTable } from 'components/EditLayerMetaData';
 import InfoIcon from 'components/InfoIcon';
+import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 import { ReactTable, ReactTableEditable } from 'components/ReactTable';
 import Select from 'components/Select';
@@ -147,7 +148,7 @@ const nestedAccordionStyles = css`
 `;
 
 // --- components (ConfigureOutput) ---
-function ConfigureOutput() {
+export function ConfigureOutputFull() {
   const { signedIn } = useContext(AuthenticationContext);
   const {
     publishSamplesMode,
@@ -212,7 +213,7 @@ function ConfigureOutput() {
     <InfoIcon
       id={id}
       cssStyles={infoIconStyles}
-      tooltip="A web scene is used for viewing TOTS sampling plans in ArcGIS Online with 3D."
+      tooltip="A web scene is used for viewing TODS decon plans in ArcGIS Online with 3D."
     />
   );
 
@@ -418,7 +419,7 @@ function ConfigureOutput() {
           {!signedIn && notLoggedInMessage}
           <div>
             <p>
-              Use this tab to configure what TOTS output is published to your
+              Use this tab to configure what TODS output is published to your
               ArcGIS Online account. Select one or more of the options below.
             </p>
           </div>
@@ -447,7 +448,7 @@ function ConfigureOutput() {
             title={
               <label css={labelStyles}>
                 <strong>
-                  Include TOTS Sampling Plan (and optional custom attributes)
+                  Include TODS Decon Plan (and optional custom attributes)
                 </strong>
                 <div css={switchStyles} onClick={(ev) => ev.stopPropagation()}>
                   <Switch
@@ -456,7 +457,7 @@ function ConfigureOutput() {
                       setIncludePartialPlan(!includePartialPlan);
                       setIsPartialOpen(!includePartialPlan);
                     }}
-                    ariaLabel="Include TOTS Sampling Plan"
+                    ariaLabel="Include TODS Decon Plan"
                   />
                 </div>
               </label>
@@ -464,7 +465,7 @@ function ConfigureOutput() {
           >
             <div css={sectionContainer}>
               <p>
-                A subset of TOTS output will be published by default. Click Add
+                A subset of TODS output will be published by default. Click Add
                 User-Defined Attributes to optionally add additional attributes
                 to use with field data collection apps.
               </p>
@@ -705,7 +706,7 @@ function ConfigureOutput() {
             }}
             title={
               <label css={labelStyles}>
-                <strong>Include Custom Sample Types</strong>
+                <strong>Include Custom Decon Technologies</strong>
                 <div css={switchStyles} onClick={(ev) => ev.stopPropagation()}>
                   <Switch
                     checked={includeCustomSampleTypes}
@@ -713,7 +714,7 @@ function ConfigureOutput() {
                       setIsSampleTypesOpen(!includeCustomSampleTypes);
                       setIncludeCustomSampleTypes(!includeCustomSampleTypes);
                     }}
-                    ariaLabel="Include Custom Sample Types"
+                    ariaLabel="Include Custom Decon Technologies"
                   />
                 </div>
               </label>
@@ -721,15 +722,15 @@ function ConfigureOutput() {
           >
             <div css={sectionContainer}>
               <p>
-                Publish custom sample types to ArcGIS Online. Select one or more
-                custom sample types from the drop-down list and specify whether
-                to publish output to a new or existing feature service. If
-                appending output to an existing feature service, select the
-                feature service from the drop-down list.
+                Publish custom decon technologies to ArcGIS Online. Select one
+                or more custom decon technologies from the drop-down list and
+                specify whether to publish output to a new or existing feature
+                service. If appending output to an existing feature service,
+                select the feature service from the drop-down list.
               </p>
               <div>
                 <label htmlFor="publish-sample-select">
-                  Sample Types to Publish
+                  Decon Technologies to Publish
                 </label>
                 <Select
                   inputId="publish-sample-select"
@@ -791,6 +792,23 @@ function ConfigureOutput() {
         </p>
 
         <NavigationButton goToPanel="publish" />
+      </div>
+    </div>
+  );
+}
+
+function ConfigureOutput() {
+  return (
+    <div css={panelContainer}>
+      <div>
+        <div css={sectionContainer}>
+          <h2>Configure Output</h2>
+          <MessageBox
+            severity="warning"
+            title="Feature Not Yet Available"
+            message="This feature is not available yet."
+          />
+        </div>
       </div>
     </div>
   );

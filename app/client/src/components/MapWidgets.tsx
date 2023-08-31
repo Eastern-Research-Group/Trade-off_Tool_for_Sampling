@@ -169,8 +169,11 @@ type Props = {
 
 function MapWidgets({ mapView, sceneView }: Props) {
   const { userInfo } = useContext(AuthenticationContext);
-  const { currentPanel, trainingMode, getTrainingMode } =
-    useContext(NavigationContext);
+  const {
+    currentPanel,
+    // trainingMode,
+    // getTrainingMode
+  } = useContext(NavigationContext);
   const {
     defaultSymbols,
     edits,
@@ -469,7 +472,7 @@ function MapWidgets({ mapView, sceneView }: Props) {
         );
         if (!deleteMultiAction) {
           view.popup.actions.add({
-            title: 'Delete Samples',
+            title: 'Delete Decon Applications',
             id: 'delete-multi',
             className: 'esri-icon-trash',
           } as __esri.ActionButton);
@@ -772,7 +775,7 @@ function MapWidgets({ mapView, sceneView }: Props) {
 
           // add a popup template to the graphic
           graphic.popupTemplate = new PopupTemplate(
-            getPopupTemplate(layerType, getTrainingMode()),
+            getPopupTemplate(layerType, true), // getTrainingMode()),
           );
 
           // update the z values
@@ -993,7 +996,12 @@ function MapWidgets({ mapView, sceneView }: Props) {
         sketchEventSetter(event);
       });
     },
-    [createBuffer, getPopupTemplate, getTrainingMode, userInfo],
+    [
+      createBuffer,
+      getPopupTemplate,
+      // getTrainingMode,
+      userInfo,
+    ],
   );
 
   // Setup the sketch view model events for the base sketchVM
@@ -1200,10 +1208,10 @@ function MapWidgets({ mapView, sceneView }: Props) {
   useEffect(() => {
     // get the popupTemplate
     const popupTemplate = new PopupTemplate(
-      getPopupTemplate('Samples', trainingMode),
+      getPopupTemplate('Samples', true), //trainingMode),
     );
 
-    // update the popupTemplate for all Sample/VSP layers
+    // update the popupTemplate for all Decon/VSP layers
     layers.forEach((layer) => {
       if (layer.layerType === 'Samples' || layer.layerType === 'VSP') {
         if (layer.sketchLayer.type === 'graphics') {
@@ -1223,7 +1231,11 @@ function MapWidgets({ mapView, sceneView }: Props) {
         }
       }
     });
-  }, [getPopupTemplate, trainingMode, layers]);
+  }, [
+    getPopupTemplate,
+    // trainingMode,
+    layers,
+  ]);
 
   // Gets the graphics to be highlighted and highlights them
   const [handles] = useState(new Handles());
@@ -1243,7 +1255,8 @@ function MapWidgets({ mapView, sceneView }: Props) {
     ) as __esri.GroupLayer;
 
     // Get any graphics that have a contam value
-    if (trainingMode && groupLayer) {
+    if (groupLayer) {
+      // if (trainingMode && groupLayer) {
       groupLayer.layers.forEach((layer) => {
         if (layer.type !== 'graphics') return;
 
@@ -1273,7 +1286,7 @@ function MapWidgets({ mapView, sceneView }: Props) {
     selectedScenario,
     mapView,
     sceneView,
-    trainingMode,
+    // trainingMode,
   ]);
 
   useEffect(() => {

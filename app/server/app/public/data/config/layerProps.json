@@ -118,7 +118,7 @@
       "name": "AC",
       "type": "esriFieldTypeInteger",
       "actualType": "int",
-      "alias": "Equivalent TOTS Samples",
+      "alias": "Equivalent TODS Decon Applications",
       "sqlType": "sqlTypeInteger",
       "nullable": true,
       "editable": true,
@@ -635,7 +635,7 @@
       "name": "NUM_SAMPLING_HOURS",
       "type": "esriFieldTypeInteger",
       "actualType": "int",
-      "alias": "Sampling Team Hours per Shift",
+      "alias": "Decon Team Hours per Shift",
       "sqlType": "sqlTypeInteger",
       "nullable": true,
       "editable": true,
@@ -646,7 +646,7 @@
       "name": "NUM_SAMPLING_PERSONNEL",
       "type": "esriFieldTypeInteger",
       "actualType": "int",
-      "alias": "Personnel per Sampling Team",
+      "alias": "Personnel per Decon Team",
       "sqlType": "sqlTypeInteger",
       "nullable": true,
       "editable": true,
@@ -657,7 +657,7 @@
       "name": "NUM_SAMPLING_SHIFTS",
       "type": "esriFieldTypeInteger",
       "actualType": "int",
-      "alias": "Sampling Team Shifts per Day",
+      "alias": "Decon Team Shifts per Day",
       "sqlType": "sqlTypeInteger",
       "nullable": true,
       "editable": true,
@@ -668,7 +668,7 @@
       "name": "NUM_SAMPLING_TEAMS",
       "type": "esriFieldTypeInteger",
       "actualType": "int",
-      "alias": "Number of Available Teams for Sampling",
+      "alias": "Number of Available Teams for Decon",
       "sqlType": "sqlTypeInteger",
       "nullable": true,
       "editable": true,
@@ -679,7 +679,7 @@
       "name": "SAMPLING_LABOR_COST",
       "type": "esriFieldTypeInteger",
       "actualType": "int",
-      "alias": "Sampling Team Labor Cost ($)",
+      "alias": "Decon Team Labor Cost ($)",
       "sqlType": "sqlTypeInteger",
       "nullable": true,
       "editable": true,
@@ -814,7 +814,7 @@
         "places": 2
       },
       "isEditable": false,
-      "label": "Equivalent TOTS Samples",
+      "label": "Equivalent TODS Decon Applications",
       "visible": true
     },
     "ALC": {
@@ -915,7 +915,7 @@
         "places": 2
       },
       "isEditable": false,
-      "label": "Sampling Material Cost ($/sample)",
+      "label": "Decon Material Cost ($/application)",
       "visible": true
     },
     "Notes": {
@@ -958,7 +958,7 @@
         "places": 2
       },
       "isEditable": false,
-      "label": "Total Cost per Sample",
+      "label": "Total Cost per Decon Application",
       "visible": true
     },
     "TTA": {
@@ -968,7 +968,7 @@
         "places": 2
       },
       "isEditable": false,
-      "label": "Time to Analyze (person hrs/sample)",
+      "label": "Time to Analyze (person hrs/application)",
       "visible": true
     },
     "TTC": {
@@ -978,7 +978,7 @@
         "places": 2
       },
       "isEditable": false,
-      "label": "Time to Collect (person hrs/sample)",
+      "label": "Time to Collect (person hrs/application)",
       "visible": true
     },
     "TTPK": {
@@ -988,7 +988,7 @@
         "places": 2
       },
       "isEditable": false,
-      "label": "Time to Prepare Kits (person hrs/sample)",
+      "label": "Time to Prepare Kits (person hrs/application)",
       "visible": true
     },
     "TTPS": {
@@ -998,13 +998,13 @@
         "places": 2
       },
       "isEditable": false,
-      "label": "Total Time per Sample",
+      "label": "Total Time per Decon",
       "visible": true
     },
     "TYPE": {
       "fieldName": "TYPE",
       "isEditable": false,
-      "label": "Sample Type",
+      "label": "Decon Technology",
       "visible": true
     },
     "TYPEUUID": {
@@ -1044,7 +1044,7 @@
         "places": 2
       },
       "isEditable": false,
-      "label": "Waste Volume per Sample",
+      "label": "Waste Volume per Decon Application",
       "visible": true
     },
     "WWPS": {
@@ -1054,7 +1054,7 @@
         "places": 2
       },
       "isEditable": false,
-      "label": "Waste Weight per Sample",
+      "label": "Waste Weight per Decon Application",
       "visible": true
     }
   }

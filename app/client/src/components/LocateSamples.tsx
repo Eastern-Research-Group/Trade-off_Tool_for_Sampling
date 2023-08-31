@@ -3,10 +3,8 @@
 import React, { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
 import Collection from '@arcgis/core/core/Collection';
-import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
 import Graphic from '@arcgis/core/Graphic';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
-import Polygon from '@arcgis/core/geometry/Polygon';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
@@ -17,20 +15,13 @@ import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 import Select from 'components/Select';
 // contexts
-import { AuthenticationContext } from 'contexts/Authentication';
 import { DialogContext } from 'contexts/Dialog';
-import {
-  useLayerProps,
-  useSampleTypesContext,
-  useServicesContext,
-} from 'contexts/LookupFiles';
-import { NavigationContext } from 'contexts/Navigation';
+import { useSampleTypesContext } from 'contexts/LookupFiles';
 import { PublishContext } from 'contexts/Publish';
 import { SketchContext } from 'contexts/Sketch';
 // types
 import { LayerType } from 'types/Layer';
 import { EditsType, ScenarioEditsType } from 'types/Edits';
-import { ErrorType } from 'types/Misc';
 // config
 import {
   AttributeItems,
@@ -38,15 +29,10 @@ import {
   PolygonSymbol,
 } from 'config/sampleAttributes';
 import {
-  cantUseWithVspMessage,
   featureNotAvailableMessage,
-  generateRandomExceededTransferLimitMessage,
-  generateRandomSuccessMessage,
   userDefinedValidationMessage,
-  webServiceErrorMessage,
 } from 'config/errorMessages';
 // utils
-import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
 import { useGeometryTools, useDynamicPopup, useStartOver } from 'utils/hooks';
 import {
   convertToPoint,
@@ -61,14 +47,9 @@ import {
   getPointSymbol,
   getScenarios,
   getSketchableLayers,
-  removeZValues,
-  setZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import { geoprocessorFetch } from 'utils/fetchUtils';
-import { createErrorObject, getLayerName, getScenarioName } from 'utils/utils';
-// styles
-import { reactSelectStyles } from 'styles';
+import { getLayerName, getScenarioName } from 'utils/utils';
 
 type ShapeTypeSelect = {
   value: string;
@@ -227,28 +208,6 @@ const textStyles = css`
   word-break: break-word;
 `;
 
-const sketchAoiButtonStyles = css`
-  background-color: white;
-  color: black;
-
-  &:hover,
-  &:focus {
-    background-color: #e7f6f8;
-    cursor: pointer;
-  }
-`;
-
-const sketchAoiTextStyles = css`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  i {
-    font-size: 20px;
-    margin-right: 5px;
-  }
-`;
-
 const inlineMenuStyles = css`
   display: flex;
   align-items: center;
@@ -273,15 +232,6 @@ const inputStyles = css`
   padding-left: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
-`;
-
-const inlineSelectStyles = css`
-  width: 100%;
-  margin-right: 10px;
-`;
-
-const submitButtonStyles = css`
-  margin-top: 10px;
 `;
 
 const sampleCountStyles = css`
@@ -399,27 +349,14 @@ const lineSeparatorStyles = css`
   border-bottom: 1px solid #d8dfe2;
 `;
 
-const radioLabelStyles = css`
-  padding-left: 0.375rem;
-`;
-
 const verticalCenterTextStyles = css`
   display: flex;
   align-items: center;
 `;
 
 // --- components (LocateSamples) ---
-type GenerateRandomType = {
-  status: 'none' | 'fetching' | 'success' | 'failure' | 'exceededTransferLimit';
-  error?: ErrorType;
-  data: __esri.Graphic[];
-};
-
 function LocateSamples() {
-  const { userInfo } = useContext(AuthenticationContext);
   const { setOptions } = useContext(DialogContext);
-  const { setGoTo, setGoToOptions, trainingMode } =
-    useContext(NavigationContext);
   const { setSampleTypeSelections } = useContext(PublishContext);
   const {
     defaultSymbols,
@@ -439,7 +376,6 @@ function LocateSamples() {
     setAoiSketchLayer,
     sketchVM,
     aoiSketchVM,
-    getGpMaxRecordCount,
     sampleAttributes,
     userDefinedOptions,
     setUserDefinedOptions,
@@ -453,9 +389,7 @@ function LocateSamples() {
   const startOver = useStartOver();
   const { createBuffer } = useGeometryTools();
   const getPopupTemplate = useDynamicPopup();
-  const layerProps = useLayerProps();
   const sampleTypeContext = useSampleTypesContext();
-  const services = useServicesContext();
 
   // Sets the sketchLayer to the first layer in the layer selection drop down,
   // if available. If the drop down is empty, an empty sketchLayer will be
@@ -506,19 +440,6 @@ function LocateSamples() {
     setAoiSketchLayer(newAoiSketchLayer);
   }, [map, aoiSketchLayer, setAoiSketchLayer, layersInitialized, setLayers]);
 
-  const [numberRandomSamples, setNumberRandomSamples] = useState('33');
-  const [
-    sampleType,
-    setSampleType, //
-  ] = useState<SampleSelectType | null>(null);
-
-  // Initialize the selected sample type to the first option
-  useEffect(() => {
-    if (sampleTypeContext.status !== 'success') return;
-
-    setSampleType(sampleTypeContext.data.sampleSelectOptions[0]);
-  }, [sampleTypeContext]);
-
   // Handle a user clicking one of the sketch buttons
   function sketchButtonClick(label: string) {
     if (!sketchVM || !map || !sketchLayer || !sceneView || !mapView) return;
@@ -565,333 +486,6 @@ function LocateSamples() {
     // let the user draw/place the shape
     if (wasSet) sketchVM[displayDimensions].create(shapeType);
     else sketchVM[displayDimensions].cancel();
-  }
-
-  // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
-  // dropdown this will create an AOI layer. This also sets the sketchVM to use the
-  // selected AOI and triggers a React useEffect to allow the user to sketch on the map.
-  const [
-    generateRandomResponse,
-    setGenerateRandomResponse, //
-  ] = useState<GenerateRandomType>({
-    status: 'none',
-    data: [],
-  });
-  function sketchAoiButtonClick() {
-    if (!map || !aoiSketchVM || !aoiSketchLayer) return;
-
-    setGenerateRandomResponse({
-      status: 'none',
-      data: [],
-    });
-
-    // put the sketch layer on the map, if it isn't there already
-    const layerIndex = map.layers.findIndex(
-      (layer) => layer.id === aoiSketchLayer.layerId,
-    );
-    if (layerIndex === -1) map.add(aoiSketchLayer.sketchLayer);
-
-    // save changes from other sketchVM and disable to prevent
-    // interference
-    if (sketchVM) {
-      sketchVM[displayDimensions].cancel();
-    }
-
-    // make the style of the button active
-    const wasSet = activateSketchButton('sampling-mask');
-
-    if (wasSet) {
-      // let the user draw/place the shape
-      aoiSketchVM.create('polygon');
-    } else {
-      aoiSketchVM.cancel();
-    }
-  }
-
-  // Handle a user generating random samples
-  function randomSamples() {
-    if (!map || !sketchLayer || !getGpMaxRecordCount || !sampleType) return;
-
-    activateSketchButton('disable-all-buttons');
-    sketchVM?.[displayDimensions].cancel();
-    aoiSketchVM?.cancel();
-
-    const aoiMaskLayer: LayerType | null =
-      generateRandomMode === 'draw'
-        ? aoiSketchLayer
-        : generateRandomMode === 'file'
-        ? selectedAoiFile
-        : null;
-    if (!aoiMaskLayer) return;
-
-    setGenerateRandomResponse({ status: 'fetching', data: [] });
-
-    getGpMaxRecordCount()
-      .then((maxRecordCount) => {
-        const originalValuesZ: number[] = [];
-        let graphics: __esri.GraphicProperties[] = [];
-        if (aoiMaskLayer?.sketchLayer?.type === 'graphics') {
-          const fullGraphics = aoiMaskLayer.sketchLayer.graphics.clone();
-          fullGraphics.forEach((graphic) => {
-            const z = removeZValues(graphic);
-            originalValuesZ.push(z);
-          });
-
-          graphics = fullGraphics.toArray();
-        }
-
-        // create a feature set for communicating with the GPServer
-        const featureSet = new FeatureSet({
-          displayFieldName: '',
-          geometryType: 'polygon',
-          spatialReference: {
-            wkid: 3857,
-          },
-          fields: [
-            {
-              name: 'OBJECTID',
-              type: 'oid',
-              alias: 'OBJECTID',
-            },
-            {
-              name: 'PERMANENT_IDENTIFIER',
-              type: 'guid',
-              alias: 'PERMANENT_IDENTIFIER',
-            },
-          ],
-          features: graphics,
-        });
-
-        // get the sample type definition (can be established or custom)
-        const typeuuid = sampleType.value;
-        const sampleTypeFeatureSet = {
-          displayFieldName: '',
-          geometryType: 'esriGeometryPolygon',
-          spatialReference: {
-            wkid: 3857,
-          },
-          fields: layerProps.data.defaultFields,
-          features: [
-            {
-              attributes: sampleAttributes[typeuuid as any],
-            },
-          ],
-        };
-
-        // determine the number of service calls needed to satisfy the request
-        const intNumberRandomSamples = parseInt(numberRandomSamples); // 7
-        const samplesPerCall = Math.floor(maxRecordCount / graphics.length);
-        const iterations = Math.ceil(intNumberRandomSamples / samplesPerCall);
-
-        // fire off the generateRandom requests
-        const requests = [];
-        let numSamples = 0;
-        let numSamplesLeft = intNumberRandomSamples;
-        for (let i = 0; i < iterations; i++) {
-          // determine the number of samples for this request
-          numSamples =
-            numSamplesLeft > samplesPerCall ? samplesPerCall : numSamplesLeft;
-
-          const props = {
-            f: 'json',
-            Number_of_Samples: numSamples,
-            Sample_Type: sampleType.label,
-            Area_of_Interest_Mask: featureSet.toJSON(),
-            Sample_Type_Parameters: sampleTypeFeatureSet,
-          };
-          appendEnvironmentObjectParam(props);
-
-          const request = geoprocessorFetch({
-            url: `${services.data.totsGPServer}/Generate%20Random`,
-            inputParameters: props,
-          });
-          requests.push(request);
-
-          // keep track of the number of remaining samples
-          numSamplesLeft = numSamplesLeft - numSamples;
-        }
-        Promise.all(requests)
-          .then(async (responses: any) => {
-            let res;
-            const timestamp = getCurrentDateTime();
-            const popupTemplate = getPopupTemplate('Samples', trainingMode);
-            const graphicsToAdd: __esri.Graphic[] = [];
-            const hybridGraphicsToAdd: __esri.Graphic[] = [];
-            const pointsToAdd: __esri.Graphic[] = [];
-            const numberOfAois = graphics.length;
-            for (let i = 0; i < responses.length; i++) {
-              res = responses[i];
-              if (!res?.results?.[0]?.value) {
-                setGenerateRandomResponse({
-                  status: 'failure',
-                  error: {
-                    error: createErrorObject(res),
-                    message: 'No data',
-                  },
-                  data: [],
-                });
-                return;
-              }
-
-              if (res.results[0].value.exceededTransferLimit) {
-                setGenerateRandomResponse({
-                  status: 'exceededTransferLimit',
-                  data: [],
-                });
-                return;
-              }
-
-              // get the results from the response
-              const results = res.results[0].value;
-
-              // set the sample styles
-              let symbol: PolygonSymbol = defaultSymbols.symbols['Samples'];
-              if (defaultSymbols.symbols.hasOwnProperty(sampleType.value)) {
-                symbol = defaultSymbols.symbols[sampleType.value];
-              }
-
-              let originalZIndex = 0;
-              const graphicsPerAoi = results.features.length / numberOfAois;
-
-              // build an array of graphics to draw on the map
-              let index = 0;
-              for (const feature of results.features) {
-                if (index !== 0 && index % graphicsPerAoi === 0)
-                  originalZIndex += 1;
-
-                const originalZ = originalValuesZ[originalZIndex];
-                const poly = new Graphic({
-                  attributes: {
-                    ...(window as any).totsSampleAttributes[typeuuid],
-                    CREATEDDATE: timestamp,
-                    DECISIONUNITUUID: sketchLayer.uuid,
-                    DECISIONUNIT: sketchLayer.label,
-                    DECISIONUNITSORT: 0,
-                    OBJECTID: feature.attributes.OBJECTID,
-                    GLOBALID: feature.attributes.GLOBALID,
-                    PERMANENT_IDENTIFIER:
-                      feature.attributes.PERMANENT_IDENTIFIER,
-                    UPDATEDDATE: timestamp,
-                    USERNAME: userInfo?.username || '',
-                    ORGANIZATION: userInfo?.orgId || '',
-                  },
-                  symbol,
-                  geometry: new Polygon({
-                    rings: feature.geometry.rings,
-                    spatialReference: results.spatialReference,
-                  }),
-                  popupTemplate,
-                });
-
-                await setZValues({
-                  map,
-                  graphic: poly,
-                  zOverride:
-                    generateRandomElevationMode === 'aoiElevation'
-                      ? originalZ
-                      : null,
-                });
-
-                graphicsToAdd.push(poly);
-                pointsToAdd.push(convertToPoint(poly));
-                hybridGraphicsToAdd.push(
-                  poly.attributes.ShapeType === 'point'
-                    ? convertToPoint(poly)
-                    : poly.clone(),
-                );
-
-                index += 1;
-              }
-            }
-
-            // put the graphics on the map
-            if (sketchLayer?.sketchLayer?.type === 'graphics') {
-              // add the graphics to a collection so it can added to browser storage
-              const collection = new Collection<__esri.Graphic>();
-              collection.addMany(graphicsToAdd);
-              sketchLayer.sketchLayer.graphics.addMany(collection);
-
-              sketchLayer.pointsLayer?.addMany(pointsToAdd);
-              sketchLayer.hybridLayer?.addMany(hybridGraphicsToAdd);
-
-              let editsCopy = updateLayerEdits({
-                edits,
-                layer: sketchLayer,
-                type: 'add',
-                changes: collection,
-              });
-
-              if (generateRandomMode === 'draw') {
-                // remove the graphics from the generate random mask
-                if (
-                  aoiMaskLayer &&
-                  aoiMaskLayer.sketchLayer.type === 'graphics'
-                ) {
-                  editsCopy = updateLayerEdits({
-                    edits: editsCopy,
-                    layer: aoiMaskLayer,
-                    type: 'delete',
-                    changes: aoiMaskLayer.sketchLayer.graphics,
-                  });
-
-                  aoiMaskLayer.sketchLayer.removeAll();
-                }
-              }
-
-              // update the edits state
-              setEdits(editsCopy);
-
-              // update the editType of the sketchLayer
-              setSketchLayer((sketchLayer: LayerType | null) => {
-                if (!sketchLayer) return sketchLayer;
-                return {
-                  ...sketchLayer,
-                  editType: 'add',
-                };
-              });
-            }
-
-            setGenerateRandomResponse({
-              status: 'success',
-              data: graphicsToAdd,
-            });
-
-            if (generateRandomMode === 'draw') {
-              if (
-                aoiMaskLayer &&
-                aoiMaskLayer.sketchLayer.type === 'graphics'
-              ) {
-                aoiMaskLayer.sketchLayer.removeAll();
-              }
-            }
-          })
-          .catch((err) => {
-            console.error(err);
-            setGenerateRandomResponse({
-              status: 'failure',
-              error: {
-                error: createErrorObject(err),
-                message: err.message,
-              },
-              data: [],
-            });
-
-            window.logErrorToGa(err);
-          });
-      })
-      .catch((err: any) => {
-        console.error(err);
-        setGenerateRandomResponse({
-          status: 'failure',
-          error: {
-            error: createErrorObject(err),
-            message: err.message,
-          },
-          data: [],
-        });
-
-        window.logErrorToGa(err);
-      });
   }
 
   const [userDefinedSampleType, setUserDefinedSampleType] =
@@ -1006,7 +600,9 @@ function LocateSamples() {
     // validate any fields that need it
     if (!sampleTypeName) {
       isValid = false;
-      messageParts.push('User Defined types must have a sample type name.');
+      messageParts.push(
+        'User Defined types must have a decon technology name.',
+      );
     }
     if (
       sampleAttributes.hasOwnProperty(sampleTypeName) &&
@@ -1017,7 +613,7 @@ function LocateSamples() {
     ) {
       isValid = false;
       messageParts.push(
-        `The "${sampleTypeName}" name is already in use. Please rename the sample type and try again.`,
+        `The "${sampleTypeName}" name is already in use. Please rename the decon technology and try again.`,
       );
     }
     if (!isNumberValid(ttpk)) {
@@ -1034,7 +630,9 @@ function LocateSamples() {
     }
     if (!isNumberValid(mcps)) {
       isValid = false;
-      messageParts.push('Sampling Material Cost needs a numeric value.');
+      messageParts.push(
+        'Decon Technology Material Cost needs a numeric value.',
+      );
     }
     if (!isNumberValid(sa, 'greaterThan0')) {
       isValid = false;
@@ -1174,14 +772,6 @@ function LocateSamples() {
   const [editScenarioVisible, setEditScenarioVisible] = useState(false);
   const [addLayerVisible, setAddLayerVisible] = useState(false);
   const [editLayerVisible, setEditLayerVisible] = useState(false);
-  const [generateRandomMode, setGenerateRandomMode] = useState<
-    'draw' | 'file' | ''
-  >('');
-  const [generateRandomElevationMode, setGenerateRandomElevationMode] =
-    useState<'ground' | 'aoiElevation'>('aoiElevation');
-  const [selectedAoiFile, setSelectedAoiFile] = useState<LayerType | null>(
-    null,
-  );
 
   // get a list of scenarios from edits
   const scenarios = getScenarios(edits);
@@ -1266,7 +856,7 @@ function LocateSamples() {
             >
               <i className="fas fa-trash-alt" />
               <br />
-              Delete All Samples
+              Delete All Decon Applications
             </button>
           </div>
         </div>
@@ -1274,18 +864,18 @@ function LocateSamples() {
         <div css={sectionContainer}>
           {selectedScenario ? (
             <p>
-              An empty sample layer is loaded by default. Use the "Active
-              Sampling Layer" controls to link, add, modify, and/or delete the
-              sampling layer associated with the active plan. You may associate
-              multiple layers with a plan by selecting sampling layers from the
-              menu and clicking the link icon. The menu will display linked
-              layers and indicate other layers available for linking. Use the
-              “unlink” control to remove a layer from a plan.
+              An empty decon layer is loaded by default. Use the "Active Decon
+              Layer" controls to link, add, modify, and/or delete the decon
+              layer associated with the active plan. You may associate multiple
+              layers with a plan by selecting decon layers from the menu and
+              clicking the link icon. The menu will display linked layers and
+              indicate other layers available for linking. Use the “unlink”
+              control to remove a layer from a plan.
             </p>
           ) : (
             <Fragment>
               <p>
-                Create a sampling plan with one or more layers. Layers can
+                Create a decon plan with one or more layers. Layers can
                 represent unique areas of interest or decision units that are
                 differentiated by the user-defined descriptions (e.g., Floor 1,
                 East Stairwell, Team 1, etc.). Enter a plan name and description
@@ -1294,7 +884,7 @@ function LocateSamples() {
               <MessageBox
                 severity="warning"
                 title=""
-                message="Note: Your work in TOTS only persists as long as your current browser session. Be sure to download results and/or publish your plan to retain a copy of your work."
+                message="Note: Your work in TODS only persists as long as your current browser session. Be sure to download results and/or publish your plan to retain a copy of your work."
               />
             </Fragment>
           )}
@@ -1605,7 +1195,7 @@ function LocateSamples() {
                   <label htmlFor="sampling-layer-select-input">
                     Active
                     <br />
-                    Sampling Layer
+                    Decon Layer
                   </label>
                 </div>
                 <div css={buttonContainerStyles}>
@@ -2109,11 +1699,11 @@ function LocateSamples() {
           <Fragment>
             <div css={sectionContainerWidthOnly}>
               <p>
-                In the panels below, add targeted and/ or multiple samples to
-                the plan.
+                In the panels below, add targeted and/ or multiple decon
+                applications to the plan.
               </p>
               <ColorPicker
-                title="Default Sample Symbology"
+                title="Default Decon Technology Symbology"
                 symbol={defaultSymbols.symbols['Samples']}
                 onChange={(symbol: PolygonSymbol) => {
                   setDefaultSymbolSingle('Samples', symbol);
@@ -2122,26 +1712,27 @@ function LocateSamples() {
             </div>
             <AccordionList>
               <AccordionItem
-                title={'Add Targeted Samples'}
+                title={'Add Targeted Decon Applications'}
                 initiallyExpanded={true}
               >
                 <div css={sectionContainer}>
                   <p>
-                    Click on a sample type to enable TOTS drawing mode. Click on
-                    the map layer to draw a sample point. Optionally, add any
-                    relevant notes. Click Save. Repeat these steps to continue
-                    adding targeted samples. Use the "Add Multiple Random
-                    Samples" feature below to add more than one sample point at
-                    a time.
+                    Click on a decon technology to enable TODS drawing mode.
+                    Click on the map layer to draw a decontamination application
+                    point. Optionally, add any relevant notes. Click Save.
+                    Repeat these steps to continue adding targeted
+                    decontamination methods.
                   </p>
                   <div>
-                    <h3>Established Sample Types</h3>
+                    <h3>Established Decontamination Technologies</h3>
                     <div css={sketchButtonContainerStyles}>
                       {sampleTypeContext.status === 'fetching' && (
                         <LoadingSpinner />
                       )}
                       {sampleTypeContext.status === 'failure' &&
-                        featureNotAvailableMessage('Established Sample Types')}
+                        featureNotAvailableMessage(
+                          'Established Decon Technologies',
+                        )}
                       {sampleTypeContext.status === 'success' && (
                         <Fragment>
                           {sampleTypeContext.data.sampleSelectOptions.map(
@@ -2191,7 +1782,7 @@ function LocateSamples() {
                   {userDefinedOptions.length > 0 && (
                     <div>
                       <br />
-                      <h3>Custom Sample Types</h3>
+                      <h3>Custom Decon Technologies</h3>
                       <div css={sketchButtonContainerStyles}>
                         {userDefinedOptions.map((option, index) => {
                           if (option.isPredefined) return null;
@@ -2220,295 +1811,22 @@ function LocateSamples() {
                   )}
                 </div>
               </AccordionItem>
-              <AccordionItem title={'Add Multiple Random Samples'}>
-                <div css={sectionContainer}>
-                  {sketchLayer?.layerType === 'VSP' && cantUseWithVspMessage}
-                  {sketchLayer?.layerType !== 'VSP' && (
-                    <Fragment>
-                      {(services.status === 'fetching' ||
-                        sampleTypeContext.status === 'fetching' ||
-                        layerProps.status === 'fetching') && <LoadingSpinner />}
-                      {(services.status === 'failure' ||
-                        sampleTypeContext.status === 'failure' ||
-                        layerProps.status === 'failure') &&
-                        featureNotAvailableMessage(
-                          'Add Multiple Random Samples',
-                        )}
-                      {services.status === 'success' &&
-                        sampleTypeContext.status === 'success' &&
-                        layerProps.status === 'success' && (
-                          <Fragment>
-                            <p>
-                              Select "Draw Sampling Mask" to draw a boundary on
-                              your map for placing samples or select "Use
-                              Imported Area of Interest" to use an Area of
-                              Interest file to place samples. Select a Sample
-                              Type from the menu and specify the number of
-                              samples to add. Click Submit to add samples.
-                            </p>
-                            <div>
-                              <input
-                                id="draw-aoi"
-                                type="radio"
-                                name="mode"
-                                value="Draw area of Interest"
-                                disabled={
-                                  generateRandomResponse.status === 'fetching'
-                                }
-                                checked={generateRandomMode === 'draw'}
-                                onChange={(ev) => {
-                                  setGenerateRandomMode('draw');
-
-                                  const maskLayers = layers.filter(
-                                    (layer) =>
-                                      layer.layerType === 'Sampling Mask',
-                                  );
-                                  setAoiSketchLayer(maskLayers[0]);
-                                }}
-                              />
-                              <label htmlFor="draw-aoi" css={radioLabelStyles}>
-                                Draw Sampling Mask
-                              </label>
-                            </div>
-
-                            {generateRandomMode === 'draw' && (
-                              <button
-                                id="sampling-mask"
-                                title="Draw Sampling Mask"
-                                className="sketch-button"
-                                disabled={
-                                  generateRandomResponse.status === 'fetching'
-                                }
-                                onClick={() => {
-                                  if (!aoiSketchLayer) return;
-
-                                  sketchAoiButtonClick();
-                                }}
-                                css={sketchAoiButtonStyles}
-                              >
-                                <span css={sketchAoiTextStyles}>
-                                  <i className="fas fa-draw-polygon" />{' '}
-                                  <span>Draw Sampling Mask</span>
-                                </span>
-                              </button>
-                            )}
-
-                            <div>
-                              <input
-                                id="use-aoi-file"
-                                type="radio"
-                                name="mode"
-                                value="Use Imported Area of Interest"
-                                disabled={
-                                  generateRandomResponse.status === 'fetching'
-                                }
-                                checked={generateRandomMode === 'file'}
-                                onChange={(ev) => {
-                                  setGenerateRandomMode('file');
-
-                                  setAoiSketchLayer(null);
-
-                                  if (!selectedAoiFile) {
-                                    const aoiLayers = layers.filter(
-                                      (layer) =>
-                                        layer.layerType === 'Area of Interest',
-                                    );
-                                    setSelectedAoiFile(aoiLayers[0]);
-                                  }
-                                }}
-                              />
-                              <label
-                                htmlFor="use-aoi-file"
-                                css={radioLabelStyles}
-                              >
-                                Use Imported Area of Interest
-                              </label>
-                            </div>
-
-                            {generateRandomMode === 'file' && (
-                              <Fragment>
-                                <label htmlFor="aoi-mask-select-input">
-                                  Area of Interest Mask
-                                </label>
-                                <div css={inlineMenuStyles}>
-                                  <Select
-                                    id="aoi-mask-select"
-                                    inputId="aoi-mask-select-input"
-                                    css={inlineSelectStyles}
-                                    styles={reactSelectStyles as any}
-                                    isClearable={true}
-                                    value={selectedAoiFile}
-                                    onChange={(ev) =>
-                                      setSelectedAoiFile(ev as LayerType)
-                                    }
-                                    options={layers.filter(
-                                      (layer) =>
-                                        layer.layerType === 'Area of Interest',
-                                    )}
-                                  />
-                                  <button
-                                    css={addButtonStyles}
-                                    disabled={
-                                      generateRandomResponse.status ===
-                                      'fetching'
-                                    }
-                                    onClick={(ev) => {
-                                      setGoTo('addData');
-                                      setGoToOptions({
-                                        from: 'file',
-                                        layerType: 'Area of Interest',
-                                      });
-                                    }}
-                                  >
-                                    Add
-                                  </button>
-                                </div>
-                              </Fragment>
-                            )}
-                            {generateRandomMode && (
-                              <Fragment>
-                                <br />
-                                <label htmlFor="sample-type-select-input">
-                                  Sample Type
-                                </label>
-                                <Select
-                                  id="sample-type-select"
-                                  inputId="sample-type-select-input"
-                                  css={fullWidthSelectStyles}
-                                  value={sampleType}
-                                  onChange={(ev) =>
-                                    setSampleType(ev as SampleSelectType)
-                                  }
-                                  options={allSampleOptions}
-                                />
-                                <label htmlFor="number-of-samples-input">
-                                  Number of Samples
-                                </label>
-                                <input
-                                  id="number-of-samples-input"
-                                  css={inputStyles}
-                                  value={numberRandomSamples}
-                                  onChange={(ev) =>
-                                    setNumberRandomSamples(ev.target.value)
-                                  }
-                                />
-
-                                <div>
-                                  <input
-                                    id="use-aoi-elevation"
-                                    type="radio"
-                                    name="elevation-mode"
-                                    value="Use AOI Elevation"
-                                    disabled={
-                                      generateRandomResponse.status ===
-                                      'fetching'
-                                    }
-                                    checked={
-                                      generateRandomElevationMode ===
-                                      'aoiElevation'
-                                    }
-                                    onChange={(ev) => {
-                                      setGenerateRandomElevationMode(
-                                        'aoiElevation',
-                                      );
-                                    }}
-                                  />
-                                  <label
-                                    htmlFor="use-aoi-elevation"
-                                    css={radioLabelStyles}
-                                  >
-                                    Use AOI Elevation
-                                  </label>
-                                </div>
-                                <div>
-                                  <input
-                                    id="snap-to-ground"
-                                    type="radio"
-                                    name="elevation-mode"
-                                    value="Snap to Ground"
-                                    disabled={
-                                      generateRandomResponse.status ===
-                                      'fetching'
-                                    }
-                                    checked={
-                                      generateRandomElevationMode === 'ground'
-                                    }
-                                    onChange={(ev) => {
-                                      setGenerateRandomElevationMode('ground');
-                                    }}
-                                  />
-                                  <label
-                                    htmlFor="snap-to-ground"
-                                    css={radioLabelStyles}
-                                  >
-                                    Snap to Ground
-                                  </label>
-                                </div>
-
-                                {generateRandomResponse.status === 'success' &&
-                                  sketchLayer &&
-                                  generateRandomSuccessMessage(
-                                    generateRandomResponse.data.length,
-                                    sketchLayer.label,
-                                  )}
-                                {generateRandomResponse.status === 'failure' &&
-                                  webServiceErrorMessage(
-                                    generateRandomResponse.error,
-                                  )}
-                                {generateRandomResponse.status ===
-                                  'exceededTransferLimit' &&
-                                  generateRandomExceededTransferLimitMessage}
-                                {((generateRandomMode === 'draw' &&
-                                  numberRandomSamples &&
-                                  aoiSketchLayer?.sketchLayer.type ===
-                                    'graphics' &&
-                                  aoiSketchLayer.sketchLayer.graphics.length >
-                                    0) ||
-                                  (generateRandomMode === 'file' &&
-                                    selectedAoiFile?.sketchLayer.type ===
-                                      'graphics' &&
-                                    selectedAoiFile.sketchLayer.graphics
-                                      .length > 0)) && (
-                                  <button
-                                    css={submitButtonStyles}
-                                    disabled={
-                                      generateRandomResponse.status ===
-                                      'fetching'
-                                    }
-                                    onClick={randomSamples}
-                                  >
-                                    {generateRandomResponse.status !==
-                                      'fetching' && 'Submit'}
-                                    {generateRandomResponse.status ===
-                                      'fetching' && (
-                                      <Fragment>
-                                        <i className="fas fa-spinner fa-pulse" />
-                                        &nbsp;&nbsp;Loading...
-                                      </Fragment>
-                                    )}
-                                  </button>
-                                )}
-                              </Fragment>
-                            )}
-                          </Fragment>
-                        )}
-                    </Fragment>
-                  )}
-                </div>
-              </AccordionItem>
-              <AccordionItem title={'Create Custom Sample Types'}>
+              <AccordionItem
+                title={'Create Custom Decontamination Technologies'}
+              >
                 <div css={sectionContainer}>
                   <p>
-                    Choose an existing sample type from the menu or click + to
-                    add a new sample type from scratch. You have the option to
-                    clone or view an existing sample type. Populate or edit the
-                    parameter fields and click Save. Once you have saved a
-                    custom sample type you can edit and/or delete the parameters
-                    using additional controls now available to you.
+                    Choose an existing decon technology from the menu or click +
+                    to add a new decon technology from scratch. You have the
+                    option to clone or view an existing decon technology.
+                    Populate or edit the parameter fields and click Save. Once
+                    you have saved a custom decon technology you can edit and/or
+                    delete the parameters using additional controls now
+                    available to you.
                   </p>
                   <div css={iconButtonContainerStyles}>
                     <label htmlFor="cst-sample-type-select-input">
-                      Sample Type
+                      Decon Technology
                     </label>
                     <div>
                       {userDefinedSampleType && (
@@ -2517,7 +1835,7 @@ function LocateSamples() {
                             !userDefinedSampleType.isPredefined && (
                               <button
                                 css={iconButtonStyles}
-                                title="Delete Sample Type"
+                                title="Delete Decon Technology"
                                 onClick={() => {
                                   setValidationMessage('');
                                   const sampleTypeUuid =
@@ -2527,9 +1845,9 @@ function LocateSamples() {
                                     title: 'Would you like to continue?',
                                     ariaLabel: 'Would you like to continue?',
                                     description:
-                                      'Sample plans are referencing samples based on one or more of the custom sample types. ' +
-                                      'This operation will delete any samples from the sampling plan that are associated ' +
-                                      'with these custom sample types that you are attempting to remove.',
+                                      'Decon plans are referencing decon applications based on one or more of the custom decon technologies. ' +
+                                      'This operation will delete any decon applications from the decon plan that are associated ' +
+                                      'with these custom decon technologies that you are attempting to remove.',
                                     onContinue: () => {
                                       setUserDefinedOptions(
                                         userDefinedOptions.filter(
@@ -2616,7 +1934,7 @@ function LocateSamples() {
                               >
                                 <i className="fas fa-trash-alt" />
                                 <span className="sr-only">
-                                  Delete Sample Type
+                                  Delete Decon Technology
                                 </span>
                               </button>
                             )}
@@ -2625,7 +1943,7 @@ function LocateSamples() {
                             title={
                               editingStatus === 'clone'
                                 ? 'Cancel'
-                                : 'Clone Sample Type'
+                                : 'Clone Decon Technology'
                             }
                             onClick={(ev) => {
                               setValidationMessage('');
@@ -2663,7 +1981,7 @@ function LocateSamples() {
                             <span className="sr-only">
                               {editingStatus === 'clone'
                                 ? 'Cancel'
-                                : 'Clone Sample Type'}
+                                : 'Clone Decon Technology'}
                             </span>
                           </button>
                           {userDefinedSampleType.isPredefined ? (
@@ -2672,7 +1990,7 @@ function LocateSamples() {
                               title={
                                 editingStatus === 'view'
                                   ? 'Hide'
-                                  : 'View Sample Type'
+                                  : 'View Decon Technology'
                               }
                               onClick={(ev) => {
                                 setValidationMessage('');
@@ -2694,7 +2012,7 @@ function LocateSamples() {
                               <span className="sr-only">
                                 {editingStatus === 'view'
                                   ? 'Hide'
-                                  : 'View Sample Type'}
+                                  : 'View Decon Technology'}
                               </span>
                             </button>
                           ) : (
@@ -2703,7 +2021,7 @@ function LocateSamples() {
                               title={
                                 editingStatus === 'edit'
                                   ? 'Cancel'
-                                  : 'Edit Sample Type'
+                                  : 'Edit Decon Technology'
                               }
                               onClick={(ev) => {
                                 setValidationMessage('');
@@ -2725,7 +2043,7 @@ function LocateSamples() {
                               <span className="sr-only">
                                 {editingStatus === 'edit'
                                   ? 'Cancel'
-                                  : 'Edit Sample Type'}
+                                  : 'Edit Decon Technology'}
                               </span>
                             </button>
                           )}
@@ -2736,7 +2054,7 @@ function LocateSamples() {
                         title={
                           editingStatus === 'create'
                             ? 'Cancel'
-                            : 'Create Sample Type'
+                            : 'Create Decon Technology'
                         }
                         onClick={(ev) => {
                           setValidationMessage('');
@@ -2758,7 +2076,7 @@ function LocateSamples() {
                         <span className="sr-only">
                           {editingStatus === 'create'
                             ? 'Cancel'
-                            : 'Create Sample Type'}
+                            : 'Create Decon Technology'}
                         </span>
                       </button>
                     </div>
@@ -2796,7 +2114,7 @@ function LocateSamples() {
                       />
                       <div>
                         <label htmlFor="sample-type-name-input">
-                          Sample Type Name
+                          Decon Technology Name
                         </label>
                         <input
                           id="sample-type-name-input"
@@ -2835,7 +2153,7 @@ function LocateSamples() {
                           ]}
                         />
                         <label htmlFor="ttpk-input">
-                          Time to Prepare Kits <em>(person hrs/sample)</em>
+                          Time to Prepare Kits <em>(person hrs/application)</em>
                         </label>
                         <input
                           id="ttpk-input"
@@ -2845,7 +2163,7 @@ function LocateSamples() {
                           onChange={(ev) => setTtpk(ev.target.value)}
                         />
                         <label htmlFor="ttc-input">
-                          Time to Collect <em>(person hrs/sample)</em>
+                          Time to Collect <em>(person hrs/application)</em>
                         </label>
                         <input
                           id="ttc-input"
@@ -2855,7 +2173,7 @@ function LocateSamples() {
                           onChange={(ev) => setTtc(ev.target.value)}
                         />
                         <label htmlFor="tta-input">
-                          Time to Analyze <em>(person hrs/sample)</em>
+                          Time to Analyze <em>(person hrs/application)</em>
                         </label>
                         <input
                           id="tta-input"
@@ -2865,7 +2183,7 @@ function LocateSamples() {
                           onChange={(ev) => setTta(ev.target.value)}
                         />
                         {/* <label htmlFor="ttps-input">
-                          Total Time per Sample <em>(person hrs/sample)</em>
+                          Total Time per Decon <em>(person hrs/application)</em>
                         </label>
                         <input
                           id="ttps-input"
@@ -2875,8 +2193,8 @@ function LocateSamples() {
                           onChange={(ev) => setTtps(ev.target.value)}
                         /> */}
                         <label htmlFor="lod_p-input">
-                          Limit of Detection for Porous Surfaces per Sample
-                          (CFU) <em>(only used for reference)</em>
+                          Limit of Detection for Porous Surfaces per Decon (CFU){' '}
+                          <em>(only used for reference)</em>
                         </label>
                         <input
                           id="lod_p-input"
@@ -2886,7 +2204,7 @@ function LocateSamples() {
                           onChange={(ev) => setLodp(ev.target.value)}
                         />
                         <label htmlFor="lod_non-input">
-                          Limit of Detection for Nonporous Surfaces per Sample
+                          Limit of Detection for Nonporous Surfaces per Decon
                           (CFU) <em>(only used for reference)</em>
                         </label>
                         <input
@@ -2897,7 +2215,8 @@ function LocateSamples() {
                           onChange={(ev) => setLodnon(ev.target.value)}
                         />
                         <label htmlFor="mcps-input">
-                          Sampling Material Cost <em>($/sample)</em>
+                          Decon Technology Material Cost{' '}
+                          <em>($/application)</em>
                         </label>
                         <input
                           id="mcps-input"
@@ -2907,7 +2226,7 @@ function LocateSamples() {
                           onChange={(ev) => setMcps(ev.target.value)}
                         />
                         {/* <label htmlFor="tcps-input">
-                          Total Cost per Sample{' '}
+                          Total Cost per Decon{' '}
                           <em>(Labor + Material + Waste)</em>
                         </label>
                         <input
@@ -2918,7 +2237,7 @@ function LocateSamples() {
                           onChange={(ev) => setTcps(ev.target.value)}
                         /> */}
                         <label htmlFor="wvps-input">
-                          Waste Volume <em>(L/sample)</em>
+                          Waste Volume <em>(L/application)</em>
                         </label>
                         <input
                           id="wvps-input"
@@ -2928,7 +2247,7 @@ function LocateSamples() {
                           onChange={(ev) => setWvps(ev.target.value)}
                         />
                         <label htmlFor="wwps-input">
-                          Waste Weight <em>(lbs/sample)</em>
+                          Waste Weight <em>(lbs/application)</em>
                         </label>
                         <input
                           id="wwps-input"

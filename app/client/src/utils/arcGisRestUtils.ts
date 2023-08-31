@@ -738,7 +738,7 @@ function createFeatureLayers(
         fields: layerProps.data.defaultFields,
         type: 'Table',
         name: sampleTypeTableName,
-        description: `Custom sample type definitions for "${serviceMetaData.label}".`,
+        description: `Custom decon technology definitions for "${serviceMetaData.label}".`,
       });
     }
 

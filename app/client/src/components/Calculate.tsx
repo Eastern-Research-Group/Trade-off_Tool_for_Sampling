@@ -1,62 +1,65 @@
 /** @jsxImportSource @emotion/react */
 
 import React, {
-  Fragment,
+  // Fragment,
   useCallback,
   useContext,
   useEffect,
   useState,
 } from 'react';
 import { css } from '@emotion/react';
-import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
-import PopupTemplate from '@arcgis/core/PopupTemplate';
+// import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
+// import PopupTemplate from '@arcgis/core/PopupTemplate';
 // components
-import { AccordionList, AccordionItem } from 'components/Accordion';
-import LoadingSpinner from 'components/LoadingSpinner';
-import Select from 'components/Select';
+// import { AccordionList, AccordionItem } from 'components/Accordion';
+// import LoadingSpinner from 'components/LoadingSpinner';
+// import Select from 'components/Select';
 import ShowLessMore from 'components/ShowLessMore';
-import NavigationButton from 'components/NavigationButton';
+// import NavigationButton from 'components/NavigationButton';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
-import { useServicesContext } from 'contexts/LookupFiles';
-import { NavigationContext } from 'contexts/Navigation';
+// import { useServicesContext } from 'contexts/LookupFiles';
+// import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // types
-import { LayerType } from 'types/Layer';
-import { ErrorType } from 'types/Misc';
+// import { LayerType } from 'types/Layer';
+// import { ErrorType } from 'types/Misc';
 // config
-import {
-  contaminationHitsSuccessMessage,
-  featureNotAvailableMessage,
-  noContaminationGraphicsMessage,
-  noContaminationMapMessage,
-  noSampleLayerMessage,
-  noSamplesMessage,
-  webServiceErrorMessage,
-} from 'config/errorMessages';
+// import {
+//   contaminationHitsSuccessMessage,
+//   featureNotAvailableMessage,
+//   noContaminationGraphicsMessage,
+//   noContaminationMapMessage,
+//   noSampleLayerMessage,
+//   noSamplesMessage,
+//   webServiceErrorMessage,
+// } from 'config/errorMessages';
 // utils
-import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
+// import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
 import { CalculateResultsType } from 'types/CalculateResults';
-import { geoprocessorFetch } from 'utils/fetchUtils';
-import { useDynamicPopup } from 'utils/hooks';
-import { removeZValues, updateLayerEdits } from 'utils/sketchUtils';
-import { chunkArray, createErrorObject } from 'utils/utils';
+// import { geoprocessorFetch } from 'utils/fetchUtils';
+// import { useDynamicPopup } from 'utils/hooks';
+import {
+  removeZValues,
+  // updateLayerEdits
+} from 'utils/sketchUtils';
+// import { chunkArray, createErrorObject } from 'utils/utils';
 // styles
-import { reactSelectStyles } from 'styles';
+// import { reactSelectStyles } from 'styles';
 
-type ContaminationResultsType = {
-  status:
-    | 'none'
-    | 'no-layer'
-    | 'no-map'
-    | 'no-contamination-graphics'
-    | 'no-graphics'
-    | 'fetching'
-    | 'success'
-    | 'failure';
-  error?: ErrorType;
-  data: any[] | null;
-};
+// type ContaminationResultsType = {
+//   status:
+//     | 'none'
+//     | 'no-layer'
+//     | 'no-map'
+//     | 'no-contamination-graphics'
+//     | 'no-graphics'
+//     | 'fetching'
+//     | 'success'
+//     | 'failure';
+//   error?: ErrorType;
+//   data: any[] | null;
+// };
 
 // Gets all of the graphics of a group layer associated with the provided layerId
 function getGraphics(map: __esri.Map, layerId: string) {
@@ -119,35 +122,35 @@ const layerInfo = css`
   padding-bottom: 0.5em;
 `;
 
-const inlineMenuStyles = css`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-`;
+// const inlineMenuStyles = css`
+//   display: flex;
+//   align-items: center;
+//   justify-content: space-between;
+// `;
 
-const addButtonStyles = css`
-  margin: 0;
-  height: 38px; /* same height as ReactSelect */
-`;
+// const addButtonStyles = css`
+//   margin: 0;
+//   height: 38px; /* same height as ReactSelect */
+// `;
 
-const fullWidthSelectStyles = css`
-  width: 100%;
-  margin-right: 10px;
-`;
+// const fullWidthSelectStyles = css`
+//   width: 100%;
+//   margin-right: 10px;
+// `;
 
 // --- components (Calculate) ---
 function Calculate() {
-  const { setGoTo, setGoToOptions, trainingMode } =
-    useContext(NavigationContext);
+  // const { setGoTo, setGoToOptions, trainingMode } =
+  //   useContext(NavigationContext);
   const {
     edits,
-    setEdits,
+    // setEdits,
     layers,
-    setLayers,
+    // setLayers,
     map,
-    sketchLayer,
+    // sketchLayer,
     selectedScenario,
-    getGpMaxRecordCount,
+    // getGpMaxRecordCount,
   } = useContext(SketchContext);
   const {
     calculateResults,
@@ -174,8 +177,8 @@ function Calculate() {
     setUpdateContextValues,
   } = useContext(CalculateContext);
 
-  const getPopupTemplate = useDynamicPopup();
-  const services = useServicesContext();
+  // const getPopupTemplate = useDynamicPopup();
+  // const services = useServicesContext();
 
   // sync the inputs with settings pulled from AGO
   const [pageInitialized, setPageInitialized] = useState(false);
@@ -330,435 +333,435 @@ function Calculate() {
     setUpdateContextValues(true);
   }
 
-  const [
-    contaminationResults,
-    setContaminationResults, //
-  ] = useState<ContaminationResultsType>({ status: 'none', data: null });
+  // const [
+  //   contaminationResults,
+  //   setContaminationResults, //
+  // ] = useState<ContaminationResultsType>({ status: 'none', data: null });
 
-  // Call the GP Server to run calculations against the contamination
-  // map.
-  function runContaminationCalculation() {
-    if (!getGpMaxRecordCount) return;
-    if (!map || !sketchLayer?.sketchLayer) return;
+  // // Call the GP Server to run calculations against the contamination
+  // // map.
+  // function runContaminationCalculation() {
+  //   if (!getGpMaxRecordCount) return;
+  //   if (!map || !sketchLayer?.sketchLayer) return;
 
-    // set no scenario status
-    if (!selectedScenario) {
-      setCalculateResults({
-        status: 'no-scenario',
-        panelOpen: true,
-        data: null,
-      });
-      return;
-    }
+  //   // set no scenario status
+  //   if (!selectedScenario) {
+  //     setCalculateResults({
+  //       status: 'no-scenario',
+  //       panelOpen: true,
+  //       data: null,
+  //     });
+  //     return;
+  //   }
 
-    // set the no layer status
-    if (selectedScenario.layers.length === 0) {
-      setCalculateResults({ status: 'no-layer', panelOpen: true, data: null });
-      return;
-    }
+  //   // set the no layer status
+  //   if (selectedScenario.layers.length === 0) {
+  //     setCalculateResults({ status: 'no-layer', panelOpen: true, data: null });
+  //     return;
+  //   }
 
-    // set the no contamination map status
-    if (!contaminationMap) {
-      setContaminationResults({ status: 'no-map', data: null });
-      return;
-    }
+  //   // set the no contamination map status
+  //   if (!contaminationMap) {
+  //     setContaminationResults({ status: 'no-map', data: null });
+  //     return;
+  //   }
 
-    let contamMapSet: __esri.FeatureSet | null = null;
-    let graphics: __esri.GraphicProperties[] = [];
-    if (contaminationMap?.sketchLayer?.type === 'graphics') {
-      const fullGraphics = contaminationMap.sketchLayer.graphics.clone();
-      fullGraphics.forEach((graphic) => removeZValues(graphic));
+  //   let contamMapSet: __esri.FeatureSet | null = null;
+  //   let graphics: __esri.GraphicProperties[] = [];
+  //   if (contaminationMap?.sketchLayer?.type === 'graphics') {
+  //     const fullGraphics = contaminationMap.sketchLayer.graphics.clone();
+  //     fullGraphics.forEach((graphic) => removeZValues(graphic));
 
-      graphics = fullGraphics.toArray();
-    }
-    if (graphics.length === 0) {
-      // display the no graphics on contamination map warning
-      setContaminationResults({
-        status: 'no-contamination-graphics',
-        data: null,
-      });
-      return;
-    }
+  //     graphics = fullGraphics.toArray();
+  //   }
+  //   if (graphics.length === 0) {
+  //     // display the no graphics on contamination map warning
+  //     setContaminationResults({
+  //       status: 'no-contamination-graphics',
+  //       data: null,
+  //     });
+  //     return;
+  //   }
 
-    // create a feature set for communicating with the GPServer
-    // this one is for the contamination map input
-    contamMapSet = new FeatureSet({
-      displayFieldName: '',
-      geometryType: 'polygon',
-      features: graphics,
-      spatialReference: {
-        wkid: 3857,
-      },
-      fields: [
-        {
-          name: 'OBJECTID',
-          type: 'oid',
-          alias: 'OBJECTID',
-        },
-        {
-          name: 'GLOBALID',
-          type: 'guid',
-          alias: 'GlobalID',
-        },
-        {
-          name: 'PERMANENT_IDENTIFIER',
-          type: 'guid',
-          alias: 'Permanent Identifier',
-        },
-        {
-          name: 'CONTAMTYPE',
-          type: 'string',
-          alias: 'Contamination Type',
-        },
-        {
-          name: 'CONTAMVAL',
-          type: 'double',
-          alias: 'Contamination Value',
-        },
-        {
-          name: 'CONTAMUNIT',
-          type: 'string',
-          alias: 'Contamination Unit',
-        },
-        {
-          name: 'Notes',
-          type: 'string',
-          alias: 'Notes',
-        },
-      ],
-    });
+  //   // create a feature set for communicating with the GPServer
+  //   // this one is for the contamination map input
+  //   contamMapSet = new FeatureSet({
+  //     displayFieldName: '',
+  //     geometryType: 'polygon',
+  //     features: graphics,
+  //     spatialReference: {
+  //       wkid: 3857,
+  //     },
+  //     fields: [
+  //       {
+  //         name: 'OBJECTID',
+  //         type: 'oid',
+  //         alias: 'OBJECTID',
+  //       },
+  //       {
+  //         name: 'GLOBALID',
+  //         type: 'guid',
+  //         alias: 'GlobalID',
+  //       },
+  //       {
+  //         name: 'PERMANENT_IDENTIFIER',
+  //         type: 'guid',
+  //         alias: 'Permanent Identifier',
+  //       },
+  //       {
+  //         name: 'CONTAMTYPE',
+  //         type: 'string',
+  //         alias: 'Contamination Type',
+  //       },
+  //       {
+  //         name: 'CONTAMVAL',
+  //         type: 'double',
+  //         alias: 'Contamination Value',
+  //       },
+  //       {
+  //         name: 'CONTAMUNIT',
+  //         type: 'string',
+  //         alias: 'Contamination Unit',
+  //       },
+  //       {
+  //         name: 'Notes',
+  //         type: 'string',
+  //         alias: 'Notes',
+  //       },
+  //     ],
+  //   });
 
-    const { groupLayer, graphics: sketchedGraphics } = getGraphics(
-      map,
-      selectedScenario.layerId,
-    );
-    if (sketchedGraphics.length === 0 || !groupLayer) {
-      // display the no-graphics warning
-      setContaminationResults({
-        status: 'no-graphics',
-        data: null,
-      });
-      return;
-    }
+  //   const { groupLayer, graphics: sketchedGraphics } = getGraphics(
+  //     map,
+  //     selectedScenario.layerId,
+  //   );
+  //   if (sketchedGraphics.length === 0 || !groupLayer) {
+  //     // display the no-graphics warning
+  //     setContaminationResults({
+  //       status: 'no-graphics',
+  //       data: null,
+  //     });
+  //     return;
+  //   }
 
-    // display the loading spinner
-    setContaminationResults({
-      status: 'fetching',
-      data: null,
-    });
+  //   // display the loading spinner
+  //   setContaminationResults({
+  //     status: 'fetching',
+  //     data: null,
+  //   });
 
-    getGpMaxRecordCount()
-      .then((maxRecordCount) => {
-        const chunkedFeatures: __esri.Graphic[][] = chunkArray(
-          sketchedGraphics,
-          maxRecordCount,
-        );
+  //   getGpMaxRecordCount()
+  //     .then((maxRecordCount) => {
+  //       const chunkedFeatures: __esri.Graphic[][] = chunkArray(
+  //         sketchedGraphics,
+  //         maxRecordCount,
+  //       );
 
-        // fire off the contamination results requests
-        const requests: Promise<any>[] = [];
-        chunkedFeatures.forEach((features) => {
-          // create a feature set for communicating with the GPServer
-          // this one is for the samples input
-          const featureSet = new FeatureSet({
-            displayFieldName: '',
-            geometryType: 'polygon',
-            features,
-            spatialReference: {
-              wkid: 3857,
-            },
-            fields: [
-              {
-                name: 'OBJECTID',
-                type: 'oid',
-                alias: 'OBJECTID',
-              },
-              {
-                name: 'GLOBALID',
-                type: 'guid',
-                alias: 'GlobalID',
-              },
-              {
-                name: 'PERMANENT_IDENTIFIER',
-                type: 'guid',
-                alias: 'Permanent Identifier',
-              },
-              {
-                name: 'TYPEUUID',
-                type: 'string',
-                alias: 'Sampling Method Type ID',
-              },
-              {
-                name: 'TYPE',
-                type: 'string',
-                alias: 'Sampling Method Type',
-              },
-              {
-                name: 'TTPK',
-                type: 'double',
-                alias: 'Time to Prepare Kits',
-              },
-              {
-                name: 'TTC',
-                type: 'double',
-                alias: 'Time to Collect',
-              },
-              {
-                name: 'TTA',
-                type: 'double',
-                alias: 'Time to Analyze',
-              },
-              {
-                name: 'TTPS',
-                type: 'double',
-                alias: 'Total Time per Sample',
-              },
-              {
-                name: 'LOD_P',
-                type: 'double',
-                alias: 'Limit of Detection Porous',
-              },
-              {
-                name: 'LOD_NON',
-                type: 'double',
-                alias: 'Limit of Detection Nonporous',
-              },
-              {
-                name: 'MCPS',
-                type: 'double',
-                alias: 'Sampling Material Cost per Sample',
-              },
-              {
-                name: 'TCPS',
-                type: 'double',
-                alias: 'Total Cost Per Sample',
-              },
-              {
-                name: 'WVPS',
-                type: 'double',
-                alias: 'Waste Volume per Sample',
-              },
-              {
-                name: 'WWPS',
-                type: 'double',
-                alias: 'Waste Weight per Sample',
-              },
-              {
-                name: 'SA',
-                type: 'double',
-                alias: 'Sampling Surface Area',
-              },
-              {
-                name: 'Notes',
-                type: 'string',
-                alias: 'Notes',
-              },
-              {
-                name: 'ALC',
-                type: 'double',
-                alias: 'Analysis Labor Cost',
-              },
-              {
-                name: 'AMC',
-                type: 'double',
-                alias: 'Analysis Material Cost',
-              },
-              {
-                name: 'CONTAMTYPE',
-                type: 'string',
-                alias: 'Contamination Type',
-              },
-              {
-                name: 'CONTAMVAL',
-                type: 'double',
-                alias: 'Contamination Value',
-              },
-              {
-                name: 'CONTAMUNIT',
-                type: 'string',
-                alias: 'Contamination Unit',
-              },
-            ],
-          });
+  //       // fire off the contamination results requests
+  //       const requests: Promise<any>[] = [];
+  //       chunkedFeatures.forEach((features) => {
+  //         // create a feature set for communicating with the GPServer
+  //         // this one is for the samples input
+  //         const featureSet = new FeatureSet({
+  //           displayFieldName: '',
+  //           geometryType: 'polygon',
+  //           features,
+  //           spatialReference: {
+  //             wkid: 3857,
+  //           },
+  //           fields: [
+  //             {
+  //               name: 'OBJECTID',
+  //               type: 'oid',
+  //               alias: 'OBJECTID',
+  //             },
+  //             {
+  //               name: 'GLOBALID',
+  //               type: 'guid',
+  //               alias: 'GlobalID',
+  //             },
+  //             {
+  //               name: 'PERMANENT_IDENTIFIER',
+  //               type: 'guid',
+  //               alias: 'Permanent Identifier',
+  //             },
+  //             {
+  //               name: 'TYPEUUID',
+  //               type: 'string',
+  //               alias: 'Decon Technology Type ID',
+  //             },
+  //             {
+  //               name: 'TYPE',
+  //               type: 'string',
+  //               alias: 'Decon Technology Type',
+  //             },
+  //             {
+  //               name: 'TTPK',
+  //               type: 'double',
+  //               alias: 'Time to Prepare Kits',
+  //             },
+  //             {
+  //               name: 'TTC',
+  //               type: 'double',
+  //               alias: 'Time to Collect',
+  //             },
+  //             {
+  //               name: 'TTA',
+  //               type: 'double',
+  //               alias: 'Time to Analyze',
+  //             },
+  //             {
+  //               name: 'TTPS',
+  //               type: 'double',
+  //               alias: 'Total Time per Decon Application',
+  //             },
+  //             {
+  //               name: 'LOD_P',
+  //               type: 'double',
+  //               alias: 'Limit of Detection Porous',
+  //             },
+  //             {
+  //               name: 'LOD_NON',
+  //               type: 'double',
+  //               alias: 'Limit of Detection Nonporous',
+  //             },
+  //             {
+  //               name: 'MCPS',
+  //               type: 'double',
+  //               alias: 'Decon Technology Material Cost per Decon Application',
+  //             },
+  //             {
+  //               name: 'TCPS',
+  //               type: 'double',
+  //               alias: 'Total Cost Per Decon Application',
+  //             },
+  //             {
+  //               name: 'WVPS',
+  //               type: 'double',
+  //               alias: 'Waste Volume per Decon Application',
+  //             },
+  //             {
+  //               name: 'WWPS',
+  //               type: 'double',
+  //               alias: 'Waste Weight per Decon Application',
+  //             },
+  //             {
+  //               name: 'SA',
+  //               type: 'double',
+  //               alias: 'Decon Technology Surface Area',
+  //             },
+  //             {
+  //               name: 'Notes',
+  //               type: 'string',
+  //               alias: 'Notes',
+  //             },
+  //             {
+  //               name: 'ALC',
+  //               type: 'double',
+  //               alias: 'Analysis Labor Cost',
+  //             },
+  //             {
+  //               name: 'AMC',
+  //               type: 'double',
+  //               alias: 'Analysis Material Cost',
+  //             },
+  //             {
+  //               name: 'CONTAMTYPE',
+  //               type: 'string',
+  //               alias: 'Contamination Type',
+  //             },
+  //             {
+  //               name: 'CONTAMVAL',
+  //               type: 'double',
+  //               alias: 'Contamination Value',
+  //             },
+  //             {
+  //               name: 'CONTAMUNIT',
+  //               type: 'string',
+  //               alias: 'Contamination Unit',
+  //             },
+  //           ],
+  //         });
 
-          // call the GP Server
-          const params = {
-            f: 'json',
-            Input_Sampling_Unit: featureSet,
-            Contamination_Map: contamMapSet,
-          };
-          appendEnvironmentObjectParam(params);
+  //         // call the GP Server
+  //         const params = {
+  //           f: 'json',
+  //           Input_Sampling_Unit: featureSet,
+  //           Contamination_Map: contamMapSet,
+  //         };
+  //         appendEnvironmentObjectParam(params);
 
-          const request = geoprocessorFetch({
-            url: `${services.data.totsGPServer}/Contamination Results`,
-            inputParameters: params,
-          });
-          requests.push(request);
-        });
+  //         const request = geoprocessorFetch({
+  //           url: `${services.data.totsGPServer}/Contamination Results`,
+  //           inputParameters: params,
+  //         });
+  //         requests.push(request);
+  //       });
 
-        Promise.all(requests)
-          .then((responses: any) => {
-            // perform calculations to update talley in nav bar
-            setUpdateContextValues(true);
+  //       Promise.all(requests)
+  //         .then((responses: any) => {
+  //           // perform calculations to update talley in nav bar
+  //           setUpdateContextValues(true);
 
-            const resFeatures: any[] = [];
-            for (let i = 0; i < responses.length; i++) {
-              const res = responses[i];
+  //           const resFeatures: any[] = [];
+  //           for (let i = 0; i < responses.length; i++) {
+  //             const res = responses[i];
 
-              // catch an error in the response of the successful fetch
-              if (res.error) {
-                console.error(res.error);
-                setContaminationResults({
-                  status: 'failure',
-                  error: {
-                    error: createErrorObject(res),
-                    message: res.error.message,
-                  },
-                  data: null,
-                });
-                return;
-              }
+  //             // catch an error in the response of the successful fetch
+  //             if (res.error) {
+  //               console.error(res.error);
+  //               setContaminationResults({
+  //                 status: 'failure',
+  //                 error: {
+  //                   error: createErrorObject(res),
+  //                   message: res.error.message,
+  //                 },
+  //                 data: null,
+  //               });
+  //               return;
+  //             }
 
-              if (res?.results?.[0]?.value?.features) {
-                resFeatures.push(...res.results[0].value.features);
-              }
-            }
+  //             if (res?.results?.[0]?.value?.features) {
+  //               resFeatures.push(...res.results[0].value.features);
+  //             }
+  //           }
 
-            // make the contamination map visible in the legend
-            contaminationMap.listMode = 'show';
-            contaminationMap.sketchLayer.listMode = 'show';
-            setContaminationMap((layer) => {
-              return {
-                ...layer,
-                listMode: 'show',
-              } as LayerType;
-            });
+  //           // make the contamination map visible in the legend
+  //           contaminationMap.listMode = 'show';
+  //           contaminationMap.sketchLayer.listMode = 'show';
+  //           setContaminationMap((layer) => {
+  //             return {
+  //               ...layer,
+  //               listMode: 'show',
+  //             } as LayerType;
+  //           });
 
-            // find the layer being edited
-            const index = layers.findIndex(
-              (layer) => layer.layerId === contaminationMap.layerId,
-            );
+  //           // find the layer being edited
+  //           const index = layers.findIndex(
+  //             (layer) => layer.layerId === contaminationMap.layerId,
+  //           );
 
-            // update the layers context
-            if (index > -1) {
-              setLayers((layers) => {
-                return [
-                  ...layers.slice(0, index),
-                  {
-                    ...contaminationMap,
-                    listMode: 'show',
-                  },
-                  ...layers.slice(index + 1),
-                ];
-              });
-            }
+  //           // update the layers context
+  //           if (index > -1) {
+  //             setLayers((layers) => {
+  //               return [
+  //                 ...layers.slice(0, index),
+  //                 {
+  //                   ...contaminationMap,
+  //                   listMode: 'show',
+  //                 },
+  //                 ...layers.slice(index + 1),
+  //               ];
+  //             });
+  //           }
 
-            // make a copy of the edits context variable
-            let editsCopy = updateLayerEdits({
-              edits,
-              layer: contaminationMap,
-              type: 'properties',
-            });
+  //           // make a copy of the edits context variable
+  //           let editsCopy = updateLayerEdits({
+  //             edits,
+  //             layer: contaminationMap,
+  //             type: 'properties',
+  //           });
 
-            // save the data to state, use an empty array if there is no data
-            if (resFeatures.length > 0) {
-              const popupTemplate = new PopupTemplate(
-                getPopupTemplate(sketchLayer.layerType, true),
-              );
+  //           // save the data to state, use an empty array if there is no data
+  //           if (resFeatures.length > 0) {
+  //             const popupTemplate = new PopupTemplate(
+  //               getPopupTemplate(sketchLayer.layerType, true),
+  //             );
 
-              // loop through the layers and update the contam values
-              groupLayer.layers.forEach((graphicsLayer) => {
-                if (graphicsLayer.type !== 'graphics') return;
+  //             // loop through the layers and update the contam values
+  //             groupLayer.layers.forEach((graphicsLayer) => {
+  //               if (graphicsLayer.type !== 'graphics') return;
 
-                const tempLayer = graphicsLayer as __esri.GraphicsLayer;
-                // update the contam value attribute of the graphics
-                tempLayer.graphics.forEach((graphic) => {
-                  const resFeature = resFeatures.find(
-                    (feature: any) =>
-                      graphic.attributes.PERMANENT_IDENTIFIER ===
-                      feature.attributes.PERMANENT_IDENTIFIER,
-                  );
+  //               const tempLayer = graphicsLayer as __esri.GraphicsLayer;
+  //               // update the contam value attribute of the graphics
+  //               tempLayer.graphics.forEach((graphic) => {
+  //                 const resFeature = resFeatures.find(
+  //                   (feature: any) =>
+  //                     graphic.attributes.PERMANENT_IDENTIFIER ===
+  //                     feature.attributes.PERMANENT_IDENTIFIER,
+  //                 );
 
-                  // if the graphic was not found in the response, set contam value to null,
-                  // otherwise use the contam value value found in the response.
-                  let contamValue = null;
-                  let contamType = graphic.attributes.CONTAMTYPE;
-                  let contamUnit = graphic.attributes.CONTAMUNIT;
-                  if (resFeature) {
-                    contamValue = resFeature.attributes.CONTAMVAL;
-                    contamType = resFeature.attributes.CONTAMTYPE;
-                    contamUnit = resFeature.attributes.CONTAMUNIT;
-                  }
-                  graphic.attributes.CONTAMVAL = contamValue;
-                  graphic.attributes.CONTAMTYPE = contamType;
-                  graphic.attributes.CONTAMUNIT = contamUnit;
-                  graphic.popupTemplate = popupTemplate;
-                });
+  //                 // if the graphic was not found in the response, set contam value to null,
+  //                 // otherwise use the contam value value found in the response.
+  //                 let contamValue = null;
+  //                 let contamType = graphic.attributes.CONTAMTYPE;
+  //                 let contamUnit = graphic.attributes.CONTAMUNIT;
+  //                 if (resFeature) {
+  //                   contamValue = resFeature.attributes.CONTAMVAL;
+  //                   contamType = resFeature.attributes.CONTAMTYPE;
+  //                   contamUnit = resFeature.attributes.CONTAMUNIT;
+  //                 }
+  //                 graphic.attributes.CONTAMVAL = contamValue;
+  //                 graphic.attributes.CONTAMTYPE = contamType;
+  //                 graphic.attributes.CONTAMUNIT = contamUnit;
+  //                 graphic.popupTemplate = popupTemplate;
+  //               });
 
-                // find the layer
-                const layer = layers.find(
-                  (layer) => layer.layerId === graphicsLayer.id,
-                );
-                if (!layer) return;
+  //               // find the layer
+  //               const layer = layers.find(
+  //                 (layer) => layer.layerId === graphicsLayer.id,
+  //               );
+  //               if (!layer) return;
 
-                // update the graphics of the sketch layer
-                editsCopy = updateLayerEdits({
-                  edits: editsCopy,
-                  layer: layer,
-                  type: 'update',
-                  changes: tempLayer.graphics,
-                  hasContaminationRan: true,
-                });
-              });
+  //               // update the graphics of the sketch layer
+  //               editsCopy = updateLayerEdits({
+  //                 edits: editsCopy,
+  //                 layer: layer,
+  //                 type: 'update',
+  //                 changes: tempLayer.graphics,
+  //                 hasContaminationRan: true,
+  //               });
+  //             });
 
-              setContaminationResults({
-                status: 'success',
-                data: resFeatures,
-              });
-            } else {
-              setContaminationResults({
-                status: 'success',
-                data: [],
-              });
-            }
+  //             setContaminationResults({
+  //               status: 'success',
+  //               data: resFeatures,
+  //             });
+  //           } else {
+  //             setContaminationResults({
+  //               status: 'success',
+  //               data: [],
+  //             });
+  //           }
 
-            setEdits(editsCopy);
-          })
-          .catch((err) => {
-            console.error(err);
+  //           setEdits(editsCopy);
+  //         })
+  //         .catch((err) => {
+  //           console.error(err);
 
-            // perform calculations to update talley in nav bar
-            setUpdateContextValues(true);
+  //           // perform calculations to update talley in nav bar
+  //           setUpdateContextValues(true);
 
-            setContaminationResults({
-              status: 'failure',
-              error: {
-                error: createErrorObject(err),
-                message: err.message,
-              },
-              data: null,
-            });
+  //           setContaminationResults({
+  //             status: 'failure',
+  //             error: {
+  //               error: createErrorObject(err),
+  //               message: err.message,
+  //             },
+  //             data: null,
+  //           });
 
-            window.logErrorToGa(err);
-          });
-      })
-      .catch((err) => {
-        console.error(err);
+  //           window.logErrorToGa(err);
+  //         });
+  //     })
+  //     .catch((err) => {
+  //       console.error(err);
 
-        // perform calculations to update talley in nav bar
-        setUpdateContextValues(true);
+  //       // perform calculations to update talley in nav bar
+  //       setUpdateContextValues(true);
 
-        setContaminationResults({
-          status: 'failure',
-          error: {
-            error: createErrorObject(err),
-            message: err.message,
-          },
-          data: null,
-        });
+  //       setContaminationResults({
+  //         status: 'failure',
+  //         error: {
+  //           error: createErrorObject(err),
+  //           message: err.message,
+  //         },
+  //         data: null,
+  //       });
 
-        window.logErrorToGa(err);
-      });
-  }
+  //       window.logErrorToGa(err);
+  //     });
+  // }
 
   // Run calculations when the user exits this tab, by updating
   // the context values.
@@ -779,15 +782,7 @@ function Calculate() {
             default parameters to reflect scenario-specific constraints and to
             support conducting "what-if" scenarios. Click{' '}
             <strong>View Detailed Results</strong> to display a detailed summary
-            of the results.{' '}
-            {trainingMode && (
-              <Fragment>
-                If you have a contamination map layer, click{' '}
-                <strong>View Contamination Hits</strong> to see if any of your
-                samples would have resulted in contamination hits.{' '}
-              </Fragment>
-            )}
-            Click <strong>Next</strong> to configure your output.
+            of the results.
           </p>
           <p css={layerInfo}>
             <strong>Plan Name: </strong>
@@ -804,7 +799,7 @@ function Calculate() {
 
         <div css={sectionContainer}>
           <label htmlFor="number-teams-input">
-            Number of Available Teams for Sampling
+            Number of Available Teams for Decon Applications
           </label>
           <input
             id="number-teams-input"
@@ -820,7 +815,7 @@ function Calculate() {
           />
 
           <label htmlFor="personnel-per-team-input">
-            Personnel per Sampling Team
+            Personnel per Decon Team
           </label>
           <input
             id="personnel-per-team-input"
@@ -836,7 +831,7 @@ function Calculate() {
           />
 
           <label htmlFor="sampling-hours-input">
-            Sampling Team Hours per Shift
+            Decon Team Hours per Shift
           </label>
           <input
             id="sampling-hours-input"
@@ -851,7 +846,7 @@ function Calculate() {
             }}
           />
 
-          <label htmlFor="shifts-per-input">Sampling Team Shifts per Day</label>
+          <label htmlFor="shifts-per-input">Decon Team Shifts per Day</label>
           <input
             id="shifts-per-input"
             type="text"
@@ -865,7 +860,7 @@ function Calculate() {
             }}
           />
 
-          <label htmlFor="labor-cost-input">Sampling Team Labor Cost ($)</label>
+          <label htmlFor="labor-cost-input">Decon Team Labor Cost ($)</label>
           <input
             id="labor-cost-input"
             type="text"
@@ -934,12 +929,12 @@ function Calculate() {
           </div>
         </div>
 
-        {trainingMode && (
+        {/* {trainingMode && (
           <Fragment>
             <div css={sectionContainer}>
               <p>
                 <strong>TRAINING MODE</strong>: If you have a contamination
-                layer, you can add here and check if your sampling plan captured
+                layer, you can add here and check if your decon plan captured
                 the contamination zone.
               </p>
             </div>
@@ -1016,11 +1011,11 @@ function Calculate() {
               </AccordionItem>
             </AccordionList>
           </Fragment>
-        )}
+        )} */}
       </div>
-      <div css={sectionContainer}>
+      {/* <div css={sectionContainer}>
         <NavigationButton goToPanel="configureOutput" />
-      </div>
+      </div> */}
     </div>
   );
 }

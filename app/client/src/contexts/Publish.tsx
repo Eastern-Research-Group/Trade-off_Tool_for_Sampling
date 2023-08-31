@@ -92,7 +92,7 @@ export const defaultPlanAttributes: AttributesType[] = [
   {
     id: 5,
     name: 'TYPE',
-    label: 'Sample Type',
+    label: 'Decon Technology',
     dataType: 'string',
     length: null,
     domain: null,
@@ -100,7 +100,7 @@ export const defaultPlanAttributes: AttributesType[] = [
   {
     id: 6,
     name: 'TYPEUUID',
-    label: 'Sample Type UUID',
+    label: 'Decon Technology UUID',
     dataType: 'string',
     length: null,
     domain: null,
@@ -116,7 +116,7 @@ export const defaultPlanAttributes: AttributesType[] = [
   {
     id: 8,
     name: 'AC',
-    label: 'Equivalent TOTS Samples',
+    label: 'Equivalent TODS Decon Applications',
     dataType: 'integer',
     length: null,
     domain: null,

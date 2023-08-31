@@ -8,9 +8,17 @@ export type LayerTypeName =
   | 'VSP'
   | 'Sampling Mask';
 
+export type LayerTypeLabel =
+  | 'Contamination Map'
+  | 'Decon Applications'
+  | 'Reference Layer'
+  | 'Area of Interest'
+  | 'VSP'
+  | 'Sampling Mask';
+
 export type LayerSelectType = {
   value: LayerTypeName;
-  label: LayerTypeName;
+  label: LayerTypeLabel;
 };
 
 export type AddedFrom = 'file' | 'sketch' | 'tots';

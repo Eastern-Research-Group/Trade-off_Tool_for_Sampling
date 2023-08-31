@@ -21,7 +21,7 @@ import { AuthenticationContext } from 'contexts/Authentication';
 import { settingDefaults } from 'contexts/Calculate';
 import { DialogContext } from 'contexts/Dialog';
 import { useLayerProps, useSampleTypesContext } from 'contexts/LookupFiles';
-import { NavigationContext } from 'contexts/Navigation';
+// import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext, defaultPlanAttributes } from 'contexts/Publish';
 import { SketchContext } from 'contexts/Sketch';
 // utils
@@ -68,17 +68,21 @@ type LayerGraphics = {
   [key: string]: __esri.Graphic[];
 };
 
-const layerTypeOptions = [
-  {
-    label: 'TOTS Sampling Plans',
-    type: 'category',
-    value: 'contains-epa-tots-sample-layer',
-  },
-  {
-    label: 'TOTS Custom Sample Types',
-    type: 'category',
-    value: 'contains-epa-tots-user-defined-sample-types',
-  },
+const layerTypeOptions: {
+  label: string;
+  value: string;
+  type?: string;
+}[] = [
+  // {
+  //   label: 'TODS Decon Plans',
+  //   type: 'category',
+  //   value: 'contains-epa-tots-sample-layer',
+  // },
+  // {
+  //   label: 'TODS Custom Decon Technologies',
+  //   type: 'category',
+  //   value: 'contains-epa-tots-user-defined-sample-types',
+  // },
   { label: 'Feature Service', value: 'Feature Service' },
   { label: 'Image Service', value: 'Image Service' },
   { label: 'KML', value: 'KML' },
@@ -742,7 +746,7 @@ type ResultCardProps = {
 function ResultCard({ result }: ResultCardProps) {
   const { portal } = useContext(AuthenticationContext);
   const { setOptions } = useContext(DialogContext);
-  const { trainingMode } = useContext(NavigationContext);
+  // const { trainingMode } = useContext(NavigationContext);
   const { setSampleTypeSelections } = useContext(PublishContext);
   const sampleTypeContext = useSampleTypesContext();
   const {
@@ -1162,7 +1166,7 @@ function ResultCard({ result }: ResultCardProps) {
       };
 
       // get the popup template
-      const popupTemplate = getPopupTemplate('Samples', trainingMode);
+      const popupTemplate = getPopupTemplate('Samples', true); //trainingMode);
 
       // create the layers to be added to the map
       for (let i = 0; i < layerDetailResponses.length; i++) {
@@ -1554,8 +1558,8 @@ function ResultCard({ result }: ResultCardProps) {
 
         if (output?.areaOutOfTolerance || output?.attributeMismatch) {
           setOptions({
-            title: 'Sample Issues',
-            ariaLabel: 'Sample Issues',
+            title: 'Decon Issues',
+            ariaLabel: 'Decon Issues',
             description: sampleIssuesPopupMessage(
               output,
               sampleTypeContext.data.areaTolerance,
@@ -2080,7 +2084,7 @@ function ResultCard({ result }: ResultCardProps) {
       title: 'Would you like to continue?',
       ariaLabel: 'Would you like to continue?',
       description:
-        'Samples using one or more of these sample types have been placed on the map. This operation will delete any samples associated with these sample types.',
+        'Decon Applications using one or more of these decon technologies have been placed on the map. This operation will delete any decon technologies associated with these decon technologies.',
       onContinue: () => {
         // Update the attributes of the graphics on the map on edits
         let editsCopy: EditsType = edits;
@@ -2138,7 +2142,7 @@ function ResultCard({ result }: ResultCardProps) {
   if (
     result?.categories?.includes('contains-epa-tots-user-defined-sample-types')
   ) {
-    type = 'Sample Types';
+    type = 'Decon Technologies';
   }
 
   return (

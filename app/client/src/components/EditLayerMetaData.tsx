@@ -653,7 +653,7 @@ function EditLayer({
       }}
     >
       <p>
-        Enter the name for a new empty sample layer and click save or use the{' '}
+        Enter the name for a new empty decon layer and click save or use the{' '}
         <button
           css={modLinkButtonStyles}
           onClick={(ev) => {
@@ -666,7 +666,7 @@ function EditLayer({
         >
           Add Data tools
         </button>{' '}
-        to import an existing sample layer.
+        to import an existing decon layer.
       </p>
       <label htmlFor="layer-name-input">Layer Name</label>
       <input
@@ -787,24 +787,24 @@ function EditCustomSampleTypesTable({
       {publishSamplesMode === 'new' && (
         <Fragment>
           <label htmlFor="sample-table-name-input">
-            Custom Sample Type Table Name
+            Custom Decon Technology Table Name
           </label>
           <input
             id="sample-table-name-input"
             css={inputStyles}
             maxLength={250}
-            placeholder="Enter Custom Sample Type Table Name"
+            placeholder="Enter Custom Decon Technology Table Name"
             value={sampleTableName}
             onChange={(ev) => setSampleTableName(ev.target.value)}
           />
           <label htmlFor="scenario-description-input">
-            Custom Sample Type Table Description
+            Custom Decon Technology Table Description
           </label>
           <input
             id="scenario-description-input"
             css={inputStyles}
             maxLength={2048}
-            placeholder="Enter Custom Sample Type Table Description (2048 characters)"
+            placeholder="Enter Custom Decon Technology Table Description (2048 characters)"
             value={sampleTableDescription}
             onChange={(ev) => setSampleTableDescription(ev.target.value)}
           />

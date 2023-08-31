@@ -167,8 +167,8 @@ export const missingAttributesMessage = (
 export const unknownSampleTypeMessage = (
   <MessageBox
     severity="error"
-    title="Unknown Sample Type"
-    message="An unknown sample type was found. Please use one of the sample types recognized by TOTS (Swab, Sponge, Micro Vac, Wet Vac, or Aggressive Air)."
+    title="Unknown Decon Technology"
+    message="An unknown decon technology was found. Please use one of the decon technologies recognized by TODS (Swab, Sponge, Micro Vac, Wet Vac, or Aggressive Air)."
   />
 );
 
@@ -197,7 +197,7 @@ export const sampleIssuesPopupMessage = (
 ) => {
   let message = '';
   if (output.areaOutOfTolerance) {
-    message += `The surface area associated with some of your samples is outside of the allowable tolerance (+- ${areaTolerance} sqin) of the provided reference area. TOTS will adjust the representation of each of your samples to account for the difference. `;
+    message += `The surface area associated with some of your decon applications is outside of the allowable tolerance (+- ${areaTolerance} sqin) of the provided reference area. TODS will adjust the representation of each of your decon applications to account for the difference. `;
   }
   if (output.attributeMismatch) {
     message +=
@@ -213,7 +213,7 @@ export const cantUseWithVspMessage = (
   <MessageBox
     severity="warning"
     title="Cannot Use With VSP"
-    message="Multiple Random Samples cannot be used in combination with VSP-Created Sampling Plans"
+    message="Multiple Random Decon Applications cannot be used in combination with VSP-Created Sampling Plans"
   />
 );
 
@@ -221,7 +221,7 @@ export const generateRandomExceededTransferLimitMessage = (
   <MessageBox
     severity="error"
     title="Exceeded Transfer Limit"
-    message="The request exceeded the transfer limit of the GP Server. Please reduce the number of samples and try again."
+    message="The request exceeded the transfer limit of the GP Server. Please reduce the number of decon applications and try again."
   />
 );
 
@@ -231,8 +231,8 @@ export const generateRandomSuccessMessage = (
 ) => (
   <MessageBox
     severity="info"
-    title="Samples Added"
-    message={`${numSamples} samples added to the "${layerName}" layer`}
+    title="Decon Applications Added"
+    message={`${numSamples} decon applications added to the "${layerName}" layer`}
   />
 );
 
@@ -248,16 +248,16 @@ export const noContaminationMapMessage = (
 export const noSampleLayerMessage = (
   <MessageBox
     severity="error"
-    title="No Samples"
-    message="No sample layer has been selected. Please go to the Create Plan tab, select a layer and try again."
+    title="No Decon Applications"
+    message="No decon layer has been selected. Please go to the Create Plan tab, select a layer and try again."
   />
 );
 
 export const noSamplesMessage = (
   <MessageBox
     severity="error"
-    title="No Samples"
-    message="There are no samples to run calculations on"
+    title="No Decon Applications"
+    message="There are no decon applications to run calculations on"
   />
 );
 
@@ -273,7 +273,7 @@ export const contaminationHitsSuccessMessage = (numberOfHits: number) => (
   <MessageBox
     severity="info"
     title="Contamination Hits"
-    message={`${numberOfHits} sample(s) placed in contaminated areas`}
+    message={`${numberOfHits} decon(s) placed in contaminated areas`}
   />
 );
 
@@ -320,16 +320,16 @@ export const downloadSuccessMessage = (
 export const noSamplesPublishMessage = (
   <MessageBox
     severity="warning"
-    title="No Samples to Publish"
-    message="There are no samples to publish. Please add some samples to the plan and try again."
+    title="No Decon Applications to Publish"
+    message="There are no decon applications to publish. Please add some decon applications to the plan and try again."
   />
 );
 
 export const noSampleTypesPublishMessage = (
   <MessageBox
     severity="warning"
-    title="No Custom Sample Types Exist"
-    message="There are no custom sample types created and/or loaded. Please add custom sample types to the plan and try again."
+    title="No Custom Decon Technologies Exist"
+    message="There are no custom decon technologies created and/or loaded. Please add custom decon technologies to the plan and try again."
   />
 );
 
@@ -337,7 +337,7 @@ export const noServiceSelectedMessage = (
   <MessageBox
     severity="warning"
     title="No Service Selected"
-    message="There is no feature service selected to publish the custom sample types to. Please select a feature service and try again."
+    message="There is no feature service selected to publish the custom decon technologies to. Please select a feature service and try again."
   />
 );
 
@@ -345,7 +345,7 @@ export const noServiceNameMessage = (
   <MessageBox
     severity="warning"
     title="No Service Name Provided"
-    message="No feature service name provided for publishing the custom sample types. Please provide a feature service name and try again."
+    message="No feature service name provided for publishing the custom decon technologies. Please provide a feature service name and try again."
   />
 );
 
@@ -354,7 +354,7 @@ export const publishSuccessMessage = (
     severity="info"
     title="Publish Succeeded"
     message={
-      'To view or share your TOTS content with others, go to the ' +
+      'To view or share your TODS content with others, go to the ' +
       'My Content menu in the Content section of your ArcGIS ' +
       'Online organization.'
     }

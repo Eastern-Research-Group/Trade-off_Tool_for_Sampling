@@ -419,7 +419,7 @@ export function getCurrentDateTime() {
  * @returns LayerType The default sample layer
  */
 export function createSampleLayer(
-  name: string = 'Default Sample Layer',
+  name: string = 'Default Decon Layer',
   parentLayer: __esri.GroupLayer | null = null,
 ) {
   const layerUuid = generateUUID();
@@ -473,7 +473,7 @@ export function getDefaultSamplingMaskLayer() {
   const layerUuid = generateUUID();
   const graphicsLayer = new GraphicsLayer({
     id: layerUuid,
-    title: 'Sketched Sampling Mask',
+    title: 'Sketched Decon Mask',
     listMode: 'hide',
   });
 
@@ -484,8 +484,8 @@ export function getDefaultSamplingMaskLayer() {
     layerId: layerUuid,
     portalId: '',
     value: 'sketchAoi',
-    name: 'Sketched Sampling Mask',
-    label: 'Sketched Sampling Mask',
+    name: 'Sketched Decon Mask',
+    label: 'Sketched Decon Mask',
     layerType: 'Sampling Mask',
     scenarioName: '',
     scenarioDescription: '',
@@ -664,7 +664,7 @@ export function getNextScenarioLayer(
   }
 
   const defaultLayerIndex = sketchableLayers.findIndex(
-    (layer) => layer.name === 'Default Sample Layer',
+    (layer) => layer.name === 'Default Decon Layer',
   );
 
   return {
@@ -714,7 +714,7 @@ export function getSampleTableColumns({
       width: largeColumnWidth,
     },
     {
-      Header: 'Sample Type',
+      Header: 'Decon Technology',
       accessor: 'TYPE',
       width: mediumColumnWidth,
     },
@@ -729,12 +729,12 @@ export function getSampleTableColumns({
       width: baseColumnWidth,
     },
     {
-      Header: 'Equivalent TOTS Samples',
+      Header: 'Equivalent TODS Decon Applications',
       accessor: 'AC',
       width: baseColumnWidth,
     },
     // {
-    //   Header: 'Total Cost Per Sample (Labor + Material + Waste)',
+    //   Header: 'Total Cost Per Decon Application (Labor + Material + Waste)',
     //   accessor: 'TCPS',
     //   width: baseColumnWidth,
     // },
@@ -754,27 +754,27 @@ export function getSampleTableColumns({
       width: baseColumnWidth,
     },
     {
-      Header: 'Sampling Material Cost ($/sample)',
+      Header: 'Decon Technology Material Cost ($/application)',
       accessor: 'MCPS',
       width: baseColumnWidth,
     },
     {
-      Header: 'Time to Prepare Kits (person hrs/sample)',
+      Header: 'Time to Prepare Kits (person hrs/application)',
       accessor: 'TTPK',
       width: baseColumnWidth,
     },
     {
-      Header: 'Time to Collect (person hrs/sample)',
+      Header: 'Time to Collect (person hrs/application)',
       accessor: 'TTC',
       width: baseColumnWidth,
     },
     {
-      Header: 'Time to Analyze (person hrs/sample)',
+      Header: 'Time to Analyze (person hrs/application)',
       accessor: 'TTA',
       width: baseColumnWidth,
     },
     // {
-    //   Header: 'Total Time per Sample (person hrs/sample)',
+    //   Header: 'Total Time per Decon Application (person hrs/application)',
     //   accessor: 'TTPS',
     //   width: baseColumnWidth,
     // },
@@ -789,12 +789,12 @@ export function getSampleTableColumns({
       width: baseColumnWidth,
     },
     {
-      Header: 'Waste Volume (L/sample)',
+      Header: 'Waste Volume (L/application)',
       accessor: 'WVPS',
       width: baseColumnWidth,
     },
     {
-      Header: 'Waste Weight (lbs/sample)',
+      Header: 'Waste Weight (lbs/application)',
       accessor: 'WWPS',
       width: baseColumnWidth,
     },
