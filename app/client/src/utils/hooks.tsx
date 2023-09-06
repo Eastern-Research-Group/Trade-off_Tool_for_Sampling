@@ -827,18 +827,19 @@ export function useCalculatePlan() {
     // calculate total cost and time
     const totalSamplingCost = totalSamplingLaborCost + totals.mcps;
     const totalAnalysisCost = totals.alc + totals.amc;
-    const totalCost = totalSamplingCost + totalAnalysisCost;
+    // const totalCost = totalSamplingCost + totalAnalysisCost;
+    const totalCost = totalSamplingCost;
 
     // Calculate total time. Note: Total Time is the greater of sample collection time or Analysis Total Time.
     // If Analysis Time is equal to or greater than Sampling Total Time then the value reported is total Analysis Time Plus one day.
     // The one day accounts for the time samples get collected and shipped to the lab on day one of the sampling response.
-    let totalTime = 0;
-    if (labThroughput + 1 < timeCompleteSampling) {
-      totalTime = timeCompleteSampling;
-    } else {
-      labThroughput += 1;
-      totalTime = labThroughput;
-    }
+    let totalTime = timeCompleteSampling;
+    // if (labThroughput + 1 < timeCompleteSampling) {
+    //   totalTime = timeCompleteSampling;
+    // } else {
+    //   labThroughput += 1;
+    //   totalTime = labThroughput;
+    // }
 
     // Get limiting time factor (will be undefined if they are equal)
     let limitingFactor: CalculateResultsDataType['Limiting Time Factor'] = '';

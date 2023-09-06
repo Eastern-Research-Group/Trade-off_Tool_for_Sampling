@@ -189,18 +189,18 @@ const resourceTallyContainerStyles = css`
   text-align: left;
 `;
 
-const subTallyStyles = css`
-  margin-left: 15px;
-`;
+// const subTallyStyles = css`
+//   margin-left: 15px;
+// `;
 
 const mainTallyStyles = css`
   font-weight: bold;
 `;
 
-const resourceTallySeparator = css`
-  border-top: none;
-  border-bottom: 1px solid ${buttonVisitedColor};
-`;
+// const resourceTallySeparator = css`
+//   border-top: none;
+//   border-bottom: 1px solid ${buttonVisitedColor};
+// `;
 
 // const helpIconStyles = css`
 //   font-size: 18px;
@@ -450,7 +450,7 @@ function NavBar({ height }: Props) {
                     calculateResults.data['Total Cost'],
                   ).toLocaleString()}
                 </div>
-                <div css={subTallyStyles}>
+                {/* <div css={subTallyStyles}>
                   <i className="fas fa-users fa-fw" /> $
                   {Math.round(
                     calculateResults.data['Total Decon Cost'],
@@ -461,12 +461,12 @@ function NavBar({ height }: Props) {
                   {Math.round(
                     calculateResults.data['Total Analysis Cost'],
                   ).toLocaleString()}
-                </div>
+                </div> */}
                 <div css={mainTallyStyles}>
                   Max Time day(s):{' '}
                   {calculateResults.data['Total Time'].toLocaleString()}
                 </div>
-                <div css={subTallyStyles}>
+                {/* <div css={subTallyStyles}>
                   <i className="fas fa-users fa-fw" />{' '}
                   {(
                     Math.round(
@@ -481,10 +481,18 @@ function NavBar({ height }: Props) {
                       calculateResults.data['Time to Complete Analyses'] * 10,
                     ) / 10
                   ).toLocaleString()}
+                </div> */}
+                <div css={mainTallyStyles}>
+                  Total Waste Volume (L):{' '}
+                  {calculateResults.data['Waste Volume'].toLocaleString()}
                 </div>
-                <hr css={resourceTallySeparator} />
+                <div css={mainTallyStyles}>
+                  Total Waste Weight (lbs):{' '}
+                  {calculateResults.data['Waste Weight'].toLocaleString()}
+                </div>
+                {/* <hr css={resourceTallySeparator} /> */}
               </div>
-              {calculateResults.data['Limiting Time Factor'] && (
+              {/* {calculateResults.data['Limiting Time Factor'] && (
                 <div>
                   <span css={mainTallyStyles}>Limiting Factor</span>
                   <br />
@@ -494,10 +502,11 @@ function NavBar({ height }: Props) {
                     'Analysis' && <i className="fas fa-flask fa-fw" />}{' '}
                   <span>{calculateResults.data['Limiting Time Factor']}</span>
                 </div>
-              )}
+              )} */}
             </div>
           )}
 
+          <div />
           {/* <button
             onClick={(ev) => setGettingStartedOpen(!gettingStartedOpen)}
             css={navButtonStyles(false)}
