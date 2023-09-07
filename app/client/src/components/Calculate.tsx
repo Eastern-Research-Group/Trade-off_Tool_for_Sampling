@@ -458,7 +458,9 @@ function Calculate() {
         // calculate new CFU values for where decon application was applied (CFU * (1 - %effectiveness) = new CFU)
         // const curCfu = contamGraphic.attributes.CONTAMVAL;
         // console.log('curCfu: ', curCfu);
-        const newCfu = contamGraphic.attributes.CONTAMVAL * (1 - 0.95);
+        const contamReduction = graphic.attributes.LOD_NON;
+        const newCfu =
+          contamGraphic.attributes.CONTAMVAL * (1 - contamReduction);
         // console.log('newCfu: ', newCfu);
 
         // add new graphics to the map and remove the original contamination feature

@@ -311,7 +311,7 @@ function CalculateResults() {
       .then((buffer: any) => {
         saveAs(
           new Blob([buffer]),
-          `tots_${selectedScenario?.scenarioName}.xlsx`,
+          `tods_${selectedScenario?.scenarioName}.xlsx`,
         );
         setDownloadStatus('success');
       })
