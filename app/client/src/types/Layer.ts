@@ -6,7 +6,8 @@ export type LayerTypeName =
   | 'Reference Layer'
   | 'Area of Interest'
   | 'VSP'
-  | 'Sampling Mask';
+  | 'Sampling Mask'
+  | 'Decon Results';
 
 export type LayerTypeLabel =
   | 'Contamination Map'

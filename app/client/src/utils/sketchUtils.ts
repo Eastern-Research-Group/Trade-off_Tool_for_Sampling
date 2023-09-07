@@ -719,12 +719,12 @@ export function getSampleTableColumns({
       width: mediumColumnWidth,
     },
     {
-      Header: 'Reference Surface Area (sq inch)',
+      Header: 'Iteration Max Area (sq meter)',
       accessor: 'SA',
       width: baseColumnWidth,
     },
     {
-      Header: 'Actual Surface Area (sq inch)',
+      Header: 'Actual Surface Area (sq meter)',
       accessor: 'AA',
       width: baseColumnWidth,
     },
@@ -744,32 +744,22 @@ export function getSampleTableColumns({
       width: largeColumnWidth,
     },
     {
-      Header: 'Analysis Labor Cost ($)',
-      accessor: 'ALC',
-      width: baseColumnWidth,
-    },
-    {
-      Header: 'Analysis Material Cost ($)',
-      accessor: 'AMC',
-      width: baseColumnWidth,
-    },
-    {
-      Header: 'Decon Technology Material Cost ($/application)',
+      Header: 'Setup Cost ($/application)',
       accessor: 'MCPS',
       width: baseColumnWidth,
     },
     {
-      Header: 'Time to Prepare Kits (person hrs/application)',
+      Header: 'Setup Time (hrs/application)',
       accessor: 'TTPK',
       width: baseColumnWidth,
     },
     {
-      Header: 'Time to Collect (person hrs/application)',
+      Header: 'Application Time (hrs/application)',
       accessor: 'TTC',
       width: baseColumnWidth,
     },
     {
-      Header: 'Time to Analyze (person hrs/application)',
+      Header: 'Residence Time (hrs/application)',
       accessor: 'TTA',
       width: baseColumnWidth,
     },
@@ -779,48 +769,53 @@ export function getSampleTableColumns({
     //   width: baseColumnWidth,
     // },
     {
-      Header: 'Limit of Detection (CFU) Porous',
+      Header: 'Log Reduction',
       accessor: 'LOD_P',
       width: baseColumnWidth,
     },
     {
-      Header: 'Limit of Detection (CFU) Nonporous',
+      Header: 'Contamination Removal',
       accessor: 'LOD_NON',
       width: baseColumnWidth,
     },
     {
-      Header: 'Waste Volume (L/application)',
+      Header: 'Solid Waste Volume (cu meters/sq meter)',
       accessor: 'WVPS',
       width: baseColumnWidth,
     },
     {
-      Header: 'Waste Weight (lbs/application)',
+      Header: 'Solid Waste Mass (kg/sq meter)',
       accessor: 'WWPS',
       width: baseColumnWidth,
     },
+    {
+      Header: 'Liquid Waste Volume (cu meters/sq meter)',
+      accessor: 'ALC',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Liquid Waste Mass (kg/sq meter)',
+      accessor: 'AMC',
+      width: baseColumnWidth,
+    },
+    // TODO look into adding these back in. CONTAMVAL will probably
+    //      be the new CFU value.
+    // {
+    //   Header: 'Contamination Type',
+    //   accessor: 'CONTAMTYPE',
+    //   width: largeColumnWidth,
+    // },
+    // {
+    //   Header: 'Activity',
+    //   accessor: 'CONTAMVAL',
+    //   width: baseColumnWidth,
+    // },
+    // {
+    //   Header: 'Unit of Measure',
+    //   accessor: 'CONTAMUNIT',
+    //   width: baseColumnWidth,
+    // },
   ];
-
-  // add the contamination hits columns, if necessary
-  if (includeContaminationFields) {
-    columns = [
-      ...columns,
-      {
-        Header: 'Contamination Type',
-        accessor: 'CONTAMTYPE',
-        width: largeColumnWidth,
-      },
-      {
-        Header: 'Activity',
-        accessor: 'CONTAMVAL',
-        width: baseColumnWidth,
-      },
-      {
-        Header: 'Unit of Measure',
-        accessor: 'CONTAMUNIT',
-        width: baseColumnWidth,
-      },
-    ];
-  }
 
   if (useEqualWidth) {
     // set the column widths

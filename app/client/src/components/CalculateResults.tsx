@@ -302,7 +302,6 @@ function CalculateResults() {
 
     // create the sheets
     addSummarySheet();
-    addParameterSheet();
     addResultsSheet();
     addSampleSheet();
 
@@ -334,11 +333,9 @@ function CalculateResults() {
 
       // setup column widths
       summarySheet.columns = [
-        { width: 39.14 },
+        { width: 50 },
         { width: valueColumnWidth },
-        { width: 41.14 },
-        { width: valueColumnWidth },
-        { width: 38 },
+        { width: 57 },
         { width: valueColumnWidth },
       ];
 
@@ -347,7 +344,7 @@ function CalculateResults() {
       summarySheet.getCell(1, 1).value =
         'Trade-off Tool for Decontamination Strategies (TODS) Summary';
       summarySheet.getCell(2, 1).font = defaultFont;
-      summarySheet.getCell(2, 1).value = 'Version: 2.0.0';
+      summarySheet.getCell(2, 1).value = 'Version: 0.1.0 - preAlpha';
       summarySheet.getCell(4, 1).font = underlinedLabelFont;
       summarySheet.getCell(4, 1).value = 'Plan Name';
       summarySheet.getCell(4, 2).font = defaultFont;
@@ -389,77 +386,56 @@ function CalculateResults() {
       summarySheet.getCell(11, 2).font = defaultFont;
       summarySheet.getCell(11, 2).value = calculateResults.data['Total Time'];
 
-      summarySheet.getCell(12, 1).font = labelFont;
-      summarySheet.getCell(12, 1).value = 'Limiting Time Factor';
-      summarySheet.getCell(12, 2).font = defaultFont;
-      summarySheet.getCell(12, 2).value =
-        calculateResults.data['Limiting Time Factor'];
-
       // col 3 & 4
       summarySheet.mergeCells(7, 3, 7, 4);
       summarySheet.getCell(7, 3).alignment = columnTitleAlignment;
       summarySheet.getCell(7, 3).font = columnTitleFont;
-      summarySheet.getCell(7, 3).value = 'Decon Operation';
+      summarySheet.getCell(7, 3).value = 'Waste Totals';
 
       summarySheet.getCell(8, 3).font = labelFont;
-      summarySheet.getCell(8, 3).value = 'Total Required Decon Time (team hrs)';
+      summarySheet.getCell(8, 3).value =
+        'Total Solid Waste Volume (cubed meters/square meter)';
       summarySheet.getCell(8, 4).font = defaultFont;
       summarySheet.getCell(8, 4).value =
-        calculateResults.data['Total Required Decon Time'];
+        calculateResults.data['Solid Waste Volume'];
 
       summarySheet.getCell(9, 3).font = labelFont;
-      summarySheet.getCell(9, 3).value = 'Time to Complete Decon (days)';
+      summarySheet.getCell(9, 3).value =
+        'Total Solid Waste Mass (kg/square meter)';
       summarySheet.getCell(9, 4).font = defaultFont;
       summarySheet.getCell(9, 4).value =
-        calculateResults.data['Time to Complete Decon'];
+        calculateResults.data['Solid Waste Mass'];
 
       summarySheet.getCell(10, 3).font = labelFont;
-      summarySheet.getCell(10, 3).value = 'Total Decon Labor Cost';
+      summarySheet.getCell(10, 3).value =
+        'Total Liquid Waste Volume (cubed meters/square meter)';
       summarySheet.getCell(10, 4).font = defaultFont;
       summarySheet.getCell(10, 4).numFmt = currencyNumberFormat;
       summarySheet.getCell(10, 4).value =
-        calculateResults.data['Total Decon Labor Cost'];
+        calculateResults.data['Liquid Waste Volume'];
 
       summarySheet.getCell(11, 3).font = labelFont;
       summarySheet.getCell(11, 3).value =
-        'Total Decon Technology Material Cost';
+        'Total Liquid Waste Mass (kg/square meter)';
       summarySheet.getCell(11, 4).font = defaultFont;
       summarySheet.getCell(11, 4).numFmt = currencyNumberFormat;
       summarySheet.getCell(11, 4).value =
-        calculateResults.data['Decon Technology Material Cost'];
+        calculateResults.data['Liquid Waste Mass'];
 
-      // col 5 & 6
-      summarySheet.mergeCells(7, 5, 7, 6);
-      summarySheet.getCell(7, 5).alignment = columnTitleAlignment;
-      summarySheet.getCell(7, 5).font = columnTitleFont;
-      summarySheet.getCell(7, 5).value = 'Analysis Operation';
+      summarySheet.getCell(12, 3).font = labelFont;
+      summarySheet.getCell(12, 3).value =
+        'Total Waste Volume (cubed meters/square meter)';
+      summarySheet.getCell(12, 4).font = defaultFont;
+      summarySheet.getCell(12, 4).numFmt = currencyNumberFormat;
+      summarySheet.getCell(12, 4).value =
+        calculateResults.data['Total Waste Volume'];
 
-      summarySheet.getCell(8, 5).font = labelFont;
-      summarySheet.getCell(8, 5).value =
-        'Total Required Analysis Time (lab hrs)';
-      summarySheet.getCell(8, 6).font = defaultFont;
-      summarySheet.getCell(8, 6).value =
-        calculateResults.data['Time to Analyze'];
-
-      summarySheet.getCell(9, 5).font = labelFont;
-      summarySheet.getCell(9, 5).value = 'Time to Complete Analyses (days)';
-      summarySheet.getCell(9, 6).font = defaultFont;
-      summarySheet.getCell(9, 6).value =
-        calculateResults.data['Time to Complete Analyses'];
-
-      summarySheet.getCell(10, 5).font = labelFont;
-      summarySheet.getCell(10, 5).value = 'Total Analysis Labor Cost';
-      summarySheet.getCell(10, 6).font = defaultFont;
-      summarySheet.getCell(10, 6).numFmt = currencyNumberFormat;
-      summarySheet.getCell(10, 6).value =
-        calculateResults.data['Analysis Labor Cost'];
-
-      summarySheet.getCell(11, 5).font = labelFont;
-      summarySheet.getCell(11, 5).value = 'Total Analysis Material Cost';
-      summarySheet.getCell(11, 6).font = defaultFont;
-      summarySheet.getCell(11, 6).numFmt = currencyNumberFormat;
-      summarySheet.getCell(11, 6).value =
-        calculateResults.data['Analysis Material Cost'];
+      summarySheet.getCell(13, 3).font = labelFont;
+      summarySheet.getCell(13, 3).value = 'Total Waste Mass (kg/square meter)';
+      summarySheet.getCell(13, 4).font = defaultFont;
+      summarySheet.getCell(13, 4).numFmt = currencyNumberFormat;
+      summarySheet.getCell(13, 4).value =
+        calculateResults.data['Total Waste Mass'];
 
       // add the map screenshot
       const screenshotImageId = workbook.addImage({
@@ -467,85 +443,9 @@ function CalculateResults() {
         extension: 'jpeg',
       });
       summarySheet.addImage(screenshotImageId, {
-        tl: { col: 1, row: 14 },
+        tl: { col: 1, row: 15 },
         ext: { width: base64Screenshot.width, height: base64Screenshot.height },
       });
-    }
-
-    function addParameterSheet() {
-      // only here to satisfy typescript
-      if (!calculateResults.data) return;
-
-      // add the sheet
-      const parameterSheet = workbook.addWorksheet('Parameters');
-
-      // setup column widths
-      parameterSheet.columns = [{ width: 41.14 }, { width: valueColumnWidth }];
-
-      // add the header
-      parameterSheet.getCell(1, 1).font = sheetTitleFont;
-      parameterSheet.getCell(1, 1).value = 'Parameters';
-
-      // col 1 & 2
-      parameterSheet.getCell(3, 1).font = labelFont;
-      parameterSheet.getCell(3, 1).value =
-        'Number of Available Teams for Decon';
-      parameterSheet.getCell(3, 2).font = defaultFont;
-      parameterSheet.getCell(3, 2).value =
-        calculateResults.data[
-          'User Specified Number of Available Teams for Decon'
-        ];
-
-      parameterSheet.getCell(4, 1).font = labelFont;
-      parameterSheet.getCell(4, 1).value = 'Personnel per Decon Team';
-      parameterSheet.getCell(4, 2).font = defaultFont;
-      parameterSheet.getCell(4, 2).value =
-        calculateResults.data['User Specified Personnel per Decon Team'];
-
-      parameterSheet.getCell(5, 1).font = labelFont;
-      parameterSheet.getCell(5, 1).value = 'Decon Team Hours per Shift';
-      parameterSheet.getCell(5, 2).font = defaultFont;
-      parameterSheet.getCell(5, 2).value =
-        calculateResults.data['User Specified Decon Team Hours per Shift'];
-
-      parameterSheet.getCell(6, 1).font = labelFont;
-      parameterSheet.getCell(6, 1).value = 'Decon Team Shifts per Day';
-      parameterSheet.getCell(6, 2).font = defaultFont;
-      parameterSheet.getCell(6, 2).value =
-        calculateResults.data['User Specified Decon Team Shifts per Day'];
-
-      parameterSheet.getCell(7, 1).font = labelFont;
-      parameterSheet.getCell(7, 1).value = 'Decon Team Labor Cost';
-      parameterSheet.getCell(7, 2).font = defaultFont;
-      parameterSheet.getCell(7, 2).numFmt = currencyNumberFormat;
-      parameterSheet.getCell(7, 2).value =
-        calculateResults.data['User Specified Decon Team Labor Cost'];
-
-      parameterSheet.getCell(8, 1).font = labelFont;
-      parameterSheet.getCell(8, 1).value =
-        'Number of Available Labs for Analysis';
-      parameterSheet.getCell(8, 2).font = defaultFont;
-      parameterSheet.getCell(8, 2).value =
-        calculateResults.data[
-          'User Specified Number of Available Labs for Analysis'
-        ];
-
-      parameterSheet.getCell(9, 1).font = labelFont;
-      parameterSheet.getCell(9, 1).value = 'Analysis Lab Hours per Day';
-      parameterSheet.getCell(9, 2).font = defaultFont;
-      parameterSheet.getCell(9, 2).value =
-        calculateResults.data['User Specified Analysis Lab Hours per Day'];
-
-      parameterSheet.getCell(10, 1).value = {
-        richText: [
-          { font: labelFont, text: 'Surface Area (ft' },
-          { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
-          { font: labelFont, text: ')' },
-        ],
-      };
-      parameterSheet.getCell(10, 2).font = defaultFont;
-      parameterSheet.getCell(10, 2).value =
-        calculateResults.data['User Specified Surface Area'];
     }
 
     function addResultsSheet() {
@@ -557,11 +457,11 @@ function CalculateResults() {
 
       // setup column widths
       resultsSheet.columns = [
-        { width: 40.86 },
+        { width: 25 },
         { width: valueColumnWidth },
         { width: 41.43 },
         { width: valueColumnWidth },
-        { width: 33.86 },
+        { width: 43 },
         { width: valueColumnWidth },
       ];
 
@@ -584,32 +484,32 @@ function CalculateResults() {
       };
       resultsSheet.getCell(4, 2).font = defaultFont;
       resultsSheet.getCell(4, 2).value =
-        calculateResults.data['Total Sampled Area'];
+        calculateResults.data['Total Decontamination Area'];
 
-      resultsSheet.getCell(5, 1).value = {
-        richText: [
-          {
-            font: labelFont,
-            text: 'User Specified Total Area of Interest (ft',
-          },
-          { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
-          { font: labelFont, text: ')' },
-        ],
-      };
-      const userAoi = calculateResults.data['User Specified Total AOI'];
-      if (userAoi) {
-        resultsSheet.getCell(5, 2).font = defaultFont;
-        resultsSheet.getCell(5, 2).value = userAoi;
-      }
+      // resultsSheet.getCell(5, 1).value = {
+      //   richText: [
+      //     {
+      //       font: labelFont,
+      //       text: 'User Specified Total Area of Interest (ft',
+      //     },
+      //     { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
+      //     { font: labelFont, text: ')' },
+      //   ],
+      // };
+      // const userAoi = calculateResults.data['User Specified Total AOI'];
+      // if (userAoi) {
+      //   resultsSheet.getCell(5, 2).font = defaultFont;
+      //   resultsSheet.getCell(5, 2).value = userAoi;
+      // }
 
-      resultsSheet.getCell(6, 1).font = labelFont;
-      resultsSheet.getCell(6, 1).value = 'Percent of Area Sampled';
-      const percentAreaSampled =
-        calculateResults.data['Percent of Area Sampled'];
-      if (percentAreaSampled) {
-        resultsSheet.getCell(6, 2).font = defaultFont;
-        resultsSheet.getCell(6, 2).value = percentAreaSampled;
-      }
+      // resultsSheet.getCell(6, 1).font = labelFont;
+      // resultsSheet.getCell(6, 1).value = 'Percent of Area Sampled';
+      // const percentAreaSampled =
+      //   calculateResults.data['Percent of Area Sampled'];
+      // if (percentAreaSampled) {
+      //   resultsSheet.getCell(6, 2).font = defaultFont;
+      //   resultsSheet.getCell(6, 2).value = percentAreaSampled;
+      // }
 
       // col 3 & 4
       resultsSheet.mergeCells(3, 3, 3, 4);
@@ -617,104 +517,113 @@ function CalculateResults() {
       resultsSheet.getCell(3, 3).font = columnTitleFont;
       resultsSheet.getCell(3, 3).value = 'Decon';
 
+      // resultsSheet.getCell(4, 3).font = labelFont;
+      // resultsSheet.getCell(4, 3).value = 'Decon Hours per Day';
+      // resultsSheet.getCell(4, 4).font = defaultFont;
+      // resultsSheet.getCell(4, 4).value =
+      //   calculateResults.data['Decon Hours per Day'];
+
+      // resultsSheet.getCell(5, 3).font = labelFont;
+      // resultsSheet.getCell(5, 3).value = 'Decon Personnel Hours per Day';
+      // resultsSheet.getCell(5, 4).font = defaultFont;
+      // resultsSheet.getCell(5, 4).value =
+      //   calculateResults.data['Decon Personnel hours per Day'];
+
+      // resultsSheet.getCell(6, 3).font = labelFont;
+      // resultsSheet.getCell(6, 3).value = 'User Specified Decon Team Labor Cost';
+      // resultsSheet.getCell(6, 4).font = defaultFont;
+      // resultsSheet.getCell(6, 4).value =
+      //   calculateResults.data['User Specified Decon Team Labor Cost'];
+
       resultsSheet.getCell(4, 3).font = labelFont;
-      resultsSheet.getCell(4, 3).value = 'Decon Hours per Day';
+      resultsSheet.getCell(4, 3).value = 'Total Setup Time (person hours)';
       resultsSheet.getCell(4, 4).font = defaultFont;
       resultsSheet.getCell(4, 4).value =
-        calculateResults.data['Decon Hours per Day'];
+        calculateResults.data['Total Setup Time'];
 
       resultsSheet.getCell(5, 3).font = labelFont;
-      resultsSheet.getCell(5, 3).value = 'Decon Personnel Hours per Day';
+      resultsSheet.getCell(5, 3).value =
+        'Total Application Time (person hours)';
       resultsSheet.getCell(5, 4).font = defaultFont;
       resultsSheet.getCell(5, 4).value =
-        calculateResults.data['Decon Personnel hours per Day'];
+        calculateResults.data['Total Application Time'];
 
       resultsSheet.getCell(6, 3).font = labelFont;
-      resultsSheet.getCell(6, 3).value = 'User Specified Decon Team Labor Cost';
+      resultsSheet.getCell(6, 3).value = 'Total Residence Time (person hours)';
       resultsSheet.getCell(6, 4).font = defaultFont;
       resultsSheet.getCell(6, 4).value =
-        calculateResults.data['User Specified Decon Team Labor Cost'];
+        calculateResults.data['Total Residence Time'];
 
       resultsSheet.getCell(7, 3).font = labelFont;
-      resultsSheet.getCell(7, 3).value = 'Time to Prepare Kits (person hours)';
+      resultsSheet.getCell(7, 3).value = 'Total Setup Cost ($)';
       resultsSheet.getCell(7, 4).font = defaultFont;
+      resultsSheet.getCell(7, 4).numFmt = currencyNumberFormat;
       resultsSheet.getCell(7, 4).value =
-        calculateResults.data['Time to Prepare Kits'];
+        calculateResults.data['Total Setup Cost'];
 
       resultsSheet.getCell(8, 3).font = labelFont;
-      resultsSheet.getCell(8, 3).value = 'Time to Collect (person hours)';
+      resultsSheet.getCell(8, 3).value = 'Total Application Cost ($)';
       resultsSheet.getCell(8, 4).font = defaultFont;
+      resultsSheet.getCell(8, 4).numFmt = currencyNumberFormat;
       resultsSheet.getCell(8, 4).value =
-        calculateResults.data['Time to Collect'];
+        calculateResults.data['Total Application Cost'];
 
       resultsSheet.getCell(9, 3).font = labelFont;
-      resultsSheet.getCell(9, 3).value = 'Decon Technology Material Cost';
+      resultsSheet.getCell(9, 3).value = 'Time to Complete Decon (days)';
       resultsSheet.getCell(9, 4).font = defaultFont;
-      resultsSheet.getCell(9, 4).numFmt = currencyNumberFormat;
-      resultsSheet.getCell(9, 4).value =
-        calculateResults.data['Decon Technology Material Cost'];
+      resultsSheet.getCell(9, 4).value = calculateResults.data['Total Time'];
 
       resultsSheet.getCell(10, 3).font = labelFont;
-      resultsSheet.getCell(10, 3).value = 'Decon Personnel Labor Cost';
+      resultsSheet.getCell(10, 3).value = 'Cost to Complete Decon ($)';
       resultsSheet.getCell(10, 4).font = defaultFont;
       resultsSheet.getCell(10, 4).numFmt = currencyNumberFormat;
-      resultsSheet.getCell(10, 4).value =
-        calculateResults.data['Decon Personnel Labor Cost'];
-
-      resultsSheet.getCell(11, 3).font = labelFont;
-      resultsSheet.getCell(11, 3).value = 'Time to Complete Decon (days)';
-      resultsSheet.getCell(11, 4).font = defaultFont;
-      resultsSheet.getCell(11, 4).value =
-        calculateResults.data['Time to Complete Decon'];
-
-      resultsSheet.getCell(12, 3).font = labelFont;
-      resultsSheet.getCell(12, 3).value = 'Total Decon Labor Cost';
-      resultsSheet.getCell(12, 4).font = defaultFont;
-      resultsSheet.getCell(12, 4).numFmt = currencyNumberFormat;
-      resultsSheet.getCell(12, 4).value =
-        calculateResults.data['Total Decon Labor Cost'];
+      resultsSheet.getCell(10, 4).value = calculateResults.data['Total Cost'];
 
       // col 5 & 6
       resultsSheet.mergeCells(3, 5, 3, 6);
       resultsSheet.getCell(3, 5).alignment = columnTitleAlignment;
       resultsSheet.getCell(3, 5).font = columnTitleFont;
-      resultsSheet.getCell(3, 5).value = 'Analysis';
+      resultsSheet.getCell(3, 5).value = 'Waste Totals';
 
       resultsSheet.getCell(4, 5).font = labelFont;
-      resultsSheet.getCell(4, 5).value = 'Time to Complete Analyses (days)';
+      resultsSheet.getCell(4, 5).value =
+        'Total Solid Waste Volume (cubed meters)';
       resultsSheet.getCell(4, 6).font = defaultFont;
       resultsSheet.getCell(4, 6).value =
-        calculateResults.data['Time to Complete Analyses'];
+        calculateResults.data['Solid Waste Volume'];
 
       resultsSheet.getCell(5, 5).font = labelFont;
-      resultsSheet.getCell(5, 5).value = 'Time to Analyze (person hours)';
+      resultsSheet.getCell(5, 5).value = 'Total Solid Waste Mass (kg)';
       resultsSheet.getCell(5, 6).font = defaultFont;
       resultsSheet.getCell(5, 6).value =
-        calculateResults.data['Time to Analyze'];
+        calculateResults.data['Solid Waste Mass'];
 
       resultsSheet.getCell(6, 5).font = labelFont;
-      resultsSheet.getCell(6, 5).value = 'Analysis Labor Cost';
+      resultsSheet.getCell(6, 5).value =
+        'Total Liquid Waste Volume (cubed meters)';
       resultsSheet.getCell(6, 6).font = defaultFont;
       resultsSheet.getCell(6, 6).numFmt = currencyNumberFormat;
       resultsSheet.getCell(6, 6).value =
-        calculateResults.data['Analysis Labor Cost'];
+        calculateResults.data['Liquid Waste Volume'];
 
       resultsSheet.getCell(7, 5).font = labelFont;
-      resultsSheet.getCell(7, 5).value = 'Analysis Material Cost';
+      resultsSheet.getCell(7, 5).value = 'Total Liquid Waste Mass (kg)';
       resultsSheet.getCell(7, 6).font = defaultFont;
       resultsSheet.getCell(7, 6).numFmt = currencyNumberFormat;
       resultsSheet.getCell(7, 6).value =
-        calculateResults.data['Analysis Material Cost'];
+        calculateResults.data['Liquid Waste Mass'];
 
       resultsSheet.getCell(8, 5).font = labelFont;
-      resultsSheet.getCell(8, 5).value = 'Total Waste Volume (L)';
+      resultsSheet.getCell(8, 5).value = 'Total Waste Volume (cubed meters)';
       resultsSheet.getCell(8, 6).font = defaultFont;
-      resultsSheet.getCell(8, 6).value = calculateResults.data['Waste Volume'];
+      resultsSheet.getCell(8, 6).value =
+        calculateResults.data['Total Waste Volume'];
 
       resultsSheet.getCell(9, 5).font = labelFont;
-      resultsSheet.getCell(9, 5).value = 'Total Waste Weight (lbs)';
+      resultsSheet.getCell(9, 5).value = 'Total Waste Mass (kg)';
       resultsSheet.getCell(9, 6).font = defaultFont;
-      resultsSheet.getCell(9, 6).value = calculateResults.data['Waste Weight'];
+      resultsSheet.getCell(9, 6).value =
+        calculateResults.data['Total Waste Mass'];
     }
 
     function addSampleSheet() {
@@ -873,6 +782,14 @@ function CalculateResults() {
               }
             />
             <LabelValue
+              label={
+                <Fragment>
+                  Total Decontamination Area (m<sup>2</sup>)
+                </Fragment>
+              }
+              value={calculateResults.data['Total Decontamination Area']}
+            />
+            <LabelValue
               label="Total Cost ($)"
               value={calculateResults.data['Total Cost']}
               isMonetary={true}
@@ -882,149 +799,71 @@ function CalculateResults() {
               value={calculateResults.data['Total Time']}
             />
             <LabelValue
-              label="Limiting Time Factor"
-              value={calculateResults.data['Limiting Time Factor']}
+              label={
+                <Fragment>
+                  Total Waste Volume (m<sup>3</sup>)
+                </Fragment>
+              }
+              value={calculateResults.data['Total Waste Volume']}
+              isMonetary={true}
+            />
+            <LabelValue
+              label="Total Waste Mass (kg)"
+              value={calculateResults.data['Total Waste Mass']}
             />
             <hr css={resourceTallySeparator} />
 
             <h4>Decon Operation</h4>
             <LabelValue
-              label="Total Required Decon Time (team hrs)"
-              value={calculateResults.data['Total Required Decon Time']}
+              label="Total Setup Time (hrs)"
+              value={calculateResults.data['Total Setup Time']}
             />
             <LabelValue
-              label="Time to Complete Decon (days)"
-              value={calculateResults.data['Time to Complete Decon']}
+              label="Total Application Time (hrs)"
+              value={calculateResults.data['Total Application Time']}
             />
             <LabelValue
-              label="Total Decon Labor Cost ($)"
-              value={calculateResults.data['Total Decon Labor Cost']}
+              label="Total Residence Time (hrs)"
+              value={calculateResults.data['Total Residence Time']}
               isMonetary={true}
             />
             <LabelValue
-              label="Total Decon Material Cost ($)"
-              value={calculateResults.data['Decon Technology Material Cost']}
-              isMonetary={true}
-            />
-            <hr css={resourceTallySeparator} />
-
-            <h4>Analysis Operation</h4>
-            <LabelValue
-              label="Total Required Analysis Time (lab hrs)"
-              value={calculateResults.data['Time to Analyze']}
-            />
-            <LabelValue
-              label="Time to Complete Analyses (days)"
-              value={calculateResults.data['Time to Complete Analyses']}
-            />
-            <LabelValue
-              label="Total Analysis Labor Cost ($)"
-              value={calculateResults.data['Analysis Labor Cost']}
+              label="Total Setup Cost ($)"
+              value={calculateResults.data['Total Setup Cost']}
               isMonetary={true}
             />
             <LabelValue
-              label="Total Analysis Material Cost ($)"
-              value={calculateResults.data['Analysis Material Cost']}
+              label="Total Application Cost ($)"
+              value={calculateResults.data['Total Application Cost']}
               isMonetary={true}
-            />
-            <br />
-
-            <h3>Details</h3>
-            <h4>Spatial Information</h4>
-            <LabelValue
-              label={
-                <Fragment>
-                  Total Sampled Area (ft<sup>2</sup>)
-                </Fragment>
-              }
-              value={calculateResults.data['Total Sampled Area']}
             />
             <LabelValue
               label={
                 <Fragment>
-                  User Specified Total Area of Interest (ft<sup>2</sup>)
+                  Solid Waste Volume (m<sup>3</sup>)
                 </Fragment>
               }
-              value={calculateResults.data['User Specified Total AOI']}
+              value={calculateResults.data['Solid Waste Volume']}
+              isMonetary={true}
             />
             <LabelValue
-              label="Percent of Area Sampled"
-              value={calculateResults.data['Percent of Area Sampled']}
-            />
-            <hr css={resourceTallySeparator} />
-
-            <h4>Decon</h4>
-            <LabelValue
-              label="Decon Hours per Day"
-              value={calculateResults.data['Decon Hours per Day']}
+              label="Solid Waste Mass (kg)"
+              value={calculateResults.data['Solid Waste Mass']}
             />
             <LabelValue
-              label="Decon Personnel Hours per Day"
-              value={calculateResults.data['Decon Personnel hours per Day']}
-            />
-            <LabelValue
-              label="User Specified Decon Team Labor Cost ($)"
-              value={
-                calculateResults.data['User Specified Decon Team Labor Cost']
+              label={
+                <Fragment>
+                  Liquid Waste Volume (m<sup>3</sup>)
+                </Fragment>
               }
+              value={calculateResults.data['Liquid Waste Volume']}
               isMonetary={true}
             />
             <LabelValue
-              label="Time to Prepare Kits (person hours)"
-              value={calculateResults.data['Time to Prepare Kits']}
-            />
-            <LabelValue
-              label="Time to Collect (person hours)"
-              value={calculateResults.data['Time to Collect']}
-            />
-            <LabelValue
-              label="Decon Material Cost ($)"
-              value={calculateResults.data['Decon Technology Material Cost']}
-              isMonetary={true}
-            />
-            <LabelValue
-              label="Decon Personnel Labor Cost ($)"
-              value={calculateResults.data['Decon Personnel Labor Cost']}
-              isMonetary={true}
-            />
-            <LabelValue
-              label="Time to Complete Decon (days)"
-              value={calculateResults.data['Time to Complete Decon']}
-            />
-            <LabelValue
-              label="Total Decon Labor Cost ($)"
-              value={calculateResults.data['Total Decon Labor Cost']}
-              isMonetary={true}
+              label="Liquid Waste Mass (kg)"
+              value={calculateResults.data['Liquid Waste Mass']}
             />
             <hr css={resourceTallySeparator} />
-
-            <h4>Analysis</h4>
-            <LabelValue
-              label="Time to Complete Analyses (days)"
-              value={calculateResults.data['Time to Complete Analyses']}
-            />
-            <LabelValue
-              label="Time to Analyze (person hours)"
-              value={calculateResults.data['Time to Analyze']}
-            />
-            <LabelValue
-              label="Analysis Labor Cost ($)"
-              value={calculateResults.data['Analysis Labor Cost']}
-              isMonetary={true}
-            />
-            <LabelValue
-              label="Analysis Material Cost ($)"
-              value={calculateResults.data['Analysis Material Cost']}
-              isMonetary={true}
-            />
-            <LabelValue
-              label="Total Waste Volume (L)"
-              value={calculateResults.data['Waste Volume']}
-            />
-            <LabelValue
-              label="Total Waste Weight (lbs)"
-              value={calculateResults.data['Waste Weight']}
-            />
           </div>
           <div>
             {downloadStatus === 'fetching' && <LoadingSpinner />}

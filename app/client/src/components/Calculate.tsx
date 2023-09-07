@@ -8,44 +8,47 @@ import React, {
   useState,
 } from 'react';
 import { css } from '@emotion/react';
+import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
+import Graphic from '@arcgis/core/Graphic';
 // import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
 // import PopupTemplate from '@arcgis/core/PopupTemplate';
 // components
 // import { AccordionList, AccordionItem } from 'components/Accordion';
-// import LoadingSpinner from 'components/LoadingSpinner';
-// import Select from 'components/Select';
+import LoadingSpinner from 'components/LoadingSpinner';
+import { contaminationMapPopup } from 'components/MapPopup';
+import Select from 'components/Select';
 import ShowLessMore from 'components/ShowLessMore';
 // import NavigationButton from 'components/NavigationButton';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 // import { useServicesContext } from 'contexts/LookupFiles';
-// import { NavigationContext } from 'contexts/Navigation';
+import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // types
-// import { LayerType } from 'types/Layer';
+import { LayerType } from 'types/Layer';
 // import { ErrorType } from 'types/Misc';
 // config
-// import {
-//   contaminationHitsSuccessMessage,
-//   featureNotAvailableMessage,
-//   noContaminationGraphicsMessage,
-//   noContaminationMapMessage,
-//   noSampleLayerMessage,
-//   noSamplesMessage,
-//   webServiceErrorMessage,
-// } from 'config/errorMessages';
+import {
+  // contaminationHitsSuccessMessage,
+  // featureNotAvailableMessage,
+  noContaminationGraphicsMessage,
+  noContaminationMapMessage,
+  noSampleLayerMessage,
+  noSamplesMessage,
+  // webServiceErrorMessage,
+} from 'config/errorMessages';
 // utils
 // import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
 import { CalculateResultsType } from 'types/CalculateResults';
 // import { geoprocessorFetch } from 'utils/fetchUtils';
 // import { useDynamicPopup } from 'utils/hooks';
-import {
-  removeZValues,
-  // updateLayerEdits
-} from 'utils/sketchUtils';
+// import {
+//   removeZValues,
+//   // updateLayerEdits
+// } from 'utils/sketchUtils';
 // import { chunkArray, createErrorObject } from 'utils/utils';
 // styles
-// import { reactSelectStyles } from 'styles';
+import { reactSelectStyles } from 'styles';
 
 // type ContaminationResultsType = {
 //   status:
@@ -73,12 +76,19 @@ function getGraphics(map: __esri.Map, layerId: string) {
   if (tempGroupLayer) {
     groupLayer = tempGroupLayer as __esri.GroupLayer;
     groupLayer.layers.forEach((layer) => {
-      if (layer.type !== 'graphics' || layer.id.includes('-points')) return;
+      console.log('layer.id: ', layer.id);
+      console.log('layer.type: ', layer.type);
+      if (
+        layer.type !== 'graphics' ||
+        layer.id.includes('-points') ||
+        layer.id.includes('-hybrid')
+      )
+        return;
 
       const graphicsLayer = layer as __esri.GraphicsLayer;
 
       const fullGraphics = graphicsLayer.graphics.clone();
-      fullGraphics.forEach((graphic) => removeZValues(graphic));
+      // fullGraphics.forEach((graphic) => removeZValues(graphic));
       graphics.push(...fullGraphics.toArray());
     });
   }
@@ -86,15 +96,19 @@ function getGraphics(map: __esri.Map, layerId: string) {
   return { groupLayer, graphics };
 }
 
+function convertToArray(item: any | any[]) {
+  return Array.isArray(item) ? item : [item];
+}
+
 // --- styles (Calculate) ---
-const inputStyles = css`
-  width: 100%;
-  height: 36px;
-  margin: 0 0 10px 0;
-  padding-left: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-`;
+// const inputStyles = css`
+//   width: 100%;
+//   height: 36px;
+//   margin: 0 0 10px 0;
+//   padding-left: 8px;
+//   border: 1px solid #ccc;
+//   border-radius: 4px;
+// `;
 
 const submitButtonContainerStyles = css`
   margin-top: 10px;
@@ -122,32 +136,36 @@ const layerInfo = css`
   padding-bottom: 0.5em;
 `;
 
-// const inlineMenuStyles = css`
-//   display: flex;
-//   align-items: center;
-//   justify-content: space-between;
-// `;
+const inlineMenuStyles = css`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
 
-// const addButtonStyles = css`
-//   margin: 0;
-//   height: 38px; /* same height as ReactSelect */
-// `;
+const addButtonStyles = css`
+  margin: 0;
+  height: 38px; /* same height as ReactSelect */
+`;
 
-// const fullWidthSelectStyles = css`
-//   width: 100%;
-//   margin-right: 10px;
-// `;
+const fullWidthSelectStyles = css`
+  width: 100%;
+  margin-right: 10px;
+`;
 
 // --- components (Calculate) ---
 function Calculate() {
-  // const { setGoTo, setGoToOptions, trainingMode } =
-  //   useContext(NavigationContext);
   const {
-    edits,
+    setGoTo,
+    setGoToOptions,
+    // trainingMode,
+  } = useContext(NavigationContext);
+  const {
+    // edits,
     // setEdits,
     layers,
     // setLayers,
     map,
+    mapView,
     // sketchLayer,
     selectedScenario,
     // getGpMaxRecordCount,
@@ -155,70 +173,70 @@ function Calculate() {
   const {
     calculateResults,
     contaminationMap,
-    inputNumLabHours,
-    inputNumLabs,
-    inputNumSamplingHours,
-    inputNumSamplingPersonnel,
-    inputNumSamplingShifts,
-    inputNumSamplingTeams,
-    inputSamplingLaborCost,
-    inputSurfaceArea,
-    resetCalculateContext,
+    // inputNumLabHours,
+    // inputNumLabs,
+    // inputNumSamplingHours,
+    // inputNumSamplingPersonnel,
+    // inputNumSamplingShifts,
+    // inputNumSamplingTeams,
+    // inputSamplingLaborCost,
+    // inputSurfaceArea,
+    // resetCalculateContext,
     setCalculateResults,
     setContaminationMap,
-    setInputNumLabHours,
-    setInputNumLabs,
-    setInputNumSamplingHours,
-    setInputNumSamplingPersonnel,
-    setInputNumSamplingShifts,
-    setInputNumSamplingTeams,
-    setInputSamplingLaborCost,
-    setInputSurfaceArea,
+    // setInputNumLabHours,
+    // setInputNumLabs,
+    // setInputNumSamplingHours,
+    // setInputNumSamplingPersonnel,
+    // setInputNumSamplingShifts,
+    // setInputNumSamplingTeams,
+    // setInputSamplingLaborCost,
+    // setInputSurfaceArea,
     setUpdateContextValues,
   } = useContext(CalculateContext);
 
   // const getPopupTemplate = useDynamicPopup();
   // const services = useServicesContext();
 
-  // sync the inputs with settings pulled from AGO
-  const [pageInitialized, setPageInitialized] = useState(false);
-  useEffect(() => {
-    if (!selectedScenario || pageInitialized) return;
-    setPageInitialized(true);
+  // // sync the inputs with settings pulled from AGO
+  // const [pageInitialized, setPageInitialized] = useState(false);
+  // useEffect(() => {
+  //   if (!selectedScenario || pageInitialized) return;
+  //   setPageInitialized(true);
 
-    const {
-      NUM_LAB_HOURS: numLabHours,
-      NUM_LABS: numLabs,
-      NUM_SAMPLING_HOURS: numSamplingHours,
-      NUM_SAMPLING_PERSONNEL: numSamplingPersonnel,
-      NUM_SAMPLING_SHIFTS: numSamplingShifts,
-      NUM_SAMPLING_TEAMS: numSamplingTeams,
-      SAMPLING_LABOR_COST: samplingLaborCost,
-      SURFACE_AREA: surfaceArea,
-    } = selectedScenario.calculateSettings.current;
+  //   const {
+  //     NUM_LAB_HOURS: numLabHours,
+  //     NUM_LABS: numLabs,
+  //     NUM_SAMPLING_HOURS: numSamplingHours,
+  //     NUM_SAMPLING_PERSONNEL: numSamplingPersonnel,
+  //     NUM_SAMPLING_SHIFTS: numSamplingShifts,
+  //     NUM_SAMPLING_TEAMS: numSamplingTeams,
+  //     SAMPLING_LABOR_COST: samplingLaborCost,
+  //     SURFACE_AREA: surfaceArea,
+  //   } = selectedScenario.calculateSettings.current;
 
-    setInputNumLabHours(numLabHours);
-    setInputNumLabs(numLabs);
-    setInputNumSamplingHours(numSamplingHours);
-    setInputNumSamplingPersonnel(numSamplingPersonnel);
-    setInputNumSamplingShifts(numSamplingShifts);
-    setInputNumSamplingTeams(numSamplingTeams);
-    setInputSamplingLaborCost(samplingLaborCost);
-    setInputSurfaceArea(surfaceArea);
-  }, [
-    edits,
-    pageInitialized,
-    resetCalculateContext,
-    selectedScenario,
-    setInputNumLabHours,
-    setInputNumLabs,
-    setInputNumSamplingHours,
-    setInputNumSamplingPersonnel,
-    setInputNumSamplingShifts,
-    setInputNumSamplingTeams,
-    setInputSamplingLaborCost,
-    setInputSurfaceArea,
-  ]);
+  //   setInputNumLabHours(numLabHours);
+  //   setInputNumLabs(numLabs);
+  //   setInputNumSamplingHours(numSamplingHours);
+  //   setInputNumSamplingPersonnel(numSamplingPersonnel);
+  //   setInputNumSamplingShifts(numSamplingShifts);
+  //   setInputNumSamplingTeams(numSamplingTeams);
+  //   setInputSamplingLaborCost(samplingLaborCost);
+  //   setInputSurfaceArea(surfaceArea);
+  // }, [
+  //   edits,
+  //   pageInitialized,
+  //   resetCalculateContext,
+  //   selectedScenario,
+  //   setInputNumLabHours,
+  //   setInputNumLabs,
+  //   setInputNumSamplingHours,
+  //   setInputNumSamplingPersonnel,
+  //   setInputNumSamplingShifts,
+  //   setInputNumSamplingTeams,
+  //   setInputSamplingLaborCost,
+  //   setInputSurfaceArea,
+  // ]);
 
   // callback for closing the results panel when leaving this tab
   const closePanel = useCallback(() => {
@@ -256,9 +274,86 @@ function Calculate() {
     setContaminationMap(newContamMap);
   }, [contaminationMap, setContaminationMap, contamMapInitialized, layers]);
 
+  // // updates context to run the calculations
+  // function runCalculationOriginal() {
+  //   if (!map) return;
+
+  //   // set no scenario status
+  //   if (!selectedScenario) {
+  //     setCalculateResults({
+  //       status: 'no-scenario',
+  //       panelOpen: true,
+  //       data: null,
+  //     });
+  //     return;
+  //   }
+
+  //   // set the no layer status
+  //   if (selectedScenario.layers.length === 0) {
+  //     setCalculateResults({ status: 'no-layer', panelOpen: true, data: null });
+  //     return;
+  //   }
+
+  //   const { graphics } = getGraphics(map, selectedScenario.layerId);
+
+  //   // set the no graphics status
+  //   if (graphics.length === 0) {
+  //     setCalculateResults({
+  //       status: 'no-graphics',
+  //       panelOpen: true,
+  //       data: null,
+  //     });
+  //     return;
+  //   }
+
+  //   const {
+  //     NUM_LABS: numLabs,
+  //     NUM_LAB_HOURS: numLabHours,
+  //     NUM_SAMPLING_HOURS: numSamplingHours,
+  //     NUM_SAMPLING_PERSONNEL: numSamplingPersonnel,
+  //     NUM_SAMPLING_SHIFTS: numSamplingShifts,
+  //     NUM_SAMPLING_TEAMS: numSamplingTeams,
+  //     SAMPLING_LABOR_COST: samplingLaborCost,
+  //     SURFACE_AREA: surfaceArea,
+  //   } = selectedScenario.calculateSettings.current;
+
+  //   // if the inputs are the same as context
+  //   // fake a loading spinner and open the panel
+  //   if (
+  //     calculateResults.status === 'success' &&
+  //     numLabs === inputNumLabs &&
+  //     numLabHours === inputNumLabHours &&
+  //     numSamplingHours === inputNumSamplingHours &&
+  //     numSamplingShifts === inputNumSamplingShifts &&
+  //     numSamplingPersonnel === inputNumSamplingPersonnel &&
+  //     numSamplingTeams === inputNumSamplingTeams &&
+  //     samplingLaborCost === inputSamplingLaborCost &&
+  //     surfaceArea === inputSurfaceArea
+  //   ) {
+  //     // display the loading spinner for 1 second
+  //     setCalculateResults({
+  //       status: 'fetching',
+  //       panelOpen: true,
+  //       data: calculateResults.data,
+  //     });
+  //     setTimeout(() => {
+  //       setCalculateResults({
+  //         status: 'success',
+  //         panelOpen: true,
+  //         data: calculateResults.data,
+  //       });
+  //     }, 1000);
+  //     return;
+  //   }
+
+  //   // open the panel and update context to run calculations
+  //   setCalculateResults({ status: 'fetching', panelOpen: true, data: null });
+  //   setUpdateContextValues(true);
+  // }
+
   // updates context to run the calculations
   function runCalculation() {
-    if (!map) return;
+    if (!map || !mapView) return;
 
     // set no scenario status
     if (!selectedScenario) {
@@ -276,6 +371,27 @@ function Calculate() {
       return;
     }
 
+    // set the no contamination map status
+    if (!contaminationMap) {
+      setCalculateResults({ status: 'no-map', panelOpen: false, data: null });
+      return;
+    }
+
+    let contaminationGraphics: __esri.Graphic[] = [];
+    if (contaminationMap?.sketchLayer?.type === 'graphics') {
+      const fullGraphics = contaminationMap.sketchLayer.graphics.clone();
+      contaminationGraphics = fullGraphics.toArray();
+    }
+    if (contaminationGraphics.length === 0) {
+      // display the no graphics on contamination map warning
+      setCalculateResults({
+        status: 'no-contamination-graphics',
+        panelOpen: false,
+        data: null,
+      });
+      return;
+    }
+
     const { graphics } = getGraphics(map, selectedScenario.layerId);
 
     // set the no graphics status
@@ -288,48 +404,147 @@ function Calculate() {
       return;
     }
 
-    const {
-      NUM_LABS: numLabs,
-      NUM_LAB_HOURS: numLabHours,
-      NUM_SAMPLING_HOURS: numSamplingHours,
-      NUM_SAMPLING_PERSONNEL: numSamplingPersonnel,
-      NUM_SAMPLING_SHIFTS: numSamplingShifts,
-      NUM_SAMPLING_TEAMS: numSamplingTeams,
-      SAMPLING_LABOR_COST: samplingLaborCost,
-      SURFACE_AREA: surfaceArea,
-    } = selectedScenario.calculateSettings.current;
-
-    // if the inputs are the same as context
-    // fake a loading spinner and open the panel
-    if (
-      calculateResults.status === 'success' &&
-      numLabs === inputNumLabs &&
-      numLabHours === inputNumLabHours &&
-      numSamplingHours === inputNumSamplingHours &&
-      numSamplingShifts === inputNumSamplingShifts &&
-      numSamplingPersonnel === inputNumSamplingPersonnel &&
-      numSamplingTeams === inputNumSamplingTeams &&
-      samplingLaborCost === inputSamplingLaborCost &&
-      surfaceArea === inputSurfaceArea
-    ) {
-      // display the loading spinner for 1 second
-      setCalculateResults({
-        status: 'fetching',
-        panelOpen: true,
-        data: calculateResults.data,
-      });
-      setTimeout(() => {
-        setCalculateResults({
-          status: 'success',
-          panelOpen: true,
-          data: calculateResults.data,
-        });
-      }, 1000);
-      return;
-    }
-
     // open the panel and update context to run calculations
     setCalculateResults({ status: 'fetching', panelOpen: true, data: null });
+
+    // TODO Calculate Decon from the contamination map
+    // TODO reset contamination map
+    mapView.graphics.removeAll();
+    mapView.graphics.addMany(contaminationGraphics);
+
+    console.log('graphics: ', graphics);
+    console.log('contaminationGraphics: ', contaminationGraphics);
+
+    // loop through decon application layer features
+    graphics.forEach((graphic) => {
+      // loop through contamination map features
+      mapView.graphics.toArray().forEach((contamGraphic) => {
+        // console.log('graphic: ', graphic);
+        // console.log('contamGraphic: ', contamGraphic);
+        // call intersect to see if decon app intersects contamination map
+        if (
+          !graphic.geometry ||
+          !contamGraphic.geometry ||
+          !geometryEngine.intersects(graphic.geometry, contamGraphic.geometry)
+        ) {
+          return;
+        }
+
+        // const contamContainsDecon = geometryEngine.contains(
+        //   contamGraphic.geometry,
+        //   graphic.geometry,
+        // );
+        // console.log('contamContainsDecon: ', contamContainsDecon);
+        // const deconContainsContam = geometryEngine.contains(
+        //   graphic.geometry,
+        //   contamGraphic.geometry,
+        // );
+        // console.log('deconContainsContam: ', deconContainsContam);
+
+        // cut a hole in contamination map using result geometry from above step
+        const newOuterContamGeometry = geometryEngine.difference(
+          contamGraphic.geometry,
+          graphic.geometry,
+        );
+        console.log('newOuterContamGeometry: ', newOuterContamGeometry);
+
+        // create new geometry to fill in the hole
+        const newInnerContamGeometry = geometryEngine.intersect(
+          graphic.geometry,
+          contamGraphic.geometry,
+        );
+        console.log('newInnerContamGeometry: ', newInnerContamGeometry);
+
+        // calculate new CFU values for where decon application was applied (CFU * (1 - %effectiveness) = new CFU)
+        // const curCfu = contamGraphic.attributes.CONTAMVAL;
+        // console.log('curCfu: ', curCfu);
+        const newCfu = contamGraphic.attributes.CONTAMVAL * (1 - 0.95);
+        // console.log('newCfu: ', newCfu);
+
+        // add new graphics to the map and remove the original contamination feature
+        const tempGroupLayer = map.layers.find(
+          (layer) => layer.id === selectedScenario.layerId,
+        ) as __esri.GroupLayer;
+        if (tempGroupLayer && tempGroupLayer.layers.length > 0) {
+          // add inner contam
+          convertToArray(newInnerContamGeometry).forEach(
+            (newGeom: __esri.Geometry) => {
+              mapView.graphics.add(
+                new Graphic({
+                  attributes: {
+                    ...contamGraphic.attributes,
+                    CONTAMVAL: newCfu,
+                    CONTAMREDUCED: true,
+                    CONTAMHIT: true,
+                  },
+                  geometry: newGeom,
+                  symbol: {
+                    type: 'simple-fill',
+                    color: [0, 255, 0],
+                    outline: {
+                      color: [0, 0, 0],
+                    },
+                  } as any,
+                  popupTemplate: {
+                    title: '',
+                    content: contaminationMapPopup,
+                  },
+                }),
+              );
+            },
+          );
+          // add outer contam
+          convertToArray(newOuterContamGeometry).forEach(
+            (newGeom: __esri.Geometry) => {
+              mapView.graphics.add(
+                new Graphic({
+                  attributes: {
+                    ...contamGraphic.attributes,
+                    CONTAMHIT: true,
+                  },
+                  geometry: newGeom,
+                  symbol: {
+                    type: 'simple-fill',
+                    color: contamGraphic.attributes.CONTAMREDUCED
+                      ? [0, 255, 0]
+                      : [255, 0, 0],
+                    outline: {
+                      color: [0, 0, 0],
+                    },
+                  } as any,
+                  popupTemplate: {
+                    title: '',
+                    content: contaminationMapPopup,
+                  },
+                }),
+              );
+            },
+          );
+
+          // remove the original contam graphic
+          mapView.graphics.remove(contamGraphic);
+        }
+      });
+    });
+
+    // remove any contamination plumes where decon was not applied
+    const graphicsToRemove: any[] = [];
+    mapView.graphics.forEach((graphic) => {
+      if (graphic.attributes.CONTAMHIT) return;
+      graphicsToRemove.push(graphic);
+    });
+    mapView.graphics.removeMany(graphicsToRemove);
+
+    // sort the graphics such that the ones where contamination has not been reduced are at the bottom
+    mapView.graphics.sort((a, b) => {
+      if (a.attributes.CONTAMREDUCED === b.attributes.CONTAMREDUCED) return 0;
+      if (a.attributes.CONTAMREDUCED && !b.attributes.CONTAMREDUCED) return 1;
+      else return -1;
+    });
+
+    contaminationMap.listMode = 'show';
+    contaminationMap.sketchLayer.listMode = 'show';
+
     setUpdateContextValues(true);
   }
 
@@ -797,7 +1012,7 @@ function Calculate() {
           </p>
         </div>
 
-        <div css={sectionContainer}>
+        {/* <div css={sectionContainer}>
           <label htmlFor="number-teams-input">
             Number of Available Teams for Decon Applications
           </label>
@@ -919,9 +1134,52 @@ function Calculate() {
               }
             }}
           />
-        </div>
+        </div> */}
 
         <div css={sectionContainer}>
+          <label htmlFor="contamination-map-select-input">
+            Contamination map
+          </label>
+          <div css={inlineMenuStyles}>
+            <Select
+              id="contamination-map-select"
+              inputId="contamination-map-select-input"
+              css={fullWidthSelectStyles}
+              styles={reactSelectStyles as any}
+              value={contaminationMap}
+              onChange={(ev) => setContaminationMap(ev as LayerType)}
+              options={layers.filter(
+                (layer: any) => layer.layerType === 'Contamination Map',
+              )}
+            />
+            <button
+              css={addButtonStyles}
+              onClick={(ev) => {
+                setGoTo('addData');
+                setGoToOptions({
+                  from: 'file',
+                  layerType: 'Contamination Map',
+                });
+              }}
+            >
+              Add
+            </button>
+          </div>
+
+          {calculateResults.status === 'fetching' && <LoadingSpinner />}
+          {/* {calculateResults.status === 'failure' &&
+            webServiceErrorMessage(calculateResults.error)} */}
+          {calculateResults.status === 'no-map' && noContaminationMapMessage}
+          {calculateResults.status === 'no-layer' && noSampleLayerMessage}
+          {calculateResults.status === 'no-graphics' && noSamplesMessage}
+          {calculateResults.status === 'no-contamination-graphics' &&
+            noContaminationGraphicsMessage}
+          {/* {calculateResults.status === 'success' &&
+            calculateResults?.data &&
+            calculateResults.data.length > -1 &&
+            contaminationHitsSuccessMessage(
+              calculateResults.data.length,
+            )} */}
           <div css={submitButtonContainerStyles}>
             <button css={submitButtonStyles} onClick={runCalculation}>
               View Detailed Results

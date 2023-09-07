@@ -170,7 +170,7 @@ const sketchButtonContainerStyles = css`
 
 const sketchButtonStyles = css`
   position: relative;
-  height: 90px;
+  height: 150px;
   width: 33.33%;
   background-color: white;
   color: black;
@@ -204,7 +204,7 @@ const textContainerStyles = css`
 `;
 
 const textStyles = css`
-  max-height: 85px;
+  max-height: 150px;
   word-break: break-word;
 `;
 
@@ -583,7 +583,7 @@ function LocateSamples() {
 
     function isNumberValid(
       numberStr: string | null,
-      valueValidation?: '' | 'greaterThan0',
+      valueValidation?: '' | 'greaterThan0' | 'between0-1',
     ) {
       if (numberStr === undefined || numberStr === null || numberStr === '') {
         return;
@@ -593,6 +593,8 @@ function LocateSamples() {
       if (isNaN(number)) return false;
       if (!valueValidation) return true;
       if (valueValidation === 'greaterThan0' && number > 0) return true;
+      if (valueValidation === 'between0-1' && number > 0 && number <= 1)
+        return true;
 
       return false;
     }
@@ -618,35 +620,51 @@ function LocateSamples() {
     }
     if (!isNumberValid(ttpk)) {
       isValid = false;
-      messageParts.push('Time to Prepare Kits needs a numeric value.');
+      messageParts.push('Setup Time needs a numeric value.');
     }
     if (!isNumberValid(ttc)) {
       isValid = false;
-      messageParts.push('Time to Collect needs a numeric value.');
+      messageParts.push('Application Time needs a numeric value.');
     }
     if (!isNumberValid(tta)) {
       isValid = false;
-      messageParts.push('Time to Analyze needs a numeric value.');
+      messageParts.push('Residence Time needs a numeric value.');
+    }
+    if (!isNumberValid(lodnon, 'between0-1')) {
+      isValid = false;
+      messageParts.push(
+        'Contamination Removal needs a numeric value between 0 and 1.',
+      );
     }
     if (!isNumberValid(mcps)) {
       isValid = false;
-      messageParts.push(
-        'Decon Technology Material Cost needs a numeric value.',
-      );
+      messageParts.push('Setup Cost needs a numeric value.');
+    }
+    if (!isNumberValid(tcps)) {
+      isValid = false;
+      messageParts.push('Cost needs a numeric value.');
     }
     if (!isNumberValid(sa, 'greaterThan0')) {
       isValid = false;
       messageParts.push(
-        'Reference Surface Area needs a numeric value greater than 0.',
+        'Iteration Max Area needs a numeric value greater than 0.',
       );
+    }
+    if (!isNumberValid(wvps)) {
+      isValid = false;
+      messageParts.push('Solid Waste Volume needs a numeric value.');
+    }
+    if (!isNumberValid(wwps)) {
+      isValid = false;
+      messageParts.push('Solid Waste Mass needs a numeric value.');
     }
     if (!isNumberValid(alc)) {
       isValid = false;
-      messageParts.push('Analysis Labor Cost needs a numeric value.');
+      messageParts.push('Liquid Waste Volume needs a numeric value.');
     }
     if (!isNumberValid(amc)) {
       isValid = false;
-      messageParts.push('Analysis Material Cost needs a numeric value.');
+      messageParts.push('Liquid Waste Mass needs a numeric value.');
     }
 
     if (messageParts.length > 0) {
@@ -2128,7 +2146,7 @@ function LocateSamples() {
                           onChange={(ev) => setSampleTypeName(ev.target.value)}
                         />
                         <label htmlFor="sa-input">
-                          Reference Surface Area <em>(sq inch)</em>
+                          Iteration Max Area <em>(square meters)</em>
                         </label>
                         <input
                           id="sa-input"
@@ -2153,7 +2171,7 @@ function LocateSamples() {
                           ]}
                         />
                         <label htmlFor="ttpk-input">
-                          Time to Prepare Kits <em>(person hrs/application)</em>
+                          Setup Time <em>(person hrs)</em>
                         </label>
                         <input
                           id="ttpk-input"
@@ -2163,7 +2181,7 @@ function LocateSamples() {
                           onChange={(ev) => setTtpk(ev.target.value)}
                         />
                         <label htmlFor="ttc-input">
-                          Time to Collect <em>(person hrs/application)</em>
+                          Application Time <em>(person hrs/square meter)</em>
                         </label>
                         <input
                           id="ttc-input"
@@ -2173,7 +2191,7 @@ function LocateSamples() {
                           onChange={(ev) => setTtc(ev.target.value)}
                         />
                         <label htmlFor="tta-input">
-                          Time to Analyze <em>(person hrs/application)</em>
+                          Residence Time <em>(person hrs)</em>
                         </label>
                         <input
                           id="tta-input"
@@ -2193,8 +2211,7 @@ function LocateSamples() {
                           onChange={(ev) => setTtps(ev.target.value)}
                         /> */}
                         <label htmlFor="lod_p-input">
-                          Limit of Detection for Porous Surfaces per Decon (CFU){' '}
-                          <em>(only used for reference)</em>
+                          Log Reduction <em>(only used for reference)</em>
                         </label>
                         <input
                           id="lod_p-input"
@@ -2204,8 +2221,7 @@ function LocateSamples() {
                           onChange={(ev) => setLodp(ev.target.value)}
                         />
                         <label htmlFor="lod_non-input">
-                          Limit of Detection for Nonporous Surfaces per Decon
-                          (CFU) <em>(only used for reference)</em>
+                          Contamination Removal <em>(%)</em>
                         </label>
                         <input
                           id="lod_non-input"
@@ -2215,8 +2231,7 @@ function LocateSamples() {
                           onChange={(ev) => setLodnon(ev.target.value)}
                         />
                         <label htmlFor="mcps-input">
-                          Decon Technology Material Cost{' '}
-                          <em>($/application)</em>
+                          Setup Cost <em>($/iteration)</em>
                         </label>
                         <input
                           id="mcps-input"
@@ -2225,9 +2240,8 @@ function LocateSamples() {
                           value={mcps ? mcps : ''}
                           onChange={(ev) => setMcps(ev.target.value)}
                         />
-                        {/* <label htmlFor="tcps-input">
-                          Total Cost per Decon{' '}
-                          <em>(Labor + Material + Waste)</em>
+                        <label htmlFor="tcps-input">
+                          Cost <em>($/square meter)</em>
                         </label>
                         <input
                           id="tcps-input"
@@ -2235,9 +2249,10 @@ function LocateSamples() {
                           css={inputStyles}
                           value={tcps ? tcps : ''}
                           onChange={(ev) => setTcps(ev.target.value)}
-                        /> */}
+                        />
                         <label htmlFor="wvps-input">
-                          Waste Volume <em>(L/application)</em>
+                          Solid Waste Volume{' '}
+                          <em>(cubed meters/square meter)</em>
                         </label>
                         <input
                           id="wvps-input"
@@ -2247,7 +2262,7 @@ function LocateSamples() {
                           onChange={(ev) => setWvps(ev.target.value)}
                         />
                         <label htmlFor="wwps-input">
-                          Waste Weight <em>(lbs/application)</em>
+                          Solid Waste Mass <em>(kg/square meter)</em>
                         </label>
                         <input
                           id="wwps-input"
@@ -2257,7 +2272,8 @@ function LocateSamples() {
                           onChange={(ev) => setWwps(ev.target.value)}
                         />
                         <label htmlFor="alc-input">
-                          Analysis Labor Cost <em>($)</em>
+                          Liquid Waste Volume{' '}
+                          <em>(cubed meters/square meter)</em>
                         </label>
                         <input
                           id="alc-input"
@@ -2267,7 +2283,7 @@ function LocateSamples() {
                           onChange={(ev) => setAlc(ev.target.value)}
                         />
                         <label htmlFor="amc-input">
-                          Analysis Material Cost <em>($)</em>
+                          Liquid Waste Mass <em>(kg/square meter)</em>
                         </label>
                         <input
                           id="amc-input"

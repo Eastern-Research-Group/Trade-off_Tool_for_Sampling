@@ -956,6 +956,10 @@ function FilePanel() {
           // add sample layer specific attributes
           const timestamp = getCurrentDateTime();
           let uuid = generateUUID();
+          if (layerType.value === 'Contamination Map') {
+            graphic.attributes['CONTAMREDUCED'] = false;
+            graphic.attributes['CONTAMHIT'] = false;
+          }
           if (layerType.value === 'Samples') {
             const { Notes, TYPE } = graphic.attributes;
             if (!sampleAttributes.hasOwnProperty(TYPE)) {
@@ -1225,6 +1229,7 @@ function FilePanel() {
         features.push(graphic);
         graphicsAdded.push(graphic);
       });
+      console.log('features: ', features);
 
       // use jsonUtils to convert the REST API renderer to an ArcGIS JS renderer
       const renderer: __esri.Renderer = rendererJsonUtils.fromJSON(
@@ -1239,6 +1244,7 @@ function FilePanel() {
           content: layer.popupInfo.description,
         };
       }
+      console.log('popupTemplate: ', popupTemplate);
 
       const layerName = getLayerName(layers, file.file.name);
       setNewLayerName(layerName);

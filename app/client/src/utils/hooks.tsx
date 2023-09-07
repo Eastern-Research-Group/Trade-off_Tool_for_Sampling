@@ -341,8 +341,11 @@ export function useGeometryTools() {
       if (!projectedGeometry) return 'ERROR - Projected Geometry is null';
 
       // calulate the area
-      const areaSI = geometryEngine.planarArea(projectedGeometry, 109454);
-      return areaSI;
+      const areaSM = geometryEngine.planarArea(
+        projectedGeometry,
+        'square-meters',
+      );
+      return areaSM;
     },
     [loadedProjection],
   );
@@ -658,7 +661,7 @@ export function useCalculatePlan() {
     let ac = 0;
 
     // caluclate the area for graphics for the selected scenario
-    let totalAreaSquereFeet = 0;
+    let totalAreaSquereMeter = 0;
     const calcGraphics: __esri.Graphic[] = [];
     layers.forEach((layer) => {
       if (
@@ -672,26 +675,26 @@ export function useCalculatePlan() {
         const calcGraphic = graphic.clone();
 
         // calculate the area using the custom hook
-        const areaSI = calculateArea(graphic);
-        if (typeof areaSI !== 'number') {
+        const areaSM = calculateArea(graphic);
+        if (typeof areaSM !== 'number') {
           return;
         }
 
         // convert area to square feet
-        const areaSF = areaSI * 0.00694444;
-        totalAreaSquereFeet = totalAreaSquereFeet + areaSF;
+        const areaSF = areaSM;
+        totalAreaSquereMeter = totalAreaSquereMeter + areaSF;
 
         // Get the number of reference surface areas that are in the actual area.
         // This is to prevent users from cheating the system by drawing larger shapes
         // then the reference surface area and it only getting counted as "1" sample.
         const { SA } = calcGraphic.attributes;
         let areaCount = 1;
-        if (areaSI >= SA) {
-          areaCount = Math.round(areaSI / SA);
+        if (areaSM >= SA) {
+          areaCount = Math.round(areaSM / SA);
         }
 
         // set the AA on the original graphic, so it is visible in the popup
-        graphic.setAttribute('AA', Math.round(areaSI));
+        graphic.setAttribute('AA', Math.round(areaSM));
         graphic.setAttribute('AC', areaCount);
 
         // multiply all of the attributes by the area
@@ -774,7 +777,7 @@ export function useCalculatePlan() {
       ac,
     });
     setCalcGraphics(calcGraphics);
-    setTotalArea(totalAreaSquereFeet);
+    setTotalArea(totalAreaSquereMeter);
   }, [calculateArea, edits, layers, loadedProjection, selectedScenario]);
 
   // perform non-geospatial calculations
@@ -786,114 +789,67 @@ export function useCalculatePlan() {
       return;
     }
 
-    const {
-      NUM_LABS: numLabs,
-      NUM_LAB_HOURS: numLabHours,
-      NUM_SAMPLING_HOURS: numSamplingHours,
-      NUM_SAMPLING_PERSONNEL: numSamplingPersonnel,
-      NUM_SAMPLING_SHIFTS: numSamplingShifts,
-      NUM_SAMPLING_TEAMS: numSamplingTeams,
-      SAMPLING_LABOR_COST: samplingLaborCost,
-      SURFACE_AREA: surfaceArea,
-    } = selectedScenario.calculateSettings.current;
+    const i = totals.sa; // iteration max area
+    const n = totals.ac; // number of iterations (total area / iteration max area)
+    const s = totals.ttpk; // setup time (hrs)
+    const r = totals.tta; // residence time (hrs)
+    const tm = totals.ttc; // time per decon
+    const sc = totals.mcps; // setup cost
+    const cm = totals.tcps; // cost per square meter
 
-    // calculate spatial items
-    let userSpecifiedAOI = null;
-    let percentAreaSampled = null;
-    if (surfaceArea > 0) {
-      userSpecifiedAOI = surfaceArea;
-      percentAreaSampled = (totalArea / surfaceArea) * 100;
-    }
-
-    // calculate the sampling items
-    const samplingTimeHours = totals.ttpk + totals.ttc;
-    const samplingHours =
-      numSamplingTeams * numSamplingHours * numSamplingShifts;
-    const samplingPersonnelHoursPerDay = samplingHours * numSamplingPersonnel;
-    const samplingPersonnelLaborCost = samplingLaborCost / numSamplingPersonnel;
-    const timeCompleteSampling = (totals.ttc + totals.ttpk) / samplingHours;
-    const totalSamplingLaborCost =
-      numSamplingTeams *
-      numSamplingPersonnel *
-      numSamplingHours *
-      numSamplingShifts *
-      samplingPersonnelLaborCost *
-      timeCompleteSampling;
-
-    // calculate lab throughput
-    const totalLabHours = numLabs * numLabHours;
-    let labThroughput = totals.tta / totalLabHours;
-
-    // calculate total cost and time
-    const totalSamplingCost = totalSamplingLaborCost + totals.mcps;
-    const totalAnalysisCost = totals.alc + totals.amc;
-    // const totalCost = totalSamplingCost + totalAnalysisCost;
-    const totalCost = totalSamplingCost;
-
-    // Calculate total time. Note: Total Time is the greater of sample collection time or Analysis Total Time.
-    // If Analysis Time is equal to or greater than Sampling Total Time then the value reported is total Analysis Time Plus one day.
-    // The one day accounts for the time samples get collected and shipped to the lab on day one of the sampling response.
-    let totalTime = timeCompleteSampling;
-    // if (labThroughput + 1 < timeCompleteSampling) {
-    //   totalTime = timeCompleteSampling;
-    // } else {
-    //   labThroughput += 1;
-    //   totalTime = labThroughput;
-    // }
-
-    // Get limiting time factor (will be undefined if they are equal)
-    let limitingFactor: CalculateResultsDataType['Limiting Time Factor'] = '';
-    if (timeCompleteSampling > labThroughput) {
-      limitingFactor = 'Decon';
-    } else {
-      limitingFactor = 'Analysis';
-    }
+    const totalTime = n * (s + r + tm * i);
+    const totalCost = n * (sc + cm * i);
 
     const resultObject: CalculateResultsDataType = {
       // assign input parameters
-      'User Specified Number of Available Teams for Decon': numSamplingTeams,
-      'User Specified Personnel per Decon Team': numSamplingPersonnel,
-      'User Specified Decon Team Hours per Shift': numSamplingHours,
-      'User Specified Decon Team Shifts per Day': numSamplingShifts,
-      'User Specified Decon Team Labor Cost': samplingLaborCost,
-      'User Specified Number of Available Labs for Analysis': numLabs,
-      'User Specified Analysis Lab Hours per Day': numLabHours,
-      'User Specified Surface Area': surfaceArea,
+      // 'User Specified Number of Available Teams for Decon': numSamplingTeams,
+      // 'User Specified Personnel per Decon Team': numSamplingPersonnel,
+      // 'User Specified Decon Team Hours per Shift': numSamplingHours,
+      // 'User Specified Decon Team Shifts per Day': numSamplingShifts,
+      // 'User Specified Decon Team Labor Cost': samplingLaborCost,
+      // 'User Specified Number of Available Labs for Analysis': numLabs,
+      // 'User Specified Analysis Lab Hours per Day': numLabHours,
+      // 'User Specified Surface Area': surfaceArea,
       'Total Number of User-Defined Decon Technologies': calcGraphics.length,
 
       // assign counts
       'Total Number of Decon Applications': totals.ac,
-      'Total Sampled Area': totalArea,
-      'Time to Prepare Kits': totals.ttpk,
-      'Time to Collect': totals.ttc,
-      'Decon Technology Material Cost': totals.mcps,
-      'Time to Analyze': totals.tta,
-      'Analysis Labor Cost': totals.alc,
-      'Analysis Material Cost': totals.amc,
-      'Waste Volume': totals.wvps,
-      'Waste Weight': totals.wwps,
+      'Total Decontamination Area': totalArea,
+      'Total Setup Time': totals.ttpk,
+      'Total Application Time': totals.ttc,
+      'Total Residence Time': totals.tta,
+      'Average Contamination Removal':
+        (totals.lod_non / calcGraphics.length) * 100,
+      'Total Setup Cost': totals.mcps,
+      'Total Application Cost': totals.tcps,
+      'Solid Waste Volume': totals.wvps,
+      'Solid Waste Mass': totals.wwps,
+      'Liquid Waste Volume': totals.alc,
+      'Liquid Waste Mass': totals.amc,
+      'Total Waste Volume': totals.wvps + totals.alc,
+      'Total Waste Mass': totals.wwps + totals.amc,
 
       // spatial items
-      'User Specified Total AOI': userSpecifiedAOI,
-      'Percent of Area Sampled': percentAreaSampled,
+      // 'User Specified Total AOI': userSpecifiedAOI,
+      // 'Percent of Area Sampled': percentAreaSampled,
 
       // sampling
-      'Total Required Decon Time': samplingTimeHours,
-      'Decon Hours per Day': samplingHours,
-      'Decon Personnel hours per Day': samplingPersonnelHoursPerDay,
-      'Decon Personnel Labor Cost': samplingPersonnelLaborCost,
-      'Time to Complete Decon': timeCompleteSampling,
-      'Total Decon Labor Cost': totalSamplingLaborCost,
-      'Total Decon Cost': totalSamplingCost,
-      'Total Analysis Cost': totalAnalysisCost,
+      // 'Total Required Decon Time': samplingTimeHours,
+      // 'Decon Hours per Day': samplingHours,
+      // 'Decon Personnel hours per Day': samplingPersonnelHoursPerDay,
+      // 'Decon Personnel Labor Cost': samplingPersonnelLaborCost,
+      // 'Time to Complete Decon': timeCompleteSampling,
+      // 'Total Decon Labor Cost': totalSamplingLaborCost,
+      // 'Total Decon Cost': totalSamplingCost,
+      // 'Total Analysis Cost': totalAnalysisCost,
 
-      // analysis
-      'Time to Complete Analyses': labThroughput,
+      // // analysis
+      // 'Time to Complete Analyses': labThroughput,
 
       //totals
       'Total Cost': totalCost,
       'Total Time': Math.round(totalTime * 10) / 10,
-      'Limiting Time Factor': limitingFactor,
+      // 'Limiting Time Factor': limitingFactor,
     };
 
     // display loading spinner for 1 second
@@ -904,6 +860,129 @@ export function useCalculatePlan() {
         data: resultObject,
       };
     });
+
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// Old Stuff      /////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////
+
+    // const {
+    //   NUM_LABS: numLabs,
+    //   NUM_LAB_HOURS: numLabHours,
+    //   NUM_SAMPLING_HOURS: numSamplingHours,
+    //   NUM_SAMPLING_PERSONNEL: numSamplingPersonnel,
+    //   NUM_SAMPLING_SHIFTS: numSamplingShifts,
+    //   NUM_SAMPLING_TEAMS: numSamplingTeams,
+    //   SAMPLING_LABOR_COST: samplingLaborCost,
+    //   SURFACE_AREA: surfaceArea,
+    // } = selectedScenario.calculateSettings.current;
+
+    // // calculate spatial items
+    // let userSpecifiedAOI = null;
+    // let percentAreaSampled = null;
+    // if (surfaceArea > 0) {
+    //   userSpecifiedAOI = surfaceArea;
+    //   percentAreaSampled = (totalArea / surfaceArea) * 100;
+    // }
+
+    // // calculate the sampling items
+    // const samplingTimeHours = totals.ttpk + totals.ttc;
+    // const samplingHours =
+    //   numSamplingTeams * numSamplingHours * numSamplingShifts;
+    // const samplingPersonnelHoursPerDay = samplingHours * numSamplingPersonnel;
+    // const samplingPersonnelLaborCost = samplingLaborCost / numSamplingPersonnel;
+    // const timeCompleteSampling = (totals.ttc + totals.ttpk) / samplingHours;
+    // const totalSamplingLaborCost =
+    //   numSamplingTeams *
+    //   numSamplingPersonnel *
+    //   numSamplingHours *
+    //   numSamplingShifts *
+    //   samplingPersonnelLaborCost *
+    //   timeCompleteSampling;
+
+    // // calculate lab throughput
+    // const totalLabHours = numLabs * numLabHours;
+    // let labThroughput = totals.tta / totalLabHours;
+
+    // // calculate total cost and time
+    // const totalSamplingCost = totalSamplingLaborCost + totals.mcps;
+    // const totalAnalysisCost = totals.alc + totals.amc;
+    // // const totalCost = totalSamplingCost + totalAnalysisCost;
+    // const totalCost = totalSamplingCost;
+
+    // // Calculate total time. Note: Total Time is the greater of sample collection time or Analysis Total Time.
+    // // If Analysis Time is equal to or greater than Sampling Total Time then the value reported is total Analysis Time Plus one day.
+    // // The one day accounts for the time samples get collected and shipped to the lab on day one of the sampling response.
+    // // let totalTime = timeCompleteSampling;
+    // // if (labThroughput + 1 < timeCompleteSampling) {
+    // //   totalTime = timeCompleteSampling;
+    // // } else {
+    // //   labThroughput += 1;
+    // //   totalTime = labThroughput;
+    // // }
+
+    // // Get limiting time factor (will be undefined if they are equal)
+    // let limitingFactor: CalculateResultsDataType['Limiting Time Factor'] = '';
+    // if (timeCompleteSampling > labThroughput) {
+    //   limitingFactor = 'Decon';
+    // } else {
+    //   limitingFactor = 'Analysis';
+    // }
+
+    // const resultObject: CalculateResultsDataType = {
+    //   // assign input parameters
+    //   'User Specified Number of Available Teams for Decon': numSamplingTeams,
+    //   'User Specified Personnel per Decon Team': numSamplingPersonnel,
+    //   'User Specified Decon Team Hours per Shift': numSamplingHours,
+    //   'User Specified Decon Team Shifts per Day': numSamplingShifts,
+    //   'User Specified Decon Team Labor Cost': samplingLaborCost,
+    //   'User Specified Number of Available Labs for Analysis': numLabs,
+    //   'User Specified Analysis Lab Hours per Day': numLabHours,
+    //   'User Specified Surface Area': surfaceArea,
+    //   'Total Number of User-Defined Decon Technologies': calcGraphics.length,
+
+    //   // assign counts
+    //   'Total Number of Decon Applications': totals.ac,
+    //   'Total Sampled Area': totalArea,
+    //   'Time to Prepare Kits': totals.ttpk,
+    //   'Time to Collect': totals.ttc,
+    //   'Decon Technology Material Cost': totals.mcps,
+    //   'Time to Analyze': totals.tta,
+    //   'Analysis Labor Cost': totals.alc,
+    //   'Analysis Material Cost': totals.amc,
+    //   'Waste Volume': totals.wvps,
+    //   'Waste Weight': totals.wwps,
+
+    //   // spatial items
+    //   'User Specified Total AOI': userSpecifiedAOI,
+    //   'Percent of Area Sampled': percentAreaSampled,
+
+    //   // sampling
+    //   'Total Required Decon Time': samplingTimeHours,
+    //   'Decon Hours per Day': samplingHours,
+    //   'Decon Personnel hours per Day': samplingPersonnelHoursPerDay,
+    //   'Decon Personnel Labor Cost': samplingPersonnelLaborCost,
+    //   'Time to Complete Decon': timeCompleteSampling,
+    //   'Total Decon Labor Cost': totalSamplingLaborCost,
+    //   'Total Decon Cost': totalSamplingCost,
+    //   'Total Analysis Cost': totalAnalysisCost,
+
+    //   // analysis
+    //   'Time to Complete Analyses': labThroughput,
+
+    //   //totals
+    //   'Total Cost': totalCost,
+    //   'Total Time': Math.round(totalTime * 10) / 10,
+    //   'Limiting Time Factor': limitingFactor,
+    // };
+
+    // // display loading spinner for 1 second
+    // setCalculateResults((calculateResults: CalculateResultsType) => {
+    //   return {
+    //     status: 'success',
+    //     panelOpen: calculateResults.panelOpen,
+    //     data: resultObject,
+    //   };
+    // });
   }, [calcGraphics, selectedScenario, setCalculateResults, totals, totalArea]);
 
   // Updates the calculation context values with the inputs.

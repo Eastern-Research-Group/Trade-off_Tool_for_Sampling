@@ -483,12 +483,12 @@ function NavBar({ height }: Props) {
                   ).toLocaleString()}
                 </div> */}
                 <div css={mainTallyStyles}>
-                  Total Waste Volume (L):{' '}
-                  {calculateResults.data['Waste Volume'].toLocaleString()}
+                  Total Waste Volume (m<sup>3</sup>):{' '}
+                  {calculateResults.data['Total Waste Volume'].toLocaleString()}
                 </div>
                 <div css={mainTallyStyles}>
-                  Total Waste Weight (lbs):{' '}
-                  {calculateResults.data['Waste Weight'].toLocaleString()}
+                  Total Waste Mass (kg):{' '}
+                  {calculateResults.data['Total Waste Mass'].toLocaleString()}
                 </div>
                 {/* <hr css={resourceTallySeparator} /> */}
               </div>

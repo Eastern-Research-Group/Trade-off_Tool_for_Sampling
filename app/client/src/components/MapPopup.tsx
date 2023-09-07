@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useState,
 } from 'react';
+import { createRoot } from 'react-dom/client';
 import { css } from '@emotion/react';
 import Select from 'components/Select';
 //components
@@ -432,6 +433,77 @@ function MapPopup({
       )}
     </div>
   );
+}
+
+type MapPopupSimpleProps = {
+  feature: any;
+  fieldInfos: FieldInfos;
+};
+
+function MapPopupSimple({ feature, fieldInfos }: MapPopupSimpleProps) {
+  const [showMore, setShowMore] = useState(false);
+
+  return (
+    <div css={containerStyles}>
+      {fieldInfos.length > 0 && (
+        <div css={inputContainerStyles}>
+          <table className="esri-widget__table">
+            <tbody>
+              {fieldInfos.map((fieldInfo, index) => {
+                if (!showMore && index > 4) return null;
+
+                const value = feature.graphic.attributes[fieldInfo.fieldName];
+                return (
+                  <tr key={index}>
+                    <th className="esri-feature__field-header">
+                      {fieldInfo.label}
+                    </th>
+                    <td className="esri-feature__field-data">
+                      {typeof value !== 'boolean'
+                        ? value
+                        : value
+                        ? 'Yes'
+                        : 'No'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <button css={linkButtonStyles} onClick={() => setShowMore(!showMore)}>
+            <i
+              css={iconStyles}
+              className={`fas fa-arrow-${showMore ? 'up' : 'down'}`}
+            />
+            Show {showMore ? 'Less' : 'More'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function contaminationMapPopup(feature: any) {
+  const content = (
+    <MapPopupSimple
+      feature={feature}
+      fieldInfos={[
+        { label: 'Contamination Type', fieldName: 'CONTAMTYPE' },
+        { label: 'Contamination Unit', fieldName: 'CONTAMUNIT' },
+        { label: 'Contamination Value', fieldName: 'CONTAMVAL' },
+        { label: 'Contamination Reduced', fieldName: 'CONTAMREDUCED' },
+        { label: 'Has Decontamination been Applied', fieldName: 'CONTAMHIT' },
+        { label: 'FID', fieldName: 'FID' },
+        { label: 'ID', fieldName: 'Id' },
+      ]}
+    />
+  );
+
+  // wrap the content for esri
+  const contentContainer = document.createElement('div');
+  createRoot(contentContainer).render(content);
+
+  return contentContainer;
 }
 
 export default MapPopup;
