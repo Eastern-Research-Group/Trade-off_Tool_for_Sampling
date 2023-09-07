@@ -690,7 +690,7 @@ export function useCalculatePlan() {
         const { SA } = calcGraphic.attributes;
         let areaCount = 1;
         if (areaSM >= SA) {
-          areaCount = Math.round(areaSM / SA);
+          areaCount = Math.ceil(areaSM / SA);
         }
 
         // set the AA on the original graphic, so it is visible in the popup
@@ -717,7 +717,7 @@ export function useCalculatePlan() {
           ttpk = ttpk + Number(TTPK) * areaCount;
         }
         if (TTC) {
-          ttc = ttc + Number(TTC) * areaCount;
+          ttc = ttc + Number(TTC) * areaSM;
         }
         if (TTA) {
           tta = tta + Number(TTA) * areaCount;
@@ -735,22 +735,22 @@ export function useCalculatePlan() {
           mcps = mcps + Number(MCPS) * areaCount;
         }
         if (TCPS) {
-          tcps = tcps + Number(TCPS) * areaCount;
+          tcps = tcps + Number(TCPS) * areaSM;
         }
         if (WVPS) {
-          wvps = wvps + Number(WVPS) * areaCount;
+          wvps = wvps + Number(WVPS) * areaSM;
         }
         if (WWPS) {
-          wwps = wwps + Number(WWPS) * areaCount;
+          wwps = wwps + Number(WWPS) * areaSM;
         }
         if (SA) {
           sa = sa + Number(SA);
         }
         if (ALC) {
-          alc = alc + Number(ALC) * areaCount;
+          alc = alc + Number(ALC) * areaSM;
         }
         if (AMC) {
-          amc = amc + Number(AMC) * areaCount;
+          amc = amc + Number(AMC) * areaSM;
         }
         if (areaCount) {
           ac = ac + Number(areaCount);
@@ -789,17 +789,16 @@ export function useCalculatePlan() {
       return;
     }
 
-    const i = totals.sa; // iteration max area
-    const n = totals.ac; // number of iterations (total area / iteration max area)
+    console.log('totals: ', totals);
     const s = totals.ttpk; // setup time (hrs)
     const r = totals.tta; // residence time (hrs)
     const tm = totals.ttc; // time per decon
     const sc = totals.mcps; // setup cost
     const cm = totals.tcps; // cost per square meter
 
-    const totalTimeMinutes = n * (s + r + tm * i);
-    const totalTime = totalTimeMinutes / 60 / 24;
-    const totalCost = n * (sc + cm * i);
+    const totalTimeHours = s + r + tm;
+    const totalTime = totalTimeHours / 60 / 24;
+    const totalCost = sc + cm;
 
     const resultObject: CalculateResultsDataType = {
       // assign input parameters

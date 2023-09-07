@@ -777,7 +777,7 @@ function CalculateResults() {
               value={calculateResults.data['Total Decontamination Area']}
             />
             <LabelValue
-              label="Total Cost"
+              label="Total Cost ($)"
               value={calculateResults.data['Total Cost']}
               isMonetary={true}
             />
@@ -813,12 +813,12 @@ function CalculateResults() {
               value={calculateResults.data['Total Residence Time']}
             />
             <LabelValue
-              label="Total Setup Cost"
+              label="Total Setup  ($)"
               value={calculateResults.data['Total Setup Cost']}
               isMonetary={true}
             />
             <LabelValue
-              label="Total Application Cost"
+              label="Total Application Cost ($)"
               value={calculateResults.data['Total Application Cost']}
               isMonetary={true}
             />
