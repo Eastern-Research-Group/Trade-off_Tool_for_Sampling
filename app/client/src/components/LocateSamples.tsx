@@ -2146,7 +2146,7 @@ function LocateSamples() {
                           onChange={(ev) => setSampleTypeName(ev.target.value)}
                         />
                         <label htmlFor="sa-input">
-                          Iteration Max Area <em>(square meters)</em>
+                          Iteration Max Area <em>(sq m)</em>
                         </label>
                         <input
                           id="sa-input"
@@ -2171,7 +2171,7 @@ function LocateSamples() {
                           ]}
                         />
                         <label htmlFor="ttpk-input">
-                          Setup Time <em>(person hrs)</em>
+                          Setup Time <em>(hrs)</em>
                         </label>
                         <input
                           id="ttpk-input"
@@ -2181,7 +2181,7 @@ function LocateSamples() {
                           onChange={(ev) => setTtpk(ev.target.value)}
                         />
                         <label htmlFor="ttc-input">
-                          Application Time <em>(person hrs/square meter)</em>
+                          Application Time <em>(hrs/sq m)</em>
                         </label>
                         <input
                           id="ttc-input"
@@ -2191,7 +2191,7 @@ function LocateSamples() {
                           onChange={(ev) => setTtc(ev.target.value)}
                         />
                         <label htmlFor="tta-input">
-                          Residence Time <em>(person hrs)</em>
+                          Residence Time <em>(hrs)</em>
                         </label>
                         <input
                           id="tta-input"
@@ -2231,7 +2231,7 @@ function LocateSamples() {
                           onChange={(ev) => setLodnon(ev.target.value)}
                         />
                         <label htmlFor="mcps-input">
-                          Setup Cost <em>($/iteration)</em>
+                          Setup Cost <em>($/application)</em>
                         </label>
                         <input
                           id="mcps-input"
@@ -2241,7 +2241,7 @@ function LocateSamples() {
                           onChange={(ev) => setMcps(ev.target.value)}
                         />
                         <label htmlFor="tcps-input">
-                          Cost <em>($/square meter)</em>
+                          Application Cost <em>($/sq m)</em>
                         </label>
                         <input
                           id="tcps-input"
@@ -2251,8 +2251,7 @@ function LocateSamples() {
                           onChange={(ev) => setTcps(ev.target.value)}
                         />
                         <label htmlFor="wvps-input">
-                          Solid Waste Volume{' '}
-                          <em>(cubed meters/square meter)</em>
+                          Solid Waste Volume <em>(cu m/sq m)</em>
                         </label>
                         <input
                           id="wvps-input"
@@ -2262,7 +2261,7 @@ function LocateSamples() {
                           onChange={(ev) => setWvps(ev.target.value)}
                         />
                         <label htmlFor="wwps-input">
-                          Solid Waste Mass <em>(kg/square meter)</em>
+                          Solid Waste Mass <em>(kg/sq m)</em>
                         </label>
                         <input
                           id="wwps-input"
@@ -2272,8 +2271,7 @@ function LocateSamples() {
                           onChange={(ev) => setWwps(ev.target.value)}
                         />
                         <label htmlFor="alc-input">
-                          Liquid Waste Volume{' '}
-                          <em>(cubed meters/square meter)</em>
+                          Liquid Waste Volume <em>(cu m/sq m)</em>
                         </label>
                         <input
                           id="alc-input"
@@ -2283,7 +2281,7 @@ function LocateSamples() {
                           onChange={(ev) => setAlc(ev.target.value)}
                         />
                         <label htmlFor="amc-input">
-                          Liquid Waste Mass <em>(kg/square meter)</em>
+                          Liquid Waste Mass <em>(kg/sq m)</em>
                         </label>
                         <input
                           id="amc-input"

@@ -81,7 +81,7 @@ const navIconStyles = (color: string) => {
 };
 
 const navTextStyles = css`
-  width: 70px;
+  width: 68px;
 `;
 
 // --- components (NavButton) ---

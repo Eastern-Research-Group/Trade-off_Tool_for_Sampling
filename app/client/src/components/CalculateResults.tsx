@@ -393,47 +393,39 @@ function CalculateResults() {
       summarySheet.getCell(7, 3).value = 'Waste Totals';
 
       summarySheet.getCell(8, 3).font = labelFont;
-      summarySheet.getCell(8, 3).value =
-        'Total Solid Waste Volume (cubed meters/square meter)';
+      summarySheet.getCell(8, 3).value = 'Total Solid Waste Volume (cu m/sq m)';
       summarySheet.getCell(8, 4).font = defaultFont;
       summarySheet.getCell(8, 4).value =
         calculateResults.data['Solid Waste Volume'];
 
       summarySheet.getCell(9, 3).font = labelFont;
-      summarySheet.getCell(9, 3).value =
-        'Total Solid Waste Mass (kg/square meter)';
+      summarySheet.getCell(9, 3).value = 'Total Solid Waste Mass (kg/sq m)';
       summarySheet.getCell(9, 4).font = defaultFont;
       summarySheet.getCell(9, 4).value =
         calculateResults.data['Solid Waste Mass'];
 
       summarySheet.getCell(10, 3).font = labelFont;
       summarySheet.getCell(10, 3).value =
-        'Total Liquid Waste Volume (cubed meters/square meter)';
+        'Total Liquid Waste Volume (cu m/sq m)';
       summarySheet.getCell(10, 4).font = defaultFont;
-      summarySheet.getCell(10, 4).numFmt = currencyNumberFormat;
       summarySheet.getCell(10, 4).value =
         calculateResults.data['Liquid Waste Volume'];
 
       summarySheet.getCell(11, 3).font = labelFont;
-      summarySheet.getCell(11, 3).value =
-        'Total Liquid Waste Mass (kg/square meter)';
+      summarySheet.getCell(11, 3).value = 'Total Liquid Waste Mass (kg/sq m)';
       summarySheet.getCell(11, 4).font = defaultFont;
-      summarySheet.getCell(11, 4).numFmt = currencyNumberFormat;
       summarySheet.getCell(11, 4).value =
         calculateResults.data['Liquid Waste Mass'];
 
       summarySheet.getCell(12, 3).font = labelFont;
-      summarySheet.getCell(12, 3).value =
-        'Total Waste Volume (cubed meters/square meter)';
+      summarySheet.getCell(12, 3).value = 'Total Waste Volume (cu m/sq m)';
       summarySheet.getCell(12, 4).font = defaultFont;
-      summarySheet.getCell(12, 4).numFmt = currencyNumberFormat;
       summarySheet.getCell(12, 4).value =
         calculateResults.data['Total Waste Volume'];
 
       summarySheet.getCell(13, 3).font = labelFont;
-      summarySheet.getCell(13, 3).value = 'Total Waste Mass (kg/square meter)';
+      summarySheet.getCell(13, 3).value = 'Total Waste Mass (kg/sq m)';
       summarySheet.getCell(13, 4).font = defaultFont;
-      summarySheet.getCell(13, 4).numFmt = currencyNumberFormat;
       summarySheet.getCell(13, 4).value =
         calculateResults.data['Total Waste Mass'];
 
@@ -536,33 +528,32 @@ function CalculateResults() {
       //   calculateResults.data['User Specified Decon Team Labor Cost'];
 
       resultsSheet.getCell(4, 3).font = labelFont;
-      resultsSheet.getCell(4, 3).value = 'Total Setup Time (person hours)';
+      resultsSheet.getCell(4, 3).value = 'Total Setup Time (hrs)';
       resultsSheet.getCell(4, 4).font = defaultFont;
       resultsSheet.getCell(4, 4).value =
         calculateResults.data['Total Setup Time'];
 
       resultsSheet.getCell(5, 3).font = labelFont;
-      resultsSheet.getCell(5, 3).value =
-        'Total Application Time (person hours)';
+      resultsSheet.getCell(5, 3).value = 'Total Application Time (hrs)';
       resultsSheet.getCell(5, 4).font = defaultFont;
       resultsSheet.getCell(5, 4).value =
         calculateResults.data['Total Application Time'];
 
       resultsSheet.getCell(6, 3).font = labelFont;
-      resultsSheet.getCell(6, 3).value = 'Total Residence Time (person hours)';
+      resultsSheet.getCell(6, 3).value = 'Total Residence Time (hrs)';
       resultsSheet.getCell(6, 4).font = defaultFont;
       resultsSheet.getCell(6, 4).value =
         calculateResults.data['Total Residence Time'];
 
       resultsSheet.getCell(7, 3).font = labelFont;
-      resultsSheet.getCell(7, 3).value = 'Total Setup Cost ($)';
+      resultsSheet.getCell(7, 3).value = 'Total Setup Cost';
       resultsSheet.getCell(7, 4).font = defaultFont;
       resultsSheet.getCell(7, 4).numFmt = currencyNumberFormat;
       resultsSheet.getCell(7, 4).value =
         calculateResults.data['Total Setup Cost'];
 
       resultsSheet.getCell(8, 3).font = labelFont;
-      resultsSheet.getCell(8, 3).value = 'Total Application Cost ($)';
+      resultsSheet.getCell(8, 3).value = 'Total Application Cost';
       resultsSheet.getCell(8, 4).font = defaultFont;
       resultsSheet.getCell(8, 4).numFmt = currencyNumberFormat;
       resultsSheet.getCell(8, 4).value =
@@ -574,7 +565,7 @@ function CalculateResults() {
       resultsSheet.getCell(9, 4).value = calculateResults.data['Total Time'];
 
       resultsSheet.getCell(10, 3).font = labelFont;
-      resultsSheet.getCell(10, 3).value = 'Cost to Complete Decon ($)';
+      resultsSheet.getCell(10, 3).value = 'Cost to Complete Decon';
       resultsSheet.getCell(10, 4).font = defaultFont;
       resultsSheet.getCell(10, 4).numFmt = currencyNumberFormat;
       resultsSheet.getCell(10, 4).value = calculateResults.data['Total Cost'];
@@ -586,8 +577,7 @@ function CalculateResults() {
       resultsSheet.getCell(3, 5).value = 'Waste Totals';
 
       resultsSheet.getCell(4, 5).font = labelFont;
-      resultsSheet.getCell(4, 5).value =
-        'Total Solid Waste Volume (cubed meters)';
+      resultsSheet.getCell(4, 5).value = 'Total Solid Waste Volume (cu m)';
       resultsSheet.getCell(4, 6).font = defaultFont;
       resultsSheet.getCell(4, 6).value =
         calculateResults.data['Solid Waste Volume'];
@@ -599,22 +589,19 @@ function CalculateResults() {
         calculateResults.data['Solid Waste Mass'];
 
       resultsSheet.getCell(6, 5).font = labelFont;
-      resultsSheet.getCell(6, 5).value =
-        'Total Liquid Waste Volume (cubed meters)';
+      resultsSheet.getCell(6, 5).value = 'Total Liquid Waste Volume (cu m)';
       resultsSheet.getCell(6, 6).font = defaultFont;
-      resultsSheet.getCell(6, 6).numFmt = currencyNumberFormat;
       resultsSheet.getCell(6, 6).value =
         calculateResults.data['Liquid Waste Volume'];
 
       resultsSheet.getCell(7, 5).font = labelFont;
       resultsSheet.getCell(7, 5).value = 'Total Liquid Waste Mass (kg)';
       resultsSheet.getCell(7, 6).font = defaultFont;
-      resultsSheet.getCell(7, 6).numFmt = currencyNumberFormat;
       resultsSheet.getCell(7, 6).value =
         calculateResults.data['Liquid Waste Mass'];
 
       resultsSheet.getCell(8, 5).font = labelFont;
-      resultsSheet.getCell(8, 5).value = 'Total Waste Volume (cubed meters)';
+      resultsSheet.getCell(8, 5).value = 'Total Waste Volume (cu m)';
       resultsSheet.getCell(8, 6).font = defaultFont;
       resultsSheet.getCell(8, 6).value =
         calculateResults.data['Total Waste Volume'];
@@ -790,7 +777,7 @@ function CalculateResults() {
               value={calculateResults.data['Total Decontamination Area']}
             />
             <LabelValue
-              label="Total Cost ($)"
+              label="Total Cost"
               value={calculateResults.data['Total Cost']}
               isMonetary={true}
             />
@@ -805,7 +792,6 @@ function CalculateResults() {
                 </Fragment>
               }
               value={calculateResults.data['Total Waste Volume']}
-              isMonetary={true}
             />
             <LabelValue
               label="Total Waste Mass (kg)"
@@ -825,15 +811,14 @@ function CalculateResults() {
             <LabelValue
               label="Total Residence Time (hrs)"
               value={calculateResults.data['Total Residence Time']}
-              isMonetary={true}
             />
             <LabelValue
-              label="Total Setup Cost ($)"
+              label="Total Setup Cost"
               value={calculateResults.data['Total Setup Cost']}
               isMonetary={true}
             />
             <LabelValue
-              label="Total Application Cost ($)"
+              label="Total Application Cost"
               value={calculateResults.data['Total Application Cost']}
               isMonetary={true}
             />
@@ -844,7 +829,6 @@ function CalculateResults() {
                 </Fragment>
               }
               value={calculateResults.data['Solid Waste Volume']}
-              isMonetary={true}
             />
             <LabelValue
               label="Solid Waste Mass (kg)"
@@ -857,7 +841,6 @@ function CalculateResults() {
                 </Fragment>
               }
               value={calculateResults.data['Liquid Waste Volume']}
-              isMonetary={true}
             />
             <LabelValue
               label="Liquid Waste Mass (kg)"

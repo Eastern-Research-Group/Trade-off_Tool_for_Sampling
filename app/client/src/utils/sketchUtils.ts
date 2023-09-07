@@ -719,12 +719,12 @@ export function getSampleTableColumns({
       width: mediumColumnWidth,
     },
     {
-      Header: 'Iteration Max Area (sq meter)',
+      Header: 'Iteration Max Area (sq m)',
       accessor: 'SA',
       width: baseColumnWidth,
     },
     {
-      Header: 'Actual Surface Area (sq meter)',
+      Header: 'Actual Surface Area (sq m)',
       accessor: 'AA',
       width: baseColumnWidth,
     },
@@ -733,11 +733,6 @@ export function getSampleTableColumns({
       accessor: 'AC',
       width: baseColumnWidth,
     },
-    // {
-    //   Header: 'Total Cost Per Decon Application (Labor + Material + Waste)',
-    //   accessor: 'TCPS',
-    //   width: baseColumnWidth,
-    // },
     {
       Header: 'Notes',
       accessor: 'Notes',
@@ -749,17 +744,22 @@ export function getSampleTableColumns({
       width: baseColumnWidth,
     },
     {
-      Header: 'Setup Time (hrs/application)',
+      Header: 'Application Cost ($/sq m)',
+      accessor: 'TCPS',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Setup Time (hrs)',
       accessor: 'TTPK',
       width: baseColumnWidth,
     },
     {
-      Header: 'Application Time (hrs/application)',
+      Header: 'Application Time (hrs/sq m)',
       accessor: 'TTC',
       width: baseColumnWidth,
     },
     {
-      Header: 'Residence Time (hrs/application)',
+      Header: 'Residence Time (hrs)',
       accessor: 'TTA',
       width: baseColumnWidth,
     },
@@ -774,27 +774,27 @@ export function getSampleTableColumns({
       width: baseColumnWidth,
     },
     {
-      Header: 'Contamination Removal',
+      Header: 'Contamination Removal (%)',
       accessor: 'LOD_NON',
       width: baseColumnWidth,
     },
     {
-      Header: 'Solid Waste Volume (cu meters/sq meter)',
+      Header: 'Solid Waste Volume (cu m/sq m)',
       accessor: 'WVPS',
       width: baseColumnWidth,
     },
     {
-      Header: 'Solid Waste Mass (kg/sq meter)',
+      Header: 'Solid Waste Mass (kg/sq m)',
       accessor: 'WWPS',
       width: baseColumnWidth,
     },
     {
-      Header: 'Liquid Waste Volume (cu meters/sq meter)',
+      Header: 'Liquid Waste Volume (cu m/sq m)',
       accessor: 'ALC',
       width: baseColumnWidth,
     },
     {
-      Header: 'Liquid Waste Mass (kg/sq meter)',
+      Header: 'Liquid Waste Mass (kg/sq m)',
       accessor: 'AMC',
       width: baseColumnWidth,
     },

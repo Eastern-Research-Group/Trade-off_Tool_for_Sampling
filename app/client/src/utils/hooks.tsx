@@ -797,7 +797,8 @@ export function useCalculatePlan() {
     const sc = totals.mcps; // setup cost
     const cm = totals.tcps; // cost per square meter
 
-    const totalTime = n * (s + r + tm * i);
+    const totalTimeMinutes = n * (s + r + tm * i);
+    const totalTime = totalTimeMinutes / 60 / 24;
     const totalCost = n * (sc + cm * i);
 
     const resultObject: CalculateResultsDataType = {
@@ -1139,37 +1140,37 @@ export function useDynamicPopup() {
       const fieldInfos = [
         { fieldName: 'DECISIONUNIT', label: 'Layer' },
         { fieldName: 'TYPE', label: 'Decon Technology' },
-        { fieldName: 'SA', label: 'Reference Surface Area (sq inch)' },
-        { fieldName: 'AA', label: 'Actual Surface Area (sq inch)' },
+        { fieldName: 'SA', label: 'Iteration Max Area (sq m)' },
+        { fieldName: 'AA', label: 'Actual Surface Area (sq m)' },
         { fieldName: 'AC', label: 'Equivalent TODS Decon Applications' },
-        // {
-        //   fieldName: 'TCPS',
-        //   label: 'Total Cost Per Decon Application (Labor + Material + Waste)',
-        // },
         { fieldName: 'Notes', label: 'Notes' },
-        { fieldName: 'ALC', label: 'Analysis Labor Cost ($)' },
-        { fieldName: 'AMC', label: 'Analysis Material Cost ($)' },
         {
           fieldName: 'MCPS',
-          label: 'Decon Technology Material Cost ($/decon)',
+          label: 'Setup Cost ($/application)',
+        },
+        {
+          fieldName: 'TCPS',
+          label: 'Application Cost ($/sq m)',
         },
         {
           fieldName: 'TTPK',
-          label: 'Time to Prepare Kits (person hrs/application)',
+          label: 'Setup Time (hrs)',
         },
-        { fieldName: 'TTC', label: 'Time to Collect (person hrs/application)' },
-        { fieldName: 'TTA', label: 'Time to Analyze (person hrs/application)' },
+        { fieldName: 'TTC', label: 'Application Time (hrs/sq m)' },
+        { fieldName: 'TTA', label: 'Residence Time (hrs)' },
         // {
         //   fieldName: 'TTPS',
         //   label: 'Total Time per Decon Application (person hrs/application)',
         // },
-        { fieldName: 'LOD_P', label: 'Limit of Detection (CFU) Porous' },
+        { fieldName: 'LOD_P', label: 'Log Reduction' },
         {
           fieldName: 'LOD_NON',
-          label: 'Limit of Detection (CFU) Nonporous',
+          label: 'Contamination Removal (%)',
         },
-        { fieldName: 'WVPS', label: 'Waste Volume (L/application)' },
-        { fieldName: 'WWPS', label: 'Waste Weight (lbs/application)' },
+        { fieldName: 'WVPS', label: 'Solid Waste Volume (cu m/sq m)' },
+        { fieldName: 'WWPS', label: 'Solid Waste Mass (kg/sq m)' },
+        { fieldName: 'ALC', label: 'Liquid Waste Volume (cu m/sq m)' },
+        { fieldName: 'AMC', label: 'Liquid Waste Mass (kg/sq m)' },
       ];
 
       // add the contamination map related fields if necessary

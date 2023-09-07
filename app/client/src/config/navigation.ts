@@ -25,7 +25,7 @@ export const panels: PanelType[] = [
   },
   {
     value: 'locateSamples',
-    label: 'Create Plan',
+    label: 'Create Decon Plan',
     iconClass: 'fas fa-thumbtack',
   },
   {
