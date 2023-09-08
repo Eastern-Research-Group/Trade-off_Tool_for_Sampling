@@ -930,7 +930,7 @@ function CalculateResults() {
               label="Liquid Waste Mass (kg)"
               value={calculateResults.data['Liquid Waste Mass']}
             />
-            <hr css={resourceTallySeparator} />
+            <br />
 
             <h3>Details</h3>
             <h4>Spatial Information</h4>
