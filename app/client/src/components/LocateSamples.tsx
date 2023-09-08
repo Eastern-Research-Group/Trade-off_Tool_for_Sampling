@@ -330,7 +330,7 @@ const iconButtonStyles = css`
 `;
 
 const deleteButtonStyles = css`
-  width: 75px;
+  width: 125px;
   margin-bottom: 0;
   padding: 0.25em 0;
   color: black;
@@ -831,7 +831,7 @@ function LocateSamples() {
     <div css={panelContainer}>
       <div>
         <div css={sectionContainer}>
-          <h2 css={headerStyles}>Create Plan</h2>
+          <h2 css={headerStyles}>Create Decon Plan</h2>
           <div css={headerContainer}>
             <button css={deleteButtonStyles} onClick={startOver}>
               <i className="fas fa-redo-alt" />
@@ -893,10 +893,12 @@ function LocateSamples() {
           ) : (
             <Fragment>
               <p>
-                Create a decon plan with one or more layers. Layers can
-                represent unique areas of interest or decision units that are
-                differentiated by the user-defined descriptions (e.g., Floor 1,
-                East Stairwell, Team 1, etc.). Enter a plan name and description
+                Create a decontamination plan with one or more layers. Layers
+                can represent the application of different and/or multiple
+                applications of various decontamination technologies, unique
+                areas of interest or decision units that are differentiated by
+                the user-defined descriptions (e.g., First application, Second
+                Application, Team 1, etc.). Enter a plan name and description
                 and click Save.
               </p>
               <MessageBox
@@ -1717,8 +1719,8 @@ function LocateSamples() {
           <Fragment>
             <div css={sectionContainerWidthOnly}>
               <p>
-                In the panels below, add targeted and/ or multiple decon
-                applications to the plan.
+                In the panels below, select and add decontamination technologies
+                to apply to the plan.
               </p>
               <ColorPicker
                 title="Default Decon Technology Symbology"
@@ -1730,7 +1732,7 @@ function LocateSamples() {
             </div>
             <AccordionList>
               <AccordionItem
-                title={'Add Targeted Decon Applications'}
+                title={'Apply Decontamination Technology'}
                 initiallyExpanded={true}
               >
                 <div css={sectionContainer}>

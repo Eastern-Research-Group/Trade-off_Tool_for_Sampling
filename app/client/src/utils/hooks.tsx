@@ -213,7 +213,7 @@ export function useStartOver() {
     setTrainingMode(false);
     setGettingStartedOpen(false);
     setDisplayDimensions('2d');
-    setDisplayGeometryType('points');
+    setDisplayGeometryType('polygons');
     setTerrain3dUseElevation(true);
     setTerrain3dVisible(true);
     setViewUnderground3d(false);
@@ -797,7 +797,7 @@ export function useCalculatePlan() {
     const cm = totals.tcps; // cost per square meter
 
     const totalTimeHours = s + r + tm;
-    const totalTime = totalTimeHours / 60 / 24;
+    const totalTime = totalTimeHours / 24;
     const totalCost = sc + cm;
 
     const resultObject: CalculateResultsDataType = {
@@ -2515,7 +2515,7 @@ function useDisplayModeStorage() {
     const displayModeStr = readFromStorage(key);
     if (!displayModeStr) {
       setDisplayDimensions('2d');
-      setDisplayGeometryType('points');
+      setDisplayGeometryType('polygons');
       setTerrain3dUseElevation(true);
       setTerrain3dVisible(true);
       setViewUnderground3d(false);

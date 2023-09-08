@@ -159,7 +159,7 @@ export const SketchContext = createContext<SketchType>({
   setSampleAttributes: () => {},
   allSampleOptions: [],
   setAllSampleOptions: () => {},
-  displayGeometryType: 'points',
+  displayGeometryType: 'polygons',
   setDisplayGeometryType: () => {},
   displayDimensions: '2d',
   setDisplayDimensions: () => {},
@@ -242,7 +242,7 @@ export function SketchProvider({ children }: Props) {
   );
   const [displayGeometryType, setDisplayGeometryType] = useState<
     'hybrid' | 'points' | 'polygons'
-  >('points');
+  >('polygons');
   const [displayDimensions, setDisplayDimensions] = useState<'2d' | '3d'>('2d');
   const [terrain3dUseElevation, setTerrain3dUseElevation] = useState(true);
   const [terrain3dVisible, setTerrain3dVisible] = useState(true);

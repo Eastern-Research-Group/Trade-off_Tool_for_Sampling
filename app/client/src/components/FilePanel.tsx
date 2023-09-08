@@ -1477,12 +1477,12 @@ function FilePanel() {
                       <p css={sectionParagraph}>
                         Polygon layer containing the area of contamination as
                         well as the concentration of the contamination. This
-                        layer can be compared against the decon plan to see how
-                        well the decon application locations are placed to
-                        remove or reduce the contamination. Once added, you can
-                        select this layer in the{' '}
-                        <strong>Calculate Resources</strong> step and then view
-                        the comparison against your decon plan.
+                        layer is used to assess the effectiveness of the
+                        decontamination technology applications that are
+                        included in a Decon Plan to remove or reduce the
+                        contamination. Once added, you can select this layer in
+                        the <strong>Calculate Resources</strong> step and then
+                        view the comparison against your decon plan.
                       </p>
                       <div css={sectionParagraph}>
                         <MessageBox
