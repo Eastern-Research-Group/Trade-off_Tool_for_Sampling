@@ -189,7 +189,14 @@ export function SketchProvider({ children }: Props) {
   const initialDefaultSymbols = {
     symbols: {
       'Area of Interest': defaultSymbol,
-      'Contamination Map': defaultSymbol,
+      'Contamination Map': {
+        type: 'simple-fill',
+        color: [4, 53, 255, 0.2],
+        outline: {
+          color: [50, 50, 50],
+          width: 2,
+        },
+      } as PolygonSymbol,
       Samples: defaultSymbol,
     },
     editCount: 0,

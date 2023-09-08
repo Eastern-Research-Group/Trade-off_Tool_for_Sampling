@@ -8,6 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { css } from '@emotion/react';
+import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import EsriMap from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
 import SceneView from '@arcgis/core/views/SceneView';
@@ -55,10 +56,24 @@ function Map({ height }: Props) {
     if (!mapRef.current) return;
     if (mapView || sceneView) return;
 
+    const deconResults = new GraphicsLayer({
+      id: 'deconResults',
+      title: 'Decontamination Results',
+      visible: false,
+      listMode: 'hide',
+    });
+
+    const contamMap = new GraphicsLayer({
+      id: 'contaminationMapUpdated',
+      title: 'Full Contamination Map After Decon',
+      visible: false,
+      listMode: 'hide',
+    });
+
     const newMap = new EsriMap({
       basemap: 'streets-vector',
       ground: 'world-elevation',
-      layers: [],
+      layers: [contamMap, deconResults],
     });
     setMap(newMap);
 
@@ -122,7 +137,11 @@ function Map({ height }: Props) {
           });
         }
 
-        if (layer.type === 'graphics' || groupType === 'graphics') {
+        if (layer.id === 'contaminationMapUpdated') {
+          type = 'contaminationMapUpdated';
+        } else if (layer.id === 'deconResults') {
+          type = 'deconResults';
+        } else if (layer.type === 'graphics' || groupType === 'graphics') {
           type = 'graphics';
         } else if (layer.type === 'feature' || groupType === 'feature') {
           type = 'feature';
@@ -152,6 +171,8 @@ function Map({ height }: Props) {
         'file',
         'feature',
         'graphics',
+        'contaminationMapUpdated',
+        'deconResults',
       ];
       map.layers.sort((a: __esri.Layer, b: __esri.Layer) => {
         return (

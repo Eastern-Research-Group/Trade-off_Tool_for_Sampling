@@ -160,6 +160,7 @@ function Calculate() {
     // trainingMode,
   } = useContext(NavigationContext);
   const {
+    defaultSymbols,
     // edits,
     // setEdits,
     layers,
@@ -409,8 +410,16 @@ function Calculate() {
 
     // TODO Calculate Decon from the contamination map
     // TODO reset contamination map
-    mapView.graphics.removeAll();
-    mapView.graphics.addMany(contaminationGraphics);
+    const resultsLayer = map.findLayerById(
+      'deconResults',
+    ) as __esri.GraphicsLayer;
+    resultsLayer.graphics.removeAll();
+    resultsLayer.graphics.addMany(contaminationGraphics);
+
+    const contamLayer = map.findLayerById(
+      'contaminationMapUpdated',
+    ) as __esri.GraphicsLayer;
+    contamLayer.graphics.removeAll();
 
     console.log('graphics: ', graphics);
     console.log('contaminationGraphics: ', contaminationGraphics);
@@ -418,7 +427,7 @@ function Calculate() {
     // loop through decon application layer features
     graphics.forEach((graphic) => {
       // loop through contamination map features
-      mapView.graphics.toArray().forEach((contamGraphic) => {
+      resultsLayer.graphics.toArray().forEach((contamGraphic) => {
         // console.log('graphic: ', graphic);
         // console.log('contamGraphic: ', contamGraphic);
         // call intersect to see if decon app intersects contamination map
@@ -471,7 +480,7 @@ function Calculate() {
           // add inner contam
           convertToArray(newInnerContamGeometry).forEach(
             (newGeom: __esri.Geometry) => {
-              mapView.graphics.add(
+              resultsLayer.graphics.add(
                 new Graphic({
                   attributes: {
                     ...contamGraphic.attributes,
@@ -498,7 +507,7 @@ function Calculate() {
           // add outer contam
           convertToArray(newOuterContamGeometry).forEach(
             (newGeom: __esri.Geometry) => {
-              mapView.graphics.add(
+              resultsLayer.graphics.add(
                 new Graphic({
                   attributes: {
                     ...contamGraphic.attributes,
@@ -524,28 +533,39 @@ function Calculate() {
           );
 
           // remove the original contam graphic
-          mapView.graphics.remove(contamGraphic);
+          resultsLayer.remove(contamGraphic);
         }
       });
     });
 
     // remove any contamination plumes where decon was not applied
     const graphicsToRemove: any[] = [];
-    mapView.graphics.forEach((graphic) => {
-      if (graphic.attributes.CONTAMHIT) return;
-      graphicsToRemove.push(graphic);
+    const replacementGraphics: any[] = [];
+    resultsLayer.graphics.forEach((graphic) => {
+      if (!graphic.attributes.CONTAMREDUCED) {
+        graphicsToRemove.push(graphic);
+      }
+
+      const newGraphic = graphic.clone();
+      newGraphic.symbol = defaultSymbols.symbols['Contamination Map'] as any;
+      replacementGraphics.push(newGraphic);
     });
-    mapView.graphics.removeMany(graphicsToRemove);
+    resultsLayer.graphics.removeMany(graphicsToRemove);
+    contamLayer.graphics.addMany(replacementGraphics);
 
     // sort the graphics such that the ones where contamination has not been reduced are at the bottom
-    mapView.graphics.sort((a, b) => {
+    resultsLayer.graphics.sort((a, b) => {
       if (a.attributes.CONTAMREDUCED === b.attributes.CONTAMREDUCED) return 0;
       if (a.attributes.CONTAMREDUCED && !b.attributes.CONTAMREDUCED) return 1;
       else return -1;
     });
 
-    contaminationMap.listMode = 'show';
-    contaminationMap.sketchLayer.listMode = 'show';
+    contaminationMap.listMode = 'hide';
+    contaminationMap.sketchLayer.listMode = 'hide';
+    resultsLayer.listMode = 'show';
+    resultsLayer.visible = true;
+    contamLayer.listMode = 'show';
+    contamLayer.visible = false;
 
     setUpdateContextValues(true);
   }

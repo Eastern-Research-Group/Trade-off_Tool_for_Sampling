@@ -587,7 +587,16 @@ function Toolbar() {
       }
       if (id === 'delete-layer') {
         // remove the layer from the map
-        setLayerToRemove(event.item.layer);
+        if (
+          ['contaminationMapUpdated', 'deconResults'].includes(
+            event.item.layer.id,
+          )
+        ) {
+          event.item.layer.visible = false;
+          event.item.layer.listMode = 'hide';
+        } else {
+          setLayerToRemove(event.item.layer);
+        }
       }
     });
 
