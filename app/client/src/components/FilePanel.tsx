@@ -1549,10 +1549,7 @@ function FilePanel() {
                     <Fragment>
                       <p css={sectionParagraph}>
                         A polygon file that bounds the extent of your project
-                        area. This layer is used to bound where decon
-                        applications are plotted when using the{' '}
-                        <strong>Add Multiple Random Decon Applications</strong>{' '}
-                        feature in the next step, <strong>Create Plan</strong>.
+                        area.
                       </p>
                     </Fragment>
                   )}
