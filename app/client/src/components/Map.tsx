@@ -65,7 +65,7 @@ function Map({ height }: Props) {
 
     const contamMap = new GraphicsLayer({
       id: 'contaminationMapUpdated',
-      title: 'Full Contamination Map After Decon',
+      title: 'Contamination Map (Updated)',
       visible: false,
       listMode: 'hide',
     });
