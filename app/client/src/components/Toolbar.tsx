@@ -956,7 +956,7 @@ function Toolbar() {
                 checked={displayDimensions === '3d'}
                 onChange={(ev) => {
                   setDisplayDimensions('3d');
-                  setDisplayGeometryType('points');
+                  setDisplayGeometryType('polygons');
                 }}
               />
               <label htmlFor="dimension-3d">3D</label>
