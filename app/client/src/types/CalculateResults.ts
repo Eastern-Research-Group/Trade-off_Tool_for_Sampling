@@ -36,6 +36,14 @@ export type CalculateResultsDataType = {
   'Total Waste Volume': number;
   'Total Waste Mass': number;
   // 'Total Analysis Cost': number;
+  'Total Contaminated Area': number;
+  'Total Decontaminated Area': number;
+  'Original CFU per Square Meter': number;
+  'New CFU per Square Meter': number;
+  'Percent CFU Reduction': number;
+  'Percent Decontaminated': number;
+  'Contamination Type': string;
+  'Contamination Units': string;
 };
 
 export type CalculateResultsType = {

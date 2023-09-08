@@ -548,9 +548,16 @@ export function useGeometryTools() {
 // samples change or the variables on the calculate tab
 // change.
 export function useCalculatePlan() {
-  const { edits, layers, selectedScenario, setEdits, setSelectedScenario } =
-    useContext(SketchContext);
   const {
+    edits,
+    layers,
+    map,
+    selectedScenario,
+    setEdits,
+    setSelectedScenario,
+  } = useContext(SketchContext);
+  const {
+    contaminationMap,
     inputNumLabs,
     inputNumLabHours,
     inputNumSamplingHours,
@@ -621,6 +628,12 @@ export function useCalculatePlan() {
     alc: 0,
     amc: 0,
     ac: 0,
+    totalContaminatedArea: 0,
+    totalDecontaminatedArea: 0,
+    originalCfuPerM2: 0,
+    newCfuPerM2: 0,
+    contaminationUnits: '',
+    contaminationType: '',
   });
   const [totalArea, setTotalArea] = useState(0);
 
@@ -629,6 +642,7 @@ export function useCalculatePlan() {
     // exit early checks
     if (!loadedProjection) return;
     if (
+      !map ||
       !selectedScenario ||
       selectedScenario.layers.length === 0 ||
       edits.count === 0
@@ -680,9 +694,7 @@ export function useCalculatePlan() {
           return;
         }
 
-        // convert area to square feet
-        const areaSF = areaSM;
-        totalAreaSquereMeter = totalAreaSquereMeter + areaSF;
+        totalAreaSquereMeter = totalAreaSquereMeter + areaSM;
 
         // Get the number of reference surface areas that are in the actual area.
         // This is to prevent users from cheating the system by drawing larger shapes
@@ -760,6 +772,61 @@ export function useCalculatePlan() {
       });
     });
 
+    let totalContaminatedArea = 0;
+    let totalDecontaminatedArea = 0;
+    let originalCfuPerM2 = 0;
+    let newCfuPerM2 = 0;
+    let contaminationUnits = '';
+    let contaminationType = '';
+    if (contaminationMap) {
+      (contaminationMap.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
+        (graphic, index) => {
+          const calcGraphic = graphic.clone();
+
+          // calculate the area using the custom hook
+          const areaSM = calculateArea(graphic);
+          if (typeof areaSM !== 'number') {
+            return;
+          }
+
+          totalContaminatedArea = totalContaminatedArea + areaSM;
+
+          const { CONTAMTYPE, CONTAMVAL, CONTAMUNIT } = calcGraphic.attributes;
+          console.log('oldContamVal: ', CONTAMVAL);
+          if (CONTAMVAL) {
+            originalCfuPerM2 = originalCfuPerM2 + Number(CONTAMVAL) * areaSM;
+          }
+
+          if (index === 0) contaminationUnits = CONTAMUNIT;
+          if (index === 0) contaminationType = CONTAMTYPE;
+        },
+      );
+
+      const contamLayer = map.findLayerById(
+        'contaminationMapUpdated',
+      ) as __esri.GraphicsLayer;
+      contamLayer.graphics.forEach((graphic) => {
+        const calcGraphic = graphic.clone();
+
+        // calculate the area using the custom hook
+        const areaSM = calculateArea(graphic);
+        if (typeof areaSM !== 'number') {
+          return;
+        }
+
+        const { CONTAMVAL } = calcGraphic.attributes;
+        console.log('newContamVal: ', CONTAMVAL);
+
+        if (graphic.attributes.CONTAMREDUCED) {
+          totalDecontaminatedArea = totalDecontaminatedArea + areaSM;
+        }
+
+        if (CONTAMVAL) {
+          newCfuPerM2 = newCfuPerM2 + Number(CONTAMVAL) * areaSM;
+        }
+      });
+    }
+
     setTotals({
       ttpk,
       ttc,
@@ -775,10 +842,24 @@ export function useCalculatePlan() {
       alc,
       amc,
       ac,
+      totalContaminatedArea,
+      totalDecontaminatedArea,
+      originalCfuPerM2,
+      newCfuPerM2,
+      contaminationUnits,
+      contaminationType,
     });
     setCalcGraphics(calcGraphics);
     setTotalArea(totalAreaSquereMeter);
-  }, [calculateArea, edits, layers, loadedProjection, selectedScenario]);
+  }, [
+    calculateArea,
+    contaminationMap,
+    edits,
+    layers,
+    loadedProjection,
+    map,
+    selectedScenario,
+  ]);
 
   // perform non-geospatial calculations
   useEffect(() => {
@@ -850,6 +931,18 @@ export function useCalculatePlan() {
       'Total Cost': totalCost,
       'Total Time': Math.round(totalTime * 10) / 10,
       // 'Limiting Time Factor': limitingFactor,
+      'Total Contaminated Area': totals.totalContaminatedArea,
+      'Total Decontaminated Area': totals.totalDecontaminatedArea,
+      'Original CFU per Square Meter': totals.originalCfuPerM2,
+      'New CFU per Square Meter': totals.newCfuPerM2,
+      'Percent CFU Reduction':
+        ((totals.originalCfuPerM2 - totals.newCfuPerM2) /
+          totals.originalCfuPerM2) *
+        100,
+      'Percent Decontaminated':
+        (totals.totalDecontaminatedArea / totals.totalContaminatedArea) * 100,
+      'Contamination Type': totals.contaminationType,
+      'Contamination Units': totals.contaminationUnits,
     };
 
     // display loading spinner for 1 second

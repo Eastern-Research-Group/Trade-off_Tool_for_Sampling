@@ -444,17 +444,16 @@ function Calculate() {
         //   graphic.geometry,
         // );
         // console.log('contamContainsDecon: ', contamContainsDecon);
-        // const deconContainsContam = geometryEngine.contains(
-        //   graphic.geometry,
-        //   contamGraphic.geometry,
-        // );
+        const deconContainsContam = geometryEngine.contains(
+          graphic.geometry,
+          contamGraphic.geometry,
+        );
         // console.log('deconContainsContam: ', deconContainsContam);
 
         // cut a hole in contamination map using result geometry from above step
-        const newOuterContamGeometry = geometryEngine.difference(
-          contamGraphic.geometry,
-          graphic.geometry,
-        );
+        const newOuterContamGeometry = deconContainsContam
+          ? null
+          : geometryEngine.difference(contamGraphic.geometry, graphic.geometry);
         console.log('newOuterContamGeometry: ', newOuterContamGeometry);
 
         // create new geometry to fill in the hole
@@ -505,32 +504,34 @@ function Calculate() {
             },
           );
           // add outer contam
-          convertToArray(newOuterContamGeometry).forEach(
-            (newGeom: __esri.Geometry) => {
-              resultsLayer.graphics.add(
-                new Graphic({
-                  attributes: {
-                    ...contamGraphic.attributes,
-                    CONTAMHIT: true,
-                  },
-                  geometry: newGeom,
-                  symbol: {
-                    type: 'simple-fill',
-                    color: contamGraphic.attributes.CONTAMREDUCED
-                      ? [0, 255, 0]
-                      : [255, 0, 0],
-                    outline: {
-                      color: [0, 0, 0],
+          if (newOuterContamGeometry) {
+            convertToArray(newOuterContamGeometry).forEach(
+              (newGeom: __esri.Geometry) => {
+                resultsLayer.graphics.add(
+                  new Graphic({
+                    attributes: {
+                      ...contamGraphic.attributes,
+                      CONTAMHIT: true,
                     },
-                  } as any,
-                  popupTemplate: {
-                    title: '',
-                    content: contaminationMapPopup,
-                  },
-                }),
-              );
-            },
-          );
+                    geometry: newGeom,
+                    symbol: {
+                      type: 'simple-fill',
+                      color: contamGraphic.attributes.CONTAMREDUCED
+                        ? [0, 255, 0]
+                        : [255, 0, 0],
+                      outline: {
+                        color: [0, 0, 0],
+                      },
+                    } as any,
+                    popupTemplate: {
+                      title: '',
+                      content: contaminationMapPopup,
+                    },
+                  }),
+                );
+              },
+            );
+          }
 
           // remove the original contam graphic
           resultsLayer.remove(contamGraphic);
@@ -541,6 +542,7 @@ function Calculate() {
     // remove any contamination plumes where decon was not applied
     const graphicsToRemove: any[] = [];
     const replacementGraphics: any[] = [];
+    console.log('resultsLayer: ', resultsLayer.graphics.length);
     resultsLayer.graphics.forEach((graphic) => {
       if (!graphic.attributes.CONTAMREDUCED) {
         graphicsToRemove.push(graphic);
@@ -550,7 +552,10 @@ function Calculate() {
       newGraphic.symbol = defaultSymbols.symbols['Contamination Map'] as any;
       replacementGraphics.push(newGraphic);
     });
+    console.log('graphicsToRemove: ', graphicsToRemove);
+    console.log('replacementGraphics: ', replacementGraphics);
     resultsLayer.graphics.removeMany(graphicsToRemove);
+    console.log('resultsLayer2: ', resultsLayer.graphics.length);
     contamLayer.graphics.addMany(replacementGraphics);
 
     // sort the graphics such that the ones where contamination has not been reduced are at the bottom
