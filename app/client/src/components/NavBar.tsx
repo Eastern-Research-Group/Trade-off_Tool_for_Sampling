@@ -22,6 +22,7 @@ import Search from 'components/Search';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 import { NavigationContext } from 'contexts/Navigation';
+import { SketchContext } from 'contexts/Sketch';
 // config
 import { navPanelWidth } from 'config/appConfig';
 import { panels, PanelType } from 'config/navigation';
@@ -318,6 +319,7 @@ type Props = {
 
 function NavBar({ height }: Props) {
   const { calculateResults } = useContext(CalculateContext);
+  const { sketchVM, aoiSketchVM } = useContext(SketchContext);
   const {
     currentPanel,
     setCurrentPanel,
@@ -343,6 +345,12 @@ function NavBar({ height }: Props) {
         setCurrentPanel(panel);
       }
 
+      if (panel.value !== 'locateSamples') {
+        sketchVM?.['2d'].cancel();
+        sketchVM?.['3d'].cancel();
+        aoiSketchVM?.cancel();
+      }
+
       if (panelIndex > latestStepIndex) setLatestStepIndex(panelIndex);
     },
     [
@@ -351,6 +359,8 @@ function NavBar({ height }: Props) {
       latestStepIndex,
       setLatestStepIndex,
       setPanelExpanded,
+      sketchVM,
+      aoiSketchVM,
     ],
   );
 
