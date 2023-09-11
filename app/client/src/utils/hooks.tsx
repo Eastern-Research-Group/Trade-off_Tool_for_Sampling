@@ -1651,6 +1651,61 @@ function usePortalLayerStorage() {
     writeToStorage(key, portalLayers, setOptions);
   }, [portalLayers, localPortalLayerInitialized, setOptions]);
 
+  function setRenderer(layer: __esri.FeatureLayer) {
+    console.log('layerId: ', layer.id);
+    // 10,000 | 100,000 | 1,000,000
+    layer.renderer = {
+      type: 'class-breaks',
+      field: 'CONTAMVAL',
+      defaultSymbol: {
+        type: 'simple-fill',
+        color: [150, 150, 150, 0.2],
+        outline: {
+          color: [150, 150, 150],
+          width: 2,
+        },
+      },
+      classBreakInfos: [
+        {
+          minValue: 1,
+          maxValue: 10_000,
+          symbol: {
+            type: 'simple-fill',
+            color: [255, 255, 0, 0.7],
+            outline: {
+              color: [255, 255, 0],
+              width: 2,
+            },
+          },
+        },
+        {
+          minValue: 10_001,
+          maxValue: 100_000,
+          symbol: {
+            type: 'simple-fill',
+            color: [255, 165, 0, 0.7],
+            outline: {
+              color: [255, 165, 0],
+              width: 2,
+            },
+          },
+        },
+        {
+          minValue: 100_000,
+          maxValue: Number.MAX_SAFE_INTEGER,
+          symbol: {
+            type: 'simple-fill',
+            color: [255, 0, 0, 0.7],
+            outline: {
+              color: [255, 0, 0],
+              width: 2,
+            },
+          },
+        },
+      ],
+    } as any;
+  }
+
   // adds portal layers to map
   useEffect(() => {
     if (!map || portalLayers.length === 0) return;
@@ -1667,12 +1722,45 @@ function usePortalLayerStorage() {
       // The only reason tots layers are also in portal layers is
       // so the search panel will show the layer as having been
       // added.
-      if (portalLayer.type === 'tots') return;
+      if (portalLayer.type === 'tots') {
+        Layer.fromPortalItem({
+          portalItem: new PortalItem({ id }),
+        }).then((layer) => {
+          // setup the watch event to see when the layer finishes loading
+          reactiveUtils.watch(
+            () => layer.loadStatus,
+            () => {
+              // set the status based on the load status
+              if (layer.loadStatus === 'loaded') {
+                console.log('layer.type: ', layer.type);
+                if (layer.type === 'feature') {
+                  console.log('is a feature layer');
+                  setRenderer(layer as __esri.FeatureLayer);
+                }
+                if (layer.type === 'group') {
+                  console.log('is a group layer');
+                  const groupLayer = layer as __esri.GroupLayer;
+                  groupLayer.layers.forEach((layer) => {
+                    setRenderer(layer as __esri.FeatureLayer);
+                  });
+                }
 
-      const layer = Layer.fromPortalItem({
-        portalItem: new PortalItem({ id }),
-      });
-      map.add(layer);
+                layer.visible = true;
+              }
+            },
+          );
+
+          // setWatcher(watcher);
+
+          // add the layer to the map
+          map.add(layer);
+        });
+      } else {
+        const layer = Layer.fromPortalItem({
+          portalItem: new PortalItem({ id }),
+        });
+        map.add(layer);
+      }
     });
   }, [map, portalLayers]);
 }
