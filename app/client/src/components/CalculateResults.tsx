@@ -747,9 +747,18 @@ function CalculateResults() {
       // add in the rows
       let currentRow = 4;
       scenarioGroupLayer.layers.forEach((layer) => {
+        console.log(`layer.type: "${layer.type}"`);
+        console.log(`layer.id: "${layer.id}"`);
+        console.log(
+          `layer.id.endsWith('-points'): "${layer.id.endsWith('-points')}"`,
+        );
+        console.log(
+          `layer.id.endsWith('-hybrid'): "${layer.id.endsWith('-hybrid')}"`,
+        );
         if (
           layer.type !== 'graphics' ||
-          layer.id.endsWith('-points' || layer.id.endsWith('-hybrid'))
+          layer.id.endsWith('-points') ||
+          layer.id.endsWith('-hybrid')
         )
           return;
 
