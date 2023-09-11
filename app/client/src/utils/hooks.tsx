@@ -870,10 +870,13 @@ export function useCalculatePlan() {
       return;
     }
 
+    const { NUM_SAMPLING_TEAMS: numSamplingTeams } =
+      selectedScenario.calculateSettings.current;
+
     console.log('totals: ', totals);
     const s = totals.ttpk; // setup time (hrs)
     const r = totals.tta; // residence time (hrs)
-    const tm = totals.ttc; // time per decon
+    const tm = totals.ttc / numSamplingTeams; // time per decon
     const sc = totals.mcps; // setup cost
     const cm = totals.tcps; // cost per square meter
 
@@ -896,13 +899,13 @@ export function useCalculatePlan() {
       // assign counts
       'Total Number of Decon Applications': totals.ac,
       'Total Decontamination Area': totalArea,
-      'Total Setup Time': totals.ttpk,
-      'Total Application Time': totals.ttc,
-      'Total Residence Time': totals.tta,
+      'Total Setup Time': s,
+      'Total Application Time': tm,
+      'Total Residence Time': r,
       'Average Contamination Removal':
         (totals.lod_non / calcGraphics.length) * 100,
-      'Total Setup Cost': totals.mcps,
-      'Total Application Cost': totals.tcps,
+      'Total Setup Cost': sc,
+      'Total Application Cost': cm,
       'Solid Waste Volume': totals.wvps,
       'Solid Waste Mass': totals.wwps,
       'Liquid Waste Volume': totals.alc,

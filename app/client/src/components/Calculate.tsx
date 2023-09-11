@@ -76,8 +76,6 @@ function getGraphics(map: __esri.Map, layerId: string) {
   if (tempGroupLayer) {
     groupLayer = tempGroupLayer as __esri.GroupLayer;
     groupLayer.layers.forEach((layer) => {
-      console.log('layer.id: ', layer.id);
-      console.log('layer.type: ', layer.type);
       if (
         layer.type !== 'graphics' ||
         layer.id.includes('-points') ||
@@ -101,14 +99,14 @@ function convertToArray(item: any | any[]) {
 }
 
 // --- styles (Calculate) ---
-// const inputStyles = css`
-//   width: 100%;
-//   height: 36px;
-//   margin: 0 0 10px 0;
-//   padding-left: 8px;
-//   border: 1px solid #ccc;
-//   border-radius: 4px;
-// `;
+const inputStyles = css`
+  width: 100%;
+  height: 36px;
+  margin: 0 0 10px 0;
+  padding-left: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+`;
 
 const submitButtonContainerStyles = css`
   margin-top: 10px;
@@ -179,7 +177,7 @@ function Calculate() {
     // inputNumSamplingHours,
     // inputNumSamplingPersonnel,
     // inputNumSamplingShifts,
-    // inputNumSamplingTeams,
+    inputNumSamplingTeams,
     // inputSamplingLaborCost,
     // inputSurfaceArea,
     // resetCalculateContext,
@@ -190,7 +188,7 @@ function Calculate() {
     // setInputNumSamplingHours,
     // setInputNumSamplingPersonnel,
     // setInputNumSamplingShifts,
-    // setInputNumSamplingTeams,
+    setInputNumSamplingTeams,
     // setInputSamplingLaborCost,
     // setInputSurfaceArea,
     setUpdateContextValues,
@@ -199,45 +197,48 @@ function Calculate() {
   // const getPopupTemplate = useDynamicPopup();
   // const services = useServicesContext();
 
-  // // sync the inputs with settings pulled from AGO
-  // const [pageInitialized, setPageInitialized] = useState(false);
-  // useEffect(() => {
-  //   if (!selectedScenario || pageInitialized) return;
-  //   setPageInitialized(true);
+  // const [numTeams, setNumTeams] = useState(1);
 
-  //   const {
-  //     NUM_LAB_HOURS: numLabHours,
-  //     NUM_LABS: numLabs,
-  //     NUM_SAMPLING_HOURS: numSamplingHours,
-  //     NUM_SAMPLING_PERSONNEL: numSamplingPersonnel,
-  //     NUM_SAMPLING_SHIFTS: numSamplingShifts,
-  //     NUM_SAMPLING_TEAMS: numSamplingTeams,
-  //     SAMPLING_LABOR_COST: samplingLaborCost,
-  //     SURFACE_AREA: surfaceArea,
-  //   } = selectedScenario.calculateSettings.current;
+  // sync the inputs with settings pulled from AGO
+  const [pageInitialized, setPageInitialized] = useState(false);
+  useEffect(() => {
+    if (!selectedScenario || pageInitialized) return;
+    setPageInitialized(true);
 
-  //   setInputNumLabHours(numLabHours);
-  //   setInputNumLabs(numLabs);
-  //   setInputNumSamplingHours(numSamplingHours);
-  //   setInputNumSamplingPersonnel(numSamplingPersonnel);
-  //   setInputNumSamplingShifts(numSamplingShifts);
-  //   setInputNumSamplingTeams(numSamplingTeams);
-  //   setInputSamplingLaborCost(samplingLaborCost);
-  //   setInputSurfaceArea(surfaceArea);
-  // }, [
-  //   edits,
-  //   pageInitialized,
-  //   resetCalculateContext,
-  //   selectedScenario,
-  //   setInputNumLabHours,
-  //   setInputNumLabs,
-  //   setInputNumSamplingHours,
-  //   setInputNumSamplingPersonnel,
-  //   setInputNumSamplingShifts,
-  //   setInputNumSamplingTeams,
-  //   setInputSamplingLaborCost,
-  //   setInputSurfaceArea,
-  // ]);
+    const {
+      //     NUM_LAB_HOURS: numLabHours,
+      //     NUM_LABS: numLabs,
+      //     NUM_SAMPLING_HOURS: numSamplingHours,
+      //     NUM_SAMPLING_PERSONNEL: numSamplingPersonnel,
+      //     NUM_SAMPLING_SHIFTS: numSamplingShifts,
+      NUM_SAMPLING_TEAMS: numSamplingTeams,
+      // SAMPLING_LABOR_COST: samplingLaborCost,
+      //     SURFACE_AREA: surfaceArea,
+    } = selectedScenario.calculateSettings.current;
+
+    //   setInputNumLabHours(numLabHours);
+    //   setInputNumLabs(numLabs);
+    //   setInputNumSamplingHours(numSamplingHours);
+    //   setInputNumSamplingPersonnel(numSamplingPersonnel);
+    //   setInputNumSamplingShifts(numSamplingShifts);
+    // setNumTeams(numSamplingTeams);
+    setInputNumSamplingTeams(numSamplingTeams);
+    //   setInputSamplingLaborCost(samplingLaborCost);
+    //   setInputSurfaceArea(surfaceArea);
+  }, [
+    // edits,
+    pageInitialized,
+    // resetCalculateContext,
+    selectedScenario,
+    //   setInputNumLabHours,
+    //   setInputNumLabs,
+    //   setInputNumSamplingHours,
+    //   setInputNumSamplingPersonnel,
+    //   setInputNumSamplingShifts,
+    setInputNumSamplingTeams,
+    //   setInputSamplingLaborCost,
+    //   setInputSurfaceArea,
+  ]);
 
   // callback for closing the results panel when leaving this tab
   const closePanel = useCallback(() => {
@@ -454,14 +455,14 @@ function Calculate() {
         const newOuterContamGeometry = deconContainsContam
           ? null
           : geometryEngine.difference(contamGraphic.geometry, graphic.geometry);
-        console.log('newOuterContamGeometry: ', newOuterContamGeometry);
+        // console.log('newOuterContamGeometry: ', newOuterContamGeometry);
 
         // create new geometry to fill in the hole
         const newInnerContamGeometry = geometryEngine.intersect(
           graphic.geometry,
           contamGraphic.geometry,
         );
-        console.log('newInnerContamGeometry: ', newInnerContamGeometry);
+        // console.log('newInnerContamGeometry: ', newInnerContamGeometry);
 
         // calculate new CFU values for where decon application was applied (CFU * (1 - %effectiveness) = new CFU)
         // const curCfu = contamGraphic.attributes.CONTAMVAL;
@@ -542,7 +543,7 @@ function Calculate() {
     // remove any contamination plumes where decon was not applied
     const graphicsToRemove: any[] = [];
     const replacementGraphics: any[] = [];
-    console.log('resultsLayer: ', resultsLayer.graphics.length);
+    // console.log('resultsLayer: ', resultsLayer.graphics.length);
     resultsLayer.graphics.forEach((graphic) => {
       if (!graphic.attributes.CONTAMREDUCED) {
         graphicsToRemove.push(graphic);
@@ -552,10 +553,10 @@ function Calculate() {
       newGraphic.symbol = defaultSymbols.symbols['Contamination Map'] as any;
       replacementGraphics.push(newGraphic);
     });
-    console.log('graphicsToRemove: ', graphicsToRemove);
-    console.log('replacementGraphics: ', replacementGraphics);
+    // console.log('graphicsToRemove: ', graphicsToRemove);
+    // console.log('replacementGraphics: ', replacementGraphics);
     resultsLayer.graphics.removeMany(graphicsToRemove);
-    console.log('resultsLayer2: ', resultsLayer.graphics.length);
+    // console.log('resultsLayer2: ', resultsLayer.graphics.length);
     contamLayer.graphics.addMany(replacementGraphics);
 
     // sort the graphics such that the ones where contamination has not been reduced are at the bottom
@@ -572,6 +573,7 @@ function Calculate() {
     contamLayer.listMode = 'show';
     contamLayer.visible = false;
 
+    // setInputNumSamplingTeams(numTeams);
     setUpdateContextValues(true);
   }
 
@@ -1039,9 +1041,9 @@ function Calculate() {
           </p>
         </div>
 
-        {/* <div css={sectionContainer}>
+        <div css={sectionContainer}>
           <label htmlFor="number-teams-input">
-            Number of Available Teams for Decon Applications
+            Number of Concurrent Applications
           </label>
           <input
             id="number-teams-input"
@@ -1056,7 +1058,7 @@ function Calculate() {
             }}
           />
 
-          <label htmlFor="personnel-per-team-input">
+          {/* <label htmlFor="personnel-per-team-input">
             Personnel per Decon Team
           </label>
           <input
@@ -1160,8 +1162,8 @@ function Calculate() {
                 setInputSurfaceArea(Number(ev.target.value));
               }
             }}
-          />
-        </div> */}
+          /> */}
+        </div>
 
         <div css={sectionContainer}>
           <label htmlFor="contamination-map-select-input">
