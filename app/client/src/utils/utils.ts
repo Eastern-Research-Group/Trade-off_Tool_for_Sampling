@@ -159,3 +159,7 @@ export function getScenarioName(edits: EditsType, desiredName: string) {
       duplicateCount === numInDesiredName ? duplicateCount + 1 : duplicateCount
     })`;
 }
+
+export function parseSmallFloat(number: number, precision: number = 15) {
+  return parseFloat(number.toFixed(precision));
+}

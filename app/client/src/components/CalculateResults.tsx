@@ -438,48 +438,66 @@ function CalculateResults() {
       summarySheet.getCell(7, 5).value = 'Efficacy';
 
       summarySheet.getCell(8, 5).font = labelFont;
-      summarySheet.getCell(8, 5).value = 'Contamination Type';
+      summarySheet.getCell(8, 5).value = {
+        richText: [
+          {
+            font: labelFont,
+            text: `Original Contaminated Area m`,
+          },
+          { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
+        ],
+      };
       summarySheet.getCell(8, 6).font = defaultFont;
       summarySheet.getCell(8, 6).value =
-        calculateResults.data['Contamination Type'];
-
-      const contamUnits = calculateResults.data['Contamination Units'];
+        calculateResults.data['Total Contaminated Area'];
 
       summarySheet.getCell(9, 5).font = labelFont;
       summarySheet.getCell(9, 5).value = {
         richText: [
           {
             font: labelFont,
-            text: `Original Amount of Contamination (${contamUnits}/m`,
+            text: `Total Decontaminated Area m`,
           },
           { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
-          { font: labelFont, text: ')' },
         ],
       };
       summarySheet.getCell(9, 6).font = defaultFont;
       summarySheet.getCell(9, 6).value =
-        calculateResults.data['Original CFU per Square Meter'];
+        calculateResults.data['Total Decontaminated Area'];
 
       summarySheet.getCell(10, 5).font = labelFont;
       summarySheet.getCell(10, 5).value = {
         richText: [
           {
             font: labelFont,
-            text: `New Amount of Contamination (${contamUnits}/m`,
+            text: `Total Contaminated Area where Contamination was Reduced m`,
           },
           { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
-          { font: labelFont, text: ')' },
         ],
       };
       summarySheet.getCell(10, 6).font = defaultFont;
       summarySheet.getCell(10, 6).value =
-        calculateResults.data['New CFU per Square Meter'];
+        calculateResults.data['Total Reduction Area'];
 
       summarySheet.getCell(11, 5).font = labelFont;
-      summarySheet.getCell(11, 5).value = 'Percent Contamination was Reduced';
+      summarySheet.getCell(11, 5).value = {
+        richText: [
+          {
+            font: labelFont,
+            text: `Total Remaining Contaminated Area m`,
+          },
+          { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
+        ],
+      };
       summarySheet.getCell(11, 6).font = defaultFont;
       summarySheet.getCell(11, 6).value =
-        calculateResults.data['Percent CFU Reduction'];
+        calculateResults.data['Total Remaining Contaminated Area'];
+
+      summarySheet.getCell(12, 5).font = labelFont;
+      summarySheet.getCell(12, 5).value = 'Percent Area Still Contaminated';
+      summarySheet.getCell(12, 6).font = defaultFont;
+      summarySheet.getCell(12, 6).value =
+        calculateResults.data['Percent Contaminated Remaining'];
 
       // add the map screenshot
       const screenshotImageId = workbook.addImage({
@@ -513,54 +531,54 @@ function CalculateResults() {
       resultsSheet.getCell(1, 1).font = sheetTitleFont;
       resultsSheet.getCell(1, 1).value = 'Detailed Results';
 
-      // col 1 & 2
-      resultsSheet.mergeCells(3, 1, 3, 2);
-      resultsSheet.getCell(3, 1).alignment = columnTitleAlignment;
-      resultsSheet.getCell(3, 1).font = columnTitleFont;
-      resultsSheet.getCell(3, 1).value = 'Spatial Information';
+      // // col 1 & 2
+      // resultsSheet.mergeCells(3, 1, 3, 2);
+      // resultsSheet.getCell(3, 1).alignment = columnTitleAlignment;
+      // resultsSheet.getCell(3, 1).font = columnTitleFont;
+      // resultsSheet.getCell(3, 1).value = 'Spatial Information';
 
-      resultsSheet.getCell(4, 1).value = {
-        richText: [
-          { font: labelFont, text: 'Total Decontamination Area (m' },
-          { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
-          { font: labelFont, text: ')' },
-        ],
-      };
-      resultsSheet.getCell(4, 2).font = defaultFont;
-      resultsSheet.getCell(4, 2).value =
-        calculateResults.data['Total Decontamination Area'];
+      // resultsSheet.getCell(4, 1).value = {
+      //   richText: [
+      //     { font: labelFont, text: 'Total Decontamination Area (m' },
+      //     { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
+      //     { font: labelFont, text: ')' },
+      //   ],
+      // };
+      // resultsSheet.getCell(4, 2).font = defaultFont;
+      // resultsSheet.getCell(4, 2).value =
+      //   calculateResults.data['Total Decontamination Area'];
 
-      resultsSheet.getCell(5, 1).value = {
-        richText: [
-          { font: labelFont, text: 'Total Contaminated Area (m' },
-          { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
-          { font: labelFont, text: ')' },
-        ],
-      };
-      resultsSheet.getCell(5, 2).font = defaultFont;
-      resultsSheet.getCell(5, 2).value =
-        calculateResults.data['Total Contaminated Area'];
+      // resultsSheet.getCell(5, 1).value = {
+      //   richText: [
+      //     { font: labelFont, text: 'Total Contaminated Area (m' },
+      //     { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
+      //     { font: labelFont, text: ')' },
+      //   ],
+      // };
+      // resultsSheet.getCell(5, 2).font = defaultFont;
+      // resultsSheet.getCell(5, 2).value =
+      //   calculateResults.data['Total Contaminated Area'];
 
-      resultsSheet.getCell(6, 1).value = {
-        richText: [
-          {
-            font: labelFont,
-            text: 'Total Contaminated Area where Contamination was Reduced (m',
-          },
-          { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
-          { font: labelFont, text: ')' },
-        ],
-      };
-      resultsSheet.getCell(6, 2).font = defaultFont;
-      resultsSheet.getCell(6, 2).value =
-        calculateResults.data['Total Decontaminated Area'];
+      // resultsSheet.getCell(6, 1).value = {
+      //   richText: [
+      //     {
+      //       font: labelFont,
+      //       text: 'Total Contaminated Area where Contamination was Reduced (m',
+      //     },
+      //     { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
+      //     { font: labelFont, text: ')' },
+      //   ],
+      // };
+      // resultsSheet.getCell(6, 2).font = defaultFont;
+      // resultsSheet.getCell(6, 2).value =
+      //   calculateResults.data['Total Decontaminated Area'];
 
-      resultsSheet.getCell(7, 1).value =
-        'Percent of Area where Contamination was Reduced';
-      resultsSheet.getCell(7, 1).font = labelFont;
-      resultsSheet.getCell(7, 2).font = defaultFont;
-      resultsSheet.getCell(7, 2).value =
-        calculateResults.data['Percent Decontaminated'];
+      // resultsSheet.getCell(7, 1).value =
+      //   'Percent of Area where Contamination was Reduced';
+      // resultsSheet.getCell(7, 1).font = labelFont;
+      // resultsSheet.getCell(7, 2).font = defaultFont;
+      // resultsSheet.getCell(7, 2).value =
+      //   calculateResults.data['Percent Decontaminated'];
 
       // resultsSheet.getCell(5, 1).value = {
       //   richText: [
@@ -587,11 +605,11 @@ function CalculateResults() {
       //   resultsSheet.getCell(6, 2).value = percentAreaSampled;
       // }
 
-      // col 3 & 4
-      resultsSheet.mergeCells(3, 3, 3, 4);
-      resultsSheet.getCell(3, 3).alignment = columnTitleAlignment;
-      resultsSheet.getCell(3, 3).font = columnTitleFont;
-      resultsSheet.getCell(3, 3).value = 'Decon';
+      // col 1 & 2
+      resultsSheet.mergeCells(3, 1, 3, 2);
+      resultsSheet.getCell(3, 1).alignment = columnTitleAlignment;
+      resultsSheet.getCell(3, 1).font = columnTitleFont;
+      resultsSheet.getCell(3, 1).value = 'Decon';
 
       // resultsSheet.getCell(4, 3).font = labelFont;
       // resultsSheet.getCell(4, 3).value = 'Decon Hours per Day';
@@ -611,89 +629,89 @@ function CalculateResults() {
       // resultsSheet.getCell(6, 4).value =
       //   calculateResults.data['User Specified Decon Team Labor Cost'];
 
-      resultsSheet.getCell(4, 3).font = labelFont;
-      resultsSheet.getCell(4, 3).value = 'Total Setup Time (hrs)';
-      resultsSheet.getCell(4, 4).font = defaultFont;
-      resultsSheet.getCell(4, 4).value =
+      resultsSheet.getCell(4, 1).font = labelFont;
+      resultsSheet.getCell(4, 1).value = 'Total Setup Time (hrs)';
+      resultsSheet.getCell(4, 2).font = defaultFont;
+      resultsSheet.getCell(4, 2).value =
         calculateResults.data['Total Setup Time'];
 
-      resultsSheet.getCell(5, 3).font = labelFont;
-      resultsSheet.getCell(5, 3).value = 'Total Application Time (hrs)';
-      resultsSheet.getCell(5, 4).font = defaultFont;
-      resultsSheet.getCell(5, 4).value =
+      resultsSheet.getCell(5, 1).font = labelFont;
+      resultsSheet.getCell(5, 1).value = 'Total Application Time (hrs)';
+      resultsSheet.getCell(5, 2).font = defaultFont;
+      resultsSheet.getCell(5, 2).value =
         calculateResults.data['Total Application Time'];
 
-      resultsSheet.getCell(6, 3).font = labelFont;
-      resultsSheet.getCell(6, 3).value = 'Total Residence Time (hrs)';
-      resultsSheet.getCell(6, 4).font = defaultFont;
-      resultsSheet.getCell(6, 4).value =
+      resultsSheet.getCell(6, 1).font = labelFont;
+      resultsSheet.getCell(6, 1).value = 'Total Residence Time (hrs)';
+      resultsSheet.getCell(6, 2).font = defaultFont;
+      resultsSheet.getCell(6, 2).value =
         calculateResults.data['Total Residence Time'];
 
-      resultsSheet.getCell(7, 3).font = labelFont;
-      resultsSheet.getCell(7, 3).value = 'Total Setup Cost';
-      resultsSheet.getCell(7, 4).font = defaultFont;
-      resultsSheet.getCell(7, 4).numFmt = currencyNumberFormat;
-      resultsSheet.getCell(7, 4).value =
+      resultsSheet.getCell(7, 1).font = labelFont;
+      resultsSheet.getCell(7, 1).value = 'Total Setup Cost';
+      resultsSheet.getCell(7, 2).font = defaultFont;
+      resultsSheet.getCell(7, 2).numFmt = currencyNumberFormat;
+      resultsSheet.getCell(7, 2).value =
         calculateResults.data['Total Setup Cost'];
 
-      resultsSheet.getCell(8, 3).font = labelFont;
-      resultsSheet.getCell(8, 3).value = 'Total Application Cost';
-      resultsSheet.getCell(8, 4).font = defaultFont;
-      resultsSheet.getCell(8, 4).numFmt = currencyNumberFormat;
-      resultsSheet.getCell(8, 4).value =
+      resultsSheet.getCell(8, 1).font = labelFont;
+      resultsSheet.getCell(8, 1).value = 'Total Application Cost';
+      resultsSheet.getCell(8, 2).font = defaultFont;
+      resultsSheet.getCell(8, 2).numFmt = currencyNumberFormat;
+      resultsSheet.getCell(8, 2).value =
         calculateResults.data['Total Application Cost'];
 
-      resultsSheet.getCell(9, 3).font = labelFont;
-      resultsSheet.getCell(9, 3).value = 'Time to Complete Decon (days)';
-      resultsSheet.getCell(9, 4).font = defaultFont;
-      resultsSheet.getCell(9, 4).value = calculateResults.data['Total Time'];
+      resultsSheet.getCell(9, 1).font = labelFont;
+      resultsSheet.getCell(9, 1).value = 'Time to Complete Decon (days)';
+      resultsSheet.getCell(9, 2).font = defaultFont;
+      resultsSheet.getCell(9, 2).value = calculateResults.data['Total Time'];
 
-      resultsSheet.getCell(10, 3).font = labelFont;
-      resultsSheet.getCell(10, 3).value = 'Cost to Complete Decon';
-      resultsSheet.getCell(10, 4).font = defaultFont;
-      resultsSheet.getCell(10, 4).numFmt = currencyNumberFormat;
-      resultsSheet.getCell(10, 4).value = calculateResults.data['Total Cost'];
+      resultsSheet.getCell(10, 1).font = labelFont;
+      resultsSheet.getCell(10, 1).value = 'Cost to Complete Decon';
+      resultsSheet.getCell(10, 2).font = defaultFont;
+      resultsSheet.getCell(10, 2).numFmt = currencyNumberFormat;
+      resultsSheet.getCell(10, 2).value = calculateResults.data['Total Cost'];
 
       // col 5 & 6
-      resultsSheet.mergeCells(3, 5, 3, 6);
-      resultsSheet.getCell(3, 5).alignment = columnTitleAlignment;
-      resultsSheet.getCell(3, 5).font = columnTitleFont;
-      resultsSheet.getCell(3, 5).value = 'Waste Totals';
+      resultsSheet.mergeCells(3, 3, 3, 4);
+      resultsSheet.getCell(3, 3).alignment = columnTitleAlignment;
+      resultsSheet.getCell(3, 3).font = columnTitleFont;
+      resultsSheet.getCell(3, 3).value = 'Waste Totals';
 
-      resultsSheet.getCell(4, 5).font = labelFont;
-      resultsSheet.getCell(4, 5).value = 'Total Solid Waste Volume (cu m)';
-      resultsSheet.getCell(4, 6).font = defaultFont;
-      resultsSheet.getCell(4, 6).value =
+      resultsSheet.getCell(4, 3).font = labelFont;
+      resultsSheet.getCell(4, 3).value = 'Total Solid Waste Volume (cu m)';
+      resultsSheet.getCell(4, 4).font = defaultFont;
+      resultsSheet.getCell(4, 4).value =
         calculateResults.data['Solid Waste Volume'];
 
-      resultsSheet.getCell(5, 5).font = labelFont;
-      resultsSheet.getCell(5, 5).value = 'Total Solid Waste Mass (kg)';
-      resultsSheet.getCell(5, 6).font = defaultFont;
-      resultsSheet.getCell(5, 6).value =
+      resultsSheet.getCell(5, 3).font = labelFont;
+      resultsSheet.getCell(5, 3).value = 'Total Solid Waste Mass (kg)';
+      resultsSheet.getCell(5, 4).font = defaultFont;
+      resultsSheet.getCell(5, 4).value =
         calculateResults.data['Solid Waste Mass'];
 
-      resultsSheet.getCell(6, 5).font = labelFont;
-      resultsSheet.getCell(6, 5).value = 'Total Liquid Waste Volume (cu m)';
-      resultsSheet.getCell(6, 6).font = defaultFont;
-      resultsSheet.getCell(6, 6).value =
+      resultsSheet.getCell(6, 3).font = labelFont;
+      resultsSheet.getCell(6, 3).value = 'Total Liquid Waste Volume (cu m)';
+      resultsSheet.getCell(6, 4).font = defaultFont;
+      resultsSheet.getCell(6, 4).value =
         calculateResults.data['Liquid Waste Volume'];
 
-      resultsSheet.getCell(7, 5).font = labelFont;
-      resultsSheet.getCell(7, 5).value = 'Total Liquid Waste Mass (kg)';
-      resultsSheet.getCell(7, 6).font = defaultFont;
-      resultsSheet.getCell(7, 6).value =
+      resultsSheet.getCell(7, 3).font = labelFont;
+      resultsSheet.getCell(7, 3).value = 'Total Liquid Waste Mass (kg)';
+      resultsSheet.getCell(7, 4).font = defaultFont;
+      resultsSheet.getCell(7, 4).value =
         calculateResults.data['Liquid Waste Mass'];
 
-      resultsSheet.getCell(8, 5).font = labelFont;
-      resultsSheet.getCell(8, 5).value = 'Total Waste Volume (cu m)';
-      resultsSheet.getCell(8, 6).font = defaultFont;
-      resultsSheet.getCell(8, 6).value =
+      resultsSheet.getCell(8, 3).font = labelFont;
+      resultsSheet.getCell(8, 3).value = 'Total Waste Volume (cu m)';
+      resultsSheet.getCell(8, 4).font = defaultFont;
+      resultsSheet.getCell(8, 4).value =
         calculateResults.data['Total Waste Volume'];
 
-      resultsSheet.getCell(9, 5).font = labelFont;
-      resultsSheet.getCell(9, 5).value = 'Total Waste Mass (kg)';
-      resultsSheet.getCell(9, 6).font = defaultFont;
-      resultsSheet.getCell(9, 6).value =
+      resultsSheet.getCell(9, 3).font = labelFont;
+      resultsSheet.getCell(9, 3).value = 'Total Waste Mass (kg)';
+      resultsSheet.getCell(9, 4).font = defaultFont;
+      resultsSheet.getCell(9, 4).value =
         calculateResults.data['Total Waste Mass'];
     }
 
@@ -862,14 +880,6 @@ function CalculateResults() {
               }
             />
             <LabelValue
-              label={
-                <Fragment>
-                  Total Decontamination Area (m<sup>2</sup>)
-                </Fragment>
-              }
-              value={calculateResults.data['Total Decontamination Area']}
-            />
-            <LabelValue
               label="Total Cost ($)"
               value={calculateResults.data['Total Cost']}
               isMonetary={true}
@@ -942,11 +952,11 @@ function CalculateResults() {
             <br />
 
             <h3>Details</h3>
-            <h4>Spatial Information</h4>
+            <h4>Efficacy Information</h4>
             <LabelValue
               label={
                 <Fragment>
-                  Total Contaminated Area (m<sup>2</sup>)
+                  Original Contaminated Area (m<sup>2</sup>)
                 </Fragment>
               }
               value={calculateResults.data['Total Contaminated Area']}
@@ -954,7 +964,7 @@ function CalculateResults() {
             <LabelValue
               label={
                 <Fragment>
-                  Total Contaminated Area where Contamination was Reduced (m
+                  Total Decontaminated Area (m
                   <sup>2</sup>)
                 </Fragment>
               }
@@ -963,39 +973,24 @@ function CalculateResults() {
             <LabelValue
               label={
                 <Fragment>
-                  Percent of Area where Contamination was Reduced
+                  Total Area where Contamination was Reduced (m
+                  <sup>2</sup>)
                 </Fragment>
               }
-              value={calculateResults.data['Percent Decontaminated']}
-            />
-
-            <hr css={resourceTallySeparator} />
-            <h4>Efficacy</h4>
-            <LabelValue
-              label={<Fragment>Contamination Type</Fragment>}
-              value={calculateResults.data['Contamination Type']}
+              value={calculateResults.data['Total Reduction Area']}
             />
             <LabelValue
               label={
                 <Fragment>
-                  Original Amount of Contamination (
-                  {calculateResults.data['Contamination Units']}/m<sup>2</sup>)
+                  Total Area Remaining Contaminated (m
+                  <sup>2</sup>)
                 </Fragment>
               }
-              value={calculateResults.data['Original CFU per Square Meter']}
+              value={calculateResults.data['Total Remaining Contaminated Area']}
             />
             <LabelValue
-              label={
-                <Fragment>
-                  New Amount of Contamination (
-                  {calculateResults.data['Contamination Units']}/m<sup>2</sup>)
-                </Fragment>
-              }
-              value={calculateResults.data['New CFU per Square Meter']}
-            />
-            <LabelValue
-              label={<Fragment>Percent Contamination was Reduced</Fragment>}
-              value={calculateResults.data['Percent CFU Reduction']}
+              label={<Fragment>Percent Remaining Contaminated Area</Fragment>}
+              value={calculateResults.data['Percent Contaminated Remaining']}
             />
           </div>
           <div>

@@ -492,6 +492,7 @@ export function contaminationMapPopup(feature: any) {
         { label: 'Contamination Unit', fieldName: 'CONTAMUNIT' },
         { label: 'Contamination Value', fieldName: 'CONTAMVAL' },
         { label: 'Contamination Reduced', fieldName: 'CONTAMREDUCED' },
+        { label: 'Contaminated', fieldName: 'CONTAMINATED' },
         { label: 'Has Decontamination been Applied', fieldName: 'CONTAMHIT' },
         { label: 'FID', fieldName: 'FID' },
         { label: 'ID', fieldName: 'Id' },

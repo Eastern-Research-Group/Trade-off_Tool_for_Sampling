@@ -958,6 +958,8 @@ function FilePanel() {
           let uuid = generateUUID();
           if (layerType.value === 'Contamination Map') {
             graphic.attributes['CONTAMREDUCED'] = false;
+            graphic.attributes['CONTAMINATED'] =
+              graphic.attributes['CONTAMVAL'] >= 100;
             graphic.attributes['CONTAMHIT'] = false;
           }
           if (layerType.value === 'Samples') {

@@ -57,6 +57,7 @@ import { SampleTypeOptions } from 'types/Publish';
 // config
 import { PanelValueType } from 'config/navigation';
 // utils
+import { parseSmallFloat } from 'utils/utils';
 import {
   createLayer,
   findLayerInEdits,
@@ -629,10 +630,8 @@ export function useCalculatePlan() {
     amc: 0,
     ac: 0,
     totalContaminatedArea: 0,
+    totalDeconReductionArea: 0,
     totalDecontaminatedArea: 0,
-    originalCfuPerM2: 0,
-    newCfuPerM2: 0,
-    contaminationUnits: '',
     contaminationType: '',
   });
   const [totalArea, setTotalArea] = useState(0);
@@ -726,43 +725,43 @@ export function useCalculatePlan() {
         } = calcGraphic.attributes;
 
         if (TTPK) {
-          ttpk = ttpk + Number(TTPK) * areaCount;
+          ttpk = ttpk + parseSmallFloat(Number(TTPK)) * areaCount;
         }
         if (TTC) {
-          ttc = ttc + Number(TTC) * areaSM;
+          ttc = ttc + parseSmallFloat(Number(TTC)) * areaSM;
         }
         if (TTA) {
-          tta = tta + Number(TTA) * areaCount;
+          tta = tta + parseSmallFloat(Number(TTA)) * areaCount;
         }
         if (TTPS) {
-          ttps = ttps + Number(TTPS) * areaCount;
+          ttps = ttps + parseSmallFloat(Number(TTPS)) * areaCount;
         }
         if (LOD_P) {
-          lod_p = lod_p + Number(LOD_P);
+          lod_p = lod_p + parseSmallFloat(Number(LOD_P));
         }
         if (LOD_NON) {
-          lod_non = lod_non + Number(LOD_NON);
+          lod_non = lod_non + parseSmallFloat(Number(LOD_NON));
         }
         if (MCPS) {
-          mcps = mcps + Number(MCPS) * areaCount;
+          mcps = mcps + parseSmallFloat(Number(MCPS)) * areaCount;
         }
         if (TCPS) {
-          tcps = tcps + Number(TCPS) * areaSM;
+          tcps = tcps + parseSmallFloat(Number(TCPS)) * areaSM;
         }
         if (WVPS) {
-          wvps = wvps + Number(WVPS) * areaSM;
+          wvps = wvps + parseSmallFloat(Number(WVPS)) * areaSM;
         }
         if (WWPS) {
-          wwps = wwps + Number(WWPS) * areaSM;
+          wwps = wwps + parseSmallFloat(Number(WWPS)) * areaSM;
         }
         if (SA) {
-          sa = sa + Number(SA);
+          sa = sa + parseSmallFloat(Number(SA));
         }
         if (ALC) {
-          alc = alc + Number(ALC) * areaSM;
+          alc = alc + parseSmallFloat(Number(ALC)) * areaSM;
         }
         if (AMC) {
-          amc = amc + Number(AMC) * areaSM;
+          amc = amc + parseSmallFloat(Number(AMC)) * areaSM;
         }
         if (areaCount) {
           ac = ac + Number(areaCount);
@@ -773,10 +772,8 @@ export function useCalculatePlan() {
     });
 
     let totalContaminatedArea = 0;
+    let totalDeconReductionArea = 0;
     let totalDecontaminatedArea = 0;
-    let originalCfuPerM2 = 0;
-    let newCfuPerM2 = 0;
-    let contaminationUnits = '';
     let contaminationType = '';
     if (contaminationMap) {
       (contaminationMap.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
@@ -789,15 +786,11 @@ export function useCalculatePlan() {
             return;
           }
 
-          totalContaminatedArea = totalContaminatedArea + areaSM;
+          const { CONTAMINATED, CONTAMTYPE } = calcGraphic.attributes;
 
-          const { CONTAMTYPE, CONTAMVAL, CONTAMUNIT } = calcGraphic.attributes;
-          console.log('oldContamVal: ', CONTAMVAL);
-          if (CONTAMVAL) {
-            originalCfuPerM2 = originalCfuPerM2 + Number(CONTAMVAL) * areaSM;
-          }
+          if (CONTAMINATED)
+            totalContaminatedArea = totalContaminatedArea + areaSM;
 
-          if (index === 0) contaminationUnits = CONTAMUNIT;
           if (index === 0) contaminationType = CONTAMTYPE;
         },
       );
@@ -818,11 +811,11 @@ export function useCalculatePlan() {
         console.log('newContamVal: ', CONTAMVAL);
 
         if (graphic.attributes.CONTAMREDUCED) {
-          totalDecontaminatedArea = totalDecontaminatedArea + areaSM;
-        }
+          totalDeconReductionArea = totalDeconReductionArea + areaSM;
 
-        if (CONTAMVAL) {
-          newCfuPerM2 = newCfuPerM2 + Number(CONTAMVAL) * areaSM;
+          if (!graphic.attributes.CONTAMINATED) {
+            totalDecontaminatedArea = totalDecontaminatedArea + areaSM;
+          }
         }
       });
     }
@@ -843,10 +836,8 @@ export function useCalculatePlan() {
       amc,
       ac,
       totalContaminatedArea,
+      totalDeconReductionArea,
       totalDecontaminatedArea,
-      originalCfuPerM2,
-      newCfuPerM2,
-      contaminationUnits,
       contaminationType,
     });
     setCalcGraphics(calcGraphics);
@@ -883,6 +874,9 @@ export function useCalculatePlan() {
     const totalTimeHours = s + r + tm;
     const totalTime = totalTimeHours / 24;
     const totalCost = sc + cm;
+
+    const contaminatedAreaRemaining =
+      totals.totalContaminatedArea - totals.totalDecontaminatedArea;
 
     const resultObject: CalculateResultsDataType = {
       // assign input parameters
@@ -935,17 +929,12 @@ export function useCalculatePlan() {
       'Total Time': Math.round(totalTime * 10) / 10,
       // 'Limiting Time Factor': limitingFactor,
       'Total Contaminated Area': totals.totalContaminatedArea,
+      'Total Reduction Area': totals.totalDeconReductionArea,
+      'Total Remaining Contaminated Area': contaminatedAreaRemaining,
       'Total Decontaminated Area': totals.totalDecontaminatedArea,
-      'Original CFU per Square Meter': totals.originalCfuPerM2,
-      'New CFU per Square Meter': totals.newCfuPerM2,
-      'Percent CFU Reduction':
-        ((totals.originalCfuPerM2 - totals.newCfuPerM2) /
-          totals.originalCfuPerM2) *
-        100,
-      'Percent Decontaminated':
-        (totals.totalDecontaminatedArea / totals.totalContaminatedArea) * 100,
+      'Percent Contaminated Remaining':
+        (contaminatedAreaRemaining / totals.totalContaminatedArea) * 100,
       'Contamination Type': totals.contaminationType,
-      'Contamination Units': totals.contaminationUnits,
     };
 
     // display loading spinner for 1 second

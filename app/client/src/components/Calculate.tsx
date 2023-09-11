@@ -46,7 +46,11 @@ import { CalculateResultsType } from 'types/CalculateResults';
 //   removeZValues,
 //   // updateLayerEdits
 // } from 'utils/sketchUtils';
-// import { chunkArray, createErrorObject } from 'utils/utils';
+import {
+  // chunkArray,
+  // createErrorObject,
+  parseSmallFloat,
+} from 'utils/utils';
 // styles
 import { reactSelectStyles } from 'styles';
 
@@ -468,8 +472,10 @@ function Calculate() {
         // const curCfu = contamGraphic.attributes.CONTAMVAL;
         // console.log('curCfu: ', curCfu);
         const contamReduction = graphic.attributes.LOD_NON;
-        const newCfu =
-          contamGraphic.attributes.CONTAMVAL * (1 - contamReduction);
+        // console.log('contamReduction: ', contamReduction);
+        const reductionFactor = parseSmallFloat(1 - contamReduction);
+        // console.log('parseSmallFloat 1 - contamReduction: ', reductionFactor);
+        const newCfu = contamGraphic.attributes.CONTAMVAL * reductionFactor;
         // console.log('newCfu: ', newCfu);
 
         // add new graphics to the map and remove the original contamination feature
@@ -486,16 +492,26 @@ function Calculate() {
                     ...contamGraphic.attributes,
                     CONTAMVAL: newCfu,
                     CONTAMREDUCED: true,
+                    CONTAMINATED: newCfu >= 100,
                     CONTAMHIT: true,
                   },
                   geometry: newGeom,
-                  symbol: {
-                    type: 'simple-fill',
-                    color: [0, 255, 0],
-                    outline: {
-                      color: [0, 0, 0],
-                    },
-                  } as any,
+                  symbol:
+                    newCfu < 100
+                      ? ({
+                          type: 'simple-fill',
+                          color: [0, 255, 0],
+                          outline: {
+                            color: [0, 0, 0],
+                          },
+                        } as any)
+                      : ({
+                          type: 'simple-fill',
+                          color: [255, 255, 255],
+                          outline: {
+                            color: [255, 0, 0],
+                          },
+                        } as any),
                   popupTemplate: {
                     title: '',
                     content: contaminationMapPopup,
@@ -518,10 +534,15 @@ function Calculate() {
                     symbol: {
                       type: 'simple-fill',
                       color: contamGraphic.attributes.CONTAMREDUCED
-                        ? [0, 255, 0]
+                        ? contamGraphic.attributes.CONTAMVAL >= 100
+                          ? [255, 255, 255]
+                          : [0, 255, 0]
                         : [255, 0, 0],
                       outline: {
-                        color: [0, 0, 0],
+                        color:
+                          contamGraphic.attributes.CONTAMVAL >= 100
+                            ? [255, 0, 0]
+                            : [0, 0, 0],
                       },
                     } as any,
                     popupTemplate: {
@@ -551,6 +572,10 @@ function Calculate() {
 
       const newGraphic = graphic.clone();
       newGraphic.symbol = defaultSymbols.symbols['Contamination Map'] as any;
+      newGraphic.popupTemplate = {
+        title: '',
+        content: contaminationMapPopup,
+      } as any;
       replacementGraphics.push(newGraphic);
     });
     // console.log('graphicsToRemove: ', graphicsToRemove);
