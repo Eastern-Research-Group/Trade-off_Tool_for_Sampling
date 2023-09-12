@@ -888,6 +888,7 @@ export function useCalculatePlan() {
       // 'User Specified Analysis Lab Hours per Day': numLabHours,
       // 'User Specified Surface Area': surfaceArea,
       'Total Number of User-Defined Decon Technologies': calcGraphics.length,
+      'User Specified Number of Concurrent Applications': numSamplingTeams,
 
       // assign counts
       'Total Number of Decon Applications': totals.ac,

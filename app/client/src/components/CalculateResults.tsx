@@ -11,6 +11,7 @@ import { css } from '@emotion/react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 // components
+import { AccordionList, AccordionItem } from 'components/Accordion';
 import ShowLessMore from 'components/ShowLessMore';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
@@ -378,21 +379,30 @@ function CalculateResults() {
         ];
 
       summarySheet.getCell(9, 1).font = labelFont;
-      summarySheet.getCell(9, 1).value = 'Total Number of Decon Applications';
+      summarySheet.getCell(9, 1).value =
+        'User Specified Number of Concurrent Applications';
       summarySheet.getCell(9, 2).font = defaultFont;
       summarySheet.getCell(9, 2).value =
-        calculateResults.data['Total Number of Decon Applications'];
+        calculateResults.data[
+          'User Specified Number of Concurrent Applications'
+        ];
 
       summarySheet.getCell(10, 1).font = labelFont;
-      summarySheet.getCell(10, 1).value = 'Total Cost';
+      summarySheet.getCell(10, 1).value = 'Total Number of Decon Applications';
       summarySheet.getCell(10, 2).font = defaultFont;
-      summarySheet.getCell(10, 2).numFmt = currencyNumberFormat;
-      summarySheet.getCell(10, 2).value = calculateResults.data['Total Cost'];
+      summarySheet.getCell(10, 2).value =
+        calculateResults.data['Total Number of Decon Applications'];
 
       summarySheet.getCell(11, 1).font = labelFont;
-      summarySheet.getCell(11, 1).value = 'Total Time (days)';
+      summarySheet.getCell(11, 1).value = 'Total Cost';
       summarySheet.getCell(11, 2).font = defaultFont;
-      summarySheet.getCell(11, 2).value = calculateResults.data['Total Time'];
+      summarySheet.getCell(11, 2).numFmt = currencyNumberFormat;
+      summarySheet.getCell(11, 2).value = calculateResults.data['Total Cost'];
+
+      summarySheet.getCell(12, 1).font = labelFont;
+      summarySheet.getCell(12, 1).value = 'Total Time (days)';
+      summarySheet.getCell(12, 2).font = defaultFont;
+      summarySheet.getCell(12, 2).value = calculateResults.data['Total Time'];
 
       // col 3 & 4
       summarySheet.mergeCells(7, 3, 7, 4);
@@ -1128,6 +1138,14 @@ function CalculateResults() {
               }
             />
             <LabelValue
+              label="User Specified Number of Concurrent Applications"
+              value={
+                calculateResults.data[
+                  'User Specified Number of Concurrent Applications'
+                ]
+              }
+            />
+            <LabelValue
               label="Total Number of Decon Applications"
               value={
                 calculateResults.data['Total Number of Decon Applications']
@@ -1149,10 +1167,12 @@ function CalculateResults() {
                 </Fragment>
               }
               value={calculateResults.data['Total Waste Volume']}
+              isMonetary={true}
             />
             <LabelValue
               label="Total Waste Mass (kg)"
               value={calculateResults.data['Total Waste Mass']}
+              isMonetary={true}
             />
             <hr css={resourceTallySeparator} />
 
@@ -1186,10 +1206,12 @@ function CalculateResults() {
                 </Fragment>
               }
               value={calculateResults.data['Solid Waste Volume']}
+              isMonetary={true}
             />
             <LabelValue
               label="Solid Waste Mass (kg)"
               value={calculateResults.data['Solid Waste Mass']}
+              isMonetary={true}
             />
             <LabelValue
               label={
@@ -1198,47 +1220,61 @@ function CalculateResults() {
                 </Fragment>
               }
               value={calculateResults.data['Liquid Waste Volume']}
+              isMonetary={true}
             />
             <LabelValue
               label="Liquid Waste Mass (kg)"
               value={calculateResults.data['Liquid Waste Mass']}
+              isMonetary={true}
             />
             <br />
 
-            <h3>Details</h3>
-            <h4>Efficacy Information</h4>
-            <LabelValue
-              label={
-                <Fragment>
-                  Total Contaminated Area (m<sup>2</sup>)
-                </Fragment>
-              }
-              value={calculateResults.data['Total Contaminated Area']}
-            />
-            <LabelValue
-              label={
-                <Fragment>
-                  Total Decontaminated Area (m
-                  <sup>2</sup>)
-                </Fragment>
-              }
-              value={calculateResults.data['Total Decontaminated Area']}
-            />
-            <LabelValue
-              label={
-                <Fragment>
-                  Amount of Area (m<sup>2</sup>) where Contamination Remains
-                  Above Limit of Detection (100 CFUs)
-                </Fragment>
-              }
-              value={calculateResults.data['Total Remaining Contaminated Area']}
-            />
-            <LabelValue
-              label={
-                'Percent of Area Remaining Contaminated above Limit of Detection (100 CFUs)'
-              }
-              value={calculateResults.data['Percent Contaminated Remaining']}
-            />
+            <AccordionList isResults={true}>
+              <AccordionItem title={'Efficacy Information'} isResults={true}>
+                <div>
+                  <LabelValue
+                    label={
+                      <Fragment>
+                        Total Contaminated Area (m<sup>2</sup>)
+                      </Fragment>
+                    }
+                    value={calculateResults.data['Total Contaminated Area']}
+                    isMonetary={true}
+                  />
+                  <LabelValue
+                    label={
+                      <Fragment>
+                        Total Decontaminated Area (m
+                        <sup>2</sup>)
+                      </Fragment>
+                    }
+                    value={calculateResults.data['Total Decontaminated Area']}
+                    isMonetary={true}
+                  />
+                  <LabelValue
+                    label={
+                      <Fragment>
+                        Amount of Area (m<sup>2</sup>) where Contamination
+                        Remains Above Limit of Detection (100 CFUs)
+                      </Fragment>
+                    }
+                    value={
+                      calculateResults.data['Total Remaining Contaminated Area']
+                    }
+                    isMonetary={true}
+                  />
+                  <LabelValue
+                    label={
+                      'Percent of Area Remaining Contaminated above Limit of Detection (100 CFUs)'
+                    }
+                    value={
+                      calculateResults.data['Percent Contaminated Remaining']
+                    }
+                    isMonetary={true}
+                  />
+                </div>
+              </AccordionItem>
+            </AccordionList>
           </div>
           <div>
             {downloadStatus === 'fetching' && <LoadingSpinner />}

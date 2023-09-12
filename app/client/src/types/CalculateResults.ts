@@ -1,5 +1,6 @@
 export type CalculateResultsDataType = {
   'Total Number of User-Defined Decon Technologies': number;
+  'User Specified Number of Concurrent Applications': number;
   'Total Number of Decon Applications': number;
   'Total Cost': number;
   'Total Time': number;

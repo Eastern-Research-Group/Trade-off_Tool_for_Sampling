@@ -2,37 +2,40 @@
 
 import React, { ReactNode, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
+import { colors } from 'styles';
 
 // --- styles (AccordionList) ---
-const accordionListContainer = css`
-  border-bottom: 1px solid #d8dfe2;
+const accordionListContainer = (isResults: boolean) => css`
+  border-bottom: solid ${isResults ? `3px ${colors.darkaqua()}` : '1px #d8dfe2'};
 `;
 
 // --- components (AccordionList) ---
 type AccordionListProps = {
+  isResults?: boolean;
   children: ReactNode;
 };
 
-function AccordionList({ children }: AccordionListProps) {
-  return <div css={accordionListContainer}>{children}</div>;
+function AccordionList({ isResults = false, children }: AccordionListProps) {
+  return <div css={accordionListContainer(isResults)}>{children}</div>;
 }
 
 // --- styles (AccordionItem) ---
-const accordionItemContainer = css`
-  border-top: 1px solid #d8dfe2;
+const accordionItemContainer = (isResults: boolean) => css`
+  border-top: solid ${isResults ? `3px ${colors.darkaqua()}` : '1px #d8dfe2'};
 `;
 
-const headerStyles = css`
+const headerStyles = (isResults: boolean) => css`
   display: flex;
   flex-flow: row wrap;
   align-items: center;
   justify-content: space-between;
   padding: 0.75em 0.875em;
   cursor: pointer;
+  ${isResults ? 'background-color: transparent;' : ''}
 
   &:hover,
   &:focus {
-    background-color: #f0f6f9;
+    background-color: ${isResults ? colors.darkblue() : '#f0f6f9'};
   }
 
   .fa-angle-down {
@@ -60,6 +63,7 @@ type AccordionItemProps = {
   title: ReactNode;
   initiallyExpanded?: boolean;
   isOpenParam?: boolean;
+  isResults?: boolean;
   onChange?: (isOpen: boolean) => void;
   children: ReactNode;
 };
@@ -68,6 +72,7 @@ function AccordionItem({
   title,
   initiallyExpanded = false,
   isOpenParam,
+  isResults = false,
   onChange = () => {},
   children,
 }: AccordionItemProps) {
@@ -80,10 +85,10 @@ function AccordionItem({
   }, [isOpen, isOpenParam]);
 
   return (
-    <div css={accordionItemContainer}>
+    <div css={accordionItemContainer(isResults)}>
       <header
         tabIndex={0}
-        css={headerStyles}
+        css={headerStyles(isResults)}
         onClick={(ev) => {
           const newIsOpen = !isOpen;
           setIsOpen(newIsOpen);
