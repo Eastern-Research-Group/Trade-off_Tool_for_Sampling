@@ -17,6 +17,8 @@ import { CalculateContext } from 'contexts/Calculate';
 import { SketchContext } from 'contexts/Sketch';
 // utils
 import { getGraphicsArray } from 'utils/sketchUtils';
+import { useGeometryTools } from 'utils/hooks';
+import { parseSmallFloat } from 'utils/utils';
 import LoadingSpinner from './LoadingSpinner';
 // styles
 import { colors } from 'styles';
@@ -266,9 +268,12 @@ function CalculateResults() {
     setBase64Initialized(true);
   }, [screenshot, downloadStatus, base64Initialized]);
 
+  const { calculateArea, loadedProjection } = useGeometryTools();
+
   // export the excel doc
   useEffect(() => {
     if (
+      !loadedProjection ||
       !selectedScenario ||
       downloadStatus !== 'fetching' ||
       !base64Screenshot.image ||
@@ -303,6 +308,7 @@ function CalculateResults() {
     // create the sheets
     addSummarySheet();
     addResultsSheet();
+    addWasteSummarySheet();
     addSampleSheet();
 
     // download the file
@@ -777,6 +783,149 @@ function CalculateResults() {
         calculateResults.data['Total Waste Mass'];
     }
 
+    function addWasteSummarySheet() {
+      // only here to satisfy typescript
+      if (!map || !selectedScenario || selectedScenario.layers.length === 0) {
+        return;
+      }
+
+      // get the group layer for the scenario
+      const scenarioGroupLayer = map.layers.find(
+        (layer) =>
+          layer.type === 'group' && layer.id === selectedScenario.layerId,
+      ) as __esri.GroupLayer;
+      if (!scenarioGroupLayer) return;
+
+      // add the sheet
+      const samplesSheet = workbook.addWorksheet('Waste Summary');
+
+      // setup column widths
+      samplesSheet.columns = [
+        { width: 30 },
+        { width: 25 },
+        { width: 22 },
+        { width: 27 },
+        { width: 26.71 },
+        { width: 26 },
+      ];
+
+      // add the header
+      samplesSheet.getCell(1, 1).font = sheetTitleFont;
+      samplesSheet.getCell(1, 1).value = 'Waste Summary';
+
+      // add in column headers
+      samplesSheet.getCell(3, 1).font = labelFont;
+      samplesSheet.getCell(3, 1).value = 'Decon Technology';
+      samplesSheet.getCell(3, 2).font = labelFont;
+      samplesSheet.getCell(3, 2).value = {
+        richText: [
+          {
+            font: labelFont,
+            text: 'Solid Waste Volume (m',
+          },
+          { font: { ...labelFont, vertAlign: 'superscript' }, text: '3' },
+          {
+            font: labelFont,
+            text: ')',
+          },
+        ],
+      };
+      samplesSheet.getCell(3, 3).font = labelFont;
+      samplesSheet.getCell(3, 3).value = 'Solid Waste Mass (kg)';
+      samplesSheet.getCell(3, 4).font = labelFont;
+      samplesSheet.getCell(3, 4).value = {
+        richText: [
+          {
+            font: labelFont,
+            text: 'Liquid Waste Volume (m',
+          },
+          { font: { ...labelFont, vertAlign: 'superscript' }, text: '3' },
+          {
+            font: labelFont,
+            text: ')',
+          },
+        ],
+      };
+      samplesSheet.getCell(3, 5).font = labelFont;
+      samplesSheet.getCell(3, 5).value = 'Liquid Waste Mass (kg)';
+
+      // perform aggregation
+      const wastePerTechnology: any = {};
+      scenarioGroupLayer.layers.forEach((layer) => {
+        if (
+          layer.type !== 'graphics' ||
+          layer.id.endsWith('-points') ||
+          layer.id.endsWith('-hybrid')
+        )
+          return;
+
+        const graphicsLayer = layer as __esri.GraphicsLayer;
+        graphicsLayer.graphics.forEach((graphic) => {
+          // calculate the area using the custom hook
+          const calcGraphic = graphic.clone();
+          let areaSM = calculateArea(calcGraphic);
+          if (typeof areaSM !== 'number') {
+            areaSM = 0;
+          }
+
+          const { TYPE, WVPS, WWPS, ALC, AMC } = graphic.attributes;
+
+          // do calculations
+          const solidWasteVolume = parseSmallFloat(Number(WVPS)) * areaSM;
+          const solidWasteMass = parseSmallFloat(Number(WWPS)) * areaSM;
+          const liquidWasteVolume = parseSmallFloat(Number(ALC)) * areaSM;
+          const liquidWasteMass = parseSmallFloat(Number(AMC)) * areaSM;
+
+          if (wastePerTechnology.hasOwnProperty(TYPE)) {
+            wastePerTechnology[TYPE].solidWasteVolume += solidWasteVolume;
+            wastePerTechnology[TYPE].solidWasteMass += solidWasteMass;
+            wastePerTechnology[TYPE].liquidWasteVolume += liquidWasteVolume;
+            wastePerTechnology[TYPE].liquidWasteMass += liquidWasteMass;
+          } else {
+            wastePerTechnology[TYPE] = {
+              solidWasteVolume,
+              solidWasteMass,
+              liquidWasteVolume,
+              liquidWasteMass,
+            };
+          }
+        });
+      });
+
+      // add in the rows
+      let currentRow = 4;
+      Object.entries(wastePerTechnology).forEach(([key, value]) => {
+        samplesSheet.getCell(currentRow, 1).font = defaultFont;
+        samplesSheet.getCell(currentRow, 1).value = key;
+
+        const {
+          solidWasteVolume,
+          solidWasteMass,
+          liquidWasteVolume,
+          liquidWasteMass,
+        } = value as any;
+
+        if (solidWasteVolume) {
+          samplesSheet.getCell(currentRow, 2).font = defaultFont;
+          samplesSheet.getCell(currentRow, 2).value = solidWasteVolume;
+        }
+        if (solidWasteMass) {
+          samplesSheet.getCell(currentRow, 3).font = defaultFont;
+          samplesSheet.getCell(currentRow, 3).value = solidWasteMass;
+        }
+        if (liquidWasteVolume) {
+          samplesSheet.getCell(currentRow, 4).font = defaultFont;
+          samplesSheet.getCell(currentRow, 4).value = liquidWasteVolume;
+        }
+        if (liquidWasteMass) {
+          samplesSheet.getCell(currentRow, 5).font = defaultFont;
+          samplesSheet.getCell(currentRow, 5).value = liquidWasteMass;
+        }
+
+        currentRow += 1;
+      });
+    }
+
     function addSampleSheet() {
       // only here to satisfy typescript
       if (!map || !selectedScenario || selectedScenario.layers.length === 0) {
@@ -791,22 +940,24 @@ function CalculateResults() {
       if (!scenarioGroupLayer) return;
 
       // add the sheet
-      const samplesSheet = workbook.addWorksheet('Decon Plan Details');
+      const samplesSheet = workbook.addWorksheet('Waste Details');
 
       // setup column widths
       samplesSheet.columns = [
-        { width: 26.71 },
-        { width: 47.71 },
-        { width: 47.71 },
-        { width: 15.43 },
-        { width: 26.71 },
-        { width: 10.86 },
-        { width: 33.57 },
+        { width: 26.71 }, // l name
+        { width: 47.71 }, // l id
+        { width: 47.71 }, // decon id
+        { width: 30 }, // decon tech
+        { width: 25 }, // swv
+        { width: 22 }, // swm
+        { width: 26 }, // lwv
+        { width: 23 }, // lwm
+        { width: 33.57 }, // notes
       ];
 
       // add the header
       samplesSheet.getCell(1, 1).font = sheetTitleFont;
-      samplesSheet.getCell(1, 1).value = 'Decon Plan Details';
+      samplesSheet.getCell(1, 1).value = 'Waste Details';
 
       // add in column headers
       samplesSheet.getCell(3, 1).font = labelFont;
@@ -818,23 +969,43 @@ function CalculateResults() {
       samplesSheet.getCell(3, 4).font = labelFont;
       samplesSheet.getCell(3, 4).value = 'Decon Technology';
       samplesSheet.getCell(3, 5).font = labelFont;
-      samplesSheet.getCell(3, 5).value = 'Measured Contamination';
+      samplesSheet.getCell(3, 5).value = {
+        richText: [
+          {
+            font: labelFont,
+            text: 'Solid Waste Volume (m',
+          },
+          { font: { ...labelFont, vertAlign: 'superscript' }, text: '3' },
+          {
+            font: labelFont,
+            text: ')',
+          },
+        ],
+      };
       samplesSheet.getCell(3, 6).font = labelFont;
-      samplesSheet.getCell(3, 6).value = 'Units';
+      samplesSheet.getCell(3, 6).value = 'Solid Waste Mass (kg)';
       samplesSheet.getCell(3, 7).font = labelFont;
-      samplesSheet.getCell(3, 7).value = 'Notes';
+      samplesSheet.getCell(3, 7).value = {
+        richText: [
+          {
+            font: labelFont,
+            text: 'Liquid Waste Volume (m',
+          },
+          { font: { ...labelFont, vertAlign: 'superscript' }, text: '3' },
+          {
+            font: labelFont,
+            text: ')',
+          },
+        ],
+      };
+      samplesSheet.getCell(3, 8).font = labelFont;
+      samplesSheet.getCell(3, 8).value = 'Liquid Waste Mass (kg)';
+      samplesSheet.getCell(3, 9).font = labelFont;
+      samplesSheet.getCell(3, 9).value = 'Notes';
 
       // add in the rows
       let currentRow = 4;
       scenarioGroupLayer.layers.forEach((layer) => {
-        console.log(`layer.type: "${layer.type}"`);
-        console.log(`layer.id: "${layer.id}"`);
-        console.log(
-          `layer.id.endsWith('-points'): "${layer.id.endsWith('-points')}"`,
-        );
-        console.log(
-          `layer.id.endsWith('-hybrid'): "${layer.id.endsWith('-hybrid')}"`,
-        );
         if (
           layer.type !== 'graphics' ||
           layer.id.endsWith('-points') ||
@@ -844,7 +1015,14 @@ function CalculateResults() {
 
         const graphicsLayer = layer as __esri.GraphicsLayer;
         graphicsLayer.graphics.forEach((graphic) => {
-          const { PERMANENT_IDENTIFIER, TYPE, CONTAMVAL, CONTAMUNIT, Notes } =
+          // calculate the area using the custom hook
+          const calcGraphic = graphic.clone();
+          let areaSM = calculateArea(calcGraphic);
+          if (typeof areaSM !== 'number') {
+            areaSM = 0;
+          }
+
+          const { PERMANENT_IDENTIFIER, TYPE, WVPS, WWPS, ALC, AMC, Notes } =
             graphic.attributes;
 
           if (layer.title) {
@@ -863,17 +1041,29 @@ function CalculateResults() {
             samplesSheet.getCell(currentRow, 4).font = defaultFont;
             samplesSheet.getCell(currentRow, 4).value = TYPE;
           }
-          if (CONTAMVAL) {
+          if (WVPS) {
             samplesSheet.getCell(currentRow, 5).font = defaultFont;
-            samplesSheet.getCell(currentRow, 5).value = CONTAMVAL;
+            samplesSheet.getCell(currentRow, 5).value =
+              parseSmallFloat(Number(WVPS)) * areaSM;
           }
-          if (CONTAMUNIT) {
+          if (WWPS) {
             samplesSheet.getCell(currentRow, 6).font = defaultFont;
-            samplesSheet.getCell(currentRow, 6).value = CONTAMUNIT;
+            samplesSheet.getCell(currentRow, 6).value =
+              parseSmallFloat(Number(WWPS)) * areaSM;
+          }
+          if (ALC) {
+            samplesSheet.getCell(currentRow, 7).font = defaultFont;
+            samplesSheet.getCell(currentRow, 7).value =
+              parseSmallFloat(Number(ALC)) * areaSM;
+          }
+          if (AMC) {
+            samplesSheet.getCell(currentRow, 8).font = defaultFont;
+            samplesSheet.getCell(currentRow, 8).value =
+              parseSmallFloat(Number(AMC)) * areaSM;
           }
           if (Notes) {
-            samplesSheet.getCell(currentRow, 7).font = defaultFont;
-            samplesSheet.getCell(currentRow, 7).value = Notes;
+            samplesSheet.getCell(currentRow, 9).font = defaultFont;
+            samplesSheet.getCell(currentRow, 9).value = Notes;
           }
 
           currentRow += 1;
@@ -882,8 +1072,10 @@ function CalculateResults() {
     }
   }, [
     base64Screenshot,
+    calculateArea,
     calculateResults,
     downloadStatus,
+    loadedProjection,
     map,
     selectedScenario,
   ]);
