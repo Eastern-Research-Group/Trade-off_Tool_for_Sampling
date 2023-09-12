@@ -865,14 +865,13 @@ export function useCalculatePlan() {
       selectedScenario.calculateSettings.current;
 
     console.log('totals: ', totals);
-    const s = totals.ttpk; // setup time (hrs)
-    const r = totals.tta; // residence time (hrs)
-    const tm = totals.ttc / numSamplingTeams; // time per decon
+    const s = totals.ttpk / 24 / numSamplingTeams; // setup time (days)
+    const r = totals.tta / 24 / numSamplingTeams; // residence time (days)
+    const tm = totals.ttc / 24 / numSamplingTeams; // time per decon
     const sc = totals.mcps; // setup cost
     const cm = totals.tcps; // cost per square meter
 
-    const totalTimeHours = s + r + tm;
-    const totalTime = totalTimeHours / 24;
+    const totalTime = s + r + tm;
     const totalCost = sc + cm;
 
     const contaminatedAreaRemaining =
@@ -1224,7 +1223,7 @@ export function useDynamicPopup() {
       const fieldInfos = [
         { fieldName: 'DECISIONUNIT', label: 'Layer' },
         { fieldName: 'TYPE', label: 'Decon Technology' },
-        { fieldName: 'SA', label: 'Iteration Max Area (sq m)' },
+        { fieldName: 'SA', label: 'Application Max Area (sq m)' },
         { fieldName: 'AA', label: 'Actual Surface Area (sq m)' },
         { fieldName: 'AC', label: 'Equivalent TODS Decon Applications' },
         { fieldName: 'Notes', label: 'Notes' },

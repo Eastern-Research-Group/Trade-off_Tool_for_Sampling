@@ -719,7 +719,7 @@ export function getSampleTableColumns({
       width: mediumColumnWidth,
     },
     {
-      Header: 'Iteration Max Area (sq m)',
+      Header: 'Application Max Area (sq m)',
       accessor: 'SA',
       width: baseColumnWidth,
     },

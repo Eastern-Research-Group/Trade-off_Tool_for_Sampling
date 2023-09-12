@@ -170,7 +170,7 @@ const sketchButtonContainerStyles = css`
 
 const sketchButtonStyles = css`
   position: relative;
-  height: 150px;
+  height: 110px;
   width: 33.33%;
   background-color: white;
   color: black;
@@ -204,7 +204,7 @@ const textContainerStyles = css`
 `;
 
 const textStyles = css`
-  max-height: 150px;
+  max-height: 85px;
   word-break: break-word;
 `;
 
@@ -647,7 +647,7 @@ function LocateSamples() {
     if (!isNumberValid(sa, 'greaterThan0')) {
       isValid = false;
       messageParts.push(
-        'Iteration Max Area needs a numeric value greater than 0.',
+        'Application Max Area needs a numeric value greater than 0.',
       );
     }
     if (!isNumberValid(wvps)) {
@@ -2148,7 +2148,10 @@ function LocateSamples() {
                           onChange={(ev) => setSampleTypeName(ev.target.value)}
                         />
                         <label htmlFor="sa-input">
-                          Iteration Max Area <em>(sq m)</em>
+                          Application Max Area{' '}
+                          <em>
+                            (m<sup>2</sup>)
+                          </em>
                         </label>
                         <input
                           id="sa-input"
@@ -2183,7 +2186,10 @@ function LocateSamples() {
                           onChange={(ev) => setTtpk(ev.target.value)}
                         />
                         <label htmlFor="ttc-input">
-                          Application Time <em>(hrs/sq m)</em>
+                          Application Time{' '}
+                          <em>
+                            (hrs/m<sup>2</sup>)
+                          </em>
                         </label>
                         <input
                           id="ttc-input"
@@ -2243,7 +2249,10 @@ function LocateSamples() {
                           onChange={(ev) => setMcps(ev.target.value)}
                         />
                         <label htmlFor="tcps-input">
-                          Application Cost <em>($/sq m)</em>
+                          Application Cost{' '}
+                          <em>
+                            ($/m<sup>2</sup>)
+                          </em>
                         </label>
                         <input
                           id="tcps-input"
@@ -2253,7 +2262,10 @@ function LocateSamples() {
                           onChange={(ev) => setTcps(ev.target.value)}
                         />
                         <label htmlFor="wvps-input">
-                          Solid Waste Volume <em>(cu m/sq m)</em>
+                          Solid Waste Volume{' '}
+                          <em>
+                            (m<sup>3</sup>/m<sup>2</sup>)
+                          </em>
                         </label>
                         <input
                           id="wvps-input"
@@ -2263,7 +2275,10 @@ function LocateSamples() {
                           onChange={(ev) => setWvps(ev.target.value)}
                         />
                         <label htmlFor="wwps-input">
-                          Solid Waste Mass <em>(kg/sq m)</em>
+                          Solid Waste Mass{' '}
+                          <em>
+                            (kg/m<sup>2</sup>)
+                          </em>
                         </label>
                         <input
                           id="wwps-input"
@@ -2273,7 +2288,10 @@ function LocateSamples() {
                           onChange={(ev) => setWwps(ev.target.value)}
                         />
                         <label htmlFor="alc-input">
-                          Liquid Waste Volume <em>(cu m/sq m)</em>
+                          Liquid Waste Volume{' '}
+                          <em>
+                            (m<sup>3</sup>/m<sup>2</sup>)
+                          </em>
                         </label>
                         <input
                           id="alc-input"
@@ -2283,7 +2301,10 @@ function LocateSamples() {
                           onChange={(ev) => setAlc(ev.target.value)}
                         />
                         <label htmlFor="amc-input">
-                          Liquid Waste Mass <em>(kg/sq m)</em>
+                          Liquid Waste Mass{' '}
+                          <em>
+                            (kg/m<sup>2</sup>)
+                          </em>
                         </label>
                         <input
                           id="amc-input"

@@ -118,12 +118,12 @@
       "DECISIONUNIT": null,
       "DECISIONUNITSORT": 0
     },
-    "Low-Concentration Hydrogen Peroxide": {
+    "Low-Conc. Hydrogen Peroxide": {
       "OBJECTID": "-1",
       "PERMANENT_IDENTIFIER": null,
       "GLOBALID": null,
-      "TYPEUUID": "Low-Concentration Hydrogen Peroxide",
-      "TYPE": "Low-Concentration Hydrogen Peroxide",
+      "TYPEUUID": "Low-Conc. Hydrogen Peroxide",
+      "TYPE": "Low-Conc. Hydrogen Peroxide",
       "ShapeType": "polygon",
       "POINT_STYLE": "square",
       "SA": 4500,
@@ -186,12 +186,12 @@
       "DECISIONUNIT": null,
       "DECISIONUNITSORT": 0
     },
-    "Hydrogen Peroxide PAA, Spor-klenz RTU": {
+    "Hydrogen Peroxide PAA": {
       "OBJECTID": "-1",
       "PERMANENT_IDENTIFIER": null,
       "GLOBALID": null,
-      "TYPEUUID": "Hydrogen Peroxide PAA, Spor-klenz RTU",
-      "TYPE": "Hydrogen Peroxide PAA, Spor-klenz RTU",
+      "TYPEUUID": "Hydrogen Peroxide PAA",
+      "TYPE": "Hydrogen Peroxide PAA",
       "ShapeType": "polygon",
       "POINT_STYLE": "triangle",
       "SA": 4500,
