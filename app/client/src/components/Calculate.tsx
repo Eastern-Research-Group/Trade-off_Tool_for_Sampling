@@ -486,6 +486,7 @@ function Calculate() {
           // add inner contam
           convertToArray(newInnerContamGeometry).forEach(
             (newGeom: __esri.Geometry) => {
+              if (!newGeom) return;
               resultsLayer.graphics.add(
                 new Graphic({
                   attributes: {
