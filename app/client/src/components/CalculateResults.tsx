@@ -52,12 +52,20 @@ type LabelValueProps = {
   label: ReactNode | string;
   value: string | number | undefined | null;
   isMonetary?: boolean;
+  precision?: number | null;
 };
 
-function LabelValue({ label, value, isMonetary = false }: LabelValueProps) {
+function LabelValue({
+  label,
+  value,
+  isMonetary = false,
+  precision = null,
+}: LabelValueProps) {
   let formattedValue = value;
   if (typeof value === 'number') {
     if (isMonetary) formattedValue = Math.round(value).toLocaleString();
+    else if (precision)
+      formattedValue = parseSmallFloat(value, 2).toLocaleString();
     else formattedValue = value.toLocaleString();
   }
 
@@ -950,7 +958,7 @@ function CalculateResults() {
       if (!scenarioGroupLayer) return;
 
       // add the sheet
-      const samplesSheet = workbook.addWorksheet('Waste Details');
+      const samplesSheet = workbook.addWorksheet('Decon Application Details');
 
       // setup column widths
       samplesSheet.columns = [
@@ -967,7 +975,7 @@ function CalculateResults() {
 
       // add the header
       samplesSheet.getCell(1, 1).font = sheetTitleFont;
-      samplesSheet.getCell(1, 1).value = 'Waste Details';
+      samplesSheet.getCell(1, 1).value = 'Decon Application Details';
 
       // add in column headers
       samplesSheet.getCell(3, 1).font = labelFont;
@@ -1270,7 +1278,7 @@ function CalculateResults() {
                     value={
                       calculateResults.data['Percent Contaminated Remaining']
                     }
-                    isMonetary={true}
+                    precision={2}
                   />
                 </div>
               </AccordionItem>
