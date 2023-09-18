@@ -811,14 +811,15 @@ function ResultCard({ result }: ResultCardProps) {
     };
   }, [watcher]);
 
-  function setRenderer(layer: __esri.FeatureLayer) {
-    console.log('layerId: ', layer.id);
-    // 10,000 | 100,000 | 1,000,000
+  function setRenderer(layer: __esri.FeatureLayer, isPoints: boolean = false) {
+    const type = isPoints ? 'simple-marker' : 'simple-fill';
+
+    // 1,000,000 | 10,000,000 | 100,000,000
     layer.renderer = {
       type: 'class-breaks',
       field: 'CONTAMVAL',
       defaultSymbol: {
-        type: 'simple-fill',
+        type,
         color: [150, 150, 150, 0.2],
         outline: {
           color: [150, 150, 150],
@@ -828,9 +829,9 @@ function ResultCard({ result }: ResultCardProps) {
       classBreakInfos: [
         {
           minValue: 1,
-          maxValue: 10_000,
+          maxValue: 1_000_000,
           symbol: {
-            type: 'simple-fill',
+            type,
             color: [255, 255, 0, 0.7],
             outline: {
               color: [255, 255, 0],
@@ -839,10 +840,10 @@ function ResultCard({ result }: ResultCardProps) {
           },
         },
         {
-          minValue: 10_001,
-          maxValue: 100_000,
+          minValue: 1_000_001,
+          maxValue: 10_000_000,
           symbol: {
-            type: 'simple-fill',
+            type,
             color: [255, 165, 0, 0.7],
             outline: {
               color: [255, 165, 0],
@@ -851,10 +852,10 @@ function ResultCard({ result }: ResultCardProps) {
           },
         },
         {
-          minValue: 100_000,
+          minValue: 10_000_001,
           maxValue: Number.MAX_SAFE_INTEGER,
           symbol: {
-            type: 'simple-fill',
+            type,
             color: [255, 0, 0, 0.7],
             outline: {
               color: [255, 0, 0],
@@ -905,8 +906,8 @@ function ResultCard({ result }: ResultCardProps) {
             if (layer.type === 'group') {
               console.log('is a group layer');
               const groupLayer = layer as __esri.GroupLayer;
-              groupLayer.layers.forEach((layer) => {
-                setRenderer(layer as __esri.FeatureLayer);
+              groupLayer.layers.forEach((layer, index) => {
+                setRenderer(layer as __esri.FeatureLayer, index === 1);
               });
             }
 
@@ -2026,85 +2027,23 @@ function ResultCard({ result }: ResultCardProps) {
   function removeTotsLayer() {
     if (!map) return;
 
-    const newEdits = {
-      count: edits.count + 1,
-      edits: edits.edits.filter((layer) => layer.portalId !== result.id),
-    };
+    // get the layers to be removed
+    const layersToRemove = map.allLayers.filter((layer: any) => {
+      // had to use any, since some layer types don't have portalItem
+      if (layer?.portalItem?.id === result.id) {
+        return true;
+      } else {
+        return false;
+      }
+    });
 
-    setLayers((layers) => {
-      // remove the layers from the map and set the next sketchLayer
-      const mapLayersToRemove: __esri.Layer[] = [];
-      let newSketchLayer: LayerType | null = null;
-      const parentLayerIds: string[] = [];
-      layers.forEach((layer) => {
-        if (layer.portalId === result.id) {
-          if (!layer.parentLayer) {
-            mapLayersToRemove.push(layer.sketchLayer);
-            return;
-          }
-
-          if (parentLayerIds.includes(layer.parentLayer.id)) return;
-
-          mapLayersToRemove.push(layer.parentLayer);
-          parentLayerIds.push(layer.parentLayer.id);
-        } else {
-          if (
-            !newSketchLayer &&
-            (layer.layerType === 'Samples' || layer.layerType === 'VSP')
-          ) {
-            newSketchLayer = layer;
-          }
-        }
-      });
-
-      const newLayers = layers.filter((layer) => layer.portalId !== result.id);
-
-      // select the next scenario and active sampling layer
-      const { nextScenario, nextLayer } = getNextScenarioLayer(
-        newEdits,
-        newLayers,
-        null,
-        null,
+    // remove the layers from the map and session storage.
+    if (layersToRemove.length > 0) {
+      map.removeMany(layersToRemove.toArray());
+      setPortalLayers((portalLayers) =>
+        portalLayers.filter((portalLayer) => portalLayer.id !== result.id),
       );
-
-      if (nextScenario) setSelectedScenario(nextScenario);
-      else setSelectedScenario(null);
-
-      if (nextLayer) setSketchLayer(nextLayer);
-      else setSketchLayer(null);
-
-      map.removeMany(mapLayersToRemove);
-
-      // set the state
-      return newLayers;
-    });
-
-    setReferenceLayers((layers) => {
-      // find the feature layer ids to remove using the portal id
-      const idsToRemove: string[] = [];
-      layers.forEach((layer) => {
-        if (layer.portalId === result.id) idsToRemove.push(layer.layerId);
-      });
-
-      // remove the map layers to remove using the list of layer ids from the
-      // previous step
-      const mapLayersToRemove: __esri.Layer[] = [];
-      map.allLayers.forEach((layer) => {
-        if (idsToRemove.includes(layer.id)) mapLayersToRemove.push(layer);
-      });
-      map.removeMany(mapLayersToRemove);
-
-      // set the state
-      return layers.filter((layer) => layer.portalId !== result.id);
-    });
-
-    // remove the layer from edits
-    setEdits(newEdits);
-
-    // remove the layer from portal layers
-    setPortalLayers((portalLayers) =>
-      portalLayers.filter((portalLayer) => portalLayer.id !== result.id),
-    );
+    }
   }
 
   /**

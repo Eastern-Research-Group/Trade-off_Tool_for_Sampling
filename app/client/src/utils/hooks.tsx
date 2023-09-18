@@ -1651,14 +1651,15 @@ function usePortalLayerStorage() {
     writeToStorage(key, portalLayers, setOptions);
   }, [portalLayers, localPortalLayerInitialized, setOptions]);
 
-  function setRenderer(layer: __esri.FeatureLayer) {
-    console.log('layerId: ', layer.id);
-    // 10,000 | 100,000 | 1,000,000
+  function setRenderer(layer: __esri.FeatureLayer, isPoints: boolean = false) {
+    const type = isPoints ? 'simple-marker' : 'simple-fill';
+
+    // 1,000,000 | 10,000,000 | 100,000,000
     layer.renderer = {
       type: 'class-breaks',
       field: 'CONTAMVAL',
       defaultSymbol: {
-        type: 'simple-fill',
+        type,
         color: [150, 150, 150, 0.2],
         outline: {
           color: [150, 150, 150],
@@ -1668,9 +1669,9 @@ function usePortalLayerStorage() {
       classBreakInfos: [
         {
           minValue: 1,
-          maxValue: 10_000,
+          maxValue: 1_000_000,
           symbol: {
-            type: 'simple-fill',
+            type,
             color: [255, 255, 0, 0.7],
             outline: {
               color: [255, 255, 0],
@@ -1679,10 +1680,10 @@ function usePortalLayerStorage() {
           },
         },
         {
-          minValue: 10_001,
-          maxValue: 100_000,
+          minValue: 1_000_001,
+          maxValue: 10_000_000,
           symbol: {
-            type: 'simple-fill',
+            type,
             color: [255, 165, 0, 0.7],
             outline: {
               color: [255, 165, 0],
@@ -1691,10 +1692,10 @@ function usePortalLayerStorage() {
           },
         },
         {
-          minValue: 100_000,
+          minValue: 10_000_001,
           maxValue: Number.MAX_SAFE_INTEGER,
           symbol: {
-            type: 'simple-fill',
+            type,
             color: [255, 0, 0, 0.7],
             outline: {
               color: [255, 0, 0],
@@ -1740,8 +1741,8 @@ function usePortalLayerStorage() {
                 if (layer.type === 'group') {
                   console.log('is a group layer');
                   const groupLayer = layer as __esri.GroupLayer;
-                  groupLayer.layers.forEach((layer) => {
-                    setRenderer(layer as __esri.FeatureLayer);
+                  groupLayer.layers.forEach((layer, index) => {
+                    setRenderer(layer as __esri.FeatureLayer, index === 1);
                   });
                 }
 
