@@ -26,6 +26,15 @@ const mapStyles = (height: number) => {
   return css`
     height: ${height}px;
     background-color: whitesmoke;
+
+    .esri-sketch__info-section,
+    .esri-sketch__feature-count-badge {
+      width: 100%;
+    }
+
+    .esri-sketch__info-section:last-of-type {
+      display: none !important;
+    }
   `;
 };
 
