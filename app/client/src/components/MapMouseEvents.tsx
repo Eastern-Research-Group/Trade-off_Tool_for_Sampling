@@ -97,7 +97,7 @@ function MapMouseEvents({ mapView, sceneView }: Props) {
           const curIds: string[] = [];
           const popupFeatures: __esri.Graphic[] = view.popup.features;
           updateGraphics.forEach((g) => {
-            const popup = popupFeatures.find(
+            const popup = popupFeatures?.find(
               (f) =>
                 f.attributes.PERMANENT_IDENTIFIER ===
                 g.attributes.PERMANENT_IDENTIFIER,
