@@ -3,34 +3,26 @@
 import React, { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
 import Collection from '@arcgis/core/core/Collection';
-import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
 import Graphic from '@arcgis/core/Graphic';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
-import Polygon from '@arcgis/core/geometry/Polygon';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import ColorPicker from 'components/ColorPicker';
 import { EditScenario, EditLayer } from 'components/EditLayerMetaData';
+import GenerateSamples from 'components/GenerateSamples';
 import LoadingSpinner from 'components/LoadingSpinner';
 import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 import Select from 'components/Select';
 // contexts
-import { AuthenticationContext } from 'contexts/Authentication';
 import { DialogContext } from 'contexts/Dialog';
-import {
-  useLayerProps,
-  useSampleTypesContext,
-  useServicesContext,
-} from 'contexts/LookupFiles';
-import { NavigationContext } from 'contexts/Navigation';
+import { useSampleTypesContext } from 'contexts/LookupFiles';
 import { PublishContext } from 'contexts/Publish';
 import { SketchContext } from 'contexts/Sketch';
 // types
 import { LayerType } from 'types/Layer';
 import { EditsType, ScenarioEditsType } from 'types/Edits';
-import { ErrorType } from 'types/Misc';
 // config
 import {
   AttributeItems,
@@ -38,17 +30,13 @@ import {
   PolygonSymbol,
 } from 'config/sampleAttributes';
 import {
-  cantUseWithVspMessage,
   featureNotAvailableMessage,
-  generateRandomExceededTransferLimitMessage,
-  generateRandomSuccessMessage,
   userDefinedValidationMessage,
-  webServiceErrorMessage,
 } from 'config/errorMessages';
 // utils
-import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
 import { use3dSketch, useDynamicPopup, useStartOver } from 'utils/hooks';
 import {
+  activateSketchButton,
   convertToPoint,
   createBuffer,
   createLayer,
@@ -62,14 +50,9 @@ import {
   getPointSymbol,
   getScenarios,
   getSketchableLayers,
-  removeZValues,
-  setZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import { geoprocessorFetch } from 'utils/fetchUtils';
-import { createErrorObject, getLayerName, getScenarioName } from 'utils/utils';
-// styles
-import { reactSelectStyles } from 'styles';
+import { getLayerName, getScenarioName } from 'utils/utils';
 
 type ShapeTypeSelect = {
   value: string;
@@ -77,8 +60,6 @@ type ShapeTypeSelect = {
 };
 
 type EditType = 'create' | 'edit' | 'clone' | 'view';
-
-const sketchSelectedClass = 'sketch-button-selected';
 
 const pointStyles: ShapeTypeSelect[] = [
   { value: 'circle', label: 'Circle' },
@@ -118,36 +99,6 @@ function getSampleTypeName(
   }
 
   return newName;
-}
-
-function activateSketchButton(id: string) {
-  let wasSet = false;
-  const sketchButtons = document.getElementsByClassName('sketch-button');
-  for (let i = 0; i < sketchButtons.length; i++) {
-    const sketchButton = sketchButtons[i];
-
-    // make the button active if the id matches the provided id
-    if (sketchButton.id === id) {
-      // make the style of the button active
-      if (!sketchButton.classList.contains(sketchSelectedClass)) {
-        sketchButton.classList.add(sketchSelectedClass);
-        wasSet = true;
-      } else {
-        // toggle the button off
-        sketchButton.classList.remove(sketchSelectedClass);
-        const activeElm = document?.activeElement as any;
-        activeElm?.blur();
-      }
-      continue;
-    }
-
-    // remove the selected class from all other buttons
-    if (sketchButton.classList.contains(sketchSelectedClass)) {
-      sketchButton.classList.remove(sketchSelectedClass);
-    }
-  }
-
-  return wasSet;
 }
 
 // --- styles (SketchButton) ---
@@ -228,28 +179,6 @@ const textStyles = css`
   word-break: break-word;
 `;
 
-const sketchAoiButtonStyles = css`
-  background-color: white;
-  color: black;
-
-  &:hover,
-  &:focus {
-    background-color: #e7f6f8;
-    cursor: pointer;
-  }
-`;
-
-const sketchAoiTextStyles = css`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  i {
-    font-size: 20px;
-    margin-right: 5px;
-  }
-`;
-
 const inlineMenuStyles = css`
   display: flex;
   align-items: center;
@@ -274,15 +203,6 @@ const inputStyles = css`
   padding-left: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
-`;
-
-const inlineSelectStyles = css`
-  width: 100%;
-  margin-right: 10px;
-`;
-
-const submitButtonStyles = css`
-  margin-top: 10px;
 `;
 
 const sampleCountStyles = css`
@@ -400,27 +320,14 @@ const lineSeparatorStyles = css`
   border-bottom: 1px solid #d8dfe2;
 `;
 
-const radioLabelStyles = css`
-  padding-left: 0.375rem;
-`;
-
 const verticalCenterTextStyles = css`
   display: flex;
   align-items: center;
 `;
 
 // --- components (LocateSamples) ---
-type GenerateRandomType = {
-  status: 'none' | 'fetching' | 'success' | 'failure' | 'exceededTransferLimit';
-  error?: ErrorType;
-  data: __esri.Graphic[];
-};
-
 function LocateSamples() {
-  const { userInfo } = useContext(AuthenticationContext);
   const { setOptions } = useContext(DialogContext);
-  const { setGoTo, setGoToOptions, trainingMode } =
-    useContext(NavigationContext);
   const { setSampleTypeSelections } = useContext(PublishContext);
   const {
     defaultSymbols,
@@ -440,7 +347,6 @@ function LocateSamples() {
     setAoiSketchLayer,
     sketchVM,
     aoiSketchVM,
-    getGpMaxRecordCount,
     sampleAttributes,
     userDefinedOptions,
     setUserDefinedOptions,
@@ -454,9 +360,7 @@ function LocateSamples() {
   const startOver = useStartOver();
   const { endSketch, startSketch } = use3dSketch();
   const getPopupTemplate = useDynamicPopup();
-  const layerProps = useLayerProps();
   const sampleTypeContext = useSampleTypesContext();
-  const services = useServicesContext();
 
   // Sets the sketchLayer to the first layer in the layer selection drop down,
   // if available. If the drop down is empty, an empty sketchLayer will be
@@ -507,19 +411,6 @@ function LocateSamples() {
     setAoiSketchLayer(newAoiSketchLayer);
   }, [map, aoiSketchLayer, setAoiSketchLayer, layersInitialized, setLayers]);
 
-  const [numberRandomSamples, setNumberRandomSamples] = useState('33');
-  const [
-    sampleType,
-    setSampleType, //
-  ] = useState<SampleSelectType | null>(null);
-
-  // Initialize the selected sample type to the first option
-  useEffect(() => {
-    if (sampleTypeContext.status !== 'success') return;
-
-    setSampleType(sampleTypeContext.data.sampleSelectOptions[0]);
-  }, [sampleTypeContext]);
-
   // Handle a user clicking one of the sketch buttons
   function sketchButtonClick(label: string) {
     if (!sketchVM || !map || !sketchLayer || !sceneView || !mapView) return;
@@ -566,333 +457,6 @@ function LocateSamples() {
     // let the user draw/place the shape
     if (wasSet) startSketch(shapeType);
     else endSketch();
-  }
-
-  // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
-  // dropdown this will create an AOI layer. This also sets the sketchVM to use the
-  // selected AOI and triggers a React useEffect to allow the user to sketch on the map.
-  const [
-    generateRandomResponse,
-    setGenerateRandomResponse, //
-  ] = useState<GenerateRandomType>({
-    status: 'none',
-    data: [],
-  });
-  function sketchAoiButtonClick() {
-    if (!map || !aoiSketchVM || !aoiSketchLayer) return;
-
-    setGenerateRandomResponse({
-      status: 'none',
-      data: [],
-    });
-
-    // put the sketch layer on the map, if it isn't there already
-    const layerIndex = map.layers.findIndex(
-      (layer) => layer.id === aoiSketchLayer.layerId,
-    );
-    if (layerIndex === -1) map.add(aoiSketchLayer.sketchLayer);
-
-    // save changes from other sketchVM and disable to prevent
-    // interference
-    if (sketchVM) {
-      sketchVM[displayDimensions].cancel();
-    }
-
-    // make the style of the button active
-    const wasSet = activateSketchButton('sampling-mask');
-
-    if (wasSet) {
-      // let the user draw/place the shape
-      aoiSketchVM.create('polygon');
-    } else {
-      aoiSketchVM.cancel();
-    }
-  }
-
-  // Handle a user generating random samples
-  function randomSamples() {
-    if (!map || !sketchLayer || !getGpMaxRecordCount || !sampleType) return;
-
-    activateSketchButton('disable-all-buttons');
-    sketchVM?.[displayDimensions].cancel();
-    aoiSketchVM?.cancel();
-
-    const aoiMaskLayer: LayerType | null =
-      generateRandomMode === 'draw'
-        ? aoiSketchLayer
-        : generateRandomMode === 'file'
-        ? selectedAoiFile
-        : null;
-    if (!aoiMaskLayer) return;
-
-    setGenerateRandomResponse({ status: 'fetching', data: [] });
-
-    getGpMaxRecordCount()
-      .then((maxRecordCount) => {
-        const originalValuesZ: number[] = [];
-        let graphics: __esri.GraphicProperties[] = [];
-        if (aoiMaskLayer?.sketchLayer?.type === 'graphics') {
-          const fullGraphics = aoiMaskLayer.sketchLayer.graphics.clone();
-          fullGraphics.forEach((graphic) => {
-            const z = removeZValues(graphic);
-            originalValuesZ.push(z);
-          });
-
-          graphics = fullGraphics.toArray();
-        }
-
-        // create a feature set for communicating with the GPServer
-        const featureSet = new FeatureSet({
-          displayFieldName: '',
-          geometryType: 'polygon',
-          spatialReference: {
-            wkid: 3857,
-          },
-          fields: [
-            {
-              name: 'OBJECTID',
-              type: 'oid',
-              alias: 'OBJECTID',
-            },
-            {
-              name: 'PERMANENT_IDENTIFIER',
-              type: 'guid',
-              alias: 'PERMANENT_IDENTIFIER',
-            },
-          ],
-          features: graphics,
-        });
-
-        // get the sample type definition (can be established or custom)
-        const typeuuid = sampleType.value;
-        const sampleTypeFeatureSet = {
-          displayFieldName: '',
-          geometryType: 'esriGeometryPolygon',
-          spatialReference: {
-            wkid: 3857,
-          },
-          fields: layerProps.data.defaultFields,
-          features: [
-            {
-              attributes: sampleAttributes[typeuuid as any],
-            },
-          ],
-        };
-
-        // determine the number of service calls needed to satisfy the request
-        const intNumberRandomSamples = parseInt(numberRandomSamples); // 7
-        const samplesPerCall = Math.floor(maxRecordCount / graphics.length);
-        const iterations = Math.ceil(intNumberRandomSamples / samplesPerCall);
-
-        // fire off the generateRandom requests
-        const requests = [];
-        let numSamples = 0;
-        let numSamplesLeft = intNumberRandomSamples;
-        for (let i = 0; i < iterations; i++) {
-          // determine the number of samples for this request
-          numSamples =
-            numSamplesLeft > samplesPerCall ? samplesPerCall : numSamplesLeft;
-
-          const props = {
-            f: 'json',
-            Number_of_Samples: numSamples,
-            Sample_Type: sampleType.label,
-            Area_of_Interest_Mask: featureSet.toJSON(),
-            Sample_Type_Parameters: sampleTypeFeatureSet,
-          };
-          appendEnvironmentObjectParam(props);
-
-          const request = geoprocessorFetch({
-            url: `${services.data.totsGPServer}/Generate%20Random`,
-            inputParameters: props,
-          });
-          requests.push(request);
-
-          // keep track of the number of remaining samples
-          numSamplesLeft = numSamplesLeft - numSamples;
-        }
-        Promise.all(requests)
-          .then(async (responses: any) => {
-            let res;
-            const timestamp = getCurrentDateTime();
-            const popupTemplate = getPopupTemplate('Samples', trainingMode);
-            const graphicsToAdd: __esri.Graphic[] = [];
-            const hybridGraphicsToAdd: __esri.Graphic[] = [];
-            const pointsToAdd: __esri.Graphic[] = [];
-            const numberOfAois = graphics.length;
-            for (let i = 0; i < responses.length; i++) {
-              res = responses[i];
-              if (!res?.results?.[0]?.value) {
-                setGenerateRandomResponse({
-                  status: 'failure',
-                  error: {
-                    error: createErrorObject(res),
-                    message: 'No data',
-                  },
-                  data: [],
-                });
-                return;
-              }
-
-              if (res.results[0].value.exceededTransferLimit) {
-                setGenerateRandomResponse({
-                  status: 'exceededTransferLimit',
-                  data: [],
-                });
-                return;
-              }
-
-              // get the results from the response
-              const results = res.results[0].value;
-
-              // set the sample styles
-              let symbol: PolygonSymbol = defaultSymbols.symbols['Samples'];
-              if (defaultSymbols.symbols.hasOwnProperty(sampleType.value)) {
-                symbol = defaultSymbols.symbols[sampleType.value];
-              }
-
-              let originalZIndex = 0;
-              const graphicsPerAoi = results.features.length / numberOfAois;
-
-              // build an array of graphics to draw on the map
-              let index = 0;
-              for (const feature of results.features) {
-                if (index !== 0 && index % graphicsPerAoi === 0)
-                  originalZIndex += 1;
-
-                const originalZ = originalValuesZ[originalZIndex];
-                const poly = new Graphic({
-                  attributes: {
-                    ...(window as any).totsSampleAttributes[typeuuid],
-                    CREATEDDATE: timestamp,
-                    DECISIONUNITUUID: sketchLayer.uuid,
-                    DECISIONUNIT: sketchLayer.label,
-                    DECISIONUNITSORT: 0,
-                    OBJECTID: feature.attributes.OBJECTID,
-                    GLOBALID: feature.attributes.GLOBALID,
-                    PERMANENT_IDENTIFIER:
-                      feature.attributes.PERMANENT_IDENTIFIER,
-                    UPDATEDDATE: timestamp,
-                    USERNAME: userInfo?.username || '',
-                    ORGANIZATION: userInfo?.orgId || '',
-                  },
-                  symbol,
-                  geometry: new Polygon({
-                    rings: feature.geometry.rings,
-                    spatialReference: results.spatialReference,
-                  }),
-                  popupTemplate,
-                });
-
-                await setZValues({
-                  map,
-                  graphic: poly,
-                  zOverride:
-                    generateRandomElevationMode === 'aoiElevation'
-                      ? originalZ
-                      : null,
-                });
-
-                graphicsToAdd.push(poly);
-                pointsToAdd.push(convertToPoint(poly));
-                hybridGraphicsToAdd.push(
-                  poly.attributes.ShapeType === 'point'
-                    ? convertToPoint(poly)
-                    : poly.clone(),
-                );
-
-                index += 1;
-              }
-            }
-
-            // put the graphics on the map
-            if (sketchLayer?.sketchLayer?.type === 'graphics') {
-              // add the graphics to a collection so it can added to browser storage
-              const collection = new Collection<__esri.Graphic>();
-              collection.addMany(graphicsToAdd);
-              sketchLayer.sketchLayer.graphics.addMany(collection);
-
-              sketchLayer.pointsLayer?.addMany(pointsToAdd);
-              sketchLayer.hybridLayer?.addMany(hybridGraphicsToAdd);
-
-              let editsCopy = updateLayerEdits({
-                edits,
-                layer: sketchLayer,
-                type: 'add',
-                changes: collection,
-              });
-
-              if (generateRandomMode === 'draw') {
-                // remove the graphics from the generate random mask
-                if (
-                  aoiMaskLayer &&
-                  aoiMaskLayer.sketchLayer.type === 'graphics'
-                ) {
-                  editsCopy = updateLayerEdits({
-                    edits: editsCopy,
-                    layer: aoiMaskLayer,
-                    type: 'delete',
-                    changes: aoiMaskLayer.sketchLayer.graphics,
-                  });
-
-                  aoiMaskLayer.sketchLayer.removeAll();
-                }
-              }
-
-              // update the edits state
-              setEdits(editsCopy);
-
-              // update the editType of the sketchLayer
-              setSketchLayer((sketchLayer: LayerType | null) => {
-                if (!sketchLayer) return sketchLayer;
-                return {
-                  ...sketchLayer,
-                  editType: 'add',
-                };
-              });
-            }
-
-            setGenerateRandomResponse({
-              status: 'success',
-              data: graphicsToAdd,
-            });
-
-            if (generateRandomMode === 'draw') {
-              if (
-                aoiMaskLayer &&
-                aoiMaskLayer.sketchLayer.type === 'graphics'
-              ) {
-                aoiMaskLayer.sketchLayer.removeAll();
-              }
-            }
-          })
-          .catch((err) => {
-            console.error(err);
-            setGenerateRandomResponse({
-              status: 'failure',
-              error: {
-                error: createErrorObject(err),
-                message: err.message,
-              },
-              data: [],
-            });
-
-            window.logErrorToGa(err);
-          });
-      })
-      .catch((err: any) => {
-        console.error(err);
-        setGenerateRandomResponse({
-          status: 'failure',
-          error: {
-            error: createErrorObject(err),
-            message: err.message,
-          },
-          data: [],
-        });
-
-        window.logErrorToGa(err);
-      });
   }
 
   const [userDefinedSampleType, setUserDefinedSampleType] =
@@ -1175,14 +739,6 @@ function LocateSamples() {
   const [editScenarioVisible, setEditScenarioVisible] = useState(false);
   const [addLayerVisible, setAddLayerVisible] = useState(false);
   const [editLayerVisible, setEditLayerVisible] = useState(false);
-  const [generateRandomMode, setGenerateRandomMode] = useState<
-    'draw' | 'file' | ''
-  >('');
-  const [generateRandomElevationMode, setGenerateRandomElevationMode] =
-    useState<'ground' | 'aoiElevation'>('aoiElevation');
-  const [selectedAoiFile, setSelectedAoiFile] = useState<LayerType | null>(
-    null,
-  );
 
   // get a list of scenarios from edits
   const scenarios = getScenarios(edits);
@@ -2223,278 +1779,7 @@ function LocateSamples() {
               </AccordionItem>
               <AccordionItem title={'Add Multiple Random Samples'}>
                 <div css={sectionContainer}>
-                  {sketchLayer?.layerType === 'VSP' && cantUseWithVspMessage}
-                  {sketchLayer?.layerType !== 'VSP' && (
-                    <Fragment>
-                      {(services.status === 'fetching' ||
-                        sampleTypeContext.status === 'fetching' ||
-                        layerProps.status === 'fetching') && <LoadingSpinner />}
-                      {(services.status === 'failure' ||
-                        sampleTypeContext.status === 'failure' ||
-                        layerProps.status === 'failure') &&
-                        featureNotAvailableMessage(
-                          'Add Multiple Random Samples',
-                        )}
-                      {services.status === 'success' &&
-                        sampleTypeContext.status === 'success' &&
-                        layerProps.status === 'success' && (
-                          <Fragment>
-                            <p>
-                              Select "Draw Sampling Mask" to draw a boundary on
-                              your map for placing samples or select "Use
-                              Imported Area of Interest" to use an Area of
-                              Interest file to place samples. Select a Sample
-                              Type from the menu and specify the number of
-                              samples to add. Click Submit to add samples.
-                            </p>
-                            <div>
-                              <input
-                                id="draw-aoi"
-                                type="radio"
-                                name="mode"
-                                value="Draw area of Interest"
-                                disabled={
-                                  generateRandomResponse.status === 'fetching'
-                                }
-                                checked={generateRandomMode === 'draw'}
-                                onChange={(ev) => {
-                                  setGenerateRandomMode('draw');
-
-                                  const maskLayers = layers.filter(
-                                    (layer) =>
-                                      layer.layerType === 'Sampling Mask',
-                                  );
-                                  setAoiSketchLayer(maskLayers[0]);
-                                }}
-                              />
-                              <label htmlFor="draw-aoi" css={radioLabelStyles}>
-                                Draw Sampling Mask
-                              </label>
-                            </div>
-
-                            {generateRandomMode === 'draw' && (
-                              <button
-                                id="sampling-mask"
-                                title="Draw Sampling Mask"
-                                className="sketch-button"
-                                disabled={
-                                  generateRandomResponse.status === 'fetching'
-                                }
-                                onClick={() => {
-                                  if (!aoiSketchLayer) return;
-
-                                  sketchAoiButtonClick();
-                                }}
-                                css={sketchAoiButtonStyles}
-                              >
-                                <span css={sketchAoiTextStyles}>
-                                  <i className="fas fa-draw-polygon" />{' '}
-                                  <span>Draw Sampling Mask</span>
-                                </span>
-                              </button>
-                            )}
-
-                            <div>
-                              <input
-                                id="use-aoi-file"
-                                type="radio"
-                                name="mode"
-                                value="Use Imported Area of Interest"
-                                disabled={
-                                  generateRandomResponse.status === 'fetching'
-                                }
-                                checked={generateRandomMode === 'file'}
-                                onChange={(ev) => {
-                                  setGenerateRandomMode('file');
-
-                                  setAoiSketchLayer(null);
-
-                                  if (!selectedAoiFile) {
-                                    const aoiLayers = layers.filter(
-                                      (layer) =>
-                                        layer.layerType === 'Area of Interest',
-                                    );
-                                    setSelectedAoiFile(aoiLayers[0]);
-                                  }
-                                }}
-                              />
-                              <label
-                                htmlFor="use-aoi-file"
-                                css={radioLabelStyles}
-                              >
-                                Use Imported Area of Interest
-                              </label>
-                            </div>
-
-                            {generateRandomMode === 'file' && (
-                              <Fragment>
-                                <label htmlFor="aoi-mask-select-input">
-                                  Area of Interest Mask
-                                </label>
-                                <div css={inlineMenuStyles}>
-                                  <Select
-                                    id="aoi-mask-select"
-                                    inputId="aoi-mask-select-input"
-                                    css={inlineSelectStyles}
-                                    styles={reactSelectStyles as any}
-                                    isClearable={true}
-                                    value={selectedAoiFile}
-                                    onChange={(ev) =>
-                                      setSelectedAoiFile(ev as LayerType)
-                                    }
-                                    options={layers.filter(
-                                      (layer) =>
-                                        layer.layerType === 'Area of Interest',
-                                    )}
-                                  />
-                                  <button
-                                    css={addButtonStyles}
-                                    disabled={
-                                      generateRandomResponse.status ===
-                                      'fetching'
-                                    }
-                                    onClick={(ev) => {
-                                      setGoTo('addData');
-                                      setGoToOptions({
-                                        from: 'file',
-                                        layerType: 'Area of Interest',
-                                      });
-                                    }}
-                                  >
-                                    Add
-                                  </button>
-                                </div>
-                              </Fragment>
-                            )}
-                            {generateRandomMode && (
-                              <Fragment>
-                                <br />
-                                <label htmlFor="sample-type-select-input">
-                                  Sample Type
-                                </label>
-                                <Select
-                                  id="sample-type-select"
-                                  inputId="sample-type-select-input"
-                                  css={fullWidthSelectStyles}
-                                  value={sampleType}
-                                  onChange={(ev) =>
-                                    setSampleType(ev as SampleSelectType)
-                                  }
-                                  options={allSampleOptions}
-                                />
-                                <label htmlFor="number-of-samples-input">
-                                  Number of Samples
-                                </label>
-                                <input
-                                  id="number-of-samples-input"
-                                  css={inputStyles}
-                                  value={numberRandomSamples}
-                                  onChange={(ev) =>
-                                    setNumberRandomSamples(ev.target.value)
-                                  }
-                                />
-
-                                <div>
-                                  <input
-                                    id="use-aoi-elevation"
-                                    type="radio"
-                                    name="elevation-mode"
-                                    value="Use AOI Elevation"
-                                    disabled={
-                                      generateRandomResponse.status ===
-                                      'fetching'
-                                    }
-                                    checked={
-                                      generateRandomElevationMode ===
-                                      'aoiElevation'
-                                    }
-                                    onChange={(ev) => {
-                                      setGenerateRandomElevationMode(
-                                        'aoiElevation',
-                                      );
-                                    }}
-                                  />
-                                  <label
-                                    htmlFor="use-aoi-elevation"
-                                    css={radioLabelStyles}
-                                  >
-                                    Use AOI Elevation
-                                  </label>
-                                </div>
-                                <div>
-                                  <input
-                                    id="snap-to-ground"
-                                    type="radio"
-                                    name="elevation-mode"
-                                    value="Snap to Ground"
-                                    disabled={
-                                      generateRandomResponse.status ===
-                                      'fetching'
-                                    }
-                                    checked={
-                                      generateRandomElevationMode === 'ground'
-                                    }
-                                    onChange={(ev) => {
-                                      setGenerateRandomElevationMode('ground');
-                                    }}
-                                  />
-                                  <label
-                                    htmlFor="snap-to-ground"
-                                    css={radioLabelStyles}
-                                  >
-                                    Snap to Ground
-                                  </label>
-                                </div>
-
-                                {generateRandomResponse.status === 'success' &&
-                                  sketchLayer &&
-                                  generateRandomSuccessMessage(
-                                    generateRandomResponse.data.length,
-                                    sketchLayer.label,
-                                  )}
-                                {generateRandomResponse.status === 'failure' &&
-                                  webServiceErrorMessage(
-                                    generateRandomResponse.error,
-                                  )}
-                                {generateRandomResponse.status ===
-                                  'exceededTransferLimit' &&
-                                  generateRandomExceededTransferLimitMessage}
-                                {((generateRandomMode === 'draw' &&
-                                  numberRandomSamples &&
-                                  aoiSketchLayer?.sketchLayer.type ===
-                                    'graphics' &&
-                                  aoiSketchLayer.sketchLayer.graphics.length >
-                                    0) ||
-                                  (generateRandomMode === 'file' &&
-                                    selectedAoiFile?.sketchLayer.type ===
-                                      'graphics' &&
-                                    selectedAoiFile.sketchLayer.graphics
-                                      .length > 0)) && (
-                                  <button
-                                    css={submitButtonStyles}
-                                    disabled={
-                                      generateRandomResponse.status ===
-                                      'fetching'
-                                    }
-                                    onClick={randomSamples}
-                                  >
-                                    {generateRandomResponse.status !==
-                                      'fetching' && 'Submit'}
-                                    {generateRandomResponse.status ===
-                                      'fetching' && (
-                                      <Fragment>
-                                        <i className="fas fa-spinner fa-pulse" />
-                                        &nbsp;&nbsp;Loading...
-                                      </Fragment>
-                                    )}
-                                  </button>
-                                )}
-                              </Fragment>
-                            )}
-                          </Fragment>
-                        )}
-                    </Fragment>
-                  )}
+                  <GenerateSamples />
                 </div>
               </AccordionItem>
               <AccordionItem title={'Create Custom Sample Types'}>
