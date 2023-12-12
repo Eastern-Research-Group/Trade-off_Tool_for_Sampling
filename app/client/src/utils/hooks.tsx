@@ -1359,6 +1359,34 @@ export function use3dSketch() {
   return { endSketch, startSketch };
 }
 
+// A generic state management helper. Used for preserving
+// state locally to the component.
+type MemoryStateType<T> = { [key: string]: T };
+const memoryState: MemoryStateType<unknown> = {};
+export function useMemoryState<T>(
+  key: string,
+  initialState: T,
+): [T, Dispatch<SetStateAction<T>>] {
+  const [state, setState] = useState<T>(() => {
+    const hasMemoryValue = Object.prototype.hasOwnProperty.call(
+      memoryState,
+      key,
+    );
+    if (hasMemoryValue) {
+      return memoryState[key];
+    } else {
+      return typeof initialState === 'function' ? initialState() : initialState;
+    }
+  });
+
+  function onChange(nextState: T) {
+    memoryState[key] = nextState;
+    setState(nextState);
+  }
+
+  return [state, onChange as Dispatch<SetStateAction<T>>];
+}
+
 ///////////////////////////////////////////////////////////////////
 ////////////////// Browser storage related hooks //////////////////
 ///////////////////////////////////////////////////////////////////

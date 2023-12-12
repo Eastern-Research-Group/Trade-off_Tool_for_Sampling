@@ -32,7 +32,7 @@ import {
 } from 'config/errorMessages';
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
-import { useDynamicPopup } from 'utils/hooks';
+import { useDynamicPopup, useMemoryState } from 'utils/hooks';
 import {
   activateSketchButton,
   convertToPoint,
@@ -115,7 +115,12 @@ type GenerateRandomType = {
   data: __esri.Graphic[];
 };
 
-function GenerateSamples() {
+type GenerateSamplesProps = {
+  id: string;
+  title: string;
+};
+
+function GenerateSamples({ id, title }: GenerateSamplesProps) {
   const { userInfo } = useContext(AuthenticationContext);
   const { setGoTo, setGoToOptions, trainingMode } =
     useContext(NavigationContext);
@@ -141,18 +146,21 @@ function GenerateSamples() {
   const sampleTypeContext = useSampleTypesContext();
   const services = useServicesContext();
 
-  const [numberRandomSamples, setNumberRandomSamples] = useState('33');
+  const [numberRandomSamples, setNumberRandomSamples] = useMemoryState<string>(
+    `${id}-numberRandomSamples`,
+    '33',
+  );
   const [
     sampleType,
     setSampleType, //
-  ] = useState<SampleSelectType | null>(null);
+  ] = useMemoryState<SampleSelectType | null>(`${id}-sampleType`, null);
 
   // Initialize the selected sample type to the first option
   useEffect(() => {
-    if (sampleTypeContext.status !== 'success') return;
+    if (sampleType || sampleTypeContext.status !== 'success') return;
 
     setSampleType(sampleTypeContext.data.sampleSelectOptions[0]);
-  }, [sampleTypeContext]);
+  }, [sampleTypeContext, sampleType, setSampleType]);
 
   // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
   // dropdown this will create an AOI layer. This also sets the sketchVM to use the
@@ -185,7 +193,7 @@ function GenerateSamples() {
     }
 
     // make the style of the button active
-    const wasSet = activateSketchButton('sampling-mask');
+    const wasSet = activateSketchButton(`${id}-sampling-mask`);
 
     if (wasSet) {
       // let the user draw/place the shape
@@ -261,6 +269,7 @@ function GenerateSamples() {
           features: [
             {
               attributes: sampleAttributes[typeuuid as any],
+              geometry: graphics[0].geometry,
             },
           ],
         };
@@ -482,14 +491,16 @@ function GenerateSamples() {
   }
 
   // scenario and layer edit UI visibility controls
-  const [generateRandomMode, setGenerateRandomMode] = useState<
+  const [generateRandomMode, setGenerateRandomMode] = useMemoryState<
     'draw' | 'file' | ''
-  >('');
+  >(`${id}-generateRandomMode`, '');
   const [generateRandomElevationMode, setGenerateRandomElevationMode] =
-    useState<'ground' | 'aoiElevation'>('aoiElevation');
-  const [selectedAoiFile, setSelectedAoiFile] = useState<LayerType | null>(
-    null,
-  );
+    useMemoryState<'ground' | 'aoiElevation'>(
+      `${id}-generateRandomElevationMode`,
+      'aoiElevation',
+    );
+  const [selectedAoiFile, setSelectedAoiFile] =
+    useMemoryState<LayerType | null>(`${id}-selectedAoiFile`, null);
 
   return (
     <Fragment>
@@ -502,7 +513,7 @@ function GenerateSamples() {
           {(services.status === 'failure' ||
             sampleTypeContext.status === 'failure' ||
             layerProps.status === 'failure') &&
-            featureNotAvailableMessage('Add Multiple Random Samples')}
+            featureNotAvailableMessage(title)}
           {services.status === 'success' &&
             sampleTypeContext.status === 'success' &&
             layerProps.status === 'success' && (
@@ -516,9 +527,9 @@ function GenerateSamples() {
                 </p>
                 <div>
                   <input
-                    id="draw-aoi"
+                    id={`${id}-draw-aoi`}
                     type="radio"
-                    name="mode"
+                    name={`${id}-mode`}
                     value="Draw area of Interest"
                     disabled={generateRandomResponse.status === 'fetching'}
                     checked={generateRandomMode === 'draw'}
@@ -531,14 +542,14 @@ function GenerateSamples() {
                       setAoiSketchLayer(maskLayers[0]);
                     }}
                   />
-                  <label htmlFor="draw-aoi" css={radioLabelStyles}>
+                  <label htmlFor={`${id}-draw-aoi`} css={radioLabelStyles}>
                     Draw Sampling Mask
                   </label>
                 </div>
 
                 {generateRandomMode === 'draw' && (
                   <button
-                    id="sampling-mask"
+                    id={`${id}-sampling-mask`}
                     title="Draw Sampling Mask"
                     className="sketch-button"
                     disabled={generateRandomResponse.status === 'fetching'}
@@ -558,9 +569,9 @@ function GenerateSamples() {
 
                 <div>
                   <input
-                    id="use-aoi-file"
+                    id={`${id}-use-aoi-file`}
                     type="radio"
-                    name="mode"
+                    name={`${id}-mode`}
                     value="Use Imported Area of Interest"
                     disabled={generateRandomResponse.status === 'fetching'}
                     checked={generateRandomMode === 'file'}
@@ -577,20 +588,20 @@ function GenerateSamples() {
                       }
                     }}
                   />
-                  <label htmlFor="use-aoi-file" css={radioLabelStyles}>
+                  <label htmlFor={`${id}-use-aoi-file`} css={radioLabelStyles}>
                     Use Imported Area of Interest
                   </label>
                 </div>
 
                 {generateRandomMode === 'file' && (
                   <Fragment>
-                    <label htmlFor="aoi-mask-select-input">
+                    <label htmlFor={`${id}-aoi-mask-select-input`}>
                       Area of Interest Mask
                     </label>
                     <div css={inlineMenuStyles}>
                       <Select
-                        id="aoi-mask-select"
-                        inputId="aoi-mask-select-input"
+                        id={`${id}-aoi-mask-select`}
+                        inputId={`${id}-aoi-mask-select-input`}
                         css={inlineSelectStyles}
                         styles={reactSelectStyles as any}
                         isClearable={true}
@@ -619,22 +630,22 @@ function GenerateSamples() {
                 {generateRandomMode && (
                   <Fragment>
                     <br />
-                    <label htmlFor="sample-type-select-input">
+                    <label htmlFor={`${id}-sample-type-select-input`}>
                       Sample Type
                     </label>
                     <Select
-                      id="sample-type-select"
-                      inputId="sample-type-select-input"
+                      id={`${id}-sample-type-select`}
+                      inputId={`${id}-sample-type-select-input`}
                       css={fullWidthSelectStyles}
                       value={sampleType}
                       onChange={(ev) => setSampleType(ev as SampleSelectType)}
                       options={allSampleOptions}
                     />
-                    <label htmlFor="number-of-samples-input">
+                    <label htmlFor={`${id}-number-of-samples-input`}>
                       Number of Samples
                     </label>
                     <input
-                      id="number-of-samples-input"
+                      id={`${id}-number-of-samples-input`}
                       css={inputStyles}
                       value={numberRandomSamples}
                       onChange={(ev) => setNumberRandomSamples(ev.target.value)}
@@ -642,9 +653,9 @@ function GenerateSamples() {
 
                     <div>
                       <input
-                        id="use-aoi-elevation"
+                        id={`${id}-use-aoi-elevation`}
                         type="radio"
-                        name="elevation-mode"
+                        name={`${id}-elevation-mode`}
                         value="Use AOI Elevation"
                         disabled={generateRandomResponse.status === 'fetching'}
                         checked={generateRandomElevationMode === 'aoiElevation'}
@@ -652,15 +663,18 @@ function GenerateSamples() {
                           setGenerateRandomElevationMode('aoiElevation');
                         }}
                       />
-                      <label htmlFor="use-aoi-elevation" css={radioLabelStyles}>
+                      <label
+                        htmlFor={`${id}-use-aoi-elevation`}
+                        css={radioLabelStyles}
+                      >
                         Use AOI Elevation
                       </label>
                     </div>
                     <div>
                       <input
-                        id="snap-to-ground"
+                        id={`${id}-snap-to-ground`}
                         type="radio"
-                        name="elevation-mode"
+                        name={`${id}-elevation-mode`}
                         value="Snap to Ground"
                         disabled={generateRandomResponse.status === 'fetching'}
                         checked={generateRandomElevationMode === 'ground'}
@@ -668,7 +682,10 @@ function GenerateSamples() {
                           setGenerateRandomElevationMode('ground');
                         }}
                       />
-                      <label htmlFor="snap-to-ground" css={radioLabelStyles}>
+                      <label
+                        htmlFor={`${id}-snap-to-ground`}
+                        css={radioLabelStyles}
+                      >
                         Snap to Ground
                       </label>
                     </div>
