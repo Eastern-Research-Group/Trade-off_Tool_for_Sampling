@@ -1435,6 +1435,7 @@ function LocateSamples() {
                   <GenerateSamples
                     id="gen-random"
                     title="Add Multiple Random Samples"
+                    type="random"
                   />
                 </div>
               </AccordionItem>
@@ -1443,6 +1444,7 @@ function LocateSamples() {
                   <GenerateSamples
                     id="gen-statistic"
                     title="Add Statistical Sampling Approach"
+                    type="statistic"
                   />
                 </div>
               </AccordionItem>

@@ -1209,7 +1209,7 @@ export function use3dSketch() {
       // get the button and it's id
       const button = document.querySelector('.sketch-button-selected');
       const id = button && button.id;
-      if (id === 'sampling-mask') {
+      if (id?.includes('-sampling-mask')) {
         deactivateButtons();
       }
 
@@ -1219,7 +1219,7 @@ export function use3dSketch() {
       let attributes: any = {};
       const uuid = generateUUID();
       let layerType: LayerTypeName = 'Samples';
-      if (id === 'sampling-mask') {
+      if (id.includes('-sampling-mask')) {
         layerType = 'Sampling Mask';
         attributes = {
           DECISIONUNITUUID: sketchLayer.sketchLayer.id,
@@ -1264,7 +1264,7 @@ export function use3dSketch() {
         await createBuffer(graphic);
       }
 
-      if (id !== 'sampling-mask') {
+      if (!id.includes('-sampling-mask')) {
         // find the points version of the layer
         const layerId = graphic.layer.id;
         const pointLayer = (graphic.layer as any).parent.layers.find(

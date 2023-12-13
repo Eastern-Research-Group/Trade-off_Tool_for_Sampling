@@ -1,11 +1,18 @@
 /** @jsxImportSource @emotion/react */
 
-import React, { Fragment, useContext, useEffect, useState } from 'react';
+import React, {
+  FormEvent,
+  Fragment,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import { css } from '@emotion/react';
 import Collection from '@arcgis/core/core/Collection';
 import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
 import Graphic from '@arcgis/core/Graphic';
 import Polygon from '@arcgis/core/geometry/Polygon';
+import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 // components
 import LoadingSpinner from 'components/LoadingSpinner';
 import Select from 'components/Select';
@@ -32,16 +39,18 @@ import {
 } from 'config/errorMessages';
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
+import { geoprocessorFetch } from 'utils/fetchUtils';
 import { useDynamicPopup, useMemoryState } from 'utils/hooks';
 import {
   activateSketchButton,
+  calculateArea,
   convertToPoint,
   getCurrentDateTime,
+  generateUUID,
   removeZValues,
   setZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import { geoprocessorFetch } from 'utils/fetchUtils';
 import { createErrorObject } from 'utils/utils';
 // styles
 import { reactSelectStyles } from 'styles';
@@ -118,28 +127,30 @@ type GenerateRandomType = {
 type GenerateSamplesProps = {
   id: string;
   title: string;
+  type: 'random' | 'statistic';
 };
 
-function GenerateSamples({ id, title }: GenerateSamplesProps) {
+function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
   const { userInfo } = useContext(AuthenticationContext);
   const { setGoTo, setGoToOptions, trainingMode } =
     useContext(NavigationContext);
   const {
+    allSampleOptions,
+    aoiSketchLayer,
+    aoiSketchVM,
     defaultSymbols,
     displayDimensions,
     edits,
-    setEdits,
+    getGpMaxRecordCount,
     layers,
     map,
-    sketchLayer,
-    setSketchLayer,
-    aoiSketchLayer,
-    setAoiSketchLayer,
-    sketchVM,
-    aoiSketchVM,
-    getGpMaxRecordCount,
     sampleAttributes,
-    allSampleOptions,
+    sceneView,
+    setAoiSketchLayer,
+    setEdits,
+    setSketchLayer,
+    sketchLayer,
+    sketchVM,
   } = useContext(SketchContext);
   const getPopupTemplate = useDynamicPopup();
   const layerProps = useLayerProps();
@@ -149,6 +160,14 @@ function GenerateSamples({ id, title }: GenerateSamplesProps) {
   const [numberRandomSamples, setNumberRandomSamples] = useMemoryState<string>(
     `${id}-numberRandomSamples`,
     '33',
+  );
+  const [percentConfidence, setPercentConfidence] = useMemoryState<string>(
+    `${id}-percentConfidence`,
+    '95',
+  );
+  const [percentComplient, setPercentComplient] = useMemoryState<string>(
+    `${id}-percentComplient`,
+    '99',
   );
   const [
     sampleType,
@@ -204,7 +223,8 @@ function GenerateSamples({ id, title }: GenerateSamplesProps) {
   }
 
   // Handle a user generating random samples
-  function randomSamples() {
+  function randomSamples(ev: FormEvent<HTMLFormElement>) {
+    ev.preventDefault();
     if (!map || !sketchLayer || !getGpMaxRecordCount || !sampleType) return;
 
     activateSketchButton('disable-all-buttons');
@@ -268,8 +288,11 @@ function GenerateSamples({ id, title }: GenerateSamplesProps) {
           fields: layerProps.data.defaultFields,
           features: [
             {
-              attributes: sampleAttributes[typeuuid as any],
-              geometry: graphics[0].geometry,
+              attributes: {
+                ...sampleAttributes[typeuuid as any],
+                GLOBALID: generateUUID(),
+                PERMANENT_IDENTIFIER: generateUUID(),
+              },
             },
           ],
         };
@@ -502,6 +525,112 @@ function GenerateSamples({ id, title }: GenerateSamplesProps) {
   const [selectedAoiFile, setSelectedAoiFile] =
     useMemoryState<LayerType | null>(`${id}-selectedAoiFile`, null);
 
+  // get drawn aois
+  const [watcher, setWatcher] = useState<IHandle | null>(null);
+  const [aoisDrawn, setAoisDrawn] = useState<__esri.Graphic[]>([]);
+  useEffect(() => {
+    if (!aoiSketchLayer || watcher) return;
+
+    if (aoiSketchLayer.sketchLayer.type === 'graphics') {
+      setAoisDrawn(aoiSketchLayer.sketchLayer.graphics.toArray());
+    }
+
+    setWatcher(
+      reactiveUtils.watch(
+        () =>
+          (aoiSketchLayer.sketchLayer as __esri.GraphicsLayer).graphics.length,
+        () => {
+          if (aoiSketchLayer.sketchLayer.type !== 'graphics') return;
+          setAoisDrawn(aoiSketchLayer.sketchLayer.graphics.toArray());
+        },
+      ),
+    );
+  }, [aoiSketchLayer, watcher]);
+
+  // get aois from file
+  const [aoisSelected, setAoisSelected] = useState<__esri.Graphic[]>([]);
+  useEffect(() => {
+    if (!selectedAoiFile) {
+      setAoisSelected([]);
+      return;
+    }
+
+    if (selectedAoiFile.sketchLayer.type !== 'graphics') return;
+    setAoisSelected(selectedAoiFile.sketchLayer.graphics.toArray());
+  }, [selectedAoiFile]);
+
+  // get aois from selections
+  const [aois, setAois] = useState<__esri.Graphic[]>([]);
+  useEffect(() => {
+    if (generateRandomMode === 'draw') setAois(aoisDrawn);
+    if (generateRandomMode === 'file') setAois(aoisSelected);
+  }, [aoisDrawn, aoisSelected, generateRandomMode]);
+
+  // get area of aois and num samples per aoi if in statistic mode
+  type AoiType = { graphic: __esri.Graphic; area: number; numSamples: number };
+  const [aoisFull, setAoisFull] = useState<AoiType[]>([]);
+  useEffect(() => {
+    async function getAoiAreas(aois: __esri.Graphic[]) {
+      if (!sampleType) return;
+
+      const aoisFull: AoiType[] = [];
+      const complientFloat = parseFloat(percentComplient);
+      const confidenceFloat = parseFloat(percentConfidence);
+      const sampleArea = sampleAttributes[sampleType.value as any].SA;
+      for (const aoi of aois) {
+        // calculate area of aoi
+        const areaOut = await calculateArea(aoi, sceneView);
+        const area = typeof areaOut === 'number' ? areaOut : 0;
+
+        // calculate statistical number of samples for aoi
+        // n ~= [0.5(1 - a^(1/V))(2N - V + 1)]
+        const N = area / sampleArea;
+        const a = 1 - confidenceFloat / 100;
+        const b = 1 - complientFloat / 100;
+        const V = Math.max(1, b * N);
+        const numSamples = Math.ceil(
+          0.5 * (1 - Math.pow(a, 1 / V)) * (2 * N - V + 1),
+        );
+
+        aoisFull.push({
+          area,
+          numSamples,
+          graphic: aoi,
+        });
+      }
+
+      setAoisFull(aoisFull);
+    }
+
+    if (type === 'random') {
+      setAoisFull(
+        aois.map((graphic) => ({
+          area: 0,
+          numSamples: 0,
+          graphic,
+        })),
+      );
+    }
+    if (type === 'statistic') getAoiAreas(aois);
+  }, [
+    aois,
+    percentComplient,
+    percentConfidence,
+    sampleAttributes,
+    sampleType,
+    sceneView,
+    type,
+  ]);
+
+  // get total number of samples across all aois
+  useEffect(() => {
+    let totalNumSamples = 0;
+    aoisFull.forEach((aoi) => {
+      totalNumSamples += aoi.numSamples;
+    });
+    setNumberRandomSamples(totalNumSamples.toString());
+  }, [aoisFull, setNumberRandomSamples]);
+
   return (
     <Fragment>
       {sketchLayer?.layerType === 'VSP' && cantUseWithVspMessage}
@@ -517,7 +646,7 @@ function GenerateSamples({ id, title }: GenerateSamplesProps) {
           {services.status === 'success' &&
             sampleTypeContext.status === 'success' &&
             layerProps.status === 'success' && (
-              <Fragment>
+              <form onSubmit={randomSamples}>
                 <p>
                   Select "Draw Sampling Mask" to draw a boundary on your map for
                   placing samples or select "Use Imported Area of Interest" to
@@ -553,6 +682,7 @@ function GenerateSamples({ id, title }: GenerateSamplesProps) {
                     title="Draw Sampling Mask"
                     className="sketch-button"
                     disabled={generateRandomResponse.status === 'fetching'}
+                    type="button"
                     onClick={() => {
                       if (!aoiSketchLayer) return;
 
@@ -641,15 +771,67 @@ function GenerateSamples({ id, title }: GenerateSamplesProps) {
                       onChange={(ev) => setSampleType(ev as SampleSelectType)}
                       options={allSampleOptions}
                     />
-                    <label htmlFor={`${id}-number-of-samples-input`}>
-                      Number of Samples
-                    </label>
-                    <input
-                      id={`${id}-number-of-samples-input`}
-                      css={inputStyles}
-                      value={numberRandomSamples}
-                      onChange={(ev) => setNumberRandomSamples(ev.target.value)}
-                    />
+
+                    {type === 'random' && (
+                      <label>
+                        <span>Number of Samples</span>
+                        <input
+                          css={inputStyles}
+                          min={1}
+                          required
+                          type="number"
+                          value={numberRandomSamples}
+                          onChange={(ev) =>
+                            setNumberRandomSamples(ev.target.value)
+                          }
+                        />
+                      </label>
+                    )}
+
+                    {type === 'statistic' && (
+                      <Fragment>
+                        <label>
+                          <span>Percent Confidence</span>
+                          <input
+                            css={inputStyles}
+                            min={0}
+                            max={100}
+                            required
+                            type="number"
+                            value={percentConfidence}
+                            onChange={(ev) =>
+                              setPercentConfidence(ev.target.value)
+                            }
+                          />
+                        </label>
+                        <label>
+                          <span>Percent Area Clear/Compliant</span>
+                          <input
+                            css={inputStyles}
+                            min={0}
+                            max={100}
+                            required
+                            type="number"
+                            value={percentComplient}
+                            onChange={(ev) =>
+                              setPercentComplient(ev.target.value)
+                            }
+                          />
+                        </label>
+
+                        {numberRandomSamples && (
+                          <Fragment>
+                            <span>
+                              Number of resulting samples:{' '}
+                              <strong>
+                                {parseInt(numberRandomSamples).toLocaleString()}
+                              </strong>
+                            </span>
+                            <br />
+                          </Fragment>
+                        )}
+                      </Fragment>
+                    )}
 
                     <div>
                       <input
@@ -711,7 +893,7 @@ function GenerateSamples({ id, title }: GenerateSamplesProps) {
                       <button
                         css={submitButtonStyles}
                         disabled={generateRandomResponse.status === 'fetching'}
-                        onClick={randomSamples}
+                        type="submit"
                       >
                         {generateRandomResponse.status !== 'fetching' &&
                           'Submit'}
@@ -725,7 +907,7 @@ function GenerateSamples({ id, title }: GenerateSamplesProps) {
                     )}
                   </Fragment>
                 )}
-              </Fragment>
+              </form>
             )}
         </Fragment>
       )}
