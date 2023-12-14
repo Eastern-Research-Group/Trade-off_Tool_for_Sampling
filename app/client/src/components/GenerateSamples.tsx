@@ -29,7 +29,6 @@ import { SketchContext } from 'contexts/Sketch';
 import { LayerType } from 'types/Layer';
 import { ErrorType } from 'types/Misc';
 // config
-import { SampleSelectType, PolygonSymbol } from 'config/sampleAttributes';
 import {
   cantUseWithVspMessage,
   featureNotAvailableMessage,
@@ -37,6 +36,7 @@ import {
   generateRandomSuccessMessage,
   webServiceErrorMessage,
 } from 'config/errorMessages';
+import { PolygonSymbol, SampleSelectType } from 'config/sampleAttributes';
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
 import { geoprocessorFetch } from 'utils/fetchUtils';
@@ -184,13 +184,11 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
   // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
   // dropdown this will create an AOI layer. This also sets the sketchVM to use the
   // selected AOI and triggers a React useEffect to allow the user to sketch on the map.
-  const [
-    generateRandomResponse,
-    setGenerateRandomResponse, //
-  ] = useState<GenerateRandomType>({
-    status: 'none',
-    data: [],
-  });
+  const [generateRandomResponse, setGenerateRandomResponse] =
+    useState<GenerateRandomType>({
+      status: 'none',
+      data: [],
+    });
   function sketchAoiButtonClick() {
     if (!map || !aoiSketchVM || !aoiSketchLayer) return;
 
@@ -222,10 +220,112 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     }
   }
 
-  // Handle a user generating random samples
-  function randomSamples(ev: FormEvent<HTMLFormElement>) {
+  // Fires of requests to Generate Random gp service and updates
+  // the passed in requests array.
+  function randomSamplesSendRequests(
+    aoiGraphics: Collection<__esri.Graphic>,
+    numberOfSamples: number,
+    maxRecordCount: number,
+    requests: {
+      request: Promise<any>;
+      originalValuesZ: number[];
+      graphics: __esri.GraphicProperties[];
+    }[],
+  ) {
+    if (!getGpMaxRecordCount || !map || !sampleType || !sketchLayer) return;
+
+    let graphics: __esri.GraphicProperties[] = [];
+    const originalValuesZ: number[] = [];
+    const fullGraphics = aoiGraphics.clone();
+    fullGraphics.forEach((graphic) => {
+      const z = removeZValues(graphic);
+      originalValuesZ.push(z);
+    });
+
+    graphics = fullGraphics.toArray();
+
+    // create a feature set for communicating with the GPServer
+    const featureSet = new FeatureSet({
+      displayFieldName: '',
+      geometryType: 'polygon',
+      spatialReference: {
+        wkid: 3857,
+      },
+      fields: [
+        {
+          name: 'OBJECTID',
+          type: 'oid',
+          alias: 'OBJECTID',
+        },
+        {
+          name: 'PERMANENT_IDENTIFIER',
+          type: 'guid',
+          alias: 'PERMANENT_IDENTIFIER',
+        },
+      ],
+      features: graphics,
+    });
+
+    // get the sample type definition (can be established or custom)
+    const typeuuid = sampleType.value;
+    const sampleTypeFeatureSet = {
+      displayFieldName: '',
+      geometryType: 'esriGeometryPolygon',
+      spatialReference: {
+        wkid: 3857,
+      },
+      fields: layerProps.data.defaultFields,
+      features: [
+        {
+          attributes: {
+            ...sampleAttributes[typeuuid as any],
+            GLOBALID: generateUUID(),
+            PERMANENT_IDENTIFIER: generateUUID(),
+          },
+        },
+      ],
+    };
+
+    // determine the number of service calls needed to satisfy the request
+    const samplesPerCall = Math.floor(maxRecordCount / graphics.length);
+    const iterations = Math.ceil(numberOfSamples / samplesPerCall);
+
+    // fire off the generateRandom requests
+    let numSamples = 0;
+    let numSamplesLeft = numberOfSamples;
+    for (let i = 0; i < iterations; i++) {
+      // determine the number of samples for this request
+      numSamples =
+        numSamplesLeft > samplesPerCall ? samplesPerCall : numSamplesLeft;
+
+      const props = {
+        f: 'json',
+        Number_of_Samples: numSamples,
+        Sample_Type: sampleType.label,
+        Area_of_Interest_Mask: featureSet.toJSON(),
+        Sample_Type_Parameters: sampleTypeFeatureSet,
+      };
+      appendEnvironmentObjectParam(props);
+
+      const request = geoprocessorFetch({
+        url: `${services.data.totsGPServer}/Generate%20Random`,
+        inputParameters: props,
+      });
+      requests.push({
+        request,
+        originalValuesZ,
+        graphics,
+      });
+
+      // keep track of the number of remaining samples
+      numSamplesLeft = numSamplesLeft - numSamples;
+    }
+  }
+
+  // Handle a user generating random or statistical samples
+  async function randomSamples(ev: FormEvent<HTMLFormElement>) {
     ev.preventDefault();
-    if (!map || !sketchLayer || !getGpMaxRecordCount || !sampleType) return;
+    if (!getGpMaxRecordCount || !map || !sampleType || !sketchLayer) return;
 
     activateSketchButton('disable-all-buttons');
     sketchVM?.[displayDimensions].cancel();
@@ -241,276 +341,197 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
     setGenerateRandomResponse({ status: 'fetching', data: [] });
 
-    getGpMaxRecordCount()
-      .then((maxRecordCount) => {
-        const originalValuesZ: number[] = [];
-        let graphics: __esri.GraphicProperties[] = [];
-        if (aoiMaskLayer?.sketchLayer?.type === 'graphics') {
-          const fullGraphics = aoiMaskLayer.sketchLayer.graphics.clone();
-          fullGraphics.forEach((graphic) => {
-            const z = removeZValues(graphic);
-            originalValuesZ.push(z);
-          });
+    if (aoiMaskLayer.sketchLayer.type === 'feature') return;
 
-          graphics = fullGraphics.toArray();
+    try {
+      const maxRecordCount = await getGpMaxRecordCount();
+
+      const requests: {
+        request: Promise<any>;
+        originalValuesZ: number[];
+        graphics: __esri.GraphicProperties[];
+      }[] = [];
+      if (type === 'random') {
+        randomSamplesSendRequests(
+          aoiMaskLayer.sketchLayer.graphics,
+          parseInt(numberRandomSamples),
+          maxRecordCount,
+          requests,
+        );
+      }
+
+      if (type === 'statistic') {
+        aoisFull.forEach((aoi) => {
+          randomSamplesSendRequests(
+            new Collection([aoi.graphic]),
+            aoi.numSamples,
+            maxRecordCount,
+            requests,
+          );
+        });
+      }
+
+      const typeuuid = sampleType.value;
+      const responses = await Promise.all(requests.map((r) => r.request));
+
+      let res;
+      const timestamp = getCurrentDateTime();
+      const popupTemplate = getPopupTemplate('Samples', trainingMode);
+      const graphicsToAdd: __esri.Graphic[] = [];
+      const hybridGraphicsToAdd: __esri.Graphic[] = [];
+      const pointsToAdd: __esri.Graphic[] = [];
+      for (let i = 0; i < responses.length; i++) {
+        res = responses[i];
+        const numberOfAois = requests[i].graphics.length;
+        if (!res?.results?.[0]?.value) {
+          setGenerateRandomResponse({
+            status: 'failure',
+            error: {
+              error: createErrorObject(res),
+              message: 'No data',
+            },
+            data: [],
+          });
+          return;
         }
 
-        // create a feature set for communicating with the GPServer
-        const featureSet = new FeatureSet({
-          displayFieldName: '',
-          geometryType: 'polygon',
-          spatialReference: {
-            wkid: 3857,
-          },
-          fields: [
-            {
-              name: 'OBJECTID',
-              type: 'oid',
-              alias: 'OBJECTID',
+        if (res.results[0].value.exceededTransferLimit) {
+          setGenerateRandomResponse({
+            status: 'exceededTransferLimit',
+            data: [],
+          });
+          return;
+        }
+
+        // get the results from the response
+        const results = res.results[0].value;
+
+        // set the sample styles
+        let symbol: PolygonSymbol = defaultSymbols.symbols['Samples'];
+        if (defaultSymbols.symbols.hasOwnProperty(sampleType.value)) {
+          symbol = defaultSymbols.symbols[sampleType.value];
+        }
+
+        let originalZIndex = 0;
+        const graphicsPerAoi = results.features.length / numberOfAois;
+
+        // build an array of graphics to draw on the map
+        let index = 0;
+        for (const feature of results.features) {
+          if (index !== 0 && index % graphicsPerAoi === 0) originalZIndex += 1;
+
+          const originalZ = requests[i].originalValuesZ[originalZIndex];
+          const poly = new Graphic({
+            attributes: {
+              ...(window as any).totsSampleAttributes[typeuuid],
+              CREATEDDATE: timestamp,
+              DECISIONUNITUUID: sketchLayer.uuid,
+              DECISIONUNIT: sketchLayer.label,
+              DECISIONUNITSORT: 0,
+              OBJECTID: feature.attributes.OBJECTID,
+              GLOBALID: feature.attributes.GLOBALID,
+              PERMANENT_IDENTIFIER: feature.attributes.PERMANENT_IDENTIFIER,
+              UPDATEDDATE: timestamp,
+              USERNAME: userInfo?.username || '',
+              ORGANIZATION: userInfo?.orgId || '',
             },
-            {
-              name: 'PERMANENT_IDENTIFIER',
-              type: 'guid',
-              alias: 'PERMANENT_IDENTIFIER',
-            },
-          ],
-          features: graphics,
+            symbol,
+            geometry: new Polygon({
+              rings: feature.geometry.rings,
+              spatialReference: results.spatialReference,
+            }),
+            popupTemplate,
+          });
+
+          await setZValues({
+            map,
+            graphic: poly,
+            zOverride:
+              generateRandomElevationMode === 'aoiElevation' ? originalZ : null,
+          });
+
+          graphicsToAdd.push(poly);
+          pointsToAdd.push(convertToPoint(poly));
+          hybridGraphicsToAdd.push(
+            poly.attributes.ShapeType === 'point'
+              ? convertToPoint(poly)
+              : poly.clone(),
+          );
+
+          index += 1;
+        }
+      }
+
+      // put the graphics on the map
+      if (sketchLayer?.sketchLayer?.type === 'graphics') {
+        // add the graphics to a collection so it can added to browser storage
+        const collection = new Collection<__esri.Graphic>();
+        collection.addMany(graphicsToAdd);
+        sketchLayer.sketchLayer.graphics.addMany(collection);
+
+        sketchLayer.pointsLayer?.addMany(pointsToAdd);
+        sketchLayer.hybridLayer?.addMany(hybridGraphicsToAdd);
+
+        let editsCopy = updateLayerEdits({
+          edits,
+          layer: sketchLayer,
+          type: 'add',
+          changes: collection,
         });
 
-        // get the sample type definition (can be established or custom)
-        const typeuuid = sampleType.value;
-        const sampleTypeFeatureSet = {
-          displayFieldName: '',
-          geometryType: 'esriGeometryPolygon',
-          spatialReference: {
-            wkid: 3857,
-          },
-          fields: layerProps.data.defaultFields,
-          features: [
-            {
-              attributes: {
-                ...sampleAttributes[typeuuid as any],
-                GLOBALID: generateUUID(),
-                PERMANENT_IDENTIFIER: generateUUID(),
-              },
-            },
-          ],
-        };
+        if (generateRandomMode === 'draw') {
+          // remove the graphics from the generate random mask
+          if (
+            aoiSketchLayer &&
+            aoiSketchLayer.sketchLayer.type === 'graphics'
+          ) {
+            editsCopy = updateLayerEdits({
+              edits: editsCopy,
+              layer: aoiSketchLayer,
+              type: 'delete',
+              changes: aoiSketchLayer.sketchLayer.graphics,
+            });
 
-        // determine the number of service calls needed to satisfy the request
-        const intNumberRandomSamples = parseInt(numberRandomSamples); // 7
-        const samplesPerCall = Math.floor(maxRecordCount / graphics.length);
-        const iterations = Math.ceil(intNumberRandomSamples / samplesPerCall);
+            aoiSketchLayer.sketchLayer.removeAll();
+          }
+        }
 
-        // fire off the generateRandom requests
-        const requests = [];
-        let numSamples = 0;
-        let numSamplesLeft = intNumberRandomSamples;
-        for (let i = 0; i < iterations; i++) {
-          // determine the number of samples for this request
-          numSamples =
-            numSamplesLeft > samplesPerCall ? samplesPerCall : numSamplesLeft;
+        // update the edits state
+        setEdits(editsCopy);
 
-          const props = {
-            f: 'json',
-            Number_of_Samples: numSamples,
-            Sample_Type: sampleType.label,
-            Area_of_Interest_Mask: featureSet.toJSON(),
-            Sample_Type_Parameters: sampleTypeFeatureSet,
+        // update the editType of the sketchLayer
+        setSketchLayer((sketchLayer: LayerType | null) => {
+          if (!sketchLayer) return sketchLayer;
+          return {
+            ...sketchLayer,
+            editType: 'add',
           };
-          appendEnvironmentObjectParam(props);
-
-          const request = geoprocessorFetch({
-            url: `${services.data.totsGPServer}/Generate%20Random`,
-            inputParameters: props,
-          });
-          requests.push(request);
-
-          // keep track of the number of remaining samples
-          numSamplesLeft = numSamplesLeft - numSamples;
-        }
-        Promise.all(requests)
-          .then(async (responses: any) => {
-            let res;
-            const timestamp = getCurrentDateTime();
-            const popupTemplate = getPopupTemplate('Samples', trainingMode);
-            const graphicsToAdd: __esri.Graphic[] = [];
-            const hybridGraphicsToAdd: __esri.Graphic[] = [];
-            const pointsToAdd: __esri.Graphic[] = [];
-            const numberOfAois = graphics.length;
-            for (let i = 0; i < responses.length; i++) {
-              res = responses[i];
-              if (!res?.results?.[0]?.value) {
-                setGenerateRandomResponse({
-                  status: 'failure',
-                  error: {
-                    error: createErrorObject(res),
-                    message: 'No data',
-                  },
-                  data: [],
-                });
-                return;
-              }
-
-              if (res.results[0].value.exceededTransferLimit) {
-                setGenerateRandomResponse({
-                  status: 'exceededTransferLimit',
-                  data: [],
-                });
-                return;
-              }
-
-              // get the results from the response
-              const results = res.results[0].value;
-
-              // set the sample styles
-              let symbol: PolygonSymbol = defaultSymbols.symbols['Samples'];
-              if (defaultSymbols.symbols.hasOwnProperty(sampleType.value)) {
-                symbol = defaultSymbols.symbols[sampleType.value];
-              }
-
-              let originalZIndex = 0;
-              const graphicsPerAoi = results.features.length / numberOfAois;
-
-              // build an array of graphics to draw on the map
-              let index = 0;
-              for (const feature of results.features) {
-                if (index !== 0 && index % graphicsPerAoi === 0)
-                  originalZIndex += 1;
-
-                const originalZ = originalValuesZ[originalZIndex];
-                const poly = new Graphic({
-                  attributes: {
-                    ...(window as any).totsSampleAttributes[typeuuid],
-                    CREATEDDATE: timestamp,
-                    DECISIONUNITUUID: sketchLayer.uuid,
-                    DECISIONUNIT: sketchLayer.label,
-                    DECISIONUNITSORT: 0,
-                    OBJECTID: feature.attributes.OBJECTID,
-                    GLOBALID: feature.attributes.GLOBALID,
-                    PERMANENT_IDENTIFIER:
-                      feature.attributes.PERMANENT_IDENTIFIER,
-                    UPDATEDDATE: timestamp,
-                    USERNAME: userInfo?.username || '',
-                    ORGANIZATION: userInfo?.orgId || '',
-                  },
-                  symbol,
-                  geometry: new Polygon({
-                    rings: feature.geometry.rings,
-                    spatialReference: results.spatialReference,
-                  }),
-                  popupTemplate,
-                });
-
-                await setZValues({
-                  map,
-                  graphic: poly,
-                  zOverride:
-                    generateRandomElevationMode === 'aoiElevation'
-                      ? originalZ
-                      : null,
-                });
-
-                graphicsToAdd.push(poly);
-                pointsToAdd.push(convertToPoint(poly));
-                hybridGraphicsToAdd.push(
-                  poly.attributes.ShapeType === 'point'
-                    ? convertToPoint(poly)
-                    : poly.clone(),
-                );
-
-                index += 1;
-              }
-            }
-
-            // put the graphics on the map
-            if (sketchLayer?.sketchLayer?.type === 'graphics') {
-              // add the graphics to a collection so it can added to browser storage
-              const collection = new Collection<__esri.Graphic>();
-              collection.addMany(graphicsToAdd);
-              sketchLayer.sketchLayer.graphics.addMany(collection);
-
-              sketchLayer.pointsLayer?.addMany(pointsToAdd);
-              sketchLayer.hybridLayer?.addMany(hybridGraphicsToAdd);
-
-              let editsCopy = updateLayerEdits({
-                edits,
-                layer: sketchLayer,
-                type: 'add',
-                changes: collection,
-              });
-
-              if (generateRandomMode === 'draw') {
-                // remove the graphics from the generate random mask
-                if (
-                  aoiMaskLayer &&
-                  aoiMaskLayer.sketchLayer.type === 'graphics'
-                ) {
-                  editsCopy = updateLayerEdits({
-                    edits: editsCopy,
-                    layer: aoiMaskLayer,
-                    type: 'delete',
-                    changes: aoiMaskLayer.sketchLayer.graphics,
-                  });
-
-                  aoiMaskLayer.sketchLayer.removeAll();
-                }
-              }
-
-              // update the edits state
-              setEdits(editsCopy);
-
-              // update the editType of the sketchLayer
-              setSketchLayer((sketchLayer: LayerType | null) => {
-                if (!sketchLayer) return sketchLayer;
-                return {
-                  ...sketchLayer,
-                  editType: 'add',
-                };
-              });
-            }
-
-            setGenerateRandomResponse({
-              status: 'success',
-              data: graphicsToAdd,
-            });
-
-            if (generateRandomMode === 'draw') {
-              if (
-                aoiMaskLayer &&
-                aoiMaskLayer.sketchLayer.type === 'graphics'
-              ) {
-                aoiMaskLayer.sketchLayer.removeAll();
-              }
-            }
-          })
-          .catch((err) => {
-            console.error(err);
-            setGenerateRandomResponse({
-              status: 'failure',
-              error: {
-                error: createErrorObject(err),
-                message: err.message,
-              },
-              data: [],
-            });
-
-            window.logErrorToGa(err);
-          });
-      })
-      .catch((err: any) => {
-        console.error(err);
-        setGenerateRandomResponse({
-          status: 'failure',
-          error: {
-            error: createErrorObject(err),
-            message: err.message,
-          },
-          data: [],
         });
+      }
 
-        window.logErrorToGa(err);
+      setGenerateRandomResponse({
+        status: 'success',
+        data: graphicsToAdd,
       });
+
+      if (generateRandomMode === 'draw') {
+        if (aoiSketchLayer && aoiSketchLayer.sketchLayer.type === 'graphics') {
+          aoiSketchLayer.sketchLayer.removeAll();
+        }
+      }
+    } catch (err: any) {
+      console.error(err);
+      setGenerateRandomResponse({
+        status: 'failure',
+        error: {
+          error: createErrorObject(err),
+          message: err.message,
+        },
+        data: [],
+      });
+
+      window.logErrorToGa(err);
+    }
   }
 
   // scenario and layer edit UI visibility controls
@@ -584,7 +605,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
         // calculate statistical number of samples for aoi
         // n ~= [0.5(1 - a^(1/V))(2N - V + 1)]
-        const N = area / sampleArea;
+        const N = area / sampleArea; // grid definition
         const a = 1 - confidenceFloat / 100;
         const b = 1 - complientFloat / 100;
         const V = Math.max(1, b * N);
@@ -624,12 +645,23 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
   // get total number of samples across all aois
   useEffect(() => {
+    if (type === 'random') return;
     let totalNumSamples = 0;
     aoisFull.forEach((aoi) => {
       totalNumSamples += aoi.numSamples;
     });
-    setNumberRandomSamples(totalNumSamples.toString());
-  }, [aoisFull, setNumberRandomSamples]);
+    setNumberRandomSamples(
+      (totalNumSamples && !isNaN(totalNumSamples)
+        ? totalNumSamples
+        : 0
+      ).toString(),
+    );
+  }, [aoisFull, setNumberRandomSamples, type]);
+
+  useEffect(() => {
+    if (!window.location.search.includes('devMode=true')) return;
+    console.log('aois (post calculations): ', aoisFull);
+  }, [aoisFull]);
 
   return (
     <Fragment>
@@ -647,13 +679,26 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
             sampleTypeContext.status === 'success' &&
             layerProps.status === 'success' && (
               <form onSubmit={randomSamples}>
-                <p>
-                  Select "Draw Sampling Mask" to draw a boundary on your map for
-                  placing samples or select "Use Imported Area of Interest" to
-                  use an Area of Interest file to place samples. Select a Sample
-                  Type from the menu and specify the number of samples to add.
-                  Click Submit to add samples.
-                </p>
+                {type === 'random' && (
+                  <p>
+                    Select "Draw Sampling Mask" to draw a boundary on your map
+                    for placing samples or select "Use Imported Area of
+                    Interest" to use an Area of Interest file to place samples.
+                    Select a Sample Type from the menu and specify the number of
+                    samples to add. Click Submit to add samples.
+                  </p>
+                )}
+                {type === 'statistic' && (
+                  <p>
+                    Select "Draw Sampling Mask" to draw a boundary on your map
+                    for placing samples or select "Use Imported Area of
+                    Interest" to use an Area of Interest file to place samples.
+                    Select a Sample Type from the menu and specify the "Percent
+                    Confidence and "Percent Area Clear/Complient". Click Submit
+                    to add samples.
+                  </p>
+                )}
+
                 <div>
                   <input
                     id={`${id}-draw-aoi`}
