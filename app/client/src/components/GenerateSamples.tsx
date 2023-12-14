@@ -146,7 +146,6 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     map,
     sampleAttributes,
     sceneView,
-    setAoiSketchLayer,
     setEdits,
     setSketchLayer,
     sketchLayer,
