@@ -709,11 +709,6 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                     checked={generateRandomMode === 'draw'}
                     onChange={(ev) => {
                       setGenerateRandomMode('draw');
-
-                      const maskLayers = layers.filter(
-                        (layer) => layer.layerType === 'Sampling Mask',
-                      );
-                      setAoiSketchLayer(maskLayers[0]);
                     }}
                   />
                   <label htmlFor={`${id}-draw-aoi`} css={radioLabelStyles}>
@@ -752,8 +747,6 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                     checked={generateRandomMode === 'file'}
                     onChange={(ev) => {
                       setGenerateRandomMode('file');
-
-                      setAoiSketchLayer(null);
 
                       if (!selectedAoiFile) {
                         const aoiLayers = layers.filter(
