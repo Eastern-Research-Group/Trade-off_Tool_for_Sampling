@@ -227,6 +227,8 @@ export function useStartOver() {
     setWebMapReferenceLayerSelections([]);
     setWebSceneReferenceLayerSelections([]);
 
+    memoryState = {};
+
     // reset the zoom
     if (mapView) {
       mapView.center = new Point({ longitude: -95, latitude: 37 });
@@ -1362,7 +1364,7 @@ export function use3dSketch() {
 // A generic state management helper. Used for preserving
 // state locally to the component.
 type MemoryStateType<T> = { [key: string]: T };
-const memoryState: MemoryStateType<unknown> = {};
+let memoryState: MemoryStateType<unknown> = {};
 export function useMemoryState<T>(
   key: string,
   initialState: T,
