@@ -15,6 +15,7 @@ import Polygon from '@arcgis/core/geometry/Polygon';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 // components
 import LoadingSpinner from 'components/LoadingSpinner';
+import MessageBox from 'components/MessageBox';
 import Select from 'components/Select';
 // contexts
 import { AuthenticationContext } from 'contexts/Authentication';
@@ -587,7 +588,12 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
   }, [aoisDrawn, aoisSelected, generateRandomMode]);
 
   // get area of aois and num samples per aoi if in statistic mode
-  type AoiType = { graphic: __esri.Graphic; area: number; numSamples: number };
+  type AoiType = {
+    graphic: __esri.Graphic;
+    area: number;
+    numSamples: number;
+    gridDefinition: number;
+  };
   const [aoisFull, setAoisFull] = useState<AoiType[]>([]);
   useEffect(() => {
     async function getAoiAreas(aois: __esri.Graphic[]) {
@@ -616,6 +622,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
           area,
           numSamples,
           graphic: aoi,
+          gridDefinition: N,
         });
       }
 
@@ -628,6 +635,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
           area: 0,
           numSamples: 0,
           graphic,
+          gridDefinition: 0,
         })),
       );
     }
@@ -661,6 +669,27 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     if (!window.location.search.includes('devMode=true')) return;
     console.log('aois (post calculations): ', aoisFull);
   }, [aoisFull]);
+
+  const [validationMessage, setValidationMessage] = useState('');
+  useEffect(() => {
+    let failedFields = [];
+    if (!validateDecimalInput(percentConfidence))
+      failedFields.push('"Percent Confidence"');
+    if (!validateDecimalInput(percentComplient))
+      failedFields.push('"Percent Complient"');
+
+    setValidationMessage(
+      failedFields.length > 0
+        ? `${failedFields.join(' and ')} must be a number between 50 and 100.`
+        : '',
+    );
+  }, [percentComplient, percentConfidence]);
+
+  function validateDecimalInput(value: string) {
+    const float = parseFloat(value);
+    if (isNaN(float) || float < 50 || float >= 100) return false;
+    return true;
+  }
 
   return (
     <Fragment>
@@ -831,10 +860,8 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                           <span>Percent Confidence</span>
                           <input
                             css={inputStyles}
-                            min={0}
-                            max={100}
                             required
-                            type="number"
+                            type="text"
                             value={percentConfidence}
                             onChange={(ev) =>
                               setPercentConfidence(ev.target.value)
@@ -845,10 +872,8 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                           <span>Percent Area Clear/Compliant</span>
                           <input
                             css={inputStyles}
-                            min={0}
-                            max={100}
                             required
-                            type="number"
+                            type="text"
                             value={percentComplient}
                             onChange={(ev) =>
                               setPercentComplient(ev.target.value)
@@ -858,6 +883,13 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
                         {numberRandomSamples && (
                           <Fragment>
+                            {validationMessage && (
+                              <MessageBox
+                                severity="warning"
+                                title=""
+                                message={validationMessage}
+                              />
+                            )}
                             <span>
                               Number of resulting samples:{' '}
                               <strong>
@@ -929,7 +961,10 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                         selectedAoiFile.sketchLayer.graphics.length > 0)) && (
                       <button
                         css={submitButtonStyles}
-                        disabled={generateRandomResponse.status === 'fetching'}
+                        disabled={
+                          generateRandomResponse.status === 'fetching' ||
+                          validationMessage !== ''
+                        }
                         type="submit"
                       >
                         {generateRandomResponse.status !== 'fetching' &&
