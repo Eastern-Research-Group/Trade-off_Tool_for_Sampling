@@ -610,7 +610,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
         // calculate statistical number of samples for aoi
         // n ~= [0.5(1 - a^(1/V))(2N - V + 1)]
-        const N = area / sampleArea; // grid definition
+        const N = Math.floor(area / sampleArea); // grid definition
         const a = 1 - confidenceFloat / 100;
         const b = 1 - complientFloat / 100;
         const V = Math.max(1, b * N);
