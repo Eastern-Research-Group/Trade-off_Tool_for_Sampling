@@ -335,8 +335,8 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       generateRandomMode === 'draw'
         ? aoiSketchLayer
         : generateRandomMode === 'file'
-        ? selectedAoiFile
-        : null;
+          ? selectedAoiFile
+          : null;
     if (!aoiMaskLayer) return;
 
     setGenerateRandomResponse({ status: 'fetching', data: [] });
