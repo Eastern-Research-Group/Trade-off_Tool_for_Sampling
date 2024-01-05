@@ -1,6 +1,7 @@
 const { URL } = require('url');
 const express = require('express');
 const axios = require('axios');
+const bodyParser = require('body-parser');
 const querystring = require('querystring');
 const config = require('../config/proxyConfig.json');
 const logger = require('../utilities/logger');
@@ -99,6 +100,95 @@ module.exports = function (app) {
           .status(response.status)
           .header(response.headers)
           .send(response.data);
+      })
+      .catch((err) => {
+        log.error(
+          logger.formatLogMsg(
+            metadataObj,
+            `Unsuccessful request. parsedUrl = ${parsedUrl}. Detailed error: ${err}`,
+          ),
+        );
+        if (res.headersSent) {
+          log.error(
+            logger.formatLogMsg(
+              metadataObj,
+              `Odd header already sent check = ${parsedUrl}. Detailed error: ${err}`,
+            ),
+          );
+        }
+
+        deleteTSHeaders(err.response);
+        res
+          .status(err.response.status)
+          .header(err.response.headers)
+          .send(err.response.data);
+      });
+  });
+
+  router.post('/', bodyParser.json(), function (req, res, next) {
+    let authoriztedURL = false;
+    var parsedUrl;
+    let metadataObj = logger.populateMetdataObjFromRequest(req);
+
+    try {
+      if (req.originalUrl) {
+        parsedUrl = querystring.unescape(req.originalUrl.substring(11)); //get rid of /proxy?url=
+
+        const url = new URL(parsedUrl);
+        authoriztedURL = config.urls.includes(url.host.toLowerCase());
+      } else {
+        let msg = 'Missing proxy request';
+        log.warn(logger.formatLogMsg(metadataObj, msg));
+        res.status(403).json({ message: msg });
+        return;
+      }
+
+      if (
+        !authoriztedURL &&
+        !parsedUrl.toLowerCase().includes('://' + req.hostname.toLowerCase())
+      ) {
+        let msg = 'Invalid proxy request';
+        log.error(
+          logger.formatLogMsg(metadataObj, `${msg}. parsedUrl = ${parsedUrl}`),
+        );
+        res.status(403).json({ message: msg });
+        return;
+      }
+    } catch (err) {
+      let msg = 'Invalid URL';
+      log.error(
+        logger.formatLogMsg(metadataObj, `${msg}. parsedUrl = ${parsedUrl}`),
+      );
+      res.status(403).json({ message: msg });
+      return;
+    }
+
+    axios({
+      method: req.method,
+      url: parsedUrl,
+      headers: {},
+      data: req.body,
+      timeout: 10000,
+      responseType: 'arraybuffer',
+    })
+      .then((response) => {
+        if (response.status !== 200) {
+          log.error(
+            logger.formatLogMsg(
+              metadataObj,
+              `Non-200 returned from web service. parsedUrl = ${parsedUrl}.`,
+            ),
+          );
+        } else {
+          log.info(
+            logger.formatLogMsg(
+              metadataObj,
+              `Successful request: ${parsedUrl}`,
+            ),
+          );
+        }
+
+        res.status(response.status).send(response.data);
       })
       .catch((err) => {
         log.error(
