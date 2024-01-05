@@ -690,7 +690,7 @@ function LocateSamples() {
 
     try {
       const results: any = await await proxyFetch(
-        `https://nsi.sec.usace.army.mil/nsiapi/structures?fmt=fc`,
+        `${services.data.nsi}/structures?fmt=fc`,
         {
           method: 'POST',
           headers: {
