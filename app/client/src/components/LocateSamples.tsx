@@ -4,6 +4,7 @@ import React, { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
 import Collection from '@arcgis/core/core/Collection';
 import Graphic from '@arcgis/core/Graphic';
+import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import Point from '@arcgis/core/geometry/Point';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
@@ -738,7 +739,81 @@ function LocateSamples() {
         );
       });
 
-      if (mapView) mapView.graphics.addMany(graphics);
+      // Figure out what to add graphics to
+      const aoiAssessed = selectedScenario?.layers.find(
+        (l) => l.layerType === 'AOI Assessed',
+      );
+
+      if (aoiAssessed) {
+        const aoiAssessedLayer = layers.find(
+          (l) => l.layerId === aoiAssessed.layerId,
+        );
+        if (aoiAssessedLayer?.sketchLayer?.type === 'graphics') {
+          aoiAssessedLayer?.sketchLayer.graphics.addMany(graphics);
+
+          const editsCopy = updateLayerEdits({
+            edits,
+            scenario: selectedScenario,
+            layer: aoiAssessedLayer,
+            type: 'add',
+            changes: new Collection(graphics),
+          });
+
+          setEdits(editsCopy);
+        }
+      } else {
+        const scenarioLayer = map.layers.find(
+          (l) => l.id === selectedScenario?.layerId,
+        );
+        if (scenarioLayer && scenarioLayer.type === 'group') {
+          const tmpScenarioLayer = scenarioLayer as __esri.GroupLayer;
+          //&& scenarioLayer.layerType === '') {
+          // build the layer
+          const layerUuid = generateUUID();
+          const graphicsLayer = new GraphicsLayer({
+            id: layerUuid,
+            title: 'AOI Assessment',
+            listMode: 'hide',
+            graphics,
+          });
+
+          // scenarioLayer..layers.add(graphicsLayer);
+          tmpScenarioLayer.layers.add(graphicsLayer);
+
+          const layer = {
+            id: -1,
+            pointsId: -1,
+            uuid: layerUuid,
+            layerId: layerUuid,
+            portalId: '',
+            value: 'aoiAssessed',
+            name: 'AOI Assessment',
+            label: 'AOI Assessment',
+            layerType: 'AOI Assessed',
+            editType: 'add',
+            visible: true,
+            listMode: 'hide',
+            sort: 0,
+            geometryType: 'esriGeometryPolygon',
+            addedFrom: 'sketch',
+            status: 'added',
+            sketchLayer: graphicsLayer,
+            pointsLayer: null,
+            hybridLayer: null,
+            parentLayer: null,
+          } as LayerType;
+
+          // add it to edits
+          const editsCopy = updateLayerEdits({
+            edits,
+            scenario: selectedScenario,
+            layer,
+            type: 'add',
+            changes: new Collection(graphics),
+          });
+          setEdits(editsCopy);
+        }
+      }
 
       if (aoiSketchLayer?.sketchLayer?.type === 'graphics') {
         aoiSketchLayer.sketchLayer.graphics.removeAll();

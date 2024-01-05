@@ -18,6 +18,7 @@ import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import * as geometryJsonUtils from '@arcgis/core/geometry/support/jsonUtils';
 import GeoRSSLayer from '@arcgis/core/layers/GeoRSSLayer';
 import Graphic from '@arcgis/core/Graphic';
+import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import KMLLayer from '@arcgis/core/layers/KMLLayer';
 import Layer from '@arcgis/core/layers/Layer';
@@ -28,11 +29,12 @@ import * as projection from '@arcgis/core/geometry/projection';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 import * as rendererJsonUtils from '@arcgis/core/renderers/support/jsonUtils';
 import SpatialReference from '@arcgis/core/geometry/SpatialReference';
+import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 import Viewpoint from '@arcgis/core/Viewpoint';
 import * as webMercatorUtils from '@arcgis/core/geometry/support/webMercatorUtils';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
 // components
-import MapPopup from 'components/MapPopup';
+import MapPopup, { buildingMapPopup } from 'components/MapPopup';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 import { DialogContext, AlertDialogOptions } from 'contexts/Dialog';
@@ -45,7 +47,12 @@ import {
   CalculateResultsType,
   CalculateResultsDataType,
 } from 'types/CalculateResults';
-import { EditsType, ScenarioEditsType, ServiceMetaDataType } from 'types/Edits';
+import {
+  EditsType,
+  FeatureEditsType,
+  ScenarioEditsType,
+  ServiceMetaDataType,
+} from 'types/Edits';
 import {
   FieldInfos,
   LayerType,
@@ -61,6 +68,7 @@ import { parseSmallFloat } from 'utils/utils';
 import {
   createLayer,
   findLayerInEdits,
+  generateUUID,
   handlePopupClick,
 } from 'utils/sketchUtils';
 import { GoToOptions } from 'types/Navigation';
@@ -1429,15 +1437,92 @@ function useEditsLayerStorage() {
         // create the layers and add them to the group layer
         const scenarioLayers: __esri.GraphicsLayer[] = [];
         editsLayer.layers.forEach((layer) => {
-          scenarioLayers.push(
-            ...createLayer({
-              defaultSymbols,
-              editsLayer: layer,
-              getPopupTemplate,
-              newLayers,
-              parentLayer: groupLayer,
-            }),
-          );
+          if (layer.layerType === 'AOI Assessed') {
+            // create graphics layer
+            const layerUuid = generateUUID();
+            const graphicsLayer = new GraphicsLayer({
+              id: layerUuid,
+              title: 'AOI Assessment',
+              listMode: 'hide',
+            });
+
+            // create popup template
+            const popupTemplate = {
+              title: '',
+              content: buildingMapPopup,
+            };
+
+            // process adds/updates/deletes/published
+            const pointFeatures: __esri.Graphic[] = [];
+            const idsUsed: string[] = [];
+            const displayedFeatures: FeatureEditsType[] = [];
+
+            // push the items from the adds array
+            layer.adds.forEach((item) => {
+              displayedFeatures.push(item);
+              idsUsed.push(item.attributes['PERMANENT_IDENTIFIER']);
+            });
+
+            // push the items from the updates array
+            layer.updates.forEach((item) => {
+              displayedFeatures.push(item);
+              idsUsed.push(item.attributes['PERMANENT_IDENTIFIER']);
+            });
+
+            // only push the ids of the deletes array to prevent drawing deleted items
+            layer.deletes.forEach((item) => {
+              idsUsed.push(item.PERMANENT_IDENTIFIER);
+            });
+
+            // add graphics from AGOL that haven't been changed
+            layer.published.forEach((item) => {
+              // don't re-add graphics that have already been added above
+              if (idsUsed.includes(item.attributes['PERMANENT_IDENTIFIER']))
+                return;
+
+              displayedFeatures.push(item);
+            });
+
+            // add graphics to map
+            displayedFeatures.forEach((graphic) => {
+              const geometry = graphic.geometry as __esri.PointProperties;
+              pointFeatures.push(
+                new Graphic({
+                  attributes: { ...graphic.attributes },
+                  popupTemplate,
+                  symbol: new TextSymbol({
+                    text: '\ue687',
+                    color: 'blue',
+                    yoffset: -13,
+                    font: {
+                      family: 'CalciteWebCoreIcons',
+                      size: 24,
+                    },
+                  }),
+                  geometry: new Point({
+                    spatialReference: {
+                      wkid: 3857,
+                    },
+                    x: geometry.x,
+                    y: geometry.y,
+                  }),
+                }),
+              );
+            });
+            graphicsLayer.addMany(pointFeatures);
+
+            scenarioLayers.push(graphicsLayer);
+          } else {
+            scenarioLayers.push(
+              ...createLayer({
+                defaultSymbols,
+                editsLayer: layer,
+                getPopupTemplate,
+                newLayers,
+                parentLayer: groupLayer,
+              }),
+            );
+          }
         });
         groupLayer.addMany(scenarioLayers);
 
