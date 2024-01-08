@@ -690,6 +690,7 @@ function LocateSamples() {
     };
 
     try {
+      // TODO - look into adding more queries here
       const results: any = await await proxyFetch(
         `${services.data.nsi}/structures?fmt=fc`,
         {
@@ -1143,8 +1144,6 @@ function LocateSamples() {
   const [generateRandomMode, setGenerateRandomMode] = useState<
     'draw' | 'file' | ''
   >('');
-  const [generateRandomElevationMode, setGenerateRandomElevationMode] =
-    useState<'ground' | 'aoiElevation'>('aoiElevation');
   const [selectedAoiFile, setSelectedAoiFile] = useState<LayerType | null>(
     null,
   );
@@ -3083,61 +3082,6 @@ function LocateSamples() {
                             {generateRandomMode && (
                               <Fragment>
                                 <br />
-                                <label htmlFor="sample-type-select-input">
-                                  Sample Type
-                                </label>
-                                <div>
-                                  <input
-                                    id="use-aoi-elevation"
-                                    type="radio"
-                                    name="elevation-mode"
-                                    value="Use AOI Elevation"
-                                    disabled={
-                                      generateRandomResponse.status ===
-                                      'fetching'
-                                    }
-                                    checked={
-                                      generateRandomElevationMode ===
-                                      'aoiElevation'
-                                    }
-                                    onChange={(ev) => {
-                                      setGenerateRandomElevationMode(
-                                        'aoiElevation',
-                                      );
-                                    }}
-                                  />
-                                  <label
-                                    htmlFor="use-aoi-elevation"
-                                    css={radioLabelStyles}
-                                  >
-                                    Use AOI Elevation
-                                  </label>
-                                </div>
-                                <div>
-                                  <input
-                                    id="snap-to-ground"
-                                    type="radio"
-                                    name="elevation-mode"
-                                    value="Snap to Ground"
-                                    disabled={
-                                      generateRandomResponse.status ===
-                                      'fetching'
-                                    }
-                                    checked={
-                                      generateRandomElevationMode === 'ground'
-                                    }
-                                    onChange={(ev) => {
-                                      setGenerateRandomElevationMode('ground');
-                                    }}
-                                  />
-                                  <label
-                                    htmlFor="snap-to-ground"
-                                    css={radioLabelStyles}
-                                  >
-                                    Snap to Ground
-                                  </label>
-                                </div>
-
                                 {generateRandomResponse.status === 'success' &&
                                   sketchLayer &&
                                   generateRandomSuccessMessage(
