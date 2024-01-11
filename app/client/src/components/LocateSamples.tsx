@@ -702,6 +702,7 @@ function LocateSamples() {
         },
       );
 
+      let editsCopy: EditsType = edits;
       const graphics: __esri.Graphic[] = [];
       results.features.forEach((feature: any) => {
         const { bldgtype, found_type, ftprntsrc, source, st_damcat } =
@@ -752,15 +753,13 @@ function LocateSamples() {
         if (aoiAssessedLayer?.sketchLayer?.type === 'graphics') {
           aoiAssessedLayer?.sketchLayer.graphics.addMany(graphics);
 
-          const editsCopy = updateLayerEdits({
+          editsCopy = updateLayerEdits({
             edits,
             scenario: selectedScenario,
             layer: aoiAssessedLayer,
             type: 'add',
             changes: new Collection(graphics),
           });
-
-          setEdits(editsCopy);
         }
       } else {
         const scenarioLayer = map.layers.find(
@@ -805,24 +804,40 @@ function LocateSamples() {
           } as LayerType;
 
           // add it to edits
-          const editsCopy = updateLayerEdits({
+          editsCopy = updateLayerEdits({
             edits,
             scenario: selectedScenario,
             layer,
             type: 'add',
             changes: new Collection(graphics),
           });
-          setEdits(editsCopy);
+
+          setLayers((layers) => {
+            return [...layers, layer];
+          });
         }
       }
 
-      if (aoiSketchLayer?.sketchLayer?.type === 'graphics') {
-        aoiSketchLayer.sketchLayer.graphics.removeAll();
+      if (generateRandomMode === 'draw') {
+        // remove the graphics from the generate random mask
+        if (aoiMaskLayer && aoiMaskLayer.sketchLayer.type === 'graphics') {
+          editsCopy = updateLayerEdits({
+            edits: editsCopy,
+            layer: aoiMaskLayer,
+            type: 'delete',
+            changes: aoiMaskLayer.sketchLayer.graphics,
+          });
+
+          aoiMaskLayer.sketchLayer.removeAll();
+        }
       }
+
+      // update the edits state
+      setEdits(editsCopy);
 
       setGenerateRandomResponse({
         status: 'success',
-        data: [],
+        data: graphics,
       });
     } catch (ex: any) {
       console.error(ex);

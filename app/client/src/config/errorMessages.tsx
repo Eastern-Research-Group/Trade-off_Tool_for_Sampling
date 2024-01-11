@@ -232,7 +232,7 @@ export const generateRandomSuccessMessage = (
   <MessageBox
     severity="info"
     title="Decon Applications Added"
-    message={`${numSamples} decon applications added to the "${layerName}" layer`}
+    message={`${numSamples} buildings added to the "${layerName}" layer`}
   />
 );
 

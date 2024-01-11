@@ -1512,6 +1512,29 @@ function useEditsLayerStorage() {
             graphicsLayer.addMany(pointFeatures);
 
             scenarioLayers.push(graphicsLayer);
+
+            newLayers.push({
+              id: layer.id,
+              pointsId: layer.pointsId,
+              uuid: layer.uuid,
+              layerId: layer.layerId,
+              portalId: layer.portalId,
+              value: layer.label,
+              name: layer.name,
+              label: layer.label,
+              layerType: layer.layerType,
+              editType: 'add',
+              addedFrom: layer.addedFrom,
+              status: layer.status,
+              visible: layer.visible,
+              listMode: layer.listMode,
+              sort: layer.sort,
+              geometryType: 'esriGeometryPolygon',
+              sketchLayer: graphicsLayer,
+              pointsLayer: null,
+              hybridLayer: null,
+              parentLayer: null,
+            });
           } else {
             scenarioLayers.push(
               ...createLayer({
