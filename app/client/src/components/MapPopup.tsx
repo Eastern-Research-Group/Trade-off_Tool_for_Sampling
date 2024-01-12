@@ -507,4 +507,49 @@ export function contaminationMapPopup(feature: any) {
   return contentContainer;
 }
 
+export function buildingMapPopup(feature: any) {
+  const content = (
+    <MapPopupSimple
+      feature={feature}
+      fieldInfos={[
+        { label: 'Building ID', fieldName: 'bid' },
+        { label: 'Building Type', fieldName: 'bldgtype' },
+        { label: 'Census Block FIPS', fieldName: 'cbfips' },
+        { label: 'ID', fieldName: 'fd_id' },
+        { label: 'Flood Zone (2021)', fieldName: 'firmzone' },
+        { label: 'Foundation Height', fieldName: 'found_ht' },
+        { label: 'Foundation Type', fieldName: 'found_type' },
+        { label: 'Footprint ID', fieldName: 'ftprntid' },
+        { label: 'Footprint Source', fieldName: 'ftprntsrc' },
+        { label: 'Ground Elevation (feet)', fieldName: 'ground_elv' },
+        { label: 'Ground Elevation (meters)', fieldName: 'ground_elv_m' },
+        { label: 'Median Year Built', fieldName: 'med_yr_blt' },
+        { label: 'Number of Stories', fieldName: 'num_story' },
+        { label: 'Percent Over 65 Disabled', fieldName: 'o65disable' },
+        { label: 'Occupancy Type', fieldName: 'occtype' },
+        { label: 'Population Night Over 65', fieldName: 'pop2amo65' },
+        { label: 'Population Night Under 65', fieldName: 'pop2amu65' },
+        { label: 'Population Day Over 65', fieldName: 'pop2pmo65' },
+        { label: 'Population Day Under 65', fieldName: 'pop2pmu65' },
+        { label: 'Source', fieldName: 'source' },
+        { label: 'Square Feet', fieldName: 'sqft' },
+        { label: 'Structure Damage Category', fieldName: 'st_damcat' },
+        { label: 'Students', fieldName: 'students' },
+        { label: 'Percent Under 65 Disabled', fieldName: 'u65disable' },
+        { label: 'Value of Contents', fieldName: 'val_cont' },
+        { label: 'Value of Structure', fieldName: 'val_struct' },
+        { label: 'Value of Vehicles', fieldName: 'val_vehic' },
+        { label: 'x', fieldName: 'x' },
+        { label: 'y', fieldName: 'y' },
+      ]}
+    />
+  );
+
+  // wrap the content for esri
+  const contentContainer = document.createElement('div');
+  createRoot(contentContainer).render(content);
+
+  return contentContainer;
+}
+
 export default MapPopup;

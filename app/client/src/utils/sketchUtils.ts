@@ -132,12 +132,15 @@ export function convertToSimpleGraphic(graphic: __esri.Graphic) {
   if (graphic?.geometry?.type === 'polygon') {
     geometry = graphic.geometry as __esri.Polygon;
   }
+  if (graphic?.geometry?.type === 'point') {
+    geometry = graphic.geometry as __esri.Point;
+  }
 
   // currently we only have polygons
   // in the future we may need to add code to handle different geometry types
   return {
     attributes: graphic.attributes ? { ...graphic.attributes } : {},
-    geometry: geometry,
+    geometry,
   };
 }
 

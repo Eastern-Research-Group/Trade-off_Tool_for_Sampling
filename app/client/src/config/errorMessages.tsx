@@ -145,6 +145,14 @@ export const noDataMessage = (filename: string) => (
   />
 );
 
+export const noDataDownloadMessage = (
+  <MessageBox
+    severity="warning"
+    title="No Data"
+    message="No data vailable to download."
+  />
+);
+
 export const userCanceledMessage = (filename: string) => (
   <MessageBox
     severity="error"
@@ -232,7 +240,7 @@ export const generateRandomSuccessMessage = (
   <MessageBox
     severity="info"
     title="Decon Applications Added"
-    message={`${numSamples} decon applications added to the "${layerName}" layer`}
+    message={`${numSamples} buildings added to the "${layerName}" layer`}
   />
 );
 

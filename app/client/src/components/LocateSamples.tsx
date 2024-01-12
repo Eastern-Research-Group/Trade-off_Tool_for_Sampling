@@ -2,26 +2,38 @@
 
 import React, { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import Collection from '@arcgis/core/core/Collection';
 import Graphic from '@arcgis/core/Graphic';
+import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
+import Point from '@arcgis/core/geometry/Point';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
+import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import ColorPicker from 'components/ColorPicker';
 import { EditScenario, EditLayer } from 'components/EditLayerMetaData';
 import LoadingSpinner from 'components/LoadingSpinner';
+import { buildingMapPopup } from 'components/MapPopup';
 import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 import Select from 'components/Select';
 // contexts
 import { DialogContext } from 'contexts/Dialog';
-import { useSampleTypesContext } from 'contexts/LookupFiles';
+import {
+  useLayerProps,
+  useSampleTypesContext,
+  useServicesContext,
+} from 'contexts/LookupFiles';
+import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext } from 'contexts/Publish';
 import { SketchContext } from 'contexts/Sketch';
 // types
 import { LayerType } from 'types/Layer';
 import { EditsType, ScenarioEditsType } from 'types/Edits';
+import { ErrorType } from 'types/Misc';
 // config
 import {
   AttributeItems,
@@ -29,10 +41,18 @@ import {
   PolygonSymbol,
 } from 'config/sampleAttributes';
 import {
+  cantUseWithVspMessage,
+  downloadSuccessMessage,
+  excelFailureMessage,
   featureNotAvailableMessage,
+  generateRandomExceededTransferLimitMessage,
+  generateRandomSuccessMessage,
+  noDataDownloadMessage,
   userDefinedValidationMessage,
+  webServiceErrorMessage,
 } from 'config/errorMessages';
 // utils
+import { proxyFetch } from 'utils/fetchUtils';
 import { useGeometryTools, useDynamicPopup, useStartOver } from 'utils/hooks';
 import {
   convertToPoint,
@@ -49,7 +69,49 @@ import {
   getSketchableLayers,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import { getLayerName, getScenarioName } from 'utils/utils';
+import { createErrorObject, getLayerName, getScenarioName } from 'utils/utils';
+// styles
+import { reactSelectStyles } from 'styles';
+
+const bldgTypeEnum = {
+  M: 'Masonry',
+  W: 'Wood',
+  H: 'Manufactured',
+  S: 'Steel',
+};
+const foundTypeEnum = {
+  C: 'Crawl',
+  B: 'Basement',
+  S: 'Slab',
+  P: 'Pier',
+  I: 'Pile',
+  F: 'Fill',
+  W: 'Solid Wall',
+};
+const ftprntsrcEnum = {
+  B: 'Bing',
+  O: 'Oak Ridge National Labs',
+  N: 'National Geospatial-Intelligence Agency',
+  M: 'Map Building Layer',
+};
+const sourceEnum = {
+  P: 'Parcel',
+  E: 'ESRI',
+  H: 'HIFLD Hospital',
+  N: 'HIFLD Nursing Home',
+  S: 'National Center for Education Statistics',
+  X: 'HAZUS/NSI-2015',
+};
+const stDamcatEnum = {
+  R: 'Residential',
+  C: 'Commercial',
+  I: 'Industrial',
+  P: 'Public',
+};
+
+function handleEnum(value: string, obj: any) {
+  return obj.hasOwnProperty(value) ? obj[value] : value;
+}
 
 type ShapeTypeSelect = {
   value: string;
@@ -208,6 +270,28 @@ const textStyles = css`
   word-break: break-word;
 `;
 
+const sketchAoiButtonStyles = css`
+  background-color: white;
+  color: black;
+
+  &:hover,
+  &:focus {
+    background-color: #e7f6f8;
+    cursor: pointer;
+  }
+`;
+
+const sketchAoiTextStyles = css`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  i {
+    font-size: 20px;
+    margin-right: 5px;
+  }
+`;
+
 const inlineMenuStyles = css`
   display: flex;
   align-items: center;
@@ -232,6 +316,15 @@ const inputStyles = css`
   padding-left: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
+`;
+
+const inlineSelectStyles = css`
+  width: 100%;
+  margin-right: 10px;
+`;
+
+const submitButtonStyles = css`
+  margin-top: 10px;
 `;
 
 const sampleCountStyles = css`
@@ -349,14 +442,25 @@ const lineSeparatorStyles = css`
   border-bottom: 1px solid #d8dfe2;
 `;
 
+const radioLabelStyles = css`
+  padding-left: 0.375rem;
+`;
+
 const verticalCenterTextStyles = css`
   display: flex;
   align-items: center;
 `;
 
 // --- components (LocateSamples) ---
+type GenerateRandomType = {
+  status: 'none' | 'fetching' | 'success' | 'failure' | 'exceededTransferLimit';
+  error?: ErrorType;
+  data: __esri.Graphic[];
+};
+
 function LocateSamples() {
   const { setOptions } = useContext(DialogContext);
+  const { setGoTo, setGoToOptions } = useContext(NavigationContext);
   const { setSampleTypeSelections } = useContext(PublishContext);
   const {
     defaultSymbols,
@@ -389,7 +493,9 @@ function LocateSamples() {
   const startOver = useStartOver();
   const { createBuffer } = useGeometryTools();
   const getPopupTemplate = useDynamicPopup();
+  const layerProps = useLayerProps();
   const sampleTypeContext = useSampleTypesContext();
+  const services = useServicesContext();
 
   // Sets the sketchLayer to the first layer in the layer selection drop down,
   // if available. If the drop down is empty, an empty sketchLayer will be
@@ -486,6 +592,433 @@ function LocateSamples() {
     // let the user draw/place the shape
     if (wasSet) sketchVM[displayDimensions].create(shapeType);
     else sketchVM[displayDimensions].cancel();
+  }
+
+  // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
+  // dropdown this will create an AOI layer. This also sets the sketchVM to use the
+  // selected AOI and triggers a React useEffect to allow the user to sketch on the map.
+  const [
+    generateRandomResponse,
+    setGenerateRandomResponse, //
+  ] = useState<GenerateRandomType>({
+    status: 'none',
+    data: [],
+  });
+  function sketchAoiButtonClick() {
+    if (!map || !aoiSketchVM || !aoiSketchLayer) return;
+
+    setGenerateRandomResponse({
+      status: 'none',
+      data: [],
+    });
+
+    // put the sketch layer on the map, if it isn't there already
+    const layerIndex = map.layers.findIndex(
+      (layer) => layer.id === aoiSketchLayer.layerId,
+    );
+    if (layerIndex === -1) map.add(aoiSketchLayer.sketchLayer);
+
+    // save changes from other sketchVM and disable to prevent
+    // interference
+    if (sketchVM) {
+      sketchVM[displayDimensions].cancel();
+    }
+
+    // make the style of the button active
+    const wasSet = activateSketchButton('sampling-mask');
+
+    if (wasSet) {
+      // let the user draw/place the shape
+      aoiSketchVM.create('polygon');
+    } else {
+      aoiSketchVM.cancel();
+    }
+  }
+
+  // Handle a user generating random samples
+  async function assessAoi() {
+    if (!map || !sketchLayer) return;
+
+    activateSketchButton('disable-all-buttons');
+    sketchVM?.[displayDimensions].cancel();
+    aoiSketchVM?.cancel();
+
+    const aoiMaskLayer: LayerType | null =
+      generateRandomMode === 'draw'
+        ? aoiSketchLayer
+        : generateRandomMode === 'file'
+        ? selectedAoiFile
+        : null;
+    if (
+      !aoiMaskLayer?.sketchLayer ||
+      aoiMaskLayer.sketchLayer.type !== 'graphics'
+    )
+      return;
+
+    setGenerateRandomResponse({ status: 'fetching', data: [] });
+
+    const features: any[] = [];
+    aoiMaskLayer.sketchLayer.graphics.forEach((graphic) => {
+      const geometry = graphic.geometry as __esri.Polygon;
+
+      const dim1Rings: number[][][] = [];
+      geometry.rings.forEach((dim1) => {
+        const dim2Rings: number[][] = [];
+        dim1.forEach((dim2) => {
+          const point = new Point({
+            spatialReference: {
+              wkid: 102100,
+            },
+            x: dim2[0],
+            y: dim2[1],
+          });
+
+          dim2Rings.push([point.longitude, point.latitude]);
+        });
+
+        dim1Rings.push(dim2Rings);
+      });
+
+      features.push({
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'Polygon',
+          coordinates: dim1Rings,
+        },
+      });
+    });
+
+    const params = {
+      type: 'FeatureCollection',
+      features,
+    };
+
+    try {
+      // TODO - look into adding more queries here
+      const results: any = await await proxyFetch(
+        `${services.data.nsi}/structures?fmt=fc`,
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify(params),
+        },
+      );
+
+      let editsCopy: EditsType = edits;
+      const graphics: __esri.Graphic[] = [];
+      results.features.forEach((feature: any) => {
+        const { bldgtype, found_type, ftprntsrc, source, st_damcat } =
+          feature.properties;
+        graphics.push(
+          new Graphic({
+            attributes: {
+              ...feature.properties,
+              bldgtype: handleEnum(bldgtype, bldgTypeEnum),
+              found_type: handleEnum(found_type, foundTypeEnum),
+              ftprntsrc: handleEnum(ftprntsrc, ftprntsrcEnum),
+              source: handleEnum(source, sourceEnum),
+              st_damcat: handleEnum(st_damcat, stDamcatEnum),
+            },
+            geometry: new Point({
+              longitude: feature.geometry.coordinates[0],
+              latitude: feature.geometry.coordinates[1],
+              spatialReference: {
+                wkid: 102100,
+              },
+            }),
+            symbol: new TextSymbol({
+              text: '\ue687',
+              color: 'blue',
+              yoffset: -13,
+              font: {
+                family: 'CalciteWebCoreIcons',
+                size: 24,
+              },
+            }),
+            popupTemplate: {
+              title: '',
+              content: buildingMapPopup,
+            },
+          }),
+        );
+      });
+
+      // Figure out what to add graphics to
+      const aoiAssessed = selectedScenario?.layers.find(
+        (l) => l.layerType === 'AOI Assessed',
+      );
+
+      if (aoiAssessed) {
+        const aoiAssessedLayer = layers.find(
+          (l) => l.layerId === aoiAssessed.layerId,
+        );
+        if (aoiAssessedLayer?.sketchLayer?.type === 'graphics') {
+          aoiAssessedLayer?.sketchLayer.graphics.addMany(graphics);
+
+          editsCopy = updateLayerEdits({
+            edits,
+            scenario: selectedScenario,
+            layer: aoiAssessedLayer,
+            type: 'add',
+            changes: new Collection(graphics),
+          });
+        }
+      } else {
+        const scenarioLayer = map.layers.find(
+          (l) => l.id === selectedScenario?.layerId,
+        );
+        if (scenarioLayer && scenarioLayer.type === 'group') {
+          const tmpScenarioLayer = scenarioLayer as __esri.GroupLayer;
+          //&& scenarioLayer.layerType === '') {
+          // build the layer
+          const layerUuid = generateUUID();
+          const graphicsLayer = new GraphicsLayer({
+            id: layerUuid,
+            title: 'AOI Assessment',
+            listMode: 'hide',
+            graphics,
+          });
+
+          // scenarioLayer..layers.add(graphicsLayer);
+          tmpScenarioLayer.layers.add(graphicsLayer);
+
+          const layer = {
+            id: -1,
+            pointsId: -1,
+            uuid: layerUuid,
+            layerId: layerUuid,
+            portalId: '',
+            value: 'aoiAssessed',
+            name: 'AOI Assessment',
+            label: 'AOI Assessment',
+            layerType: 'AOI Assessed',
+            editType: 'add',
+            visible: true,
+            listMode: 'hide',
+            sort: 0,
+            geometryType: 'esriGeometryPolygon',
+            addedFrom: 'sketch',
+            status: 'added',
+            sketchLayer: graphicsLayer,
+            pointsLayer: null,
+            hybridLayer: null,
+            parentLayer: null,
+          } as LayerType;
+
+          // add it to edits
+          editsCopy = updateLayerEdits({
+            edits,
+            scenario: selectedScenario,
+            layer,
+            type: 'add',
+            changes: new Collection(graphics),
+          });
+
+          setSelectedScenario((selectedScenario) => {
+            if (!selectedScenario) return selectedScenario;
+
+            const scenario = editsCopy.edits.find(
+              (edit) =>
+                edit.type === 'scenario' &&
+                edit.layerId === selectedScenario.layerId,
+            ) as ScenarioEditsType;
+            const newLayer = scenario.layers.find(
+              (l) => l.layerId === layer.layerId,
+            );
+
+            if (!newLayer) return selectedScenario;
+
+            return {
+              ...selectedScenario,
+              layers: [...selectedScenario.layers, newLayer],
+            };
+          });
+
+          setLayers((layers) => {
+            return [...layers, layer];
+          });
+        }
+      }
+
+      if (generateRandomMode === 'draw') {
+        // remove the graphics from the generate random mask
+        if (aoiMaskLayer && aoiMaskLayer.sketchLayer.type === 'graphics') {
+          editsCopy = updateLayerEdits({
+            edits: editsCopy,
+            layer: aoiMaskLayer,
+            type: 'delete',
+            changes: aoiMaskLayer.sketchLayer.graphics,
+          });
+
+          aoiMaskLayer.sketchLayer.removeAll();
+        }
+      }
+
+      // update the edits state
+      setEdits(editsCopy);
+
+      setGenerateRandomResponse({
+        status: 'success',
+        data: graphics,
+      });
+    } catch (ex: any) {
+      console.error(ex);
+      setGenerateRandomResponse({
+        status: 'failure',
+        error: {
+          error: createErrorObject(ex),
+          message: ex.message,
+        },
+        data: [],
+      });
+
+      window.logErrorToGa(ex);
+    }
+  }
+
+  type Cell = { value: any; font?: any; alignment?: any };
+  type Row = Cell[];
+
+  type DownloadStatus =
+    | 'none'
+    | 'fetching'
+    | 'success'
+    | 'no-data'
+    | 'excel-failure';
+  const [
+    downloadStatus,
+    setDownloadStatus, //
+  ] = useState<DownloadStatus>('none');
+  async function downloadSummary() {
+    // find the layer
+    const aoiAssessed = selectedScenario?.layers.find(
+      (l) => l.layerType === 'AOI Assessed',
+    );
+    console.log('aoiAssessed: ', aoiAssessed);
+    if (!aoiAssessed) {
+      setDownloadStatus('no-data');
+      return;
+    }
+
+    const aoiAssessedLayer = layers.find(
+      (l) => l.layerId === aoiAssessed.layerId,
+    );
+    if (
+      !aoiAssessedLayer ||
+      (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.length ===
+        0
+    ) {
+      setDownloadStatus('no-data');
+      return;
+    }
+
+    setDownloadStatus('fetching');
+
+    const workbook = new ExcelJS.Workbook();
+
+    // create the styles
+    const defaultFont = { name: 'Calibri', size: 12 };
+    const labelFont = { name: 'Calibri', bold: true, size: 12 };
+
+    // add the sheet
+    const summarySheet = workbook.addWorksheet('Building Data');
+
+    let curRow = fillOutCells({
+      sheet: summarySheet,
+      rows: [
+        [
+          { value: 'Building ID', font: labelFont },
+          { value: 'Building Type', font: labelFont },
+          { value: 'Census Block FIPS', font: labelFont },
+          { value: 'ID', font: labelFont },
+          { value: 'Flood Zone (2021)', font: labelFont },
+          { value: 'Foundation Height', font: labelFont },
+          { value: 'Foundation Type', font: labelFont },
+          { value: 'Footprint ID', font: labelFont },
+          { value: 'Footprint Source', font: labelFont },
+          { value: 'Ground Elevation (feet)', font: labelFont },
+          { value: 'Ground Elevation (meters)', font: labelFont },
+          { value: 'Median Year Built', font: labelFont },
+          { value: 'Number of Stories', font: labelFont },
+          { value: 'Percent Over 65 Disabled', font: labelFont },
+          { value: 'Occupancy Type', font: labelFont },
+          { value: 'Population Night Over 65', font: labelFont },
+          { value: 'Population Night Under 65', font: labelFont },
+          { value: 'Population Day Over 65', font: labelFont },
+          { value: 'Population Day Under 65', font: labelFont },
+          { value: 'Source', font: labelFont },
+          { value: 'Square Feet', font: labelFont },
+          { value: 'Structure Damage Category', font: labelFont },
+          { value: 'Students', font: labelFont },
+          { value: 'Percent Under 65 Disabled', font: labelFont },
+          { value: 'Value of Contents', font: labelFont },
+          { value: 'Value of Structure', font: labelFont },
+          { value: 'Value of Vehicles', font: labelFont },
+          { value: 'x', font: labelFont },
+          { value: 'y', font: labelFont },
+        ],
+      ],
+    });
+
+    const rows: Row[] = [];
+    (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
+      (graphic) => {
+        rows.push(
+          Object.values(graphic.attributes).map((value) => {
+            return {
+              value,
+            };
+          }),
+        );
+      },
+    );
+
+    fillOutCells({
+      sheet: summarySheet,
+      rows,
+      startRow: curRow,
+    });
+
+    function fillOutCells({
+      sheet,
+      rows,
+      startRow = 1,
+    }: {
+      sheet: ExcelJS.Worksheet;
+      rows: Row[];
+      startRow?: number;
+    }) {
+      let rowIdx = startRow;
+      rows.forEach((rowData, index) => {
+        if (index !== 0) rowIdx += 1;
+        rowData.forEach((cellData, cellIdx) => {
+          const cell = sheet.getCell(rowIdx, cellIdx + 1);
+          cell.value = cellData.value;
+          cell.font = cellData.font ?? defaultFont;
+          if (cellData.alignment) cell.alignment = cellData.alignment;
+        });
+      });
+
+      return rowIdx + 1;
+    }
+
+    // download the file
+    try {
+      const buffer = await workbook.xlsx.writeBuffer();
+      saveAs(
+        new Blob([buffer]),
+        `tods_${selectedScenario?.scenarioName}_aoi_assessment.xlsx`,
+      );
+      setDownloadStatus('success');
+    } catch (err: any) {
+      console.error(err);
+      setDownloadStatus('excel-failure');
+
+      window.logErrorToGa(err);
+    }
   }
 
   const [userDefinedSampleType, setUserDefinedSampleType] =
@@ -790,6 +1323,12 @@ function LocateSamples() {
   const [editScenarioVisible, setEditScenarioVisible] = useState(false);
   const [addLayerVisible, setAddLayerVisible] = useState(false);
   const [editLayerVisible, setEditLayerVisible] = useState(false);
+  const [generateRandomMode, setGenerateRandomMode] = useState<
+    'draw' | 'file' | ''
+  >('');
+  const [selectedAoiFile, setSelectedAoiFile] = useState<LayerType | null>(
+    null,
+  );
 
   // get a list of scenarios from edits
   const scenarios = getScenarios(edits);
@@ -2574,6 +3113,221 @@ function LocateSamples() {
                         )}
                       </div>
                     </div>
+                  )}
+                </div>
+              </AccordionItem>
+              <AccordionItem title="Assess AOI">
+                <div css={sectionContainer}>
+                  {sketchLayer?.layerType === 'VSP' && cantUseWithVspMessage}
+                  {sketchLayer?.layerType !== 'VSP' && (
+                    <Fragment>
+                      {(services.status === 'fetching' ||
+                        sampleTypeContext.status === 'fetching' ||
+                        layerProps.status === 'fetching') && <LoadingSpinner />}
+                      {(services.status === 'failure' ||
+                        sampleTypeContext.status === 'failure' ||
+                        layerProps.status === 'failure') &&
+                        featureNotAvailableMessage(
+                          'Add Multiple Random Samples',
+                        )}
+                      {services.status === 'success' &&
+                        sampleTypeContext.status === 'success' &&
+                        layerProps.status === 'success' && (
+                          <Fragment>
+                            <p>
+                              Select "Draw Sampling Mask" to draw a boundary on
+                              your map for assessing AOI or select "Use Imported
+                              Area of Interest" to use an Area of Interest file
+                              to assess the AOI. Click Submit to assess the AOI.
+                            </p>
+                            <div>
+                              <input
+                                id="draw-aoi"
+                                type="radio"
+                                name="mode"
+                                value="Draw area of Interest"
+                                disabled={
+                                  generateRandomResponse.status === 'fetching'
+                                }
+                                checked={generateRandomMode === 'draw'}
+                                onChange={(ev) => {
+                                  setGenerateRandomMode('draw');
+
+                                  const maskLayers = layers.filter(
+                                    (layer) =>
+                                      layer.layerType === 'Sampling Mask',
+                                  );
+                                  setAoiSketchLayer(maskLayers[0]);
+                                }}
+                              />
+                              <label htmlFor="draw-aoi" css={radioLabelStyles}>
+                                Draw Sampling Mask
+                              </label>
+                            </div>
+
+                            {generateRandomMode === 'draw' && (
+                              <button
+                                id="sampling-mask"
+                                title="Draw Sampling Mask"
+                                className="sketch-button"
+                                disabled={
+                                  generateRandomResponse.status === 'fetching'
+                                }
+                                onClick={() => {
+                                  if (!aoiSketchLayer) return;
+
+                                  sketchAoiButtonClick();
+                                }}
+                                css={sketchAoiButtonStyles}
+                              >
+                                <span css={sketchAoiTextStyles}>
+                                  <i className="fas fa-draw-polygon" />{' '}
+                                  <span>Draw Sampling Mask</span>
+                                </span>
+                              </button>
+                            )}
+
+                            <div>
+                              <input
+                                id="use-aoi-file"
+                                type="radio"
+                                name="mode"
+                                value="Use Imported Area of Interest"
+                                disabled={
+                                  generateRandomResponse.status === 'fetching'
+                                }
+                                checked={generateRandomMode === 'file'}
+                                onChange={(ev) => {
+                                  setGenerateRandomMode('file');
+
+                                  setAoiSketchLayer(null);
+
+                                  if (!selectedAoiFile) {
+                                    const aoiLayers = layers.filter(
+                                      (layer) =>
+                                        layer.layerType === 'Area of Interest',
+                                    );
+                                    setSelectedAoiFile(aoiLayers[0]);
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor="use-aoi-file"
+                                css={radioLabelStyles}
+                              >
+                                Use Imported Area of Interest
+                              </label>
+                            </div>
+
+                            {generateRandomMode === 'file' && (
+                              <Fragment>
+                                <label htmlFor="aoi-mask-select-input">
+                                  Area of Interest Mask
+                                </label>
+                                <div css={inlineMenuStyles}>
+                                  <Select
+                                    id="aoi-mask-select"
+                                    inputId="aoi-mask-select-input"
+                                    css={inlineSelectStyles}
+                                    styles={reactSelectStyles as any}
+                                    isClearable={true}
+                                    value={selectedAoiFile}
+                                    onChange={(ev) =>
+                                      setSelectedAoiFile(ev as LayerType)
+                                    }
+                                    options={layers.filter(
+                                      (layer) =>
+                                        layer.layerType === 'Area of Interest',
+                                    )}
+                                  />
+                                  <button
+                                    css={addButtonStyles}
+                                    disabled={
+                                      generateRandomResponse.status ===
+                                      'fetching'
+                                    }
+                                    onClick={(ev) => {
+                                      setGoTo('addData');
+                                      setGoToOptions({
+                                        from: 'file',
+                                        layerType: 'Area of Interest',
+                                      });
+                                    }}
+                                  >
+                                    Add
+                                  </button>
+                                </div>
+                              </Fragment>
+                            )}
+                            {generateRandomMode && (
+                              <Fragment>
+                                <br />
+                                {generateRandomResponse.status === 'success' &&
+                                  sketchLayer &&
+                                  generateRandomSuccessMessage(
+                                    generateRandomResponse.data.length,
+                                    sketchLayer.label,
+                                  )}
+                                {generateRandomResponse.status === 'failure' &&
+                                  webServiceErrorMessage(
+                                    generateRandomResponse.error,
+                                  )}
+                                {generateRandomResponse.status ===
+                                  'exceededTransferLimit' &&
+                                  generateRandomExceededTransferLimitMessage}
+                                {((generateRandomMode === 'draw' &&
+                                  aoiSketchLayer?.sketchLayer.type ===
+                                    'graphics' &&
+                                  aoiSketchLayer.sketchLayer.graphics.length >
+                                    0) ||
+                                  (generateRandomMode === 'file' &&
+                                    selectedAoiFile?.sketchLayer.type ===
+                                      'graphics' &&
+                                    selectedAoiFile.sketchLayer.graphics
+                                      .length > 0)) && (
+                                  <button
+                                    css={submitButtonStyles}
+                                    disabled={
+                                      generateRandomResponse.status ===
+                                      'fetching'
+                                    }
+                                    onClick={assessAoi}
+                                  >
+                                    {generateRandomResponse.status !==
+                                      'fetching' && 'Submit'}
+                                    {generateRandomResponse.status ===
+                                      'fetching' && (
+                                      <Fragment>
+                                        <i className="fas fa-spinner fa-pulse" />
+                                        &nbsp;&nbsp;Loading...
+                                      </Fragment>
+                                    )}
+                                  </button>
+                                )}
+                              </Fragment>
+                            )}
+
+                            <div>
+                              {downloadStatus === 'fetching' && (
+                                <LoadingSpinner />
+                              )}
+                              {downloadStatus === 'excel-failure' &&
+                                excelFailureMessage}
+                              {downloadStatus === 'no-data' &&
+                                noDataDownloadMessage}
+                              {downloadStatus === 'success' &&
+                                downloadSuccessMessage}
+
+                              <button
+                                css={submitButtonStyles}
+                                onClick={downloadSummary}
+                              >
+                                Download
+                              </button>
+                            </div>
+                          </Fragment>
+                        )}
+                    </Fragment>
                   )}
                 </div>
               </AccordionItem>
