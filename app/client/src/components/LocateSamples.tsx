@@ -2,6 +2,8 @@
 
 import React, { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import Collection from '@arcgis/core/core/Collection';
 import Graphic from '@arcgis/core/Graphic';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
@@ -40,9 +42,12 @@ import {
 } from 'config/sampleAttributes';
 import {
   cantUseWithVspMessage,
+  downloadSuccessMessage,
+  excelFailureMessage,
   featureNotAvailableMessage,
   generateRandomExceededTransferLimitMessage,
   generateRandomSuccessMessage,
+  noDataDownloadMessage,
   userDefinedValidationMessage,
   webServiceErrorMessage,
 } from 'config/errorMessages';
@@ -812,6 +817,26 @@ function LocateSamples() {
             changes: new Collection(graphics),
           });
 
+          setSelectedScenario((selectedScenario) => {
+            if (!selectedScenario) return selectedScenario;
+
+            const scenario = editsCopy.edits.find(
+              (edit) =>
+                edit.type === 'scenario' &&
+                edit.layerId === selectedScenario.layerId,
+            ) as ScenarioEditsType;
+            const newLayer = scenario.layers.find(
+              (l) => l.layerId === layer.layerId,
+            );
+
+            if (!newLayer) return selectedScenario;
+
+            return {
+              ...selectedScenario,
+              layers: [...selectedScenario.layers, newLayer],
+            };
+          });
+
           setLayers((layers) => {
             return [...layers, layer];
           });
@@ -851,6 +876,148 @@ function LocateSamples() {
       });
 
       window.logErrorToGa(ex);
+    }
+  }
+
+  type Cell = { value: any; font?: any; alignment?: any };
+  type Row = Cell[];
+
+  type DownloadStatus =
+    | 'none'
+    | 'fetching'
+    | 'success'
+    | 'no-data'
+    | 'excel-failure';
+  const [
+    downloadStatus,
+    setDownloadStatus, //
+  ] = useState<DownloadStatus>('none');
+  async function downloadSummary() {
+    // find the layer
+    const aoiAssessed = selectedScenario?.layers.find(
+      (l) => l.layerType === 'AOI Assessed',
+    );
+    console.log('aoiAssessed: ', aoiAssessed);
+    if (!aoiAssessed) {
+      setDownloadStatus('no-data');
+      return;
+    }
+
+    const aoiAssessedLayer = layers.find(
+      (l) => l.layerId === aoiAssessed.layerId,
+    );
+    if (
+      !aoiAssessedLayer ||
+      (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.length ===
+        0
+    ) {
+      setDownloadStatus('no-data');
+      return;
+    }
+
+    setDownloadStatus('fetching');
+
+    const workbook = new ExcelJS.Workbook();
+
+    // create the styles
+    const defaultFont = { name: 'Calibri', size: 12 };
+    const labelFont = { name: 'Calibri', bold: true, size: 12 };
+
+    // add the sheet
+    const summarySheet = workbook.addWorksheet('Building Data');
+
+    let curRow = fillOutCells({
+      sheet: summarySheet,
+      rows: [
+        [
+          { value: 'Building ID', font: labelFont },
+          { value: 'Building Type', font: labelFont },
+          { value: 'Census Block FIPS', font: labelFont },
+          { value: 'ID', font: labelFont },
+          { value: 'Flood Zone (2021)', font: labelFont },
+          { value: 'Foundation Height', font: labelFont },
+          { value: 'Foundation Type', font: labelFont },
+          { value: 'Footprint ID', font: labelFont },
+          { value: 'Footprint Source', font: labelFont },
+          { value: 'Ground Elevation (feet)', font: labelFont },
+          { value: 'Ground Elevation (meters)', font: labelFont },
+          { value: 'Median Year Built', font: labelFont },
+          { value: 'Number of Stories', font: labelFont },
+          { value: 'Percent Over 65 Disabled', font: labelFont },
+          { value: 'Occupancy Type', font: labelFont },
+          { value: 'Population Night Over 65', font: labelFont },
+          { value: 'Population Night Under 65', font: labelFont },
+          { value: 'Population Day Over 65', font: labelFont },
+          { value: 'Population Day Under 65', font: labelFont },
+          { value: 'Source', font: labelFont },
+          { value: 'Square Feet', font: labelFont },
+          { value: 'Structure Damage Category', font: labelFont },
+          { value: 'Students', font: labelFont },
+          { value: 'Percent Under 65 Disabled', font: labelFont },
+          { value: 'Value of Contents', font: labelFont },
+          { value: 'Value of Structure', font: labelFont },
+          { value: 'Value of Vehicles', font: labelFont },
+          { value: 'x', font: labelFont },
+          { value: 'y', font: labelFont },
+        ],
+      ],
+    });
+
+    const rows: Row[] = [];
+    (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
+      (graphic) => {
+        rows.push(
+          Object.values(graphic.attributes).map((value) => {
+            return {
+              value,
+            };
+          }),
+        );
+      },
+    );
+
+    fillOutCells({
+      sheet: summarySheet,
+      rows,
+      startRow: curRow,
+    });
+
+    function fillOutCells({
+      sheet,
+      rows,
+      startRow = 1,
+    }: {
+      sheet: ExcelJS.Worksheet;
+      rows: Row[];
+      startRow?: number;
+    }) {
+      let rowIdx = startRow;
+      rows.forEach((rowData, index) => {
+        if (index !== 0) rowIdx += 1;
+        rowData.forEach((cellData, cellIdx) => {
+          const cell = sheet.getCell(rowIdx, cellIdx + 1);
+          cell.value = cellData.value;
+          cell.font = cellData.font ?? defaultFont;
+          if (cellData.alignment) cell.alignment = cellData.alignment;
+        });
+      });
+
+      return rowIdx + 1;
+    }
+
+    // download the file
+    try {
+      const buffer = await workbook.xlsx.writeBuffer();
+      saveAs(
+        new Blob([buffer]),
+        `tods_${selectedScenario?.scenarioName}_aoi_assessment.xlsx`,
+      );
+      setDownloadStatus('success');
+    } catch (err: any) {
+      console.error(err);
+      setDownloadStatus('excel-failure');
+
+      window.logErrorToGa(err);
     }
   }
 
@@ -2969,11 +3136,9 @@ function LocateSamples() {
                           <Fragment>
                             <p>
                               Select "Draw Sampling Mask" to draw a boundary on
-                              your map for placing samples or select "Use
-                              Imported Area of Interest" to use an Area of
-                              Interest file to place samples. Select a Sample
-                              Type from the menu and specify the number of
-                              samples to add. Click Submit to add samples.
+                              your map for assessing AOI or select "Use Imported
+                              Area of Interest" to use an Area of Interest file
+                              to assess the AOI. Click Submit to assess the AOI.
                             </p>
                             <div>
                               <input
@@ -3141,6 +3306,25 @@ function LocateSamples() {
                                 )}
                               </Fragment>
                             )}
+
+                            <div>
+                              {downloadStatus === 'fetching' && (
+                                <LoadingSpinner />
+                              )}
+                              {downloadStatus === 'excel-failure' &&
+                                excelFailureMessage}
+                              {downloadStatus === 'no-data' &&
+                                noDataDownloadMessage}
+                              {downloadStatus === 'success' &&
+                                downloadSuccessMessage}
+
+                              <button
+                                css={submitButtonStyles}
+                                onClick={downloadSummary}
+                              >
+                                Download
+                              </button>
+                            </div>
                           </Fragment>
                         )}
                     </Fragment>

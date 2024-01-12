@@ -145,6 +145,14 @@ export const noDataMessage = (filename: string) => (
   />
 );
 
+export const noDataDownloadMessage = (
+  <MessageBox
+    severity="warning"
+    title="No Data"
+    message="No data vailable to download."
+  />
+);
+
 export const userCanceledMessage = (filename: string) => (
   <MessageBox
     severity="error"
