@@ -31,6 +31,7 @@ import { LayerType } from 'types/Layer';
 import { ErrorType } from 'types/Misc';
 // config
 import {
+  cantUseWith3dMessage,
   cantUseWithVspMessage,
   featureNotAvailableMessage,
   generateRandomExceededTransferLimitMessage,
@@ -694,7 +695,10 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
   return (
     <Fragment>
       {sketchLayer?.layerType === 'VSP' && cantUseWithVspMessage}
-      {sketchLayer?.layerType !== 'VSP' && (
+      {sketchLayer?.layerType !== 'VSP' &&
+        displayDimensions === '3d' &&
+        cantUseWith3dMessage}
+      {sketchLayer?.layerType !== 'VSP' && displayDimensions === '2d' && (
         <Fragment>
           {(services.status === 'fetching' ||
             sampleTypeContext.status === 'fetching' ||

@@ -1127,8 +1127,8 @@ function LocateSamples() {
                           const parent = parentLayer
                             ? parentLayer
                             : map
-                            ? map
-                            : null;
+                              ? map
+                              : null;
                           if (parent) parent.remove(sketchLayer.sketchLayer);
                         }}
                       >

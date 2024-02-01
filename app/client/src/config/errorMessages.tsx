@@ -219,6 +219,14 @@ export const cantUseWithVspMessage = (
   />
 );
 
+export const cantUseWith3dMessage = (
+  <MessageBox
+    severity="warning"
+    title="Not Available in 3D View"
+    message="Multiple Random Samples cannot be used in 3D mode"
+  />
+);
+
 export const generateRandomExceededTransferLimitMessage = (
   <MessageBox
     severity="error"
