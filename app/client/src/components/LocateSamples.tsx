@@ -647,8 +647,8 @@ function LocateSamples() {
       generateRandomMode === 'draw'
         ? aoiSketchLayer
         : generateRandomMode === 'file'
-        ? selectedAoiFile
-        : null;
+          ? selectedAoiFile
+          : null;
     if (
       !aoiMaskLayer?.sketchLayer ||
       aoiMaskLayer.sketchLayer.type !== 'graphics'
@@ -926,39 +926,48 @@ function LocateSamples() {
     // add the sheet
     const summarySheet = workbook.addWorksheet('Building Data');
 
+    const cols = [
+      { label: 'Building ID', fieldName: 'bid' },
+      { label: 'Building Type', fieldName: 'bldgtype' },
+      { label: 'Census Block FIPS', fieldName: 'cbfips' },
+      { label: 'ID', fieldName: 'fd_id' },
+      { label: 'Flood Zone (2021)', fieldName: 'firmzone' },
+      { label: 'Foundation Height', fieldName: 'found_ht' },
+      { label: 'Foundation Type', fieldName: 'found_type' },
+      { label: 'Footprint ID', fieldName: 'ftprntid' },
+      { label: 'Footprint Source', fieldName: 'ftprntsrc' },
+      { label: 'Ground Elevation (feet)', fieldName: 'ground_elv' },
+      { label: 'Ground Elevation (meters)', fieldName: 'ground_elv_m' },
+      { label: 'Median Year Built', fieldName: 'med_yr_blt' },
+      { label: 'Number of Stories', fieldName: 'num_story' },
+      { label: 'Percent Over 65 Disabled', fieldName: 'o65disable' },
+      { label: 'Occupancy Type', fieldName: 'occtype' },
+      { label: 'Population Night Over 65', fieldName: 'pop2amo65' },
+      { label: 'Population Night Under 65', fieldName: 'pop2amu65' },
+      { label: 'Population Day Over 65', fieldName: 'pop2pmo65' },
+      { label: 'Population Day Under 65', fieldName: 'pop2pmu65' },
+      { label: 'Source', fieldName: 'source' },
+      { label: 'Square Feet', fieldName: 'sqft' },
+      { label: 'Structure Damage Category', fieldName: 'st_damcat' },
+      { label: 'Students', fieldName: 'students' },
+      { label: 'Percent Under 65 Disabled', fieldName: 'u65disable' },
+      { label: 'Value of Contents', fieldName: 'val_cont' },
+      { label: 'Value of Structure', fieldName: 'val_struct' },
+      { label: 'Value of Vehicles', fieldName: 'val_vehic' },
+      { label: 'x', fieldName: 'x' },
+      { label: 'y', fieldName: 'y' },
+    ];
+
     let curRow = fillOutCells({
       sheet: summarySheet,
       rows: [
         [
-          { value: 'Building ID', font: labelFont },
-          { value: 'Building Type', font: labelFont },
-          { value: 'Census Block FIPS', font: labelFont },
-          { value: 'ID', font: labelFont },
-          { value: 'Flood Zone (2021)', font: labelFont },
-          { value: 'Foundation Height', font: labelFont },
-          { value: 'Foundation Type', font: labelFont },
-          { value: 'Footprint ID', font: labelFont },
-          { value: 'Footprint Source', font: labelFont },
-          { value: 'Ground Elevation (feet)', font: labelFont },
-          { value: 'Ground Elevation (meters)', font: labelFont },
-          { value: 'Median Year Built', font: labelFont },
-          { value: 'Number of Stories', font: labelFont },
-          { value: 'Percent Over 65 Disabled', font: labelFont },
-          { value: 'Occupancy Type', font: labelFont },
-          { value: 'Population Night Over 65', font: labelFont },
-          { value: 'Population Night Under 65', font: labelFont },
-          { value: 'Population Day Over 65', font: labelFont },
-          { value: 'Population Day Under 65', font: labelFont },
-          { value: 'Source', font: labelFont },
-          { value: 'Square Feet', font: labelFont },
-          { value: 'Structure Damage Category', font: labelFont },
-          { value: 'Students', font: labelFont },
-          { value: 'Percent Under 65 Disabled', font: labelFont },
-          { value: 'Value of Contents', font: labelFont },
-          { value: 'Value of Structure', font: labelFont },
-          { value: 'Value of Vehicles', font: labelFont },
-          { value: 'x', font: labelFont },
-          { value: 'y', font: labelFont },
+          ...cols.map((col) => {
+            return {
+              value: col.label,
+              font: labelFont,
+            };
+          }),
         ],
       ],
     });
@@ -967,9 +976,9 @@ function LocateSamples() {
     (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
       (graphic) => {
         rows.push(
-          Object.values(graphic.attributes).map((value) => {
+          cols.map((col) => {
             return {
-              value,
+              value: graphic.attributes[col.fieldName],
             };
           }),
         );
@@ -2066,8 +2075,8 @@ function LocateSamples() {
                           const parent = parentLayer
                             ? parentLayer
                             : map
-                            ? map
-                            : null;
+                              ? map
+                              : null;
                           if (parent) parent.remove(sketchLayer.sketchLayer);
                         }}
                       >
