@@ -328,8 +328,10 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     }
   }
 
-  // Throttles GP server requests to 6 requests at one time.
+  // Throttles GP server requests to 3 requests at one time.
   // Any more than 6 and the GP server cancels remaining requests.
+  // Setting it to 3 allows two separate users to use this feature
+  // at the same time.
   async function fireRequestsThrottled(
     parameters: {
       inputParameters: any;
