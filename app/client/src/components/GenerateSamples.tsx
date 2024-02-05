@@ -228,7 +228,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     numberOfSamples: number,
     maxRecordCount: number,
     requests: {
-      request: Promise<any>;
+      inputParameters: any;
       originalValuesZ: number[];
       graphics: __esri.GraphicProperties[];
     }[],
@@ -241,6 +241,15 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     fullGraphics.forEach((graphic) => {
       const z = removeZValues(graphic);
       originalValuesZ.push(z);
+
+      graphic.attributes = {
+        FID: 0,
+        Id: 0,
+        TYPE: 'Area of Interest',
+        PERMANENT_IDENTIFIER: graphic.attributes.PERMANENT_IDENTIFIER,
+        GLOBALID: graphic.attributes.GLOBALID,
+        OBJECTID: -1,
+      };
     });
 
     graphics = fullGraphics.toArray();
@@ -308,12 +317,8 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       };
       appendEnvironmentObjectParam(props);
 
-      const request = geoprocessorFetch({
-        url: `${services.data.totsGPServer}/Generate%20Random`,
-        inputParameters: props,
-      });
       requests.push({
-        request,
+        inputParameters: props,
         originalValuesZ,
         graphics,
       });
@@ -321,6 +326,40 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       // keep track of the number of remaining samples
       numSamplesLeft = numSamplesLeft - numSamples;
     }
+  }
+
+  // Throttles GP server requests to 6 requests at one time.
+  // Any more than 6 and the GP server cancels remaining requests.
+  async function fireRequestsThrottled(
+    parameters: {
+      inputParameters: any;
+      originalValuesZ: number[];
+      graphics: __esri.GraphicProperties[];
+    }[],
+  ) {
+    const requests: {
+      request: Promise<any>;
+      originalValuesZ: number[];
+      graphics: __esri.GraphicProperties[];
+    }[] = [];
+
+    let i = 0;
+    for (const params of parameters) {
+      const request = geoprocessorFetch({
+        url: `${services.data.totsGPServer}/Generate%20Random`,
+        inputParameters: params.inputParameters,
+      });
+      requests.push({
+        request,
+        originalValuesZ: params.originalValuesZ,
+        graphics: params.graphics,
+      });
+
+      i += 1;
+      if (i % 3 === 0) await Promise.all(requests.map((r) => r.request));
+    }
+
+    return requests;
   }
 
   // Handle a user generating random or statistical samples
@@ -347,8 +386,8 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     try {
       const maxRecordCount = await getGpMaxRecordCount();
 
-      const requests: {
-        request: Promise<any>;
+      const parameters: {
+        inputParameters: any;
         originalValuesZ: number[];
         graphics: __esri.GraphicProperties[];
       }[] = [];
@@ -357,7 +396,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
           aoiMaskLayer.sketchLayer.graphics,
           parseInt(numberRandomSamples),
           maxRecordCount,
-          requests,
+          parameters,
         );
       }
 
@@ -367,10 +406,12 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
             new Collection([aoi.graphic]),
             aoi.numSamples,
             maxRecordCount,
-            requests,
+            parameters,
           );
         });
       }
+
+      const requests = await fireRequestsThrottled(parameters);
 
       const typeuuid = sampleType.value;
       const responses = await Promise.all(requests.map((r) => r.request));
