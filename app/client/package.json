@@ -25,7 +25,6 @@
   "scripts": {
     "start": "react-scripts -r @cypress/instrument-cra start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint:css": "stylelint './src/**/*.{js,jsx,ts,tsx,css}'"
   },
@@ -42,6 +41,7 @@
     "react-color": "2.19.3",
     "react-dom": "18.2.0",
     "react-dropzone": "14.2.3",
+    "react-router-dom": "6.22.0",
     "react-scripts": "5.0.1",
     "react-select": "5.8.0",
     "react-switch": "7.0.0",
@@ -55,8 +55,6 @@
   "devDependencies": {
     "@cypress/instrument-cra": "1.4.0",
     "@types/file-saver": "2.0.7",
-    "@types/jest": "29.5.11",
-    "@types/mocha": "10.0.6",
     "@types/node": "20.11.5",
     "@types/react": "18.2.48",
     "@types/react-color": "3.0.11",

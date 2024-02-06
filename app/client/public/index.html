@@ -507,17 +507,6 @@
     <!-- Google Analytics (GA4) -->
     <script>
       const loc = window.location;
-      if (loc.pathname.replace('/', '') !== '') {
-        let url = `${loc.origin}/404.html`;
-        if (loc.hostname === 'localhost') {
-          url = `${loc.protocol}//${loc.hostname}:9090/404.html`;
-        }
-
-        // append the original url for tracking purposes
-        url += `?src=${loc.href}`;
-
-        window.location.assign(url);
-      }
 
       function configureGoogleAnalytics(id, debug = false) {
         const gaScript = document.createElement('script');
