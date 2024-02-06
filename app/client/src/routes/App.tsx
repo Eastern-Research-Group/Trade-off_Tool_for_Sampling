@@ -3,8 +3,6 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { css } from '@emotion/react';
 import { useWindowSize } from '@reach/window-size';
-import esriConfig from '@arcgis/core/config';
-import * as urlUtils from '@arcgis/core/core/urlUtils';
 // components
 import NavBar from 'components/NavBar';
 import Toolbar from 'components/Toolbar';
@@ -15,19 +13,13 @@ import { ReactTable } from 'components/ReactTable';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 import { DialogContext } from 'contexts/Dialog';
-import { useServicesContext } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // utilities
-import { getEnvironmentString } from 'utils/arcGisRestUtils';
-import { logCallToGoogleAnalytics } from 'utils/fetchUtils';
 import { useSessionStorage } from 'utils/hooks';
 import { getSampleTableColumns } from 'utils/sketchUtils';
 // config
 import { navPanelWidth } from 'config/appConfig';
-// styles
-import '@reach/dialog/styles.css';
-import '@arcgis/core/assets/esri/themes/light/main.css';
 
 const resizerHeight = 10;
 const esrifooterheight = 16;
@@ -204,7 +196,6 @@ function App() {
     selectedScenario,
   } = useContext(SketchContext);
 
-  const services = useServicesContext();
   useSessionStorage();
 
   const { height, width } = useWindowSize();
@@ -323,84 +314,6 @@ function App() {
     selectionMethod,
     ids,
   };
-
-  // setup esri interceptors for logging to google analytics
-  const [interceptorsInitialized, setInterceptorsInitialized] = useState(false);
-  useEffect(() => {
-    if (interceptorsInitialized || !esriConfig?.request?.interceptors) return;
-
-    var callId = 0;
-    var callDurations: any = {};
-
-    if (services.status === 'success') {
-      // Have ESRI use the proxy for communicating with the TOTS GP Server
-      urlUtils.addProxyRule({
-        proxyUrl: services.data.proxyUrl,
-        urlPrefix: 'https://ags.erg.com',
-      });
-      urlUtils.addProxyRule({
-        proxyUrl: services.data.proxyUrl,
-        urlPrefix: 'http://ags.erg.com',
-      });
-    }
-
-    if (!esriConfig?.request?.interceptors) return;
-
-    // intercept esri calls to gispub
-    const urls: string[] = ['https://www.arcgis.com/sharing/rest/'];
-    esriConfig.request.interceptors.push({
-      urls,
-
-      // Workaround for ESRI CORS cacheing issue, when switching between
-      // environments.
-      before: function (params) {
-        // if this environment has a phony variable use it
-        const envString = getEnvironmentString();
-        if (envString) {
-          params.requestOptions.query[envString] = 1;
-        }
-
-        // add the callId to the query so we can tie the response back
-        params.requestOptions.query['callId'] = callId;
-
-        // add the call's start time to the dictionary
-        callDurations[callId] = performance.now();
-
-        // increment the callId
-        callId = callId + 1;
-      },
-
-      // Log esri api calls to Google Analytics
-      after: function (response: any) {
-        // get the execution time for the call
-        const callId = response.requestOptions.query.callId;
-        const startTime = callDurations[callId];
-
-        logCallToGoogleAnalytics(response.url, 200, startTime);
-
-        // delete the execution time from the dictionary
-        delete callDurations[callId];
-      },
-
-      error: function (error) {
-        // get the execution time for the call
-        const details = error.details;
-        const callId = details.requestOptions.query.callId;
-        const startTime = callDurations[callId];
-
-        logCallToGoogleAnalytics(
-          details.url,
-          details.httpStatus ? details.httpStatus : error.message,
-          startTime,
-        );
-
-        // delete the execution time from the dictionary
-        delete callDurations[callId];
-      },
-    });
-
-    setInterceptorsInitialized(true);
-  }, [interceptorsInitialized, services]);
 
   return (
     <div className="tots" ref={totsRef}>

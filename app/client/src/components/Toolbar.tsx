@@ -428,7 +428,11 @@ const navIconStyles = css`
 `;
 
 // --- components (Toolbar) ---
-function Toolbar() {
+type Props = {
+  isDashboard?: boolean;
+};
+
+function Toolbar({ isDashboard = false }: Props) {
   const { setContaminationMap } = useContext(CalculateContext);
   const { trainingMode, setTrainingMode } = useContext(NavigationContext);
   const {
@@ -920,7 +924,8 @@ function Toolbar() {
   return (
     <div css={toolBarStyles} data-testid="tots-toolbar">
       <h2 css={toolBarTitle}>
-        Trade-off Tool for Sampling (TOTS) {trainingMode && ' - TRAINING MODE'}
+        Trade-off Tool for Sampling (TOTS){' '}
+        {isDashboard ? ' - Dashboard' : `${trainingMode && ' - TRAINING MODE'}`}
       </h2>
       <div css={toolBarButtonsStyles}>
         <div>
@@ -1032,16 +1037,18 @@ function Toolbar() {
                   />
                 </label>
 
-                <label css={switchLabelContainer}>
-                  <span css={switchLabel}>3D Use Terrain Elevation</span>
-                  <Switch
-                    checked={terrain3dUseElevation}
-                    onChange={(checked) => setTerrain3dUseElevation(checked)}
-                    ariaLabel="3D Use Terrain Elevation"
-                    onColor="#90ee90"
-                    onHandleColor="#129c12"
-                  />
-                </label>
+                {!isDashboard && (
+                  <label css={switchLabelContainer}>
+                    <span css={switchLabel}>3D Use Terrain Elevation</span>
+                    <Switch
+                      checked={terrain3dUseElevation}
+                      onChange={(checked) => setTerrain3dUseElevation(checked)}
+                      ariaLabel="3D Use Terrain Elevation"
+                      onColor="#90ee90"
+                      onHandleColor="#129c12"
+                    />
+                  </label>
+                )}
 
                 <label css={switchLabelContainer}>
                   <span css={switchLabel}>3D View Underground</span>
@@ -1056,27 +1063,31 @@ function Toolbar() {
               </Fragment>
             )}
 
-            <label css={switchLabelContainer}>
-              <span css={switchLabel}>Training Mode</span>
-              <Switch
-                checked={trainingMode}
-                onChange={(checked) => setTrainingMode(checked)}
-                ariaLabel="Training Mode"
-                onColor="#90ee90"
-                onHandleColor="#129c12"
-              />
-            </label>
+            {!isDashboard && (
+              <label css={switchLabelContainer}>
+                <span css={switchLabel}>Training Mode</span>
+                <Switch
+                  checked={trainingMode}
+                  onChange={(checked) => setTrainingMode(checked)}
+                  ariaLabel="Training Mode"
+                  onColor="#90ee90"
+                  onHandleColor="#129c12"
+                />
+              </label>
+            )}
 
-            <label css={switchLabelContainer}>
-              <span css={switchLabel}>Auto Zoom</span>
-              <Switch
-                checked={autoZoom}
-                onChange={(checked) => setAutoZoom(checked)}
-                ariaLabel="Auto Zoom"
-                onColor="#90ee90"
-                onHandleColor="#129c12"
-              />
-            </label>
+            {!isDashboard && (
+              <label css={switchLabelContainer}>
+                <span css={switchLabel}>Auto Zoom</span>
+                <Switch
+                  checked={autoZoom}
+                  onChange={(checked) => setAutoZoom(checked)}
+                  ariaLabel="Auto Zoom"
+                  onColor="#90ee90"
+                  onHandleColor="#129c12"
+                />
+              </label>
+            )}
           </div>
         </div>
         <div>

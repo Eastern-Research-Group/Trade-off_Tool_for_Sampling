@@ -1,8 +1,10 @@
 import 'react-app-polyfill/stable';
-import React from 'react';
+import React, { Fragment, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Global, css } from '@emotion/react';
+import esriConfig from '@arcgis/core/config';
+import * as urlUtils from '@arcgis/core/core/urlUtils';
 import * as serviceWorker from './serviceWorker';
 // components
 import ErrorBoundary from 'components/ErrorBoundary';
@@ -15,12 +17,16 @@ import Dashboard from 'routes/Dashboard';
 import { AuthenticationProvider } from 'contexts/Authentication';
 import { CalculateProvider } from 'contexts/Calculate';
 import { DialogProvider } from 'contexts/Dialog';
-import { LookupFilesProvider } from 'contexts/LookupFiles';
+import { LookupFilesProvider, useServicesContext } from 'contexts/LookupFiles';
 import { NavigationProvider } from 'contexts/Navigation';
 import { PublishProvider } from 'contexts/Publish';
 import { SketchProvider } from 'contexts/Sketch';
+// utilities
+import { getEnvironmentString } from 'utils/arcGisRestUtils';
+import { logCallToGoogleAnalytics } from 'utils/fetchUtils';
 // styles
 import '@arcgis/core/assets/esri/themes/light/main.css';
+import '@reach/dialog/styles.css';
 
 declare global {
   interface Window {
@@ -86,6 +92,101 @@ const globalStyles = css`
   }
 `;
 
+function AppRoutes() {
+  const services = useServicesContext();
+
+  // setup esri interceptors for logging to google analytics
+  const [interceptorsInitialized, setInterceptorsInitialized] = useState(false);
+  useEffect(() => {
+    if (interceptorsInitialized || !esriConfig?.request?.interceptors) return;
+
+    var callId = 0;
+    var callDurations: any = {};
+
+    if (services.status === 'success') {
+      // Have ESRI use the proxy for communicating with the TOTS GP Server
+      urlUtils.addProxyRule({
+        proxyUrl: services.data.proxyUrl,
+        urlPrefix: 'https://ags.erg.com',
+      });
+      urlUtils.addProxyRule({
+        proxyUrl: services.data.proxyUrl,
+        urlPrefix: 'http://ags.erg.com',
+      });
+    }
+
+    if (!esriConfig?.request?.interceptors) return;
+
+    // intercept esri calls to gispub
+    const urls: string[] = ['https://www.arcgis.com/sharing/rest/'];
+    esriConfig.request.interceptors.push({
+      urls,
+
+      // Workaround for ESRI CORS cacheing issue, when switching between
+      // environments.
+      before: function (params) {
+        // if this environment has a phony variable use it
+        const envString = getEnvironmentString();
+        if (envString) {
+          params.requestOptions.query[envString] = 1;
+        }
+
+        // add the callId to the query so we can tie the response back
+        params.requestOptions.query['callId'] = callId;
+
+        // add the call's start time to the dictionary
+        callDurations[callId] = performance.now();
+
+        // increment the callId
+        callId = callId + 1;
+      },
+
+      // Log esri api calls to Google Analytics
+      after: function (response: any) {
+        // get the execution time for the call
+        const callId = response.requestOptions.query.callId;
+        const startTime = callDurations[callId];
+
+        logCallToGoogleAnalytics(response.url, 200, startTime);
+
+        // delete the execution time from the dictionary
+        delete callDurations[callId];
+      },
+
+      error: function (error) {
+        // get the execution time for the call
+        const details = error.details;
+        const callId = details.requestOptions.query.callId;
+        const startTime = callDurations[callId];
+
+        logCallToGoogleAnalytics(
+          details.url,
+          details.httpStatus ? details.httpStatus : error.message,
+          startTime,
+        );
+
+        // delete the execution time from the dictionary
+        delete callDurations[callId];
+      },
+    });
+
+    setInterceptorsInitialized(true);
+  }, [interceptorsInitialized, services]);
+
+  return (
+    <Fragment>
+      <AlertDialog />
+      <AlertMessage />
+
+      <Routes>
+        <Route index element={<App />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="*" element={<ErrorPage />} />
+      </Routes>
+    </Fragment>
+  );
+}
+
 function Root() {
   return (
     <BrowserRouter>
@@ -98,14 +199,7 @@ function Root() {
                   <SketchProvider>
                     <Global styles={globalStyles} />
                     <ErrorBoundary>
-                      <AlertDialog />
-                      <AlertMessage />
-
-                      <Routes>
-                        <Route index element={<App />} />
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="*" element={<ErrorPage />} />
-                      </Routes>
+                      <AppRoutes />
                     </ErrorBoundary>
                   </SketchProvider>
                 </PublishProvider>
