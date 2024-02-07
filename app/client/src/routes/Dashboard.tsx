@@ -1,20 +1,45 @@
 /** @jsxImportSource @emotion/react */
 
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, {
+  Fragment,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { debounce } from 'lodash';
+import { AsyncPaginate, wrapMenuList } from 'react-select-async-paginate';
 import { css } from '@emotion/react';
 import { useWindowSize } from '@reach/window-size';
+import Portal from '@arcgis/core/portal/Portal';
 // components
+import MapDashboard from 'components/MapDashboard';
+import { MenuList as CustomMenuList } from 'components/MenuList';
 import Toolbar from 'components/Toolbar';
 import TestingToolbar from 'components/TestingToolbar';
-import Map from 'components/Map';
 // contexts
+import { AuthenticationContext } from 'contexts/Authentication';
 import { DialogContext } from 'contexts/Dialog';
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // utilities
-import { useSessionStorage } from 'utils/hooks';
+import { useAbort, useSessionStorage } from 'utils/hooks';
+import { isAbort } from 'utils/utils';
+// types
+import type { LoadOptions } from 'react-select-async-paginate';
 // config
-import { navPanelWidth } from 'config/appConfig';
+import { notLoggedInMessage } from 'config/errorMessages';
+
+function appendToQuery(query: string, part: string, separator: string = 'AND') {
+  // nothing to append
+  if (part.length === 0) return query;
+
+  // append the query part
+  if (query.length > 0) return `${query} ${separator} (${part})`;
+  else return `(${part})`;
+}
 
 const appStyles = (offset: number) => css`
   display: flex;
@@ -33,7 +58,7 @@ const mapPanelStyles = (tableHeight: number) => css`
   float: right;
   position: relative;
   height: calc(100% - ${tableHeight}px);
-  width: calc(100% - ${navPanelWidth});
+  width: 100%;
 `;
 
 const mapHeightStyles = css`
@@ -41,9 +66,17 @@ const mapHeightStyles = css`
 `;
 
 function Dashboard() {
+  const { abort } = useAbort();
+  const { portal, signedIn } = useContext(AuthenticationContext);
   const { tablePanelExpanded, tablePanelHeight } =
     useContext(NavigationContext);
-  const { layers, selectedScenario } = useContext(SketchContext);
+  const {
+    layers,
+    mapDashboard,
+    mapViewDashboard,
+    sceneViewDashboard,
+    selectedScenario,
+  } = useContext(SketchContext);
   useSessionStorage();
 
   const { height, width } = useWindowSize();
@@ -92,6 +125,88 @@ function Dashboard() {
     if (offset !== offsetTop) setOffset(offsetTop);
   }, [contentHeight, height, offset, totsRef, width]);
 
+  const [selectedPlan, setSelectedPlan] = useState<Option | null>(null);
+
+  // Create the filter function from the HOF
+  const filterFunc: FilterFunction = useMemo(() => {
+    const localPortal = portal ? portal : new Portal();
+    return filterOptions(localPortal);
+  }, [portal]);
+
+  const fetchOptions = useCallback(
+    async (
+      inputValue: string,
+      loadedOptions: readonly (Option | GroupBase<Option>)[],
+    ) => {
+      abort();
+      try {
+        return await filterFunc(inputValue, loadedOptions);
+      } catch (err) {
+        if (!isAbort(err)) console.error(err);
+        return { options: [], hasMore: true };
+      }
+    },
+    [abort, filterFunc],
+  );
+
+  const debouncedFetchOptions = useMemo(() => {
+    return debounce(fetchOptions, 250, {
+      leading: true,
+      trailing: true,
+    });
+  }, [fetchOptions]);
+
+  useEffect(() => {
+    return function cleanup() {
+      debouncedFetchOptions?.cancel();
+    };
+  }, [debouncedFetchOptions]);
+
+  const loadOptions = debouncedFetchOptions ?? fetchOptions;
+
+  // Filters options by search input, returning a maximum number of options
+  function filterOptions(portal: Portal) {
+    return async function (
+      inputValue: string,
+      loadedOptions: readonly (Option | GroupBase<Option>)[],
+    ) {
+      // type selection
+      const categories: string[] = ['contains-epa-tots-sample-layer'];
+      const defaultTypePart =
+        'type:"Map Service" OR type:"Feature Service" OR type:"Image Service" ' +
+        'OR type:"Vector Tile Service" OR type:"KML" OR type:"WMS" OR type:"Scene Service"';
+
+      let query = '';
+      // search box
+      if (inputValue) {
+        query = appendToQuery(query, inputValue);
+      }
+
+      // add the type selection to the query, use all types if all types are set to false
+      query = appendToQuery(query, defaultTypePart);
+
+      // build the query parameters
+      let queryParams = {
+        categories: [categories],
+        query,
+        sortField: 'title',
+        sortOrder: 'asc',
+        start: loadedOptions.length + 1,
+      } as __esri.PortalQueryParams;
+
+      // perform the query
+      const response = await portal.queryItems(queryParams);
+      const options = response.results.map((item: Record<string, string>) => {
+        return { label: item.title, value: item.id };
+      });
+
+      return {
+        options,
+        hasMore: loadedOptions.length < response.total,
+      };
+    };
+  }
+
   // count the number of samples
   const sampleData: any[] = [];
   layers.forEach((layer) => {
@@ -121,7 +236,59 @@ function Dashboard() {
             {window.location.search.includes('devMode=true') && (
               <TestingToolbar />
             )}
-            <Toolbar isDashboard={true} />
+            <Toolbar
+              isDashboard={true}
+              map={mapDashboard}
+              mapView={mapViewDashboard}
+              sceneView={sceneViewDashboard}
+            />
+
+            <div
+              css={css`
+                min-width: 268px;
+                width: 50%;
+                margin: 10px;
+              `}
+            >
+              {signedIn ? (
+                <Fragment>
+                  <label htmlFor="plan-select">Plan:</label>
+                  <AsyncPaginate
+                    aria-label="Plan input"
+                    className="width-full"
+                    classNames={{
+                      container: () => 'font-ui-xs',
+                      menuList: () => 'font-ui-xs',
+                    }}
+                    components={{ MenuList: wrapMenuList(CustomMenuList) }}
+                    inputId="plan-select"
+                    instanceId="plan-select"
+                    loadOptions={loadOptions}
+                    menuPortalTarget={document.body}
+                    onChange={(ev) => setSelectedPlan(ev as any)}
+                    onMenuClose={abort}
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        border: '1px solid #adadad',
+                        borderRadius: '4px',
+                      }),
+                      menuPortal: (base) => ({
+                        ...base,
+                        zIndex: 9999,
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        color: '#71767a',
+                      }),
+                    }}
+                    value={selectedPlan}
+                  />
+                </Fragment>
+              ) : (
+                notLoggedInMessage
+              )}
+            </div>
           </div>
           <div
             css={mapPanelStyles(
@@ -130,7 +297,7 @@ function Dashboard() {
           >
             <div id="tots-map-div" css={mapHeightStyles}>
               {toolbarHeight && (
-                <Map
+                <MapDashboard
                   height={
                     contentHeight -
                     (tablePanelExpanded ? tablePanelHeight : 0) -
@@ -147,3 +314,19 @@ function Dashboard() {
 }
 
 export default Dashboard;
+
+/*
+## Types
+*/
+
+type FilterFunction = LoadOptions<Option, GroupBase<Option>, unknown>;
+
+interface GroupBase<Option> {
+  readonly options: readonly Option[];
+  readonly label?: string;
+}
+
+type Option = {
+  label: string;
+  value: string | number;
+};

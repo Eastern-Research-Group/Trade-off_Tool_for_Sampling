@@ -159,3 +159,14 @@ export function getScenarioName(edits: EditsType, desiredName: string) {
       duplicateCount === numInDesiredName ? duplicateCount + 1 : duplicateCount
     })`;
 }
+
+/**
+ * Checks if the provided error is an abort error.
+ *
+ * @param error
+ * @returns true if it is an abort error
+ */
+export function isAbort(error: unknown) {
+  if (!error || typeof error !== 'object' || !('name' in error)) return false;
+  return (error as Error).name === 'AbortError';
+}

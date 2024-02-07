@@ -43,7 +43,7 @@ import { LayerType } from 'types/Layer';
 const toolBarHeight = '40px';
 
 // Builds the legend item for a layer
-function buildLegendListItem(event: any) {
+function buildLegendListItem(event: any, isDashboard: boolean) {
   const item = event.item;
   const view = event.view;
 
@@ -235,20 +235,21 @@ function buildLegendListItem(event: any) {
 
   // add a delete button for each layer, but don't add it to sublayers
   item.actionsOpen = true;
-  item.actionsSections = [
-    [
-      {
-        title: 'Zoom to Layer',
-        className: 'esri-icon-zoom-in-magnifying-glass',
-        id: 'zoom-layer',
-      },
-      {
-        title: 'Delete Layer',
-        className: 'esri-icon-trash',
-        id: 'delete-layer',
-      },
-    ],
+  const actions = [
+    {
+      title: 'Zoom to Layer',
+      className: 'esri-icon-zoom-in-magnifying-glass',
+      id: 'zoom-layer',
+    },
   ];
+  if (!isDashboard) {
+    actions.push({
+      title: 'Delete Layer',
+      className: 'esri-icon-trash',
+      id: 'delete-layer',
+    });
+  }
+  item.actionsSections = [actions];
 }
 
 const basemapNames = [
@@ -430,9 +431,12 @@ const navIconStyles = css`
 // --- components (Toolbar) ---
 type Props = {
   isDashboard?: boolean;
+  map: __esri.Map | null;
+  mapView: __esri.MapView | null;
+  sceneView: __esri.SceneView | null;
 };
 
-function Toolbar({ isDashboard = false }: Props) {
+function Toolbar({ isDashboard = false, map, mapView, sceneView }: Props) {
   const { setContaminationMap } = useContext(CalculateContext);
   const { trainingMode, setTrainingMode } = useContext(NavigationContext);
   const {
@@ -443,8 +447,6 @@ function Toolbar({ isDashboard = false }: Props) {
     defaultSymbols,
     edits,
     setEdits,
-    map,
-    mapView,
     layers,
     setLayers,
     portalLayers,
@@ -460,7 +462,6 @@ function Toolbar({ isDashboard = false }: Props) {
     displayGeometryType,
     setDisplayGeometryType,
     userDefinedAttributes,
-    sceneView,
     displayDimensions,
     setDisplayDimensions,
     terrain3dUseElevation,
@@ -559,7 +560,7 @@ function Toolbar({ isDashboard = false }: Props) {
       view: mapView,
       container: 'legend-container',
       listItemCreatedFunction: (event) => {
-        buildLegendListItem(event);
+        buildLegendListItem(event, isDashboard);
       },
     });
 
@@ -609,16 +610,16 @@ function Toolbar({ isDashboard = false }: Props) {
     });
 
     setLayerList(newLayerList);
-  }, [defaultSymbols, layerList, mapView]);
+  }, [defaultSymbols, isDashboard, layerList, mapView]);
 
   // Rebuild the legend if the sample type definitions are changed
   useEffect(() => {
     if (!layerList) return;
 
     layerList.listItemCreatedFunction = (event) => {
-      buildLegendListItem(event);
+      buildLegendListItem(event, isDashboard);
     };
-  }, [defaultSymbols, layerList, userDefinedAttributes]);
+  }, [defaultSymbols, isDashboard, layerList, userDefinedAttributes]);
 
   // Deletes layers from the map and session variables when the delete button is clicked
   useEffect(() => {

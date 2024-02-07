@@ -189,6 +189,7 @@ function App() {
   const {
     displayDimensions,
     layers,
+    map,
     mapView,
     sceneView,
     selectedSampleIds,
@@ -324,7 +325,7 @@ function App() {
             {window.location.search.includes('devMode=true') && (
               <TestingToolbar />
             )}
-            <Toolbar />
+            <Toolbar map={map} mapView={mapView} sceneView={sceneView} />
           </div>
           <NavBar height={contentHeight - toolbarHeight} />
           <div
