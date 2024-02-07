@@ -472,14 +472,17 @@ function Toolbar({ isDashboard = false, map, mapView, sceneView }: Props) {
     setViewUnderground3d,
   } = useContext(SketchContext);
   const {
-    signedIn,
-    setSignedIn,
+    hasCheckedSignInStatus,
     oAuthInfo,
-    setOAuthInfo,
     portal,
+    signedIn,
+    signIn,
+    setHasCheckedSignInStatus,
+    setOAuthInfo,
     setPortal,
-    userInfo,
+    setSignedIn,
     setUserInfo,
+    userInfo,
   } = useContext(AuthenticationContext);
 
   // Initialize the OAuth
@@ -498,16 +501,15 @@ function Toolbar({ isDashboard = false, map, mapView, sceneView }: Props) {
   }, [setOAuthInfo, oAuthInfo]);
 
   // Check the user's sign in status
-  const [
-    hasCheckedSignInStatus,
-    setHasCheckedSignInStatus, //
-  ] = useState(false);
+  const [localCheckedSignIn, setLocalCheckedSignIn] = useState(false);
   useEffect(() => {
-    if (!oAuthInfo || hasCheckedSignInStatus) return;
+    if (!oAuthInfo || localCheckedSignIn) return;
 
-    setHasCheckedSignInStatus(true);
+    setLocalCheckedSignIn(true);
+
     IdentityManager.checkSignInStatus(`${oAuthInfo.portalUrl}/sharing`)
       .then(() => {
+        setHasCheckedSignInStatus(true);
         setSignedIn(true);
 
         const portal = new Portal();
@@ -517,9 +519,17 @@ function Toolbar({ isDashboard = false, map, mapView, sceneView }: Props) {
         });
       })
       .catch(() => {
+        setHasCheckedSignInStatus(true);
         setSignedIn(false);
       });
-  }, [oAuthInfo, setSignedIn, setPortal, hasCheckedSignInStatus]);
+  }, [
+    localCheckedSignIn,
+    oAuthInfo,
+    setSignedIn,
+    setPortal,
+    hasCheckedSignInStatus,
+    setHasCheckedSignInStatus,
+  ]);
 
   // Get the user information
   useEffect(() => {
@@ -1137,26 +1147,7 @@ function Toolbar({ isDashboard = false, map, mapView, sceneView }: Props) {
                 setSignedIn(false);
                 setPortal(null);
               } else {
-                IdentityManager.getCredential(
-                  `${oAuthInfo.portalUrl}/sharing`,
-                  {
-                    oAuthPopupConfirmation: false,
-                  },
-                )
-                  .then(() => {
-                    setSignedIn(true);
-
-                    const portal = new Portal();
-                    portal.authMode = 'immediate';
-                    portal.load().then(() => {
-                      setPortal(portal);
-                    });
-                  })
-                  .catch((err) => {
-                    console.error(err);
-                    setSignedIn(false);
-                    setPortal(null);
-                  });
+                signIn();
               }
             }}
           >

@@ -67,7 +67,9 @@ const mapHeightStyles = css`
 
 function Dashboard() {
   const { abort } = useAbort();
-  const { portal, signedIn } = useContext(AuthenticationContext);
+  const { hasCheckedSignInStatus, portal, signedIn } = useContext(
+    AuthenticationContext,
+  );
   const { tablePanelExpanded, tablePanelHeight } =
     useContext(NavigationContext);
   const {
@@ -285,8 +287,10 @@ function Dashboard() {
                     value={selectedPlan}
                   />
                 </Fragment>
-              ) : (
+              ) : hasCheckedSignInStatus ? (
                 notLoggedInMessage
+              ) : (
+                ''
               )}
             </div>
           </div>
