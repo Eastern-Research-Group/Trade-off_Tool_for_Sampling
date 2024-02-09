@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
 
-import React, { useContext } from 'react';
+import React, { Fragment, useContext } from 'react';
 import { css } from '@emotion/react';
 // contexts
 import { SketchContext } from 'contexts/Sketch';
@@ -20,35 +20,61 @@ const buttonStyles = css`
 `;
 
 function TestingToolbar() {
-  const { layers, map, mapView, sceneView, sketchVM } =
-    useContext(SketchContext);
+  const {
+    layers,
+    map,
+    mapDashboard,
+    mapView,
+    mapViewDashboard,
+    sceneView,
+    sceneViewDashboard,
+    sketchVM,
+  } = useContext(SketchContext);
 
   return (
     <div css={toolbarStyles}>
-      <button css={buttonStyles} onClick={() => console.log('map: ', map)}>
+      <button
+        css={buttonStyles}
+        onClick={() => {
+          if (window.location.pathname === '/dashboard') {
+            console.log('map: ', mapDashboard);
+          } else {
+            console.log('map: ', map);
+          }
+        }}
+      >
         Log Map
       </button>
       <button
         css={buttonStyles}
         onClick={() => {
-          console.log('mapView: ', mapView);
-          console.log('sceneView: ', sceneView);
+          if (window.location.pathname === '/dashboard') {
+            console.log('mapView: ', mapViewDashboard);
+            console.log('sceneView: ', sceneViewDashboard);
+          } else {
+            console.log('mapView: ', mapView);
+            console.log('sceneView: ', sceneView);
+          }
         }}
       >
         Log Views
       </button>
-      <button
-        css={buttonStyles}
-        onClick={() => console.log('layers: ', layers)}
-      >
-        Log Layers
-      </button>
-      <button
-        css={buttonStyles}
-        onClick={() => console.log('sketchVM: ', sketchVM)}
-      >
-        Log SketchVM
-      </button>
+      {window.location.pathname !== '/dashboard' && (
+        <Fragment>
+          <button
+            css={buttonStyles}
+            onClick={() => console.log('layers: ', layers)}
+          >
+            Log Layers
+          </button>
+          <button
+            css={buttonStyles}
+            onClick={() => console.log('sketchVM: ', sketchVM)}
+          >
+            Log SketchVM
+          </button>
+        </Fragment>
+      )}
       <button
         css={buttonStyles}
         onClick={() => {

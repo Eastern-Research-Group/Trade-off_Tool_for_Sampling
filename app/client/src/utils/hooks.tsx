@@ -724,7 +724,11 @@ export function useDynamicPopup() {
   const { edits, setEdits, layers } = useContext(SketchContext);
   const layerProps = useLayerProps();
 
-  const getSampleTemplate = (feature: any, fieldInfos: FieldInfos) => {
+  const getSampleTemplate = (
+    feature: any,
+    fieldInfos: FieldInfos,
+    includeControls: boolean,
+  ) => {
     const content = (
       <MapPopup
         features={[feature]}
@@ -733,6 +737,7 @@ export function useDynamicPopup() {
         layers={layers}
         fieldInfos={fieldInfos}
         layerProps={layerProps}
+        includeControls={includeControls}
         onClick={handlePopupClick}
       />
     );
@@ -757,16 +762,20 @@ export function useDynamicPopup() {
   return function getPopupTemplate(
     type: LayerTypeName,
     includeContaminationFields: boolean = false,
+    includeControls: boolean = true,
   ) {
     if (type === 'Sampling Mask') {
       const actions = new Collection<any>();
-      actions.addMany([
-        {
-          title: 'Delete Sample',
-          id: 'delete',
-          className: 'esri-icon-trash',
-        },
-      ]);
+
+      if (includeControls) {
+        actions.addMany([
+          {
+            title: 'Delete Sample',
+            id: 'delete',
+            className: 'esri-icon-trash',
+          },
+        ]);
+      }
 
       return {
         title: '',
@@ -851,22 +860,25 @@ export function useDynamicPopup() {
       }
 
       const actions = new Collection<any>();
-      actions.addMany([
-        {
-          title: 'Delete Sample',
-          id: 'delete',
-          className: 'esri-icon-trash',
-        },
-        {
-          title: 'View In Table',
-          id: 'table',
-          className: 'esri-icon-table',
-        },
-      ]);
+      if (includeControls) {
+        actions.addMany([
+          {
+            title: 'Delete Sample',
+            id: 'delete',
+            className: 'esri-icon-trash',
+          },
+          {
+            title: 'View In Table',
+            id: 'table',
+            className: 'esri-icon-table',
+          },
+        ]);
+      }
 
       return {
         title: '',
-        content: (feature: any) => getSampleTemplate(feature, fieldInfos),
+        content: (feature: any) =>
+          getSampleTemplate(feature, fieldInfos, includeControls),
         actions,
       };
     }
