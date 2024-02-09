@@ -34,7 +34,7 @@ export type CalculateResultsDataType = {
   'Waste Weight': number;
 };
 
-export type CalculateResultsType = {
+export type CalculateResultsBaseType = {
   status:
     | 'none'
     | 'no-graphics'
@@ -43,6 +43,9 @@ export type CalculateResultsType = {
     | 'fetching'
     | 'success'
     | 'failure';
-  panelOpen: boolean;
   data: CalculateResultsDataType | null;
 };
+
+export interface CalculateResultsType extends CalculateResultsBaseType {
+  panelOpen: boolean;
+}

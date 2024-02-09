@@ -14,6 +14,11 @@ import * as webMercatorUtils from '@arcgis/core/geometry/support/webMercatorUtil
 import { Dispatch, SetStateAction } from 'react';
 // types
 import {
+  CalculateResultsBaseType,
+  CalculateResultsDataType,
+} from 'types/CalculateResults';
+import {
+  CalculateSettingsBaseType,
   EditsType,
   EditType,
   FeatureEditsType,
@@ -36,7 +41,7 @@ import {
  * @param graphic The polygon to be converted
  * @returns The area of the provided graphic
  */
-export async function calculateArea(
+async function calculateArea(
   graphic: __esri.Graphic,
   sceneView: __esri.SceneView | null,
 ) {
@@ -95,6 +100,286 @@ export async function calculateArea(
     // calulate the area
     return geometryEngine.planarArea(projectedGeometry, 109454);
   }
+}
+
+/**
+ * Calculates details of plan for provided layers.
+ *
+ * @param layers Layers to calculate plan details on
+ * @param sceneViewForArea SceneView for performing area calculations on
+ * @param calculateSettings Calculate settings parameters
+ * @returns status of calculations and calculation results
+ */
+export async function calculatePlan(
+  layers: __esri.GraphicsLayer[],
+  sceneViewForArea: __esri.SceneView,
+  calculateSettings: CalculateSettingsBaseType,
+): Promise<CalculateResultsBaseType> {
+  const { calcGraphics, totals, totalArea } = await calculatePlanGeospatial(
+    layers,
+    sceneViewForArea,
+  );
+
+  if (calcGraphics.length === 0 || totalArea === 0) {
+    return { status: 'none', data: null };
+  }
+
+  const {
+    NUM_LABS: numLabs,
+    NUM_LAB_HOURS: numLabHours,
+    NUM_SAMPLING_HOURS: numSamplingHours,
+    NUM_SAMPLING_PERSONNEL: numSamplingPersonnel,
+    NUM_SAMPLING_SHIFTS: numSamplingShifts,
+    NUM_SAMPLING_TEAMS: numSamplingTeams,
+    SAMPLING_LABOR_COST: samplingLaborCost,
+    SURFACE_AREA: surfaceArea,
+  } = calculateSettings;
+
+  // calculate spatial items
+  let userSpecifiedAOI = null;
+  let percentAreaSampled = null;
+  if (surfaceArea > 0) {
+    userSpecifiedAOI = surfaceArea;
+    percentAreaSampled = (totalArea / surfaceArea) * 100;
+  }
+
+  // calculate the sampling items
+  const samplingTimeHours = totals.ttpk + totals.ttc;
+  const samplingHours = numSamplingTeams * numSamplingHours * numSamplingShifts;
+  const samplingPersonnelHoursPerDay = samplingHours * numSamplingPersonnel;
+  const samplingPersonnelLaborCost = samplingLaborCost / numSamplingPersonnel;
+  const timeCompleteSampling = (totals.ttc + totals.ttpk) / samplingHours;
+  const totalSamplingLaborCost =
+    numSamplingTeams *
+    numSamplingPersonnel *
+    numSamplingHours *
+    numSamplingShifts *
+    samplingPersonnelLaborCost *
+    timeCompleteSampling;
+
+  // calculate lab throughput
+  const totalLabHours = numLabs * numLabHours;
+  let labThroughput = totals.tta / totalLabHours;
+
+  // calculate total cost and time
+  const totalSamplingCost = totalSamplingLaborCost + totals.mcps;
+  const totalAnalysisCost = totals.alc + totals.amc;
+  const totalCost = totalSamplingCost + totalAnalysisCost;
+
+  // Calculate total time. Note: Total Time is the greater of sample collection time or Analysis Total Time.
+  // If Analysis Time is equal to or greater than Sampling Total Time then the value reported is total Analysis Time Plus one day.
+  // The one day accounts for the time samples get collected and shipped to the lab on day one of the sampling response.
+  let totalTime = 0;
+  if (labThroughput + 1 < timeCompleteSampling) {
+    totalTime = timeCompleteSampling;
+  } else {
+    labThroughput += 1;
+    totalTime = labThroughput;
+  }
+
+  // Get limiting time factor (will be undefined if they are equal)
+  let limitingFactor: CalculateResultsDataType['Limiting Time Factor'] = '';
+  if (timeCompleteSampling > labThroughput) {
+    limitingFactor = 'Sampling';
+  } else {
+    limitingFactor = 'Analysis';
+  }
+
+  const resultObject: CalculateResultsDataType = {
+    // assign input parameters
+    'User Specified Number of Available Teams for Sampling': numSamplingTeams,
+    'User Specified Personnel per Sampling Team': numSamplingPersonnel,
+    'User Specified Sampling Team Hours per Shift': numSamplingHours,
+    'User Specified Sampling Team Shifts per Day': numSamplingShifts,
+    'User Specified Sampling Team Labor Cost': samplingLaborCost,
+    'User Specified Number of Available Labs for Analysis': numLabs,
+    'User Specified Analysis Lab Hours per Day': numLabHours,
+    'User Specified Surface Area': surfaceArea,
+    'Total Number of User-Defined Samples': calcGraphics.length,
+
+    // assign counts
+    'Total Number of Samples': totals.ac,
+    'Total Sampled Area': totalArea,
+    'Time to Prepare Kits': totals.ttpk,
+    'Time to Collect': totals.ttc,
+    'Sampling Material Cost': totals.mcps,
+    'Time to Analyze': totals.tta,
+    'Analysis Labor Cost': totals.alc,
+    'Analysis Material Cost': totals.amc,
+    'Waste Volume': totals.wvps,
+    'Waste Weight': totals.wwps,
+
+    // spatial items
+    'User Specified Total AOI': userSpecifiedAOI,
+    'Percent of Area Sampled': percentAreaSampled,
+
+    // sampling
+    'Total Required Sampling Time': samplingTimeHours,
+    'Sampling Hours per Day': samplingHours,
+    'Sampling Personnel hours per Day': samplingPersonnelHoursPerDay,
+    'Sampling Personnel Labor Cost': samplingPersonnelLaborCost,
+    'Time to Complete Sampling': timeCompleteSampling,
+    'Total Sampling Labor Cost': totalSamplingLaborCost,
+    'Total Sampling Cost': totalSamplingCost,
+    'Total Analysis Cost': totalAnalysisCost,
+
+    // analysis
+    'Time to Complete Analyses': labThroughput,
+
+    //totals
+    'Total Cost': totalCost,
+    'Total Time': Math.round(totalTime * 10) / 10,
+    'Limiting Time Factor': limitingFactor,
+  };
+
+  return {
+    status: 'success',
+    data: resultObject,
+  };
+}
+
+/**
+ * Performs geospatial calculations for provided layers.
+ *
+ * @param layers Layers to calculate plan details on
+ * @param sceneViewForArea SceneView for performing area calculations on
+ * @returns graphics used in calculations, totals and total area
+ */
+async function calculatePlanGeospatial(
+  layers: __esri.GraphicsLayer[],
+  sceneViewForArea: __esri.SceneView,
+) {
+  let ttpk = 0;
+  let ttc = 0;
+  let tta = 0;
+  let ttps = 0;
+  let lod_p = 0;
+  let lod_non = 0;
+  let mcps = 0;
+  let tcps = 0;
+  let wvps = 0;
+  let wwps = 0;
+  let sa = 0;
+  let alc = 0;
+  let amc = 0;
+  let ac = 0;
+
+  // caluclate the area for graphics for the selected scenario
+  let totalAreaSquereFeet = 0;
+  const calcGraphics: __esri.Graphic[] = [];
+  for (const layer of layers) {
+    for (const graphic of layer.graphics.toArray()) {
+      const calcGraphic = graphic.clone();
+
+      // calculate the area using the custom hook
+      const areaSI = await calculateArea(graphic, sceneViewForArea);
+      if (typeof areaSI !== 'number') {
+        continue;
+      }
+
+      // convert area to square feet
+      const areaSF = areaSI * 0.00694444;
+      totalAreaSquereFeet = totalAreaSquereFeet + areaSF;
+
+      // Get the number of reference surface areas that are in the actual area.
+      // This is to prevent users from cheating the system by drawing larger shapes
+      // then the reference surface area and it only getting counted as "1" sample.
+      const { SA } = calcGraphic.attributes;
+      let areaCount = 1;
+      if (areaSI >= SA) {
+        areaCount = Math.round(areaSI / SA);
+      }
+
+      // set the AA on the original graphic, so it is visible in the popup
+      graphic.setAttribute('AA', Math.round(areaSI));
+      graphic.setAttribute('AC', areaCount);
+
+      // multiply all of the attributes by the area
+      const {
+        TTPK,
+        TTC,
+        TTA,
+        TTPS,
+        LOD_P,
+        LOD_NON,
+        MCPS,
+        TCPS,
+        WVPS,
+        WWPS,
+        ALC,
+        AMC,
+      } = calcGraphic.attributes;
+
+      if (TTPK) {
+        ttpk = ttpk + Number(TTPK) * areaCount;
+      }
+      if (TTC) {
+        ttc = ttc + Number(TTC) * areaCount;
+      }
+      if (TTA) {
+        tta = tta + Number(TTA) * areaCount;
+      }
+      if (TTPS) {
+        ttps = ttps + Number(TTPS) * areaCount;
+      }
+      if (LOD_P) {
+        lod_p = lod_p + Number(LOD_P);
+      }
+      if (LOD_NON) {
+        lod_non = lod_non + Number(LOD_NON);
+      }
+      if (MCPS) {
+        mcps = mcps + Number(MCPS) * areaCount;
+      }
+      if (TCPS) {
+        tcps = tcps + Number(TCPS) * areaCount;
+      }
+      if (WVPS) {
+        wvps = wvps + Number(WVPS) * areaCount;
+      }
+      if (WWPS) {
+        wwps = wwps + Number(WWPS) * areaCount;
+      }
+      if (SA) {
+        sa = sa + Number(SA);
+      }
+      if (ALC) {
+        alc = alc + Number(ALC) * areaCount;
+      }
+      if (AMC) {
+        amc = amc + Number(AMC) * areaCount;
+      }
+      if (areaCount) {
+        ac = ac + Number(areaCount);
+      }
+
+      calcGraphics.push(calcGraphic);
+    }
+  }
+
+  const totals = {
+    ttpk,
+    ttc,
+    tta,
+    ttps,
+    lod_p,
+    lod_non,
+    mcps,
+    tcps,
+    wvps,
+    wwps,
+    sa,
+    alc,
+    amc,
+    ac,
+  };
+  const totalArea = totalAreaSquereFeet;
+
+  return {
+    calcGraphics,
+    totals,
+    totalArea,
+  };
 }
 
 /**
