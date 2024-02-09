@@ -32,6 +32,7 @@ import Toolbar from 'components/Toolbar';
 import TestingToolbar from 'components/TestingToolbar';
 // contexts
 import { AuthenticationContext } from 'contexts/Authentication';
+import { settingDefaults } from 'contexts/Calculate';
 import { DialogContext } from 'contexts/Dialog';
 import { useLayerProps } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
@@ -45,7 +46,11 @@ import {
   getFeatureLayers,
 } from 'utils/arcGisRestUtils';
 import { useAbort, useDynamicPopup, useSessionStorage } from 'utils/hooks';
-import { convertToPoint, getSimplePopupTemplate } from 'utils/sketchUtils';
+import {
+  calculatePlan,
+  convertToPoint,
+  getSimplePopupTemplate,
+} from 'utils/sketchUtils';
 import { isAbort } from 'utils/utils';
 // types
 import { Attributes, DefaultSymbolsType } from 'config/sampleAttributes';
@@ -109,6 +114,7 @@ function Dashboard() {
     mapViewDashboard,
     sampleAttributes,
     sceneViewDashboard,
+    sceneViewForAreaDashboard,
     selectedScenario,
   } = useContext(SketchContext);
   useSessionStorage();
@@ -439,6 +445,7 @@ function Dashboard() {
           } else {
             planLayer.tables.add(
               new FeatureLayer({
+                title: layerDetails.name,
                 url: `${selectedPlan.url}/${layerDetails.id}`,
               }),
             );
@@ -496,9 +503,11 @@ function Dashboard() {
           for (const feature of layerFeatures.features) {
             // layerFeatures.features.forEach((feature: any) => {
             const graphic: any = Graphic.fromJSON(feature);
-            graphic.geometry.spatialReference = {
-              wkid: 3857,
-            };
+            if (graphic.geometry) {
+              graphic.geometry.spatialReference = {
+                wkid: 3857,
+              };
+            }
             graphic.popupTemplate = popupTemplate;
 
             const newGraphic: any = {
@@ -684,9 +693,11 @@ function Dashboard() {
           title: 'No Data',
           ariaLabel: 'No Data',
           description: `The "${selectedPlan.label}" layer was recently added and currently does not have any data. This could be due to a delay in processing the new data. Please try again later.`,
-          // onCancel: () => setStatus('no-data'),
+          // onCancel: () => setStatus('no-data'), // TODO
         });
       }
+
+      return planLayer;
     } catch (err) {
       console.error(err);
       // setStatus('error');
@@ -790,10 +801,49 @@ function Dashboard() {
                       instanceId="plan-select"
                       loadOptions={loadOptions}
                       menuPortalTarget={document.body}
-                      onChange={(ev) => {
+                      onChange={async (ev) => {
                         const plan = ev as Option;
                         setSelectedPlan(plan);
-                        loadPlan(plan);
+                        const planLayer = await loadPlan(plan);
+
+                        if (planLayer && sceneViewForAreaDashboard) {
+                          const layersParam = planLayer.layers
+                            .filter(
+                              (l) =>
+                                !l.id?.includes('-points') &&
+                                !l.id?.includes('-hybrid') &&
+                                l.type === 'graphics',
+                            )
+                            .toArray() as __esri.GraphicsLayer[];
+
+                          let calculateSettings = settingDefaults;
+
+                          // get calculate settings
+                          const calcSettingsTable = planLayer.tables.find((l) =>
+                            l.title.endsWith('-calculate-settings'),
+                          ) as __esri.FeatureLayer;
+                          if (calcSettingsTable) {
+                            try {
+                              const tmp = await calcSettingsTable.queryFeatures(
+                                {
+                                  where: '1=1',
+                                  outFields: ['*'],
+                                },
+                              );
+
+                              if (tmp.features.length > 0) {
+                                calculateSettings = tmp.features[0].attributes;
+                              }
+                            } catch (ex) {}
+                          }
+
+                          const output = await calculatePlan(
+                            layersParam,
+                            sceneViewForAreaDashboard,
+                            calculateSettings,
+                          );
+                          console.log('output: ', output);
+                        }
                       }}
                       onMenuClose={abort}
                       styles={{

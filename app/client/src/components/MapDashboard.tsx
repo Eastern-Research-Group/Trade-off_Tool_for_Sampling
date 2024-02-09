@@ -55,6 +55,7 @@ function Map({ height }: Props) {
     setMapViewDashboard,
     sceneViewDashboard,
     setSceneViewDashboard,
+    setSceneViewForAreaDashboard,
     sketchLayer,
     aoiSketchLayer,
   } = useContext(SketchContext);
@@ -98,12 +99,28 @@ function Map({ height }: Props) {
     });
 
     setSceneViewDashboard(scene);
+
+    // Create a hidden scene view that is only for calculating
+    // area of 3D geometry. This is to work around an issue
+    // where area of 3D geometry could not be calculated when
+    // 2D mode is selected.
+    setSceneViewForAreaDashboard(
+      new SceneView({
+        container: 'hidden-scene-view',
+        map: new EsriMap({
+          ground: 'world-elevation',
+          layers: [],
+        }),
+        qualityProfile: 'low',
+      }),
+    );
   }, [
     mapViewDashboard,
     sceneViewDashboard,
     setMapDashboard,
     setMapViewDashboard,
     setSceneViewDashboard,
+    setSceneViewForAreaDashboard,
   ]);
 
   // Creates a watch event that is used for reordering the layers

@@ -81,6 +81,10 @@ type SketchType = {
   setSceneViewDashboard: Dispatch<SetStateAction<__esri.SceneView | null>>;
   sceneViewForArea: __esri.SceneView | null;
   setSceneViewForArea: Dispatch<SetStateAction<__esri.SceneView | null>>;
+  sceneViewForAreaDashboard: __esri.SceneView | null;
+  setSceneViewForAreaDashboard: Dispatch<
+    SetStateAction<__esri.SceneView | null>
+  >;
   selectedSampleIds: SelectedSampleType[];
   setSelectedSampleIds: Dispatch<SetStateAction<SelectedSampleType[]>>;
   selectedScenario: ScenarioEditsType | null;
@@ -162,6 +166,8 @@ export const SketchContext = createContext<SketchType>({
   setSceneViewDashboard: () => {},
   sceneViewForArea: null,
   setSceneViewForArea: () => {},
+  sceneViewForAreaDashboard: null,
+  setSceneViewForAreaDashboard: () => {},
   sketchVM: null,
   setSketchVM: () => {},
   aoiSketchVM: null,
@@ -238,6 +244,8 @@ export function SketchProvider({ children }: Props) {
   const [sceneViewDashboard, setSceneViewDashboard] =
     useState<__esri.SceneView | null>(null);
   const [sceneViewForArea, setSceneViewForArea] =
+    useState<__esri.SceneView | null>(null);
+  const [sceneViewForAreaDashboard, setSceneViewForAreaDashboard] =
     useState<__esri.SceneView | null>(null);
   const [selectedSampleIds, setSelectedSampleIds] = useState<
     SelectedSampleType[]
@@ -420,6 +428,8 @@ export function SketchProvider({ children }: Props) {
         setSceneViewDashboard,
         sceneViewForArea,
         setSceneViewForArea,
+        sceneViewForAreaDashboard,
+        setSceneViewForAreaDashboard,
         sketchVM,
         setSketchVM,
         aoiSketchVM,
