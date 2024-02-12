@@ -10,6 +10,7 @@ import React, {
   useState,
 } from 'react';
 import { debounce } from 'lodash';
+import RGL, { WidthProvider } from 'react-grid-layout';
 import { AsyncPaginate, wrapMenuList } from 'react-select-async-paginate';
 import { css } from '@emotion/react';
 import { useWindowSize } from '@reach/window-size';
@@ -35,7 +36,6 @@ import { AuthenticationContext } from 'contexts/Authentication';
 import { settingDefaults } from 'contexts/Calculate';
 import { DialogContext } from 'contexts/Dialog';
 import { useLayerProps } from 'contexts/LookupFiles';
-import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // utilities
 import {
@@ -60,6 +60,10 @@ import type { LoadOptions } from 'react-select-async-paginate';
 import { notLoggedInMessage } from 'config/errorMessages';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import LoadingSpinner from 'components/LoadingSpinner';
+// styles
+import { linkButtonStyles } from 'styles';
+
+const ReactGridLayout = WidthProvider(RGL);
 
 type LayerGraphics = {
   [key: string]: __esri.Graphic[];
@@ -74,37 +78,11 @@ function appendToQuery(query: string, part: string, separator: string = 'AND') {
   else return `(${part})`;
 }
 
-const appStyles = (offset: number) => css`
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - ${offset}px);
-  min-height: 675px;
-  width: 100%;
-`;
-
-const containerStyles = css`
-  height: 100%;
-  position: relative;
-`;
-
-const mapPanelStyles = (tableHeight: number) => css`
-  float: right;
-  position: relative;
-  height: calc(100% - ${tableHeight}px);
-  width: 100%;
-`;
-
-const mapHeightStyles = css`
-  height: 100%;
-`;
-
 function Dashboard() {
   const { abort } = useAbort();
   const { hasCheckedSignInStatus, portal, signedIn } = useContext(
     AuthenticationContext,
   );
-  const { tablePanelExpanded, tablePanelHeight } =
-    useContext(NavigationContext);
   const {
     defaultSymbols,
     displayDimensions,
@@ -128,13 +106,30 @@ function Dashboard() {
   const [toolbarHeight, setToolbarHeight] = useState(0);
 
   // calculate height of div holding actions info
-  const toolbarRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!toolbarRef?.current) return;
+  const toolbarRef = useCallback((node: HTMLDivElement) => {
+    if (!node) return;
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (entries[0]) {
+        const { height } = entries[0].contentRect;
+        setToolbarHeight(height);
+      }
+    });
+    resizeObserver.observe(node);
+  }, []);
 
-    const barHeight = toolbarRef.current.getBoundingClientRect().height;
-    if (toolbarHeight !== barHeight) setToolbarHeight(barHeight);
-  }, [width, height, toolbarRef, toolbarHeight]);
+  const [containerHeight, setContainerHeight] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const elementRef = useCallback((node: HTMLDivElement) => {
+    if (!node) return;
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (entries[0]) {
+        const { height, width } = entries[0].contentRect;
+        setContainerHeight(height);
+        setContainerWidth(width);
+      }
+    });
+    resizeObserver.observe(node);
+  }, []);
 
   const [
     sizeCheckInitialized,
@@ -157,15 +152,12 @@ function Dashboard() {
   }, [width, height, sizeCheckInitialized, setOptions]);
 
   const totsRef = useRef<HTMLDivElement>(null);
-  const [offset, setOffset] = useState(0);
   useEffect(() => {
     if (!totsRef?.current) return;
 
-    const offsetTop = totsRef.current.offsetTop;
     const clientHeight = totsRef.current.clientHeight;
     if (contentHeight !== clientHeight) setContentHeight(clientHeight);
-    if (offset !== offsetTop) setOffset(offsetTop);
-  }, [contentHeight, height, offset, totsRef, width]);
+  }, [contentHeight, height, totsRef, width]);
 
   const [selectedPlan, setSelectedPlan] = useState<Option | null>(null);
 
@@ -758,166 +750,229 @@ function Dashboard() {
 
   const [layerToDeleteId, setLayerToDeleteId] = useState(-1);
 
+  const layout = [
+    {
+      i: 'a',
+      x: 0,
+      y: 0,
+      w: 1,
+      h: 1,
+      static: true,
+      contents: <div>Panel 1</div>,
+    },
+    {
+      i: 'b',
+      x: 0,
+      y: 1,
+      w: 1,
+      h: 1,
+      static: true,
+      contents: <div>Panel 2</div>,
+    },
+    {
+      i: 'c',
+      x: 1,
+      y: 0,
+      w: 1,
+      h: 2,
+      static: true,
+      contents: (
+        <div id="tots-map-div" css={mapHeightStyles}>
+          <MapDashboard height={containerHeight - 33} />
+        </div>
+      ),
+    },
+  ];
+  const originalGridLayout = layout.map((l) => {
+    return {
+      ...l,
+      contents: undefined,
+    };
+  });
+
+  const [gridLayout, setGridLayout] = useState<any>(originalGridLayout);
+  const [fullscreenKey, setFullscreenKey] = useState('');
+  const [hoverKey, setHoverKey] = useState('');
+
   return (
     <div className="tots" ref={totsRef}>
-      <div css={appStyles(offset)}>
-        <div css={containerStyles}>
-          <div ref={toolbarRef}>
-            {window.location.search.includes('devMode=true') && (
-              <TestingToolbar />
-            )}
-            <Toolbar
-              isDashboard={true}
-              map={mapDashboard}
-              mapView={mapViewDashboard}
-              sceneView={sceneViewDashboard}
-            />
+      <div css={appStyles}>
+        <div ref={toolbarRef}>
+          {window.location.search.includes('devMode=true') && (
+            <TestingToolbar />
+          )}
+          <Toolbar
+            isDashboard={true}
+            map={mapDashboard}
+            mapView={mapViewDashboard}
+            sceneView={sceneViewDashboard}
+          />
 
-            <div
-              css={css`
-                margin: 10px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-              `}
-            >
+          <div css={toolbarContainerStyles}>
+            <div css={planSelectStyles}>
+              {signedIn ? (
+                <Fragment>
+                  <label htmlFor="plan-select">Plan:</label>
+                  <AsyncPaginate
+                    aria-label="Plan input"
+                    className="width-full"
+                    classNames={{
+                      container: () => 'font-ui-xs',
+                      menuList: () => 'font-ui-xs',
+                    }}
+                    components={{ MenuList: wrapMenuList(CustomMenuList) }}
+                    inputId="plan-select"
+                    instanceId="plan-select"
+                    loadOptions={loadOptions}
+                    menuPortalTarget={document.body}
+                    onChange={async (ev) => {
+                      const plan = ev as Option;
+                      setSelectedPlan(plan);
+                      const planLayer = await loadPlan(plan);
+
+                      if (planLayer && sceneViewForAreaDashboard) {
+                        const layersParam = planLayer.layers
+                          .filter(
+                            (l) =>
+                              !l.id?.includes('-points') &&
+                              !l.id?.includes('-hybrid') &&
+                              l.type === 'graphics',
+                          )
+                          .toArray() as __esri.GraphicsLayer[];
+
+                        let calculateSettings = settingDefaults;
+
+                        // get calculate settings
+                        const calcSettingsTable = planLayer.tables.find((l) =>
+                          l.title.endsWith('-calculate-settings'),
+                        ) as __esri.FeatureLayer;
+                        if (calcSettingsTable) {
+                          try {
+                            const tmp = await calcSettingsTable.queryFeatures({
+                              where: '1=1',
+                              outFields: ['*'],
+                            });
+
+                            if (tmp.features.length > 0) {
+                              calculateSettings = tmp.features[0].attributes;
+                            }
+                          } catch (ex) {}
+                        }
+
+                        const output = await calculatePlan(
+                          layersParam,
+                          sceneViewForAreaDashboard,
+                          calculateSettings,
+                        );
+                        console.log('output: ', output);
+                      }
+                    }}
+                    onMenuClose={abort}
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        border: '1px solid #adadad',
+                        borderRadius: '4px',
+                      }),
+                      menuPortal: (base) => ({
+                        ...base,
+                        zIndex: 9999,
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        color: '#71767a',
+                      }),
+                    }}
+                    value={selectedPlan}
+                  />
+                </Fragment>
+              ) : hasCheckedSignInStatus ? (
+                notLoggedInMessage
+              ) : (
+                <LoadingSpinner />
+              )}
+            </div>
+            {window.location.search.includes('devMode=true') && (
               <div
                 css={css`
-                  width: 50%;
+                  align-items: center;
                 `}
               >
-                {signedIn ? (
-                  <Fragment>
-                    <label htmlFor="plan-select">Plan:</label>
-                    <AsyncPaginate
-                      aria-label="Plan input"
-                      className="width-full"
-                      classNames={{
-                        container: () => 'font-ui-xs',
-                        menuList: () => 'font-ui-xs',
-                      }}
-                      components={{ MenuList: wrapMenuList(CustomMenuList) }}
-                      inputId="plan-select"
-                      instanceId="plan-select"
-                      loadOptions={loadOptions}
-                      menuPortalTarget={document.body}
-                      onChange={async (ev) => {
-                        const plan = ev as Option;
-                        setSelectedPlan(plan);
-                        const planLayer = await loadPlan(plan);
+                <input
+                  type="number"
+                  value={layerToDeleteId}
+                  onChange={(ev: any) => setLayerToDeleteId(ev.target.value)}
+                />
+                <button
+                  onClick={() => {
+                    if (layerToDeleteId === -1 || !portal || !selectedPlan)
+                      return;
 
-                        if (planLayer && sceneViewForAreaDashboard) {
-                          const layersParam = planLayer.layers
-                            .filter(
-                              (l) =>
-                                !l.id?.includes('-points') &&
-                                !l.id?.includes('-hybrid') &&
-                                l.type === 'graphics',
-                            )
-                            .toArray() as __esri.GraphicsLayer[];
+                    deleteFeatureLayer(
+                      portal,
+                      selectedPlan.url,
+                      layerToDeleteId,
+                    );
 
-                          let calculateSettings = settingDefaults;
-
-                          // get calculate settings
-                          const calcSettingsTable = planLayer.tables.find((l) =>
-                            l.title.endsWith('-calculate-settings'),
-                          ) as __esri.FeatureLayer;
-                          if (calcSettingsTable) {
-                            try {
-                              const tmp = await calcSettingsTable.queryFeatures(
-                                {
-                                  where: '1=1',
-                                  outFields: ['*'],
-                                },
-                              );
-
-                              if (tmp.features.length > 0) {
-                                calculateSettings = tmp.features[0].attributes;
-                              }
-                            } catch (ex) {}
-                          }
-
-                          const output = await calculatePlan(
-                            layersParam,
-                            sceneViewForAreaDashboard,
-                            calculateSettings,
-                          );
-                          console.log('output: ', output);
+                    setLayerToDeleteId(-1);
+                  }}
+                >
+                  Test
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        <div ref={elementRef} css={containerStyles(toolbarHeight)}>
+          <ReactGridLayout
+            className="layout"
+            allowOverlap={true}
+            layout={gridLayout}
+            useCSSTransforms={true}
+            cols={2}
+            rowHeight={containerHeight / 2 - 20}
+            width={containerWidth - 20}
+          >
+            {layout.map((item: any) => {
+              const isFullscreen = item.i === fullscreenKey;
+              return (
+                <div
+                  key={item.i}
+                  css={gridCellStyles(fullscreenKey !== '' && !isFullscreen)}
+                  onMouseEnter={() => setHoverKey(item.i)}
+                  onMouseLeave={() => setHoverKey('')}
+                >
+                  {hoverKey === item.i && (
+                    <button
+                      css={fullscreenButtonStyles}
+                      onClick={() => {
+                        if (gridLayout.length === 1) {
+                          setGridLayout(originalGridLayout);
+                          setFullscreenKey('');
+                        } else {
+                          setGridLayout([
+                            {
+                              i: item.i,
+                              x: 0,
+                              y: 0,
+                              w: 2,
+                              h: 2,
+                              isDraggable: false,
+                              isResizable: false,
+                            },
+                          ]);
+                          setFullscreenKey(item.i);
                         }
                       }}
-                      onMenuClose={abort}
-                      styles={{
-                        control: (base) => ({
-                          ...base,
-                          border: '1px solid #adadad',
-                          borderRadius: '4px',
-                        }),
-                        menuPortal: (base) => ({
-                          ...base,
-                          zIndex: 9999,
-                        }),
-                        placeholder: (base) => ({
-                          ...base,
-                          color: '#71767a',
-                        }),
-                      }}
-                      value={selectedPlan}
-                    />
-                  </Fragment>
-                ) : hasCheckedSignInStatus ? (
-                  notLoggedInMessage
-                ) : (
-                  <LoadingSpinner />
-                )}
-              </div>
-              {window.location.search.includes('devMode=true') && (
-                <div
-                  css={css`
-                    align-items: center;
-                  `}
-                >
-                  <input
-                    type="number"
-                    value={layerToDeleteId}
-                    onChange={(ev: any) => setLayerToDeleteId(ev.target.value)}
-                  />
-                  <button
-                    onClick={() => {
-                      if (layerToDeleteId === -1 || !portal || !selectedPlan)
-                        return;
-
-                      deleteFeatureLayer(
-                        portal,
-                        selectedPlan.url,
-                        layerToDeleteId,
-                      );
-
-                      setLayerToDeleteId(-1);
-                    }}
-                  >
-                    Test
-                  </button>
+                    >
+                      {isFullscreen ? collapseIcon : expandIcon}
+                    </button>
+                  )}
+                  {item.contents}
                 </div>
-              )}
-            </div>
-          </div>
-          <div
-            css={mapPanelStyles(
-              toolbarHeight + (tablePanelExpanded ? tablePanelHeight : 0),
-            )}
-          >
-            <div id="tots-map-div" css={mapHeightStyles}>
-              {toolbarHeight && (
-                <MapDashboard
-                  height={
-                    contentHeight -
-                    (tablePanelExpanded ? tablePanelHeight : 0) -
-                    toolbarHeight
-                  }
-                />
-              )}
-            </div>
-          </div>
+              );
+            })}
+          </ReactGridLayout>
         </div>
       </div>
     </div>
@@ -925,6 +980,88 @@ function Dashboard() {
 }
 
 export default Dashboard;
+
+const collapseIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 16 16"
+    width="12px"
+    height="12px"
+  >
+    <path
+      vector-effect="non-scaling-stroke"
+      d="M11.719 11.06l3.633 3.585-.704.71L11 11.756v3.205h-1v-4.9h5v1zM5 4.245L1.352.644l-.704.711L4.281 4.94H1v1h5v-4.9H5zM14.96 5h-3.204l3.6-3.648-.711-.704-3.584 3.633V1h-1v5h4.9zM1.04 11h3.204l-3.6 3.648.711.704 3.584-3.633V15h1v-5h-4.9z"
+    ></path>
+  </svg>
+);
+
+const expandIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 16 16"
+    width="12px"
+    height="12px"
+  >
+    <path
+      vector-effect="non-scaling-stroke"
+      d="M9.645 5.648L13.244 2h-3.205V1h4.9v5h-1V2.719l-3.584 3.633zm-4 4L2.06 13.281V10h-1v5h4.9v-1H2.756l3.6-3.648zM14 10.04v3.205l-3.648-3.6-.704.711 3.633 3.584H10v1h5v-4.9zM2 2.756l3.648 3.6.704-.711L2.719 2.06H6v-1H1v4.9h1z"
+    ></path>
+  </svg>
+);
+
+/*
+## Styles
+*/
+
+const appStyles = css`
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 675px;
+  width: 100%;
+  background-color: #f8f8f8;
+`;
+
+const containerStyles = (toolbarheight: number) => css`
+  height: calc(100vh - ${toolbarheight}px);
+  width: 100%;
+`;
+
+const fullscreenButtonStyles = css`
+  ${linkButtonStyles}
+  color: black;
+  background-color: white;
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 100%;
+  border: 1px solid #757575;
+  z-index: 620;
+  padding-top: 2px;
+`;
+
+const gridCellStyles = (visible: boolean) => css`
+  background-color: white;
+  border: 1px solid #dfdfdf;
+  ${visible && 'display: none;'}
+`;
+
+const mapHeightStyles = css`
+  height: 100%;
+`;
+
+const planSelectStyles = css`
+  width: 50%;
+`;
+
+const toolbarContainerStyles = css`
+  margin: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
 
 /*
 ## Types
