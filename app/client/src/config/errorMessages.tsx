@@ -394,3 +394,12 @@ export const featureNotAvailableMessage = (featureName: string) => (
     message={`The "${featureName}" is unavailble, please try again later.`}
   />
 );
+
+// dashboard
+export const dashboardLoadFailed = (
+  <MessageBox
+    severity="error"
+    title="Load Plan Failure"
+    message="An error occurred while loading the plan. Please try again later. If the issue persists, please contact an administrator."
+  />
+);
