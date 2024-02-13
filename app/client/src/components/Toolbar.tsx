@@ -936,7 +936,9 @@ function Toolbar({ isDashboard = false, map, mapView, sceneView }: Props) {
     <div css={toolBarStyles} data-testid="tots-toolbar">
       <h2 css={toolBarTitle}>
         Trade-off Tool for Sampling (TOTS){' '}
-        {isDashboard ? ' - Dashboard' : `${trainingMode && ' - TRAINING MODE'}`}
+        {isDashboard
+          ? ' - Dashboard'
+          : `${trainingMode ? ' - TRAINING MODE' : ''}`}
       </h2>
       <div css={toolBarButtonsStyles}>
         <div>
