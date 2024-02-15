@@ -11,14 +11,11 @@ import { css } from '@emotion/react';
 import EsriMap from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
 import SceneView from '@arcgis/core/views/SceneView';
-import Viewpoint from '@arcgis/core/Viewpoint';
 // components
 import MapMouseEvents from 'components/MapMouseEvents';
 import MapWidgets from 'components/MapWidgets';
 // contexts
 import { SketchContext } from 'contexts/Sketch';
-// utils
-import { getGraphicsArray } from 'utils/sketchUtils';
 
 // --- styles (Map) ---
 const mapStyles = (height: number) => {
@@ -44,9 +41,6 @@ function Map({ height }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
 
   const {
-    autoZoom,
-    displayDimensions,
-    homeWidget,
     mapDashboard,
     setMapDashboard,
     mapViewDashboard,
@@ -54,8 +48,6 @@ function Map({ height }: Props) {
     sceneViewDashboard,
     setSceneViewDashboard,
     setSceneViewForAreaDashboard,
-    sketchLayer,
-    aoiSketchLayer,
   } = useContext(SketchContext);
 
   // Creates the map and view
@@ -192,44 +184,6 @@ function Map({ height }: Props) {
 
     setWatchInitialized(true);
   }, [mapDashboard, watchInitialized]);
-
-  // Zooms to the graphics whenever the sketchLayer changes
-  useEffect(() => {
-    if (
-      !mapDashboard ||
-      !mapViewDashboard ||
-      !sceneViewDashboard ||
-      !homeWidget ||
-      !autoZoom
-    )
-      return;
-    if (!sketchLayer?.sketchLayer) return;
-
-    const zoomGraphics = getGraphicsArray([sketchLayer, aoiSketchLayer]);
-
-    if (zoomGraphics.length > 0) {
-      const view =
-        displayDimensions === '3d' ? sceneViewDashboard : mapViewDashboard;
-      view.goTo(zoomGraphics).then(() => {
-        // set map zoom and home widget's viewpoint
-        homeWidget['2d'].viewpoint = new Viewpoint({
-          targetGeometry: view.extent,
-        });
-        homeWidget['3d'].viewpoint = new Viewpoint({
-          targetGeometry: view.extent,
-        });
-      });
-    }
-  }, [
-    autoZoom,
-    displayDimensions,
-    mapDashboard,
-    mapViewDashboard,
-    aoiSketchLayer,
-    sceneViewDashboard,
-    sketchLayer,
-    homeWidget,
-  ]);
 
   return (
     <Fragment>

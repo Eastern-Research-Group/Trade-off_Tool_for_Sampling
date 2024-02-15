@@ -31,6 +31,7 @@ import KMLLayer from '@arcgis/core/layers/KMLLayer';
 import Layer from '@arcgis/core/layers/Layer';
 import Portal from '@arcgis/core/portal/Portal';
 import PortalItem from '@arcgis/core/portal/PortalItem';
+import Viewpoint from '@arcgis/core/Viewpoint';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
 import * as rendererJsonUtils from '@arcgis/core/renderers/support/jsonUtils';
 // components
@@ -104,6 +105,7 @@ function Dashboard() {
     defaultSymbols,
     displayDimensions,
     displayGeometryType,
+    homeWidget,
     layers,
     mapDashboard,
     mapViewDashboard,
@@ -687,14 +689,30 @@ function Dashboard() {
     layersToAdd.push(planLayer);
     mapDashboard.layers.addMany(layersToAdd);
 
+    function updateHomeWidget(view: __esri.MapView | __esri.SceneView) {
+      if (!homeWidget) return;
+
+      // set map zoom and home widget's viewpoint
+      homeWidget['2d'].viewpoint = new Viewpoint({
+        targetGeometry: view.extent,
+      });
+      homeWidget['3d'].viewpoint = new Viewpoint({
+        targetGeometry: view.extent,
+      });
+    }
+
     // validate the area and attributes of features of the uploads. If there is an
     // issue, display a popup asking the user if they would like the samples to be updated.
     if (zoomToGraphics.length > 0) {
       // zoom to the graphics layer
       if (mapViewDashboard && displayDimensions === '2d')
-        mapViewDashboard.goTo(zoomToGraphics);
+        mapViewDashboard
+          .goTo(zoomToGraphics)
+          .then(() => updateHomeWidget(mapViewDashboard));
       if (sceneViewDashboard && displayDimensions === '3d')
-        sceneViewDashboard.goTo(zoomToGraphics);
+        sceneViewDashboard
+          .goTo(zoomToGraphics)
+          .then(() => updateHomeWidget(sceneViewDashboard));
     } else if (zoomToGraphics.length === 0 && duration < 300) {
       // display a message if the layer is empty and the layer is less
       // than 5 minutes old
