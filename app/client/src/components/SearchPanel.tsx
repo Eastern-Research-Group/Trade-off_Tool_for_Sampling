@@ -60,7 +60,7 @@ import {
   // PortalLayerType,
   // UrlLayerType,
 } from 'types/Layer';
-import { ErrorType } from 'types/Misc';
+import { SearchResultsType } from 'types/Misc';
 // import { AttributesType } from 'types/Publish';
 import {
   Attributes,
@@ -239,12 +239,6 @@ type SortByType = {
   value: 'none' | 'title' | 'owner' | 'avgrating' | 'numviews' | 'modified';
   label: 'Relevance' | 'Title' | 'Owner' | 'Rating' | 'Views' | 'Date';
   defaultSort: 'asc' | 'desc';
-};
-
-type SearchResultsType = {
-  status: 'none' | 'fetching' | 'success' | 'failure' | 'not-logged-in';
-  error?: ErrorType;
-  data: __esri.PortalQueryResult | null;
 };
 
 function SearchPanel() {

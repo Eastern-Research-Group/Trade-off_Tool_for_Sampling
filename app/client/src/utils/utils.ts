@@ -163,3 +163,14 @@ export function getScenarioName(edits: EditsType, desiredName: string) {
 export function parseSmallFloat(number: number, precision: number = 15) {
   return parseFloat(number.toFixed(precision));
 }
+
+/**
+ * Checks if the provided error is an abort error.
+ *
+ * @param error
+ * @returns true if it is an abort error
+ */
+export function isAbort(error: unknown) {
+  if (!error || typeof error !== 'object' || !('name' in error)) return false;
+  return (error as Error).name === 'AbortError';
+}

@@ -27,7 +27,6 @@ import { SketchContext } from 'contexts/Sketch';
 import { navPanelWidth } from 'config/appConfig';
 import { panels, PanelType } from 'config/navigation';
 // styles
-import '@reach/dialog/styles.css';
 import { colors } from 'styles';
 import { useCalculatePlan } from 'utils/hooks';
 

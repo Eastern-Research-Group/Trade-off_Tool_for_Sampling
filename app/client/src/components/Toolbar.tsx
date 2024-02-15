@@ -43,7 +43,7 @@ import { LayerType } from 'types/Layer';
 const toolBarHeight = '40px';
 
 // Builds the legend item for a layer
-function buildLegendListItem(event: any) {
+function buildLegendListItem(event: any, isDashboard: boolean) {
   const item = event.item;
   const view = event.view;
 
@@ -235,20 +235,21 @@ function buildLegendListItem(event: any) {
 
   // add a delete button for each layer, but don't add it to sublayers
   item.actionsOpen = true;
-  item.actionsSections = [
-    [
-      {
-        title: 'Zoom to Layer',
-        className: 'esri-icon-zoom-in-magnifying-glass',
-        id: 'zoom-layer',
-      },
-      {
-        title: 'Delete Layer',
-        className: 'esri-icon-trash',
-        id: 'delete-layer',
-      },
-    ],
+  const actions = [
+    {
+      title: 'Zoom to Layer',
+      className: 'esri-icon-zoom-in-magnifying-glass',
+      id: 'zoom-layer',
+    },
   ];
+  if (!isDashboard) {
+    actions.push({
+      title: 'Delete Layer',
+      className: 'esri-icon-trash',
+      id: 'delete-layer',
+    });
+  }
+  item.actionsSections = [actions];
 }
 
 const basemapNames = [
@@ -309,6 +310,18 @@ const switchLabelContainer = css`
   display: flex;
   align-items: center;
   font-weight: bold;
+`;
+
+const fieldsetStyles = css`
+  ${settingContainerStyles}
+  margin: 0 2px 1.5em;
+  padding: 0.35em 1em 0.75em;
+  border: 2px groove rgb(192, 192, 192);
+  legend {
+    font-weight: bold;
+    line-height: 1.3;
+    padding: 0 2px;
+  }
 `;
 
 const infoIconStyles = css`
@@ -386,9 +399,9 @@ const floatContainerStyles = (containerVisible: boolean, right: string) => {
   `;
 };
 
-const legendStyles = (legendVisible: boolean) => {
+const legendStyles = (legendVisible: boolean, right: string) => {
   return css`
-    ${floatContainerStyles(legendVisible, '0')}
+    ${floatContainerStyles(legendVisible, right)}
 
     /* Hide/show the actions panel */
     .esri-layer-list__item-actions[hidden] {
@@ -415,7 +428,14 @@ const navIconStyles = css`
 `;
 
 // --- components (Toolbar) ---
-function Toolbar() {
+type Props = {
+  isDashboard?: boolean;
+  map: __esri.Map | null;
+  mapView: __esri.MapView | null;
+  sceneView: __esri.SceneView | null;
+};
+
+function Toolbar({ isDashboard = false, map, mapView, sceneView }: Props) {
   const { setContaminationMap } = useContext(CalculateContext);
   // const { trainingMode, setTrainingMode } = useContext(NavigationContext);
   const {
@@ -426,8 +446,6 @@ function Toolbar() {
     defaultSymbols,
     edits,
     setEdits,
-    map,
-    mapView,
     layers,
     setLayers,
     portalLayers,
@@ -443,7 +461,6 @@ function Toolbar() {
     displayGeometryType,
     setDisplayGeometryType,
     userDefinedAttributes,
-    sceneView,
     displayDimensions,
     setDisplayDimensions,
     terrain3dUseElevation,
@@ -454,14 +471,17 @@ function Toolbar() {
     setViewUnderground3d,
   } = useContext(SketchContext);
   const {
-    signedIn,
-    setSignedIn,
+    hasCheckedSignInStatus,
     oAuthInfo,
-    setOAuthInfo,
     portal,
+    signedIn,
+    signIn,
+    setHasCheckedSignInStatus,
+    setOAuthInfo,
     setPortal,
-    userInfo,
+    setSignedIn,
     setUserInfo,
+    userInfo,
   } = useContext(AuthenticationContext);
 
   // Initialize the OAuth
@@ -480,16 +500,15 @@ function Toolbar() {
   }, [setOAuthInfo, oAuthInfo]);
 
   // Check the user's sign in status
-  const [
-    hasCheckedSignInStatus,
-    setHasCheckedSignInStatus, //
-  ] = useState(false);
+  const [localCheckedSignIn, setLocalCheckedSignIn] = useState(false);
   useEffect(() => {
-    if (!oAuthInfo || hasCheckedSignInStatus) return;
+    if (!oAuthInfo || localCheckedSignIn) return;
 
-    setHasCheckedSignInStatus(true);
+    setLocalCheckedSignIn(true);
+
     IdentityManager.checkSignInStatus(`${oAuthInfo.portalUrl}/sharing`)
       .then(() => {
+        setHasCheckedSignInStatus(true);
         setSignedIn(true);
 
         const portal = new Portal();
@@ -499,9 +518,17 @@ function Toolbar() {
         });
       })
       .catch(() => {
+        setHasCheckedSignInStatus(true);
         setSignedIn(false);
       });
-  }, [oAuthInfo, setSignedIn, setPortal, hasCheckedSignInStatus]);
+  }, [
+    localCheckedSignIn,
+    oAuthInfo,
+    setSignedIn,
+    setPortal,
+    hasCheckedSignInStatus,
+    setHasCheckedSignInStatus,
+  ]);
 
   // Get the user information
   useEffect(() => {
@@ -542,7 +569,7 @@ function Toolbar() {
       view: mapView,
       container: 'legend-container',
       listItemCreatedFunction: (event) => {
-        buildLegendListItem(event);
+        buildLegendListItem(event, isDashboard);
       },
     });
 
@@ -601,16 +628,16 @@ function Toolbar() {
     });
 
     setLayerList(newLayerList);
-  }, [defaultSymbols, layerList, mapView]);
+  }, [defaultSymbols, isDashboard, layerList, mapView]);
 
   // Rebuild the legend if the sample type definitions are changed
   useEffect(() => {
     if (!layerList) return;
 
     layerList.listItemCreatedFunction = (event) => {
-      buildLegendListItem(event);
+      buildLegendListItem(event, isDashboard);
     };
-  }, [defaultSymbols, layerList, userDefinedAttributes]);
+  }, [defaultSymbols, isDashboard, layerList, userDefinedAttributes]);
 
   // Deletes layers from the map and session variables when the delete button is clicked
   useEffect(() => {
@@ -918,6 +945,7 @@ function Toolbar() {
       <h2 css={toolBarTitle}>
         Trade-off Tool for Decontamination Strategies (TODS){' '}
         {/* {trainingMode && ' - TRAINING MODE'} */}
+        {isDashboard ? ' - Dashboard' : ''}
       </h2>
       <div css={toolBarButtonsStyles}>
         <div>
@@ -933,8 +961,8 @@ function Toolbar() {
             <i className="esri-icon-settings2" css={navIconStyles} />
             Settings{' '}
           </button>
-          <div css={floatContainerStyles(settingsVisible, '223px')}>
-            <fieldset css={settingContainerStyles}>
+          <div css={floatContainerStyles(settingsVisible, '242px')}>
+            <fieldset css={fieldsetStyles}>
               <legend>
                 Dimension
                 <InfoIcon
@@ -971,7 +999,7 @@ function Toolbar() {
               <label htmlFor="dimension-3d">3D</label>
             </fieldset>
 
-            <fieldset css={settingContainerStyles}>
+            <fieldset css={fieldsetStyles}>
               <legend>
                 Shape
                 <InfoIcon
@@ -1029,16 +1057,18 @@ function Toolbar() {
                   />
                 </label>
 
-                <label css={switchLabelContainer}>
-                  <span css={switchLabel}>3D Use Terrain Elevation</span>
-                  <Switch
-                    checked={terrain3dUseElevation}
-                    onChange={(checked) => setTerrain3dUseElevation(checked)}
-                    ariaLabel="3D Use Terrain Elevation"
-                    onColor="#90ee90"
-                    onHandleColor="#129c12"
-                  />
-                </label>
+                {!isDashboard && (
+                  <label css={switchLabelContainer}>
+                    <span css={switchLabel}>3D Use Terrain Elevation</span>
+                    <Switch
+                      checked={terrain3dUseElevation}
+                      onChange={(checked) => setTerrain3dUseElevation(checked)}
+                      ariaLabel="3D Use Terrain Elevation"
+                      onColor="#90ee90"
+                      onHandleColor="#129c12"
+                    />
+                  </label>
+                )}
 
                 <label css={switchLabelContainer}>
                   <span css={switchLabel}>3D View Underground</span>
@@ -1064,16 +1094,18 @@ function Toolbar() {
               />
             </label> */}
 
-            <label css={switchLabelContainer}>
-              <span css={switchLabel}>Auto Zoom</span>
-              <Switch
-                checked={autoZoom}
-                onChange={(checked) => setAutoZoom(checked)}
-                ariaLabel="Auto Zoom"
-                onColor="#90ee90"
-                onHandleColor="#129c12"
-              />
-            </label>
+            {!isDashboard && (
+              <label css={switchLabelContainer}>
+                <span css={switchLabel}>Auto Zoom</span>
+                <Switch
+                  checked={autoZoom}
+                  onChange={(checked) => setAutoZoom(checked)}
+                  ariaLabel="Auto Zoom"
+                  onColor="#90ee90"
+                  onHandleColor="#129c12"
+                />
+              </label>
+            )}
           </div>
         </div>
         <div>
@@ -1090,7 +1122,7 @@ function Toolbar() {
             Basemap{' '}
           </button>
           <div
-            css={floatContainerStyles(basemapVisible, '115px')}
+            css={floatContainerStyles(basemapVisible, '131px')}
             id="basemap-container"
           />
         </div>
@@ -1107,7 +1139,7 @@ function Toolbar() {
             <i className="esri-icon-legend" css={navIconStyles} />
             Legend{' '}
           </button>
-          <div css={legendStyles(legendVisible)} id="legend-container">
+          <div css={legendStyles(legendVisible, '13px')} id="legend-container">
             <div className="esri-layer-list__no-items">
               There are currently no items to display.
             </div>
@@ -1115,33 +1147,14 @@ function Toolbar() {
         </div>
         {oAuthInfo && (
           <button
-            css={toolBarButtonStyles('100px')}
+            css={toolBarButtonStyles('105px')}
             onClick={(ev) => {
               if (signedIn) {
                 IdentityManager.destroyCredentials();
                 setSignedIn(false);
                 setPortal(null);
               } else {
-                IdentityManager.getCredential(
-                  `${oAuthInfo.portalUrl}/sharing`,
-                  {
-                    oAuthPopupConfirmation: false,
-                  },
-                )
-                  .then(() => {
-                    setSignedIn(true);
-
-                    const portal = new Portal();
-                    portal.authMode = 'immediate';
-                    portal.load().then(() => {
-                      setPortal(portal);
-                    });
-                  })
-                  .catch((err) => {
-                    console.error(err);
-                    setSignedIn(false);
-                    setPortal(null);
-                  });
+                signIn();
               }
             }}
           >
