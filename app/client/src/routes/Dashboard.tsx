@@ -593,6 +593,8 @@ function Dashboard() {
             id: layerUuid,
             graphics: graphicsList,
             title: layerName,
+            visible: displayGeometryType === 'polygons',
+            listMode: displayGeometryType === 'polygons' ? 'show' : 'hide',
           });
 
           // convert the polygon graphics into points
@@ -613,16 +615,16 @@ function Dashboard() {
             id: layerUuid + '-points',
             graphics: pointGraphics,
             title: layerName,
-            visible: false,
-            listMode: 'hide',
+            visible: displayGeometryType === 'points',
+            listMode: displayGeometryType === 'points' ? 'show' : 'hide',
           });
 
           const hybridLayer = new GraphicsLayer({
             id: layerUuid + '-hybrid',
             graphics: hybridGraphics,
             title: layerName,
-            visible: false,
-            listMode: 'hide',
+            visible: displayGeometryType === 'hybrid',
+            listMode: displayGeometryType === 'hybrid' ? 'show' : 'hide',
           });
 
           planLayer.addMany([graphicsLayer, pointsLayer, hybridLayer]);
