@@ -162,7 +162,8 @@ async function calculateArea(
  * @returns false if all z values are the same and true if any are different
  */
 export function hasDifferingZ(graphic: __esri.Graphic) {
-  if (!graphic || graphic.geometry.type !== 'polygon') return false;
+  if (!graphic || !graphic.geometry || graphic.geometry.type !== 'polygon')
+    return false;
 
   const poly = graphic.geometry as __esri.Polygon;
   const firstCoordinate = poly.rings?.[0]?.[0];
@@ -1377,7 +1378,7 @@ export function convertToPoint(polygon: __esri.Graphic) {
   // build the graphic
   return new Graphic({
     attributes: polygon.attributes,
-    geometry: (polygon.geometry as any).centroid,
+    geometry: (polygon.geometry as any)?.centroid,
     popupTemplate: polygon.popupTemplate,
     symbol,
   });

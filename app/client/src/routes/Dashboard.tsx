@@ -18,6 +18,7 @@ import HighchartsReact from 'highcharts-react-official';
 import solidGauge from 'highcharts/modules/solid-gauge';
 import RGL, { WidthProvider } from 'react-grid-layout';
 import { AsyncPaginate, wrapMenuList } from 'react-select-async-paginate';
+import { v4 as uuidv4 } from 'uuid';
 import { css } from '@emotion/react';
 import { useWindowSize } from '@reach/window-size';
 import CSVLayer from '@arcgis/core/layers/CSVLayer';
@@ -507,11 +508,11 @@ function Dashboard() {
         for (const feature of layerFeatures.features) {
           // layerFeatures.features.forEach((feature: any) => {
           const graphic: any = Graphic.fromJSON(feature);
-          if (graphic.geometry) {
-            graphic.geometry.spatialReference = {
-              wkid: 3857,
-            };
-          }
+          if (!graphic?.geometry) continue;
+
+          graphic.geometry.spatialReference = {
+            wkid: 3857,
+          };
           graphic.popupTemplate = popupTemplate;
 
           const newGraphic: any = {
@@ -583,10 +584,13 @@ function Dashboard() {
           const layerName = firstAttributes.DECISIONUNIT
             ? firstAttributes.DECISIONUNIT
             : scenarioName;
+          const layerUuid = firstAttributes.DECISIONUNITUUID
+            ? firstAttributes.DECISIONUNITUUID
+            : uuidv4();
 
           // build the graphics layer
           const graphicsLayer = new GraphicsLayer({
-            id: firstAttributes.DECISIONUNITUUID,
+            id: layerUuid,
             graphics: graphicsList,
             title: layerName,
           });
@@ -596,6 +600,7 @@ function Dashboard() {
           let hybridGraphics: __esri.Graphic[] = [];
           graphicsList.forEach((graphicParams) => {
             const graphic = new Graphic(graphicParams);
+            if (!graphic?.geometry) return;
             pointGraphics.push(convertToPoint(graphic));
             hybridGraphics.push(
               graphic.attributes.ShapeType === 'point'
@@ -605,7 +610,7 @@ function Dashboard() {
           });
 
           const pointsLayer = new GraphicsLayer({
-            id: firstAttributes.DECISIONUNITUUID + '-points',
+            id: layerUuid + '-points',
             graphics: pointGraphics,
             title: layerName,
             visible: false,
@@ -613,7 +618,7 @@ function Dashboard() {
           });
 
           const hybridLayer = new GraphicsLayer({
-            id: firstAttributes.DECISIONUNITUUID + '-hybrid',
+            id: layerUuid + '-hybrid',
             graphics: hybridGraphics,
             title: layerName,
             visible: false,
