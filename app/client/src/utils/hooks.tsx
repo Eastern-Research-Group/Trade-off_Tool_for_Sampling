@@ -6,6 +6,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -105,10 +106,7 @@ export async function writeToStorage(
       description: message,
     });
 
-    window.logToGa('send', 'exception', {
-      exDescription: `${key}:${message}`,
-      exFatal: false,
-    });
+    window.logErrorToGa(`${key}:${message}`);
   }
 }
 
@@ -1146,7 +1144,11 @@ export function useDynamicPopup() {
   const { edits, setEdits, layers } = useContext(SketchContext);
   const layerProps = useLayerProps();
 
-  const getSampleTemplate = (feature: any, fieldInfos: FieldInfos) => {
+  const getSampleTemplate = (
+    feature: any,
+    fieldInfos: FieldInfos,
+    includeControls: boolean,
+  ) => {
     const content = (
       <MapPopup
         features={[feature]}
@@ -1155,6 +1157,7 @@ export function useDynamicPopup() {
         layers={layers}
         fieldInfos={fieldInfos}
         layerProps={layerProps}
+        includeControls={includeControls}
         onClick={handlePopupClick}
       />
     );
@@ -1179,16 +1182,19 @@ export function useDynamicPopup() {
   return function getPopupTemplate(
     type: LayerTypeName,
     includeContaminationFields: boolean = false,
+    includeControls: boolean = true,
   ) {
     if (type === 'Sampling Mask') {
       const actions = new Collection<any>();
-      actions.addMany([
-        {
-          title: 'Delete Decon Technology',
-          id: 'delete',
-          className: 'esri-icon-trash',
-        },
-      ]);
+      if (includeControls) {
+        actions.addMany([
+          {
+            title: 'Delete Decon Technology',
+            id: 'delete',
+            className: 'esri-icon-trash',
+          },
+        ]);
+      }
 
       return {
         title: '',
@@ -1276,28 +1282,59 @@ export function useDynamicPopup() {
       }
 
       const actions = new Collection<any>();
-      actions.addMany([
-        {
-          title: 'Delete Decon',
-          id: 'delete',
-          className: 'esri-icon-trash',
-        },
-        {
-          title: 'View In Table',
-          id: 'table',
-          className: 'esri-icon-table',
-        },
-      ]);
+      if (includeControls) {
+        actions.addMany([
+          {
+            title: 'Delete Decon',
+            id: 'delete',
+            className: 'esri-icon-trash',
+          },
+          {
+            title: 'View In Table',
+            id: 'table',
+            className: 'esri-icon-table',
+          },
+        ]);
+      }
 
       return {
         title: '',
-        content: (feature: any) => getSampleTemplate(feature, fieldInfos),
+        content: (feature: any) =>
+          getSampleTemplate(feature, fieldInfos, includeControls),
         actions,
       };
     }
 
     return {};
   };
+}
+
+// Used to abort fetch requests
+export function useAbort() {
+  const abortController = useRef(new AbortController());
+  const getAbortController = useCallback(() => {
+    if (abortController.current.signal.aborted) {
+      abortController.current = new AbortController();
+    }
+    return abortController.current;
+  }, []);
+
+  const abort = useCallback(() => {
+    getAbortController().abort();
+  }, [getAbortController]);
+
+  useEffect(() => {
+    return function cleanup() {
+      abortController.current.abort();
+    };
+  }, [getAbortController]);
+
+  const getSignal = useCallback(
+    () => getAbortController().signal,
+    [getAbortController],
+  );
+
+  return { abort, getSignal };
 }
 
 ///////////////////////////////////////////////////////////////////

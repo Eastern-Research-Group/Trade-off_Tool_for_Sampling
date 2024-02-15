@@ -81,6 +81,7 @@ type Props = {
   layers: LayerType[];
   fieldInfos: FieldInfos;
   layerProps: LookupFile;
+  includeControls?: boolean;
   onClick: (
     edits: EditsType,
     setEdits: Dispatch<SetStateAction<EditsType>>,
@@ -98,6 +99,7 @@ function MapPopup({
   layers,
   fieldInfos,
   layerProps,
+  includeControls = true,
   onClick,
 }: Props) {
   // initializes the note and graphicNote whenever the graphic selection changes
@@ -272,7 +274,7 @@ function MapPopup({
           <table className="esri-widget__table">
             <tbody>
               {fieldInfos.map((fieldInfo, index) => {
-                if (!showMore && index > 4) return null;
+                if (includeControls && !showMore && index > 4) return null;
 
                 return (
                   <tr key={index}>
@@ -287,16 +289,21 @@ function MapPopup({
               })}
             </tbody>
           </table>
-          <button css={linkButtonStyles} onClick={() => setShowMore(!showMore)}>
-            <i
-              css={iconStyles}
-              className={`fas fa-arrow-${showMore ? 'up' : 'down'}`}
-            />
-            Show {showMore ? 'Less' : 'More'}
-          </button>
+          {includeControls && (
+            <button
+              css={linkButtonStyles}
+              onClick={() => setShowMore(!showMore)}
+            >
+              <i
+                css={iconStyles}
+                className={`fas fa-arrow-${showMore ? 'up' : 'down'}`}
+              />
+              Show {showMore ? 'Less' : 'More'}
+            </button>
+          )}
         </div>
       )}
-      {activeLayer?.title !== 'Sketched Sampling Mask' && (
+      {includeControls && activeLayer?.title !== 'Sketched Sampling Mask' && (
         <Fragment>
           <div css={inputContainerStyles}>
             <label htmlFor="layer-change-select-input">Layer:</label>
@@ -462,8 +469,8 @@ function MapPopupSimple({ feature, fieldInfos }: MapPopupSimpleProps) {
                       {typeof value !== 'boolean'
                         ? value
                         : value
-                        ? 'Yes'
-                        : 'No'}
+                          ? 'Yes'
+                          : 'No'}
                     </td>
                   </tr>
                 );
