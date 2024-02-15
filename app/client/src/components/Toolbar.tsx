@@ -399,9 +399,9 @@ const floatContainerStyles = (containerVisible: boolean, right: string) => {
   `;
 };
 
-const legendStyles = (legendVisible: boolean) => {
+const legendStyles = (legendVisible: boolean, right: string) => {
   return css`
-    ${floatContainerStyles(legendVisible, '0')}
+    ${floatContainerStyles(legendVisible, right)}
 
     /* Hide/show the actions panel */
     .esri-layer-list__item-actions[hidden] {
@@ -961,7 +961,7 @@ function Toolbar({ isDashboard = false, map, mapView, sceneView }: Props) {
             <i className="esri-icon-settings2" css={navIconStyles} />
             Settings{' '}
           </button>
-          <div css={floatContainerStyles(settingsVisible, '223px')}>
+          <div css={floatContainerStyles(settingsVisible, '242px')}>
             <fieldset css={fieldsetStyles}>
               <legend>
                 Dimension
@@ -1122,7 +1122,7 @@ function Toolbar({ isDashboard = false, map, mapView, sceneView }: Props) {
             Basemap{' '}
           </button>
           <div
-            css={floatContainerStyles(basemapVisible, '115px')}
+            css={floatContainerStyles(basemapVisible, '131px')}
             id="basemap-container"
           />
         </div>
@@ -1139,7 +1139,7 @@ function Toolbar({ isDashboard = false, map, mapView, sceneView }: Props) {
             <i className="esri-icon-legend" css={navIconStyles} />
             Legend{' '}
           </button>
-          <div css={legendStyles(legendVisible)} id="legend-container">
+          <div css={legendStyles(legendVisible, '13px')} id="legend-container">
             <div className="esri-layer-list__no-items">
               There are currently no items to display.
             </div>
