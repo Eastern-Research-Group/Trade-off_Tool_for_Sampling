@@ -1,36 +1,25 @@
 /** @jsxImportSource @emotion/react */
 
-import {
-  Dispatch,
-  SetStateAction,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import { Dispatch, useCallback, useContext, useEffect, useState } from 'react';
+import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Point from '@arcgis/core/geometry/Point';
 import PopupTemplate from '@arcgis/core/PopupTemplate';
 import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 // contexts
-import { AuthenticationContext } from 'contexts/Authentication';
+import { DashboardContext, DashboardProjects } from 'contexts/Dashboard';
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // types
-import { LayerType, LayerTypeName } from 'types/Layer';
+import { LayerTypeName } from 'types/Layer';
 import { PolygonSymbol } from 'config/sampleAttributes';
 // utils
 import { useDynamicPopup, useGeometryTools } from 'utils/hooks';
 import {
-  deactivateButtons,
   deepCopyObject,
   generateUUID,
-  getCurrentDateTime,
   getPointSymbol,
   setZValues,
 } from 'utils/sketchUtils';
-import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
-import { DashboardContext, DashboardProjects } from 'contexts/Dashboard';
-import Graphic from '@arcgis/core/Graphic';
 
 let terrain3dUseElevationGlobal = true;
 
@@ -61,7 +50,6 @@ type Props = {
 };
 
 function MapSketchWidgetsDashboard({ mapView, sceneView }: Props) {
-  const { userInfo } = useContext(AuthenticationContext);
   const { currentPanel } = useContext(NavigationContext);
   const {
     aoiSketchVMDashboard,
