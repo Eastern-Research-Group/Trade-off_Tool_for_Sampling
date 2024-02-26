@@ -130,10 +130,10 @@ const sourceEnum = {
   X: 'HAZUS/NSI-2015',
 };
 const stDamcatEnum = {
-  R: 'Residential',
-  C: 'Commercial',
-  I: 'Industrial',
-  P: 'Public',
+  RES: 'Residential',
+  COM: 'Commercial',
+  IND: 'Industrial',
+  PUB: 'Public',
 };
 
 type LayerGraphics = {
@@ -1792,20 +1792,20 @@ function AoiWrapper({
     aoiSketchVMDashboard.create('polygon');
   }
 
-  if (summaryData.status === 'fetching') return <LoadingSpinner />;
-  if (summaryData.status === 'failure') return <p>An error occurred!</p>;
-
-  if (summaryData.status === 'idle') {
-    return (
-      <div
-        css={css`
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          height: 100%;
-          width: 100%;
-        `}
-      >
+  if (summaryData.status === 'success') return children;
+  return (
+    <div
+      css={css`
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        width: 100%;
+      `}
+    >
+      {summaryData.status === 'fetching' && <LoadingSpinner />}
+      {summaryData.status === 'failure' && <p>An error occurred!</p>}
+      {summaryData.status === 'idle' && (
         <button
           onClick={() => {
             sketchAoiButtonClick();
@@ -1814,11 +1814,9 @@ function AoiWrapper({
         >
           Draw AOI
         </button>
-      </div>
-    );
-  }
-
-  return children;
+      )}
+    </div>
+  );
 }
 
 /*

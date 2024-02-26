@@ -69,7 +69,12 @@ import {
   getSketchableLayers,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import { activateSketchButton, createErrorObject, getLayerName, getScenarioName } from 'utils/utils';
+import {
+  activateSketchButton,
+  createErrorObject,
+  getLayerName,
+  getScenarioName,
+} from 'utils/utils';
 // styles
 import { reactSelectStyles } from 'styles';
 
@@ -103,10 +108,10 @@ const sourceEnum = {
   X: 'HAZUS/NSI-2015',
 };
 const stDamcatEnum = {
-  R: 'Residential',
-  C: 'Commercial',
-  I: 'Industrial',
-  P: 'Public',
+  RES: 'Residential',
+  COM: 'Commercial',
+  IND: 'Industrial',
+  PUB: 'Public',
 };
 
 function handleEnum(value: string, obj: any) {
