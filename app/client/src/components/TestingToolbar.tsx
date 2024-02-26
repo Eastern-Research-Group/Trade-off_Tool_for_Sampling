@@ -3,6 +3,7 @@
 import React, { Fragment, useContext } from 'react';
 import { css } from '@emotion/react';
 // contexts
+import { DashboardContext } from 'contexts/Dashboard';
 import { SketchContext } from 'contexts/Sketch';
 
 const toolbarStyles = css`
@@ -18,16 +19,10 @@ const buttonStyles = css`
 `;
 
 function TestingToolbar() {
-  const {
-    layers,
-    map,
-    mapDashboard,
-    mapView,
-    mapViewDashboard,
-    sceneView,
-    sceneViewDashboard,
-    sketchVM,
-  } = useContext(SketchContext);
+  const { mapDashboard, mapViewDashboard, sceneViewDashboard } =
+    useContext(DashboardContext);
+  const { layers, map, mapView, sceneView, sketchVM } =
+    useContext(SketchContext);
 
   return (
     <div css={toolbarStyles}>

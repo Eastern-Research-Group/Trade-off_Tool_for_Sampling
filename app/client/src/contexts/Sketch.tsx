@@ -69,22 +69,12 @@ type SketchType = {
   setAoiSketchLayer: Dispatch<SetStateAction<LayerType | null>>;
   map: __esri.Map | null;
   setMap: Dispatch<SetStateAction<__esri.Map | null>>;
-  mapDashboard: __esri.Map | null;
-  setMapDashboard: Dispatch<SetStateAction<__esri.Map | null>>;
   mapView: __esri.MapView | null;
   setMapView: Dispatch<SetStateAction<__esri.MapView | null>>;
-  mapViewDashboard: __esri.MapView | null;
-  setMapViewDashboard: Dispatch<SetStateAction<__esri.MapView | null>>;
   sceneView: __esri.SceneView | null;
   setSceneView: Dispatch<SetStateAction<__esri.SceneView | null>>;
-  sceneViewDashboard: __esri.SceneView | null;
-  setSceneViewDashboard: Dispatch<SetStateAction<__esri.SceneView | null>>;
   sceneViewForArea: __esri.SceneView | null;
   setSceneViewForArea: Dispatch<SetStateAction<__esri.SceneView | null>>;
-  sceneViewForAreaDashboard: __esri.SceneView | null;
-  setSceneViewForAreaDashboard: Dispatch<
-    SetStateAction<__esri.SceneView | null>
-  >;
   selectedSampleIds: SelectedSampleType[];
   setSelectedSampleIds: Dispatch<SetStateAction<SelectedSampleType[]>>;
   selectedScenario: ScenarioEditsType | null;
@@ -154,20 +144,12 @@ export const SketchContext = createContext<SketchType>({
   setAoiSketchLayer: () => {},
   map: null,
   setMap: () => {},
-  mapDashboard: null,
-  setMapDashboard: () => {},
   mapView: null,
   setMapView: () => {},
-  mapViewDashboard: null,
-  setMapViewDashboard: () => {},
   sceneView: null,
   setSceneView: () => {},
-  sceneViewDashboard: null,
-  setSceneViewDashboard: () => {},
   sceneViewForArea: null,
   setSceneViewForArea: () => {},
-  sceneViewForAreaDashboard: null,
-  setSceneViewForAreaDashboard: () => {},
   sketchVM: null,
   setSketchVM: () => {},
   aoiSketchVM: null,
@@ -243,16 +225,9 @@ export function SketchProvider({ children }: Props) {
   const [homeWidget, setHomeWidget] = useState<HomeWidgetType | null>(null);
   const [symbolsInitialized, setSymbolsInitialized] = useState(false);
   const [map, setMap] = useState<__esri.Map | null>(null);
-  const [mapDashboard, setMapDashboard] = useState<__esri.Map | null>(null);
   const [mapView, setMapView] = useState<__esri.MapView | null>(null);
-  const [mapViewDashboard, setMapViewDashboard] =
-    useState<__esri.MapView | null>(null);
   const [sceneView, setSceneView] = useState<__esri.SceneView | null>(null);
-  const [sceneViewDashboard, setSceneViewDashboard] =
-    useState<__esri.SceneView | null>(null);
   const [sceneViewForArea, setSceneViewForArea] =
-    useState<__esri.SceneView | null>(null);
-  const [sceneViewForAreaDashboard, setSceneViewForAreaDashboard] =
     useState<__esri.SceneView | null>(null);
   const [selectedSampleIds, setSelectedSampleIds] = useState<
     SelectedSampleType[]
@@ -423,20 +398,12 @@ export function SketchProvider({ children }: Props) {
         setAoiSketchLayer,
         map,
         setMap,
-        mapDashboard,
-        setMapDashboard,
         mapView,
         setMapView,
-        mapViewDashboard,
-        setMapViewDashboard,
         sceneView,
         setSceneView,
-        sceneViewDashboard,
-        setSceneViewDashboard,
         sceneViewForArea,
         setSceneViewForArea,
-        sceneViewForAreaDashboard,
-        setSceneViewForAreaDashboard,
         sketchVM,
         setSketchVM,
         aoiSketchVM,

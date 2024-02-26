@@ -2,6 +2,7 @@
 
 import React, {
   Fragment,
+  ReactNode,
   useCallback,
   useContext,
   useEffect,
@@ -13,9 +14,7 @@ import { debounce } from 'lodash';
 import Highcharts from 'highcharts';
 import highchartsAccessibility from 'highcharts/modules/accessibility';
 import highchartsExporting from 'highcharts/modules/exporting';
-import highchartsMore from 'highcharts/highcharts-more';
 import HighchartsReact from 'highcharts-react-official';
-import solidGauge from 'highcharts/modules/solid-gauge';
 import RGL, { WidthProvider } from 'react-grid-layout';
 import { AsyncPaginate, wrapMenuList } from 'react-select-async-paginate';
 import { v4 as uuidv4 } from 'uuid';
@@ -33,17 +32,25 @@ import Portal from '@arcgis/core/portal/Portal';
 import PortalItem from '@arcgis/core/portal/PortalItem';
 import Viewpoint from '@arcgis/core/Viewpoint';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
+import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 import * as rendererJsonUtils from '@arcgis/core/renderers/support/jsonUtils';
 // components
 import MapDashboard from 'components/MapDashboard';
+import { buildingMapPopup } from 'components/MapPopup';
 import { MenuList as CustomMenuList } from 'components/MenuList';
 import Toolbar from 'components/Toolbar';
 import TestingToolbar from 'components/TestingToolbar';
 // contexts
 import { AuthenticationContext } from 'contexts/Authentication';
 import { settingDefaults } from 'contexts/Calculate';
+import {
+  DashboardContext,
+  DashboardProjects,
+  DashboardProvider,
+  Option,
+} from 'contexts/Dashboard';
 import { DialogContext } from 'contexts/Dialog';
-import { useLayerProps } from 'contexts/LookupFiles';
+import { useLayerProps, useServicesContext } from 'contexts/LookupFiles';
 import { SketchContext } from 'contexts/Sketch';
 // utilities
 import {
@@ -59,7 +66,7 @@ import {
   convertToPoint,
   getSimplePopupTemplate,
 } from 'utils/sketchUtils';
-import { isAbort } from 'utils/utils';
+import { createErrorObject, isAbort } from 'utils/utils';
 // types
 import { Attributes, DefaultSymbolsType } from 'config/sampleAttributes';
 import { AttributesType } from 'types/Publish';
@@ -70,17 +77,82 @@ import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import LoadingSpinner from 'components/LoadingSpinner';
 // styles
 import { linkButtonStyles } from 'styles';
+import { ErrorType, LookupFile } from 'types/Misc';
+import { proxyFetch } from 'utils/fetchUtils';
+import Point from '@arcgis/core/geometry/Point';
+import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 
 // add features for highcharts
 highchartsAccessibility(Highcharts);
 highchartsExporting(Highcharts);
-highchartsMore(Highcharts);
-solidGauge(Highcharts);
 
 const ReactGridLayout = WidthProvider(RGL);
 
+const numCols = 4;
+const numRows = 4;
+
+const defaultNsiSummary: NsiSummaryType = {
+  numBuildings: 0,
+  avgSquareFootage: 0,
+  totalSquareFootage: 0,
+  medianYearBuilt: 0,
+  buildingCat: {},
+  materialCat: {},
+};
+
+const bldgTypeEnum = {
+  M: 'Masonry',
+  W: 'Wood',
+  H: 'Manufactured',
+  S: 'Steel',
+};
+const foundTypeEnum = {
+  C: 'Crawl',
+  B: 'Basement',
+  S: 'Slab',
+  P: 'Pier',
+  I: 'Pile',
+  F: 'Fill',
+  W: 'Solid Wall',
+};
+const ftprntsrcEnum = {
+  B: 'Bing',
+  O: 'Oak Ridge National Labs',
+  N: 'National Geospatial-Intelligence Agency',
+  M: 'Map Building Layer',
+};
+const sourceEnum = {
+  P: 'Parcel',
+  E: 'ESRI',
+  H: 'HIFLD Hospital',
+  N: 'HIFLD Nursing Home',
+  S: 'National Center for Education Statistics',
+  X: 'HAZUS/NSI-2015',
+};
+const stDamcatEnum = {
+  R: 'Residential',
+  C: 'Commercial',
+  I: 'Industrial',
+  P: 'Public',
+};
+
 type LayerGraphics = {
   [key: string]: __esri.Graphic[];
+};
+
+type NsiSummaryType = {
+  numBuildings: number;
+  avgSquareFootage: number;
+  totalSquareFootage: number;
+  medianYearBuilt: number;
+  buildingCat: { [key: string]: number };
+  materialCat: { [key: string]: number };
+};
+
+type NsiSummaryStatusType = {
+  status: 'idle' | 'fetching' | 'success' | 'failure';
+  data: NsiSummaryType;
+  error?: ErrorType;
 };
 
 function appendToQuery(query: string, part: string, separator: string = 'AND') {
@@ -90,6 +162,199 @@ function appendToQuery(query: string, part: string, separator: string = 'AND') {
   // append the query part
   if (query.length > 0) return `${query} ${separator} (${part})`;
   else return `(${part})`;
+}
+
+function findMedian(arr: number[]) {
+  arr.sort((a, b) => a - b);
+  const middleIndex = Math.floor(arr.length / 2);
+
+  if (arr.length % 2 === 0) {
+    return (arr[middleIndex - 1] + arr[middleIndex]) / 2;
+  } else {
+    return arr[middleIndex];
+  }
+}
+
+function handleEnum(value: string, obj: any) {
+  return obj.hasOwnProperty(value) ? obj[value] : value;
+}
+
+function incrementCategory(
+  object: { [key: string]: number },
+  category: string,
+) {
+  const value = object[category];
+  object[category] = value ? value + 1 : 1;
+}
+
+async function loadAoiData(
+  aoiSketchLayerDashboard: __esri.GraphicsLayer | null,
+  plan: Option,
+  dashboardProjects: DashboardProjects,
+  setNsiSummaryData: React.Dispatch<React.SetStateAction<NsiSummaryStatusType>>,
+  services: LookupFile,
+  mapDashboard: __esri.Map,
+) {
+  if (!aoiSketchLayerDashboard) return;
+
+  try {
+    const project = dashboardProjects.projects.find((p) => p.id === plan.value);
+    console.log('dashboardProjects: ', dashboardProjects);
+    console.log('project: ', project);
+
+    aoiSketchLayerDashboard.graphics.removeAll();
+    if (project) {
+      setNsiSummaryData({
+        status: 'fetching',
+        data: defaultNsiSummary,
+      });
+
+      console.log('project.aoiGraphics: ', project.aoiGraphics);
+      const newGraphics = project.aoiGraphics.map((g) => {
+        return Graphic.fromJSON(g);
+      });
+      console.log('newGraphics: ', newGraphics);
+      aoiSketchLayerDashboard.graphics.addMany(newGraphics);
+
+      const features: any[] = [];
+      aoiSketchLayerDashboard.graphics.forEach((graphic) => {
+        const geometry = graphic.geometry as __esri.Polygon;
+
+        const dim1Rings: number[][][] = [];
+        geometry.rings.forEach((dim1) => {
+          const dim2Rings: number[][] = [];
+          dim1.forEach((dim2) => {
+            const point = new Point({
+              spatialReference: {
+                wkid: 102100,
+              },
+              x: dim2[0],
+              y: dim2[1],
+            });
+
+            dim2Rings.push([point.longitude, point.latitude]);
+          });
+
+          dim1Rings.push(dim2Rings);
+        });
+
+        features.push({
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'Polygon',
+            coordinates: dim1Rings,
+          },
+        });
+      });
+
+      const params = {
+        type: 'FeatureCollection',
+        features,
+      };
+
+      // call NSI service for building data
+      const results: any = await proxyFetch(
+        `${services.data.nsi}/structures?fmt=fc`,
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify(params),
+        },
+      );
+
+      const graphics: __esri.Graphic[] = [];
+      const nsiSummaryData: NsiSummaryType = { ...defaultNsiSummary };
+      const yearsBuilt: number[] = [];
+      results.features.forEach((feature: any) => {
+        // const { bldgtype, found_type, ftprntsrc, source, st_damcat } =
+        const props = feature.properties;
+
+        const bldgtype = handleEnum(props.bldgtype, bldgTypeEnum);
+        const found_type = handleEnum(props.found_type, foundTypeEnum);
+        const ftprntsrc = handleEnum(props.ftprntsrc, ftprntsrcEnum);
+        const source = handleEnum(props.source, sourceEnum);
+        const st_damcat = handleEnum(props.st_damcat, stDamcatEnum);
+        graphics.push(
+          new Graphic({
+            attributes: {
+              ...feature.properties,
+              bldgtype,
+              found_type,
+              ftprntsrc,
+              source,
+              st_damcat,
+            },
+            geometry: new Point({
+              longitude: feature.geometry.coordinates[0],
+              latitude: feature.geometry.coordinates[1],
+              spatialReference: {
+                wkid: 102100,
+              },
+            }),
+            symbol: new TextSymbol({
+              text: '\ue687',
+              color: 'blue',
+              yoffset: -13,
+              font: {
+                family: 'CalciteWebCoreIcons',
+                size: 24,
+              },
+            }),
+            popupTemplate: {
+              title: '',
+              content: buildingMapPopup,
+            },
+          }),
+        );
+
+        const { med_yr_blt, sqft } = props;
+        yearsBuilt.push(med_yr_blt);
+        nsiSummaryData.numBuildings += 1;
+        nsiSummaryData.totalSquareFootage += sqft;
+        incrementCategory(nsiSummaryData.buildingCat, st_damcat);
+        incrementCategory(nsiSummaryData.materialCat, bldgtype);
+      });
+
+      nsiSummaryData.avgSquareFootage =
+        nsiSummaryData.totalSquareFootage / nsiSummaryData.numBuildings;
+      nsiSummaryData.medianYearBuilt = findMedian(yearsBuilt);
+      setNsiSummaryData({
+        status: 'success',
+        data: nsiSummaryData,
+      });
+
+      if (mapDashboard && graphics.length > 0) {
+        const graphicsLayer = new GraphicsLayer({
+          id: 'buildingLayer',
+          title: 'Buildings',
+          visible: true,
+          listMode: 'show',
+          graphics,
+        });
+        mapDashboard.add(graphicsLayer);
+      }
+    } else {
+      setNsiSummaryData({
+        status: 'idle',
+        data: defaultNsiSummary,
+      });
+    }
+  } catch (ex: any) {
+    console.error(ex);
+    setNsiSummaryData({
+      status: 'failure',
+      data: defaultNsiSummary,
+      error: {
+        error: createErrorObject(ex),
+        message: ex.message,
+      },
+    });
+
+    window.logErrorToGa(ex);
+  }
 }
 
 function roundNumber(num: number) {
@@ -102,21 +367,26 @@ function Dashboard() {
     AuthenticationContext,
   );
   const {
+    dashboardProjects,
+    mapDashboard,
+    mapViewDashboard,
+    sceneViewDashboard,
+    sceneViewForAreaDashboard,
+    aoiSketchLayerDashboard,
+    selectedDashboardProject,
+    setSelectedDashboardProject,
+  } = useContext(DashboardContext);
+  const {
     defaultSymbols,
     displayDimensions,
     displayGeometryType,
     homeWidget,
-    layers,
-    mapDashboard,
-    mapViewDashboard,
     sampleAttributes,
-    sceneViewDashboard,
-    sceneViewForAreaDashboard,
-    selectedScenario,
   } = useContext(SketchContext);
   useSessionStorage();
   const layerProps = useLayerProps();
   const getPopupTemplate = useDynamicPopup();
+  const services = useServicesContext();
 
   const { height, width } = useWindowSize();
 
@@ -150,6 +420,18 @@ function Dashboard() {
     resizeObserver.observe(node);
   }, []);
 
+  const [mapHeight, setMapHeight] = useState(0);
+  const mapRef = useCallback((node: HTMLDivElement) => {
+    if (!node) return;
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (entries[0]) {
+        const { height } = entries[0].contentRect;
+        setMapHeight(height);
+      }
+    });
+    resizeObserver.observe(node);
+  }, []);
+
   const [
     sizeCheckInitialized,
     setSizeCheckInitialized, //
@@ -177,8 +459,6 @@ function Dashboard() {
     const clientHeight = totsRef.current.clientHeight;
     if (contentHeight !== clientHeight) setContentHeight(clientHeight);
   }, [contentHeight, height, totsRef, width]);
-
-  const [selectedPlan, setSelectedPlan] = useState<Option | null>(null);
 
   // Create the filter function from the HOF
   const filterFunc: FilterFunction = useMemo(() => {
@@ -265,36 +545,15 @@ function Dashboard() {
     };
   }
 
-  // count the number of samples
-  const sampleData: any[] = [];
-  layers.forEach((layer) => {
-    if (!layer.sketchLayer || layer.sketchLayer.type === 'feature') return;
-    if (layer?.parentLayer?.id !== selectedScenario?.layerId) return;
-    if (layer.layerType === 'Samples' || layer.layerType === 'VSP') {
-      const graphics = layer.sketchLayer.graphics.toArray();
-      graphics.sort((a, b) =>
-        a.attributes.PERMANENT_IDENTIFIER.localeCompare(
-          b.attributes.PERMANENT_IDENTIFIER,
-        ),
-      );
-      graphics.forEach((sample) => {
-        sampleData.push({
-          graphic: sample,
-          ...sample.attributes,
-        });
-      });
-    }
-  });
-
-  async function loadPlan(selectedPlan: Option) {
-    if (!selectedPlan || !portal || !mapDashboard) return;
+  async function loadPlan(selectedDashboardProject: Option) {
+    if (!selectedDashboardProject || !portal || !mapDashboard) return;
 
     const tempPortal = portal as any;
     const token = tempPortal.credential.token;
 
     // get the list of feature layers in this feature server
     const featureLayersRes: any = await getFeatureLayers(
-      selectedPlan.url,
+      selectedDashboardProject.url,
       token,
     );
 
@@ -337,7 +596,11 @@ function Dashboard() {
     ];
     resCombined.forEach((layer: any) => {
       // get the layer details promise
-      const layerCall = getFeatureLayer(selectedPlan.url, token, layer.id);
+      const layerCall = getFeatureLayer(
+        selectedDashboardProject.url,
+        token,
+        layer.id,
+      );
       layerPromises.push(layerCall);
     });
 
@@ -350,7 +613,7 @@ function Dashboard() {
       // get the layer features promise
       const featuresCall = getAllFeatures(
         portal,
-        selectedPlan.url + '/' + layerDetails.id,
+        selectedDashboardProject.url + '/' + layerDetails.id,
         layerDetails.objectIdField,
       );
       featurePromises.push(featuresCall);
@@ -387,8 +650,8 @@ function Dashboard() {
     const popupTemplate = getPopupTemplate('Samples', false, false);
 
     const planLayer = new GroupLayer({
-      title: selectedPlan.label,
-      id: selectedPlan.value,
+      title: selectedDashboardProject.label,
+      id: selectedDashboardProject.value,
     });
 
     const layersToAdd: __esri.Layer[] = [];
@@ -453,7 +716,7 @@ function Dashboard() {
           planLayer.tables.add(
             new FeatureLayer({
               title: layerDetails.name,
-              url: `${selectedPlan.url}/${layerDetails.id}`,
+              url: `${selectedDashboardProject.url}/${layerDetails.id}`,
             }),
           );
 
@@ -681,11 +944,12 @@ function Dashboard() {
     }
 
     // get the age of the layer in seconds
-    const created: number = new Date(selectedPlan.created).getTime();
+    const created: number = new Date(
+      selectedDashboardProject.created,
+    ).getTime();
     const curTime: number = Date.now();
     const duration = (curTime - created) / 1000;
 
-    mapDashboard.removeAll();
     layersToAdd.push(planLayer);
     mapDashboard.layers.addMany(layersToAdd);
 
@@ -719,7 +983,7 @@ function Dashboard() {
       setOptions({
         title: 'No Data',
         ariaLabel: 'No Data',
-        description: `The "${selectedPlan.label}" layer was recently added and currently does not have any data. This could be due to a delay in processing the new data. Please try again later.`,
+        description: `The "${selectedDashboardProject.label}" layer was recently added and currently does not have any data. This could be due to a delay in processing the new data. Please try again later.`,
         // onCancel: () => setStatus('no-data'), // TODO
       });
     }
@@ -729,9 +993,24 @@ function Dashboard() {
 
   const [planCalculations, setPlanCalculations] = useState<any>(null);
   async function refreshData(plan: Option) {
+    if (!mapDashboard) return;
     setStatus('fetching');
 
     try {
+      const layersToRemove = mapDashboard.layers
+        .filter((l) => l.id !== 'aoi-mask')
+        .toArray();
+
+      mapDashboard.removeMany(layersToRemove);
+
+      const aoiPromise = loadAoiData(
+        aoiSketchLayerDashboard,
+        plan,
+        dashboardProjects,
+        setNsiSummaryData,
+        services,
+        mapDashboard,
+      );
       const planLayer = await loadPlan(plan);
 
       if (planLayer && sceneViewForAreaDashboard) {
@@ -771,6 +1050,8 @@ function Dashboard() {
         setPlanCalculations(output);
       }
 
+      await aoiPromise;
+
       setStatus('success');
     } catch (ex) {
       console.error(ex);
@@ -779,16 +1060,41 @@ function Dashboard() {
     }
   }
 
+  const [nsiSummaryData, setNsiSummaryData] = useState<NsiSummaryStatusType>({
+    status: 'idle',
+    data: defaultNsiSummary,
+  });
+
+  useEffect(() => {
+    if (!mapDashboard || !selectedDashboardProject) return;
+
+    loadAoiData(
+      aoiSketchLayerDashboard,
+      selectedDashboardProject,
+      dashboardProjects,
+      setNsiSummaryData,
+      services,
+      mapDashboard,
+    );
+  }, [
+    aoiSketchLayerDashboard,
+    selectedDashboardProject,
+    dashboardProjects,
+    setNsiSummaryData,
+    services,
+    mapDashboard,
+  ]);
+
   useEffect(() => {
     console.log('planCalculations: ', planCalculations);
   }, [planCalculations]);
 
   useEffect(() => {
-    if (!mapDashboard || !selectedPlan) return;
+    if (!mapDashboard || !selectedDashboardProject) return;
 
     // Loop through the layers and switch between point/polygon representations
     const tmpLayer = mapDashboard.layers.find(
-      (l) => l.id === selectedPlan.value,
+      (l) => l.id === selectedDashboardProject.value,
     );
     if (!tmpLayer || tmpLayer.type !== 'group') return;
 
@@ -831,7 +1137,22 @@ function Dashboard() {
         }
       }
     });
-  }, [displayGeometryType, mapDashboard, selectedPlan]);
+  }, [displayGeometryType, mapDashboard, selectedDashboardProject]);
+
+  const [sketchWatcher, setSketchWatcher] = useState<IHandle | null>(null);
+  useEffect(() => {
+    if (sketchWatcher || !aoiSketchLayerDashboard) return;
+
+    console.log('setup watcher...');
+    setSketchWatcher(
+      reactiveUtils.watch(
+        () => (aoiSketchLayerDashboard.graphics as any).items,
+        () => {
+          console.log('graphics changed...');
+        },
+      ),
+    );
+  }, [aoiSketchLayerDashboard, sketchWatcher]);
 
   const [layerToDeleteId, setLayerToDeleteId] = useState(-1);
 
@@ -840,32 +1161,77 @@ function Dashboard() {
       i: 'a',
       x: 0,
       y: 0,
-      w: 1,
+      w: 2,
       h: 1,
       static: true,
-      contents: <CostsChart planCalculations={planCalculations} />,
+      contents: (
+        <AoiWrapper summaryData={nsiSummaryData}>
+          <BuildingText summaryData={nsiSummaryData} />
+        </AoiWrapper>
+      ),
     },
     {
       i: 'b',
       x: 0,
       y: 1,
       w: 1,
-      h: 1,
+      h: 2,
       static: true,
-      contents: <Gauge planCalculations={planCalculations} />,
+      contents: (
+        <AoiWrapper summaryData={nsiSummaryData}>
+          <PieChart
+            data={nsiSummaryData.data.buildingCat}
+            title="Building Categorization Characterization"
+          />
+        </AoiWrapper>
+      ),
     },
     {
       i: 'c',
       x: 1,
-      y: 0,
+      y: 1,
       w: 1,
       h: 2,
       static: true,
       contents: (
-        <div id="tots-map-div" css={mapHeightStyles}>
-          <MapDashboard height={containerHeight - 33} />
+        <AoiWrapper summaryData={nsiSummaryData}>
+          <PieChart
+            data={nsiSummaryData.data.materialCat}
+            title="AOI Primary Structural Material Composition"
+          />
+        </AoiWrapper>
+      ),
+    },
+    {
+      i: 'd',
+      x: 0,
+      y: 3,
+      w: 2,
+      h: 1,
+      static: true,
+      contents: <CostsChart planCalculations={planCalculations} />,
+    },
+    {
+      i: 'e',
+      x: 2,
+      y: 0,
+      w: 2,
+      h: 3,
+      static: true,
+      contents: (
+        <div id="tots-map-div" ref={mapRef} css={mapHeightStyles}>
+          <MapDashboard height={mapHeight - 33} />
         </div>
       ),
+    },
+    {
+      i: 'f',
+      x: 2,
+      y: 3,
+      w: 2,
+      h: 1,
+      // static: true,
+      contents: <CostsChart planCalculations={planCalculations} />,
     },
   ];
   const originalGridLayout = layout.map((l) => {
@@ -917,7 +1283,8 @@ function Dashboard() {
                       menuPortalTarget={document.body}
                       onChange={(ev) => {
                         const plan = ev as Option;
-                        setSelectedPlan(plan);
+                        console.log('plan: ', plan);
+                        setSelectedDashboardProject(plan);
                         refreshData(plan);
                       }}
                       onMenuClose={abort}
@@ -936,14 +1303,14 @@ function Dashboard() {
                           color: '#71767a',
                         }),
                       }}
-                      value={selectedPlan}
+                      value={selectedDashboardProject}
                     />
-                    {selectedPlan && (
+                    {selectedDashboardProject && (
                       <button
                         css={refreshButtonStyles}
                         disabled={status === 'fetching'}
                         onClick={() => {
-                          refreshData(selectedPlan);
+                          refreshData(selectedDashboardProject);
                         }}
                       >
                         <i
@@ -975,12 +1342,16 @@ function Dashboard() {
                 />
                 <button
                   onClick={() => {
-                    if (layerToDeleteId === -1 || !portal || !selectedPlan)
+                    if (
+                      layerToDeleteId === -1 ||
+                      !portal ||
+                      !selectedDashboardProject
+                    )
                       return;
 
                     deleteFeatureLayer(
                       portal,
-                      selectedPlan.url,
+                      selectedDashboardProject.url,
                       layerToDeleteId,
                     );
 
@@ -999,8 +1370,8 @@ function Dashboard() {
             allowOverlap={true}
             layout={gridLayout}
             useCSSTransforms={true}
-            cols={2}
-            rowHeight={containerHeight / 2 - 20}
+            cols={numCols}
+            rowHeight={containerHeight / numRows - 20}
             width={containerWidth - 20}
           >
             {layout.map((item: any) => {
@@ -1025,8 +1396,8 @@ function Dashboard() {
                               i: item.i,
                               x: 0,
                               y: 0,
-                              w: 2,
-                              h: 2,
+                              w: numCols,
+                              h: numRows,
                               isDraggable: false,
                               isResizable: false,
                             },
@@ -1049,7 +1420,13 @@ function Dashboard() {
   );
 }
 
-export default Dashboard;
+export default function DashboardContainer() {
+  return (
+    <DashboardProvider>
+      <Dashboard />
+    </DashboardProvider>
+  );
+}
 
 const collapseIcon = (
   <svg
@@ -1078,6 +1455,85 @@ const expandIcon = (
     ></path>
   </svg>
 );
+
+function PieChart({
+  data,
+  title,
+}: {
+  data: { [key: string]: number };
+  title: string;
+}) {
+  Highcharts.setOptions({
+    plotOptions: {
+      series: {
+        animation: false,
+      },
+    },
+  });
+
+  const displayData: { name: string; y: number }[] = [];
+  Object.entries(data).forEach(([key, value]) => {
+    displayData.push({
+      name: key,
+      y: value,
+    });
+  });
+
+  return (
+    <HighchartsReact
+      highcharts={Highcharts}
+      containerProps={{ style: { height: '100%', width: '100%' } }}
+      options={{
+        chart: {
+          type: 'pie',
+        },
+        title: {
+          text: title,
+        },
+        tooltip: {
+          valueSuffix: '%',
+        },
+        subtitle: {
+          text: '',
+        },
+        plotOptions: {
+          series: {
+            allowPointSelect: true,
+            cursor: 'pointer',
+            dataLabels: [
+              {
+                enabled: true,
+                distance: 20,
+              },
+              {
+                enabled: true,
+                distance: -40,
+                format: '{point.percentage:.1f}%',
+                style: {
+                  fontSize: '1.2em',
+                  textOutline: 'none',
+                  opacity: 0.7,
+                },
+                filter: {
+                  operator: '>',
+                  property: 'percentage',
+                  value: 10,
+                },
+              },
+            ],
+          },
+        },
+        series: [
+          {
+            name: 'Percentage',
+            colorByPoint: true,
+            data: displayData,
+          },
+        ],
+      }}
+    />
+  );
+}
 
 function CostsChart({ planCalculations }: { planCalculations: any }) {
   if (planCalculations?.status !== 'success' || !planCalculations?.data)
@@ -1244,196 +1700,125 @@ function CostsChart({ planCalculations }: { planCalculations: any }) {
   );
 }
 
-function Gauge({ planCalculations }: { planCalculations: any }) {
-  if (planCalculations?.status !== 'success' || !planCalculations?.data)
-    return null;
-
-  Highcharts.setOptions({
-    plotOptions: {
-      series: {
-        animation: false,
-      },
-    },
-  });
+function BuildingText({ summaryData }: { summaryData: NsiSummaryStatusType }) {
+  const {
+    avgSquareFootage,
+    totalSquareFootage,
+    medianYearBuilt,
+    numBuildings,
+  } = summaryData.data;
 
   return (
-    <HighchartsReact
-      highcharts={Highcharts}
-      containerProps={{ style: { height: '100%', width: '100%' } }}
-      options={{
-        title: { text: 'Percent Sampling Complete' },
-        credits: { enabled: false },
-        chart: {
-          animation: false,
-          type: 'gauge',
-          // style: { fontFamily: fonts.primary },
-          // height: responsiveBarChartHeight,
-          plotBackgroundColor: null,
-          plotBorderWidth: null,
-          plotShadow: false,
-        },
-        // exporting: {
-        //   buttons: {
-        //     contextButton: {
-        //       menuItems: [
-        //         'downloadPNG',
-        //         'downloadJPEG',
-        //         'downloadPDF',
-        //         'downloadSVG',
-        //       ],
-        //       theme: {
-        //         fill: 'rgba(0, 0, 0, 0)',
-        //         states: {
-        //           hover: {
-        //             fill: 'rgba(0, 0, 0, 0)',
-        //           },
-        //           select: {
-        //             fill: 'rgba(0, 0, 0, 0)',
-        //             stroke: '#666666',
-        //           },
-        //         },
-        //       },
-        //     },
-        //   },
-        //   chartOptions: {
-        //     plotOptions: {
-        //       series: {
-        //         dataLabels: {
-        //           enabled: true,
-        //         },
-        //       },
-        //     },
-        //   },
-        //   // filename: `${activeState.label.replaceAll(
-        //   //   ' ',
-        //   //   '_',
-        //   // )}_Site_Specific`,
-        // },
-        // tooltip: {
-        //   //   formatter: function () {
-        //   //     return `${(this as any).key}<br/>
-        //   // ${(this as any).series.name}: <b>${(this as any).y.toLocaleString()}</b>`;
-        //   //   },
-        //   formatter: function () {
-        //     /* Build the 'header'.  Note that you can wrap this.x in something
-        //      * like Highcharts.dateFormat('%A, %b %e, %H:%M:%S', this.x)
-        //      * if you are dealing with a time series to display a more
-        //      * prettily-formatted date value.
-        //      */
-        //     let s = `${(this as any).key}<br/>`;
-
-        //     for (let i = 0; i < (this as any).points.length; i++) {
-        //       const myPoint = (this as any).points[i];
-        //       s +=
-        //         '<span style="color:' +
-        //         myPoint.series.color +
-        //         '">\u25CF</span>' +
-        //         myPoint.series.name +
-        //         ': ';
-
-        //       /* Need to check whether or not we are dealing with an
-        //        * area range plot and display a range if we are
-        //        */
-        //       s += '<strong>';
-        //       if (myPoint.point.low && myPoint.point.high) {
-        //         s +=
-        //           myPoint.point.low.toLocaleString() +
-        //           ' - ' +
-        //           myPoint.point.high.toLocaleString();
-        //       } else {
-        //         s += myPoint.y.toLocaleString();
-        //       }
-        //       s += '</strong>';
-        //     }
-
-        //     return s;
-        //   },
-        //   shared: true,
-        // },
-        pane: {
-          startAngle: -90,
-          endAngle: 89.9,
-          background: null,
-          center: ['50%', '75%'],
-          size: '110%',
-        },
-
-        // the value axis
-        yAxis: {
-          min: 0,
-          max: 100,
-          tickPixelInterval: 72,
-          tickPosition: 'inside',
-          // tickColor: Highcharts.defaultOptions.chart.backgroundColor || '#FFFFFF',
-          tickLength: 20,
-          tickWidth: 2,
-          minorTickInterval: null,
-          labels: {
-            distance: 20,
-            style: {
-              fontSize: '14px',
-            },
-          },
-          lineWidth: 0,
-          // plotBands: [{
-          //     from: 0,
-          //     to: 120,
-          //     color: '#55BF3B', // green
-          //     thickness: 20
-          // }, {
-          //     from: 120,
-          //     to: 160,
-          //     color: '#DDDF0D', // yellow
-          //     thickness: 20
-          // }, {
-          //     from: 160,
-          //     to: 200,
-          //     color: '#DF5353', // red
-          //     thickness: 20
-          // }]
-        },
-
-        series: [
-          {
-            name: 'Percent Complete',
-            data: [
-              Math.round(
-                (planCalculations.data['Sampling Material Cost'] /
-                  planCalculations.data['Total Sampling Cost']) *
-                  100,
-              ),
-            ],
-            tooltip: {
-              valueSuffix: ' %',
-            },
-            dataLabels: {
-              format: '{y} %',
-              borderWidth: 0,
-              color:
-                (Highcharts.defaultOptions.title &&
-                  Highcharts.defaultOptions.title.style &&
-                  Highcharts.defaultOptions.title.style.color) ||
-                '#333333',
-              style: {
-                fontSize: '16px',
-              },
-            },
-            dial: {
-              radius: '63%',
-              backgroundColor: 'gray',
-              baseWidth: 12,
-              baseLength: '0%',
-              rearLength: '0%',
-            },
-            pivot: {
-              backgroundColor: 'gray',
-              radius: 6,
-            },
-          },
-        ],
-      }}
-    />
+    <div
+      css={css`
+        height: 100%;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 50% 50%;
+        font-weight: bold;
+      `}
+    >
+      <div css={textStyles}>
+        <div css={text2Styles}>
+          <i className="fas fa-city" />
+          <span>Number of Buildings</span>
+        </div>
+        <span>{numBuildings.toLocaleString()}</span>
+      </div>
+      <div css={textStyles}>
+        <div css={text2Styles}>
+          <i className="fas fa-calculator" />
+          <span>Average Square Footage</span>
+        </div>
+        <span>{Math.round(avgSquareFootage).toLocaleString()} SF</span>
+      </div>
+      <div css={textStyles}>
+        <div css={text2Styles}>
+          <i className="fas fa-hourglass-half" />
+          <span>Median Year Built</span>
+        </div>
+        <span>{medianYearBuilt}</span>
+      </div>
+      <div css={textStyles}>
+        <div css={text2Styles}>
+          <i className="fas fa-ruler" />
+          <span>Total Square Footage</span>
+        </div>
+        <span>{Math.round(totalSquareFootage).toLocaleString()} SF</span>
+      </div>
+    </div>
   );
+}
+
+const textStyles = css`
+  display: flex;
+  justify-content: space-between;
+  color: #1f4e79;
+  margin: 10px;
+  align-items: center;
+  gap: 10px;
+`;
+
+const text2Styles = css`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+
+  i {
+    font-size: 24px;
+  }
+`;
+
+function AoiWrapper({
+  summaryData,
+  children,
+}: {
+  summaryData: NsiSummaryStatusType;
+  children: ReactNode;
+}) {
+  const { mapDashboard, aoiSketchLayerDashboard, aoiSketchVMDashboard } =
+    useContext(DashboardContext);
+
+  // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
+  // dropdown this will create an AOI layer. This also sets the sketchVM to use the
+  // selected AOI and triggers a React useEffect to allow the user to sketch on the map.
+  function sketchAoiButtonClick() {
+    if (!mapDashboard || !aoiSketchVMDashboard || !aoiSketchLayerDashboard)
+      return;
+
+    // let the user draw/place the shape
+    console.log('aoiSketchVMDashboard: ', aoiSketchVMDashboard);
+    console.log('layer: ', aoiSketchVMDashboard.layer);
+    aoiSketchVMDashboard.create('polygon');
+  }
+
+  if (summaryData.status === 'fetching') return <LoadingSpinner />;
+  if (summaryData.status === 'failure') return <p>An error occurred!</p>;
+
+  if (summaryData.status === 'idle') {
+    return (
+      <div
+        css={css`
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100%;
+          width: 100%;
+        `}
+      >
+        <button
+          onClick={() => {
+            sketchAoiButtonClick();
+            // setHasAoi(true);
+          }}
+        >
+          Draw AOI
+        </button>
+      </div>
+    );
+  }
+
+  return children;
 }
 
 /*
@@ -1511,10 +1896,3 @@ interface GroupBase<Option> {
   readonly options: readonly Option[];
   readonly label?: string;
 }
-
-type Option = {
-  created: string;
-  label: string;
-  value: string;
-  url: string;
-};

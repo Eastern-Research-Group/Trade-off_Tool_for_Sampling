@@ -69,7 +69,7 @@ import {
   getSketchableLayers,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import { createErrorObject, getLayerName, getScenarioName } from 'utils/utils';
+import { activateSketchButton, createErrorObject, getLayerName, getScenarioName } from 'utils/utils';
 // styles
 import { reactSelectStyles } from 'styles';
 
@@ -120,8 +120,6 @@ type ShapeTypeSelect = {
 
 type EditType = 'create' | 'edit' | 'clone' | 'view';
 
-const sketchSelectedClass = 'sketch-button-selected';
-
 const pointStyles: ShapeTypeSelect[] = [
   { value: 'circle', label: 'Circle' },
   { value: 'cross', label: 'Cross' },
@@ -160,36 +158,6 @@ function getSampleTypeName(
   }
 
   return newName;
-}
-
-function activateSketchButton(id: string) {
-  let wasSet = false;
-  const sketchButtons = document.getElementsByClassName('sketch-button');
-  for (let i = 0; i < sketchButtons.length; i++) {
-    const sketchButton = sketchButtons[i];
-
-    // make the button active if the id matches the provided id
-    if (sketchButton.id === id) {
-      // make the style of the button active
-      if (!sketchButton.classList.contains(sketchSelectedClass)) {
-        sketchButton.classList.add(sketchSelectedClass);
-        wasSet = true;
-      } else {
-        // toggle the button off
-        sketchButton.classList.remove(sketchSelectedClass);
-        const activeElm = document?.activeElement as any;
-        activeElm?.blur();
-      }
-      continue;
-    }
-
-    // remove the selected class from all other buttons
-    if (sketchButton.classList.contains(sketchSelectedClass)) {
-      sketchButton.classList.remove(sketchSelectedClass);
-    }
-  }
-
-  return wasSet;
 }
 
 // --- styles (SketchButton) ---
@@ -696,7 +664,7 @@ function LocateSamples() {
 
     try {
       // TODO - look into adding more queries here
-      const results: any = await await proxyFetch(
+      const results: any = await proxyFetch(
         `${services.data.nsi}/structures?fmt=fc`,
         {
           method: 'POST',

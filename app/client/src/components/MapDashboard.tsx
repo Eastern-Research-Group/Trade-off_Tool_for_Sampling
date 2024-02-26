@@ -13,9 +13,10 @@ import MapView from '@arcgis/core/views/MapView';
 import SceneView from '@arcgis/core/views/SceneView';
 // components
 import MapMouseEvents from 'components/MapMouseEvents';
+import MapSketchWidgetsDashboard from 'components/MapSketchWidgetsDashboard';
 import MapWidgets from 'components/MapWidgets';
 // contexts
-import { SketchContext } from 'contexts/Sketch';
+import { DashboardContext } from 'contexts/Dashboard';
 
 // --- styles (Map) ---
 const mapStyles = (height: number) => {
@@ -48,7 +49,7 @@ function Map({ height }: Props) {
     sceneViewDashboard,
     setSceneViewDashboard,
     setSceneViewForAreaDashboard,
-  } = useContext(SketchContext);
+  } = useContext(DashboardContext);
 
   // Creates the map and view
   useEffect(() => {
@@ -188,9 +189,14 @@ function Map({ height }: Props) {
   return (
     <Fragment>
       <div ref={mapRef} css={mapStyles(height)} data-testid="tots-map">
-        {mapViewDashboard && sceneViewDashboard && (
+        {mapDashboard && mapViewDashboard && sceneViewDashboard && (
           <Fragment>
+            <MapSketchWidgetsDashboard
+              mapView={mapViewDashboard}
+              sceneView={sceneViewDashboard}
+            />
             <MapWidgets
+              map={mapDashboard}
               mapView={mapViewDashboard}
               sceneView={sceneViewDashboard}
             />

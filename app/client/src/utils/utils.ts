@@ -174,3 +174,34 @@ export function isAbort(error: unknown) {
   if (!error || typeof error !== 'object' || !('name' in error)) return false;
   return (error as Error).name === 'AbortError';
 }
+
+export function activateSketchButton(id: string) {
+  const sketchSelectedClass = 'sketch-button-selected';
+  let wasSet = false;
+  const sketchButtons = document.getElementsByClassName('sketch-button');
+  for (let i = 0; i < sketchButtons.length; i++) {
+    const sketchButton = sketchButtons[i];
+
+    // make the button active if the id matches the provided id
+    if (sketchButton.id === id) {
+      // make the style of the button active
+      if (!sketchButton.classList.contains(sketchSelectedClass)) {
+        sketchButton.classList.add(sketchSelectedClass);
+        wasSet = true;
+      } else {
+        // toggle the button off
+        sketchButton.classList.remove(sketchSelectedClass);
+        const activeElm = document?.activeElement as any;
+        activeElm?.blur();
+      }
+      continue;
+    }
+
+    // remove the selected class from all other buttons
+    if (sketchButton.classList.contains(sketchSelectedClass)) {
+      sketchButton.classList.remove(sketchSelectedClass);
+    }
+  }
+
+  return wasSet;
+}

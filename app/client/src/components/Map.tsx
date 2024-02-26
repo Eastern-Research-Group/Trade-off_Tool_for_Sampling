@@ -15,6 +15,7 @@ import SceneView from '@arcgis/core/views/SceneView';
 import Viewpoint from '@arcgis/core/Viewpoint';
 // components
 import MapMouseEvents from 'components/MapMouseEvents';
+import MapSketchWidgets from 'components/MapSketchWidgets';
 import MapWidgets from 'components/MapWidgets';
 // contexts
 import { SketchContext } from 'contexts/Sketch';
@@ -225,9 +226,10 @@ function Map({ height }: Props) {
 
   return (
     <div ref={mapRef} css={mapStyles(height)} data-testid="tots-map">
-      {mapView && sceneView && (
+      {map && mapView && sceneView && (
         <Fragment>
-          <MapWidgets mapView={mapView} sceneView={sceneView} />
+          <MapWidgets map={map} mapView={mapView} sceneView={sceneView} />
+          <MapSketchWidgets mapView={mapView} sceneView={sceneView} />
           <MapMouseEvents mapView={mapView} sceneView={sceneView} />
         </Fragment>
       )}
