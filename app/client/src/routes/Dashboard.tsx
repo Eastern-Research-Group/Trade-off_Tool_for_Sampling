@@ -1307,6 +1307,7 @@ function Dashboard() {
                     />
                     {selectedDashboardProject && (
                       <button
+                        id="dashboard-refresh-button"
                         css={refreshButtonStyles}
                         disabled={status === 'fetching'}
                         onClick={() => {

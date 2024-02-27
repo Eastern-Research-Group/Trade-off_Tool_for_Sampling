@@ -37,7 +37,9 @@ import WMSLayer from '@arcgis/core/layers/WMSLayer';
 // components
 import MapPopup, { buildingMapPopup } from 'components/MapPopup';
 // contexts
+import { AuthenticationContext } from 'contexts/Authentication';
 import { CalculateContext } from 'contexts/Calculate';
+import { DashboardContext } from 'contexts/Dashboard';
 import { DialogContext, AlertDialogOptions } from 'contexts/Dialog';
 import { useLayerProps, useSampleTypesContext } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
@@ -2879,6 +2881,68 @@ function useDisplayModeStorage() {
   ]);
 }
 
+// Uses browser storage for holding the training mode selection.
+function useDashboardPlanStorage() {
+  const key = 'tots_dashboard_plan';
+
+  const { hasCheckedSignInStatus, portal, signedIn } = useContext(
+    AuthenticationContext,
+  );
+  const { setOptions } = useContext(DialogContext);
+  const {
+    dashboardProjects,
+    selectedDashboardProject,
+    setDashboardProjects,
+    setSelectedDashboardProject,
+  } = useContext(DashboardContext);
+
+  // Retreives training mode data from browser storage when the app loads
+  const [localTrainingModeInitialized, setLocalTrainingModeInitialized] =
+    useState(false);
+  useEffect(() => {
+    if (!hasCheckedSignInStatus || !portal || localTrainingModeInitialized)
+      return;
+
+    setLocalTrainingModeInitialized(true);
+
+    const trainingModeStr = readFromStorage(key);
+    if (!trainingModeStr) return;
+
+    const trainingMode = JSON.parse(trainingModeStr);
+    setSelectedDashboardProject(trainingMode.selectedDashboardProject);
+    setDashboardProjects(trainingMode.dashboardProjects);
+
+    // TODO - Need to find a better way to do this. Will need to refactor refresh button code
+    setTimeout(() => {
+      const refreshButton = document.getElementById('dashboard-refresh-button');
+      if (refreshButton) refreshButton.click();
+    }, 500);
+  }, [
+    localTrainingModeInitialized,
+    hasCheckedSignInStatus,
+    portal,
+    setDashboardProjects,
+    setSelectedDashboardProject,
+    signedIn,
+  ]);
+
+  useEffect(() => {
+    if (!localTrainingModeInitialized) return;
+
+    const dashboard: object = {
+      dashboardProjects,
+      selectedDashboardProject,
+    };
+
+    writeToStorage(key, dashboard, setOptions);
+  }, [
+    dashboardProjects,
+    selectedDashboardProject,
+    localTrainingModeInitialized,
+    setOptions,
+  ]);
+}
+
 // Saves/Retrieves data to browser storage
 export function useSessionStorage() {
   // useTrainingModeStorage();
@@ -2901,4 +2965,5 @@ export function useSessionStorage() {
   useTablePanelStorage();
   usePublishStorage();
   useDisplayModeStorage();
+  useDashboardPlanStorage();
 }
