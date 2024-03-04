@@ -7,7 +7,6 @@ import { DialogOverlay, DialogContent } from '@reach/dialog';
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import { EditCustomSampleTypesTable } from 'components/EditLayerMetaData';
 import InfoIcon from 'components/InfoIcon';
-import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 import { ReactTable, ReactTableEditable } from 'components/ReactTable';
 import Select from 'components/Select';
@@ -15,7 +14,10 @@ import ShowLessMore from 'components/ShowLessMore';
 import Switch from 'components/Switch';
 // contexts
 import { AuthenticationContext } from 'contexts/Authentication';
-import { PublishContext, defaultPlanAttributes } from 'contexts/Publish';
+import {
+  PublishContext,
+  defaultPlanAttributes,
+} from 'contexts/Publish';
 import { SketchContext } from 'contexts/Sketch';
 // types
 import { ScenarioEditsType } from 'types/Edits';
@@ -148,7 +150,7 @@ const nestedAccordionStyles = css`
 `;
 
 // --- components (ConfigureOutput) ---
-export function ConfigureOutputFull() {
+function ConfigureOutput() {
   const { signedIn } = useContext(AuthenticationContext);
   const {
     publishSamplesMode,
@@ -797,23 +799,6 @@ export function ConfigureOutputFull() {
   );
 }
 
-function ConfigureOutput() {
-  return (
-    <div css={panelContainer}>
-      <div>
-        <div css={sectionContainer}>
-          <h2>Configure Output</h2>
-          <MessageBox
-            severity="warning"
-            title="Feature Not Yet Available"
-            message="This feature is not available yet."
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // --- styles (GettingStarted) ---
 
 const overlayStyles = css`
@@ -1044,6 +1029,9 @@ function EditAttributePopup({
                 dataType.value === 'integer' ||
                 dataType.value === 'string')
             ) {
+              // filter out blank row of coded values
+              const codedValues = codes.filter((c) => c.id !== -1);
+
               if (domainType.value === 'range') {
                 domain = {
                   type: 'range',
@@ -1053,11 +1041,14 @@ function EditAttributePopup({
                   },
                   codedValues: null,
                 };
-              } else if (domainType.value === 'coded') {
+              } else if (
+                domainType.value === 'coded' &&
+                codedValues.length > 0
+              ) {
                 domain = {
                   type: 'coded',
                   range: null,
-                  codedValues: codes,
+                  codedValues,
                 };
               } else {
                 domain = {
@@ -1195,6 +1186,7 @@ function EditAttributePopup({
                 css={inputStyles}
                 value={length}
                 onChange={(ev) => setLength(Number(ev.target.value))}
+                required
               />
             </div>
           )}
@@ -1222,6 +1214,14 @@ function EditAttributePopup({
                 menuPosition={'fixed'}
                 menuPlacement={'bottom'}
               />
+              {/* This is a workaround for an issue where react-select does not
+                allow the required attribute to be passed in. */}
+              <input
+                css={hiddenInput}
+                aria-hidden="true"
+                value={domainType?.label}
+                required
+              />
 
               {domainType?.value === 'range' && (
                 <div css={rangeContainerStyles}>
@@ -1234,6 +1234,7 @@ function EditAttributePopup({
                       css={inputStyles}
                       value={min}
                       onChange={(ev) => setMin(Number(ev.target.value))}
+                      required
                     />
                   </div>
                   <div>
@@ -1245,6 +1246,7 @@ function EditAttributePopup({
                       css={inputStyles}
                       value={max}
                       onChange={(ev) => setMax(Number(ev.target.value))}
+                      required
                     />
                   </div>
                 </div>
@@ -1280,6 +1282,14 @@ function EditAttributePopup({
                         },
                       ];
                     }}
+                  />
+                  {/* This is a workaround for an issue where react-select does not
+                    allow the required attribute to be passed in. */}
+                  <input
+                    css={hiddenInput}
+                    aria-hidden="true"
+                    value={codes.filter((c) => c.id !== -1)[0]?.label}
+                    required
                   />
                 </div>
               )}

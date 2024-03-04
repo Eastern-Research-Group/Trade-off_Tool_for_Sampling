@@ -749,7 +749,7 @@ function EditCustomSampleTypesTable({
     const tmpPortal = portal ? portal : new Portal();
     tmpPortal
       .queryItems({
-        categories: ['contains-epa-tots-user-defined-sample-types'],
+        categories: ['contains-epa-tods-user-defined-decon-tech'],
         sortField: 'title',
         sortOrder: 'asc',
       })
