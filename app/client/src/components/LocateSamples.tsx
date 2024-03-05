@@ -1372,62 +1372,45 @@ function LocateSamples() {
               onClick={() => {
                 if (!sketchVM || !sketchLayer) return;
 
-                // make a copy of the edits context variable
-                const editsCopy = updateLayerEdits({
-                  edits,
-                  layer: sketchLayer,
-                  type: 'delete',
-                  changes: sketchVM[displayDimensions].layer.graphics,
-                });
+                // Figure out what to add graphics to
+                const aoiAssessed = selectedScenario?.layers.find(
+                  (l) => l.layerType === 'AOI Assessed',
+                );
+                if (!aoiAssessed) return;
+
+                let editsCopy: EditsType = edits;
+                const aoiAssessedLayer = layers.find(
+                  (l) => l.layerId === aoiAssessed.layerId,
+                );
+                if (aoiAssessedLayer?.sketchLayer?.type === 'graphics') {
+                  editsCopy = updateLayerEdits({
+                    edits,
+                    scenario: selectedScenario,
+                    layer: aoiAssessedLayer,
+                    type: 'delete',
+                    changes: aoiAssessedLayer?.sketchLayer.graphics,
+                  });
+
+                  aoiAssessedLayer?.sketchLayer.graphics.removeAll();
+                }
 
                 setEdits(editsCopy);
-
-                sketchVM[displayDimensions].layer.removeAll();
-                (
-                  sketchVM[displayDimensions].layer as any
-                ).parent.layers.forEach((layer: any) => {
-                  if (
-                    layer.id ===
-                    sketchVM[displayDimensions].layer.id + '-points'
-                  ) {
-                    layer.removeAll();
-                  }
-                  if (
-                    layer.id ===
-                    sketchVM[displayDimensions].layer.id + '-hybrid'
-                  ) {
-                    layer.removeAll();
-                  }
-                });
               }}
             >
               <i className="fas fa-trash-alt" />
               <br />
-              Delete All Decon Applications
+              Delete All Results
             </button>
           </div>
         </div>
         <div css={lineSeparatorStyles} />
         <div css={sectionContainer}>
           {selectedScenario ? (
-            <p>
-              An empty decon layer is loaded by default. Use the "Active Decon
-              Layer" controls to link, add, modify, and/or delete the decon
-              layer associated with the active plan. You may associate multiple
-              layers with a plan by selecting decon layers from the menu and
-              clicking the link icon. The menu will display linked layers and
-              indicate other layers available for linking. Use the “unlink”
-              control to remove a layer from a plan.
-            </p>
+            <p></p>
           ) : (
             <Fragment>
               <p>
-                Create a decontamination plan with one or more layers. Layers
-                can represent the application of different and/or multiple
-                applications of various decontamination technologies, unique
-                areas of interest or decision units that are differentiated by
-                the user-defined descriptions (e.g., First application, Second
-                Application, Team 1, etc.). Enter a plan name and description
+                Create a decontamination plan. Enter a plan name and description
                 and click Save.
               </p>
               <MessageBox
@@ -2260,7 +2243,10 @@ function LocateSamples() {
               />
             </div> */}
             <AccordionList>
-              <AccordionItem title="Assess AOI" initiallyExpanded={true}>
+              <AccordionItem
+                title="Characterize Area of Interest"
+                initiallyExpanded={true}
+              >
                 <div css={sectionContainer}>
                   {sketchLayer?.layerType === 'VSP' && cantUseWithVspMessage}
                   {sketchLayer?.layerType !== 'VSP' && (
