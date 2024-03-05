@@ -9,7 +9,7 @@ import Graphic from '@arcgis/core/Graphic';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import Point from '@arcgis/core/geometry/Point';
-import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
+// import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
@@ -21,14 +21,14 @@ import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 import Select from 'components/Select';
 // contexts
-import { DialogContext } from 'contexts/Dialog';
+// import { DialogContext } from 'contexts/Dialog';
 import {
   useLayerProps,
   useSampleTypesContext,
   useServicesContext,
 } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
-import { PublishContext } from 'contexts/Publish';
+// import { PublishContext } from 'contexts/Publish';
 import { SketchContext } from 'contexts/Sketch';
 // types
 import { LayerType } from 'types/Layer';
@@ -36,8 +36,8 @@ import { EditsType, ScenarioEditsType } from 'types/Edits';
 import { ErrorType } from 'types/Misc';
 // config
 import {
-  AttributeItems,
-  SampleSelectType,
+  // AttributeItems,
+  // SampleSelectType,
   PolygonSymbol,
 } from 'config/sampleAttributes';
 import {
@@ -48,12 +48,16 @@ import {
   generateRandomExceededTransferLimitMessage,
   generateRandomSuccessMessage,
   noDataDownloadMessage,
-  userDefinedValidationMessage,
+  // userDefinedValidationMessage,
   webServiceErrorMessage,
 } from 'config/errorMessages';
 // utils
 import { proxyFetch } from 'utils/fetchUtils';
-import { useGeometryTools, useDynamicPopup, useStartOver } from 'utils/hooks';
+import {
+  // useGeometryTools,
+  useDynamicPopup,
+  useStartOver,
+} from 'utils/hooks';
 import {
   convertToPoint,
   createLayer,
@@ -64,7 +68,7 @@ import {
   getCurrentDateTime,
   getDefaultSamplingMaskLayer,
   getNextScenarioLayer,
-  getPointSymbol,
+  // getPointSymbol,
   getScenarios,
   getSketchableLayers,
   updateLayerEdits,
@@ -123,7 +127,7 @@ type ShapeTypeSelect = {
   label: string;
 };
 
-type EditType = 'create' | 'edit' | 'clone' | 'view';
+// type EditType = 'create' | 'edit' | 'clone' | 'view';
 
 const pointStyles: ShapeTypeSelect[] = [
   { value: 'circle', label: 'Circle' },
@@ -139,31 +143,31 @@ const pointStyles: ShapeTypeSelect[] = [
   },
 ];
 
-/**
- * Determines if the desired name has already been used. If it has
- * it appends in index to the end (i.e. '<desiredName> (2)').
- */
-function getSampleTypeName(
-  sampleTypes: SampleSelectType[],
-  desiredName: string,
-) {
-  // get a list of names in use
-  let usedNames: string[] = [];
-  sampleTypes.forEach((sampleType) => {
-    usedNames.push(sampleType.label);
-  });
+// /**
+//  * Determines if the desired name has already been used. If it has
+//  * it appends in index to the end (i.e. '<desiredName> (2)').
+//  */
+// function getSampleTypeName(
+//   sampleTypes: SampleSelectType[],
+//   desiredName: string,
+// ) {
+//   // get a list of names in use
+//   let usedNames: string[] = [];
+//   sampleTypes.forEach((sampleType) => {
+//     usedNames.push(sampleType.label);
+//   });
 
-  // Find a name where there is not a collision.
-  // Most of the time this loop will be skipped.
-  let duplicateCount = 0;
-  let newName = desiredName;
-  while (usedNames.includes(newName)) {
-    duplicateCount += 1;
-    newName = `${desiredName} (${duplicateCount})`;
-  }
+//   // Find a name where there is not a collision.
+//   // Most of the time this loop will be skipped.
+//   let duplicateCount = 0;
+//   let newName = desiredName;
+//   while (usedNames.includes(newName)) {
+//     duplicateCount += 1;
+//     newName = `${desiredName} (${duplicateCount})`;
+//   }
 
-  return newName;
-}
+//   return newName;
+// }
 
 // --- styles (SketchButton) ---
 const buttonContainerStyles = css`
@@ -198,50 +202,50 @@ const layerSelectStyles = css`
   margin-bottom: 10px;
 `;
 
-const sketchButtonContainerStyles = css`
-  margin-left: 1px;
-  margin-top: 1px;
-`;
+// const sketchButtonContainerStyles = css`
+//   margin-left: 1px;
+//   margin-top: 1px;
+// `;
 
-const sketchButtonStyles = css`
-  position: relative;
-  height: 110px;
-  width: 33.33%;
-  background-color: white;
-  color: black;
-  border: 1px solid #ccc;
-  border-radius: 0;
-  margin: 0 0 -1px -1px;
+// const sketchButtonStyles = css`
+//   position: relative;
+//   height: 110px;
+//   width: 33.33%;
+//   background-color: white;
+//   color: black;
+//   border: 1px solid #ccc;
+//   border-radius: 0;
+//   margin: 0 0 -1px -1px;
 
-  &::before,
-  &::after {
-    content: '';
-    display: block;
-    padding-top: 50%;
-  }
+//   &::before,
+//   &::after {
+//     content: '';
+//     display: block;
+//     padding-top: 50%;
+//   }
 
-  &:hover,
-  &:focus {
-    background-color: #e7f6f8;
-    cursor: pointer;
-  }
-`;
+//   &:hover,
+//   &:focus {
+//     background-color: #e7f6f8;
+//     cursor: pointer;
+//   }
+// `;
 
-const textContainerStyles = css`
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
+// const textContainerStyles = css`
+//   position: absolute;
+//   top: 0;
+//   left: 0;
+//   bottom: 0;
+//   right: 0;
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+// `;
 
-const textStyles = css`
-  max-height: 85px;
-  word-break: break-word;
-`;
+// const textStyles = css`
+//   max-height: 85px;
+//   word-break: break-word;
+// `;
 
 const sketchAoiButtonStyles = css`
   background-color: white;
@@ -276,20 +280,20 @@ const addButtonStyles = css`
   height: 38px; /* same height as ReactSelect */
 `;
 
-const fullWidthSelectStyles = css`
-  width: 100%;
-  margin-right: 10px;
-  margin-bottom: 10px;
-`;
+// const fullWidthSelectStyles = css`
+//   width: 100%;
+//   margin-right: 10px;
+//   margin-bottom: 10px;
+// `;
 
-const inputStyles = css`
-  width: 100%;
-  height: 36px;
-  margin: 0 0 10px 0;
-  padding-left: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-`;
+// const inputStyles = css`
+//   width: 100%;
+//   height: 36px;
+//   margin: 0 0 10px 0;
+//   padding-left: 8px;
+//   border: 1px solid #ccc;
+//   border-radius: 4px;
+// `;
 
 const inlineSelectStyles = css`
   width: 100%;
@@ -300,67 +304,67 @@ const submitButtonStyles = css`
   margin-top: 10px;
 `;
 
-const sampleCountStyles = css`
-  font-size: 26px;
-  color: #0085e3;
-`;
+// const sampleCountStyles = css`
+//   font-size: 26px;
+//   color: #0085e3;
+// `;
 
 // --- components (SketchButton) ---
-type SketchButtonProps = {
-  value: string;
-  label: string;
-  iconClass: string;
-  layers: LayerType[];
-  selectedScenario: ScenarioEditsType | null;
-  onClick: () => void;
-};
+// type SketchButtonProps = {
+//   value: string;
+//   label: string;
+//   iconClass: string;
+//   layers: LayerType[];
+//   selectedScenario: ScenarioEditsType | null;
+//   onClick: () => void;
+// };
 
-function SketchButton({
-  value,
-  label,
-  iconClass,
-  layers,
-  selectedScenario,
-  onClick,
-}: SketchButtonProps) {
-  // put an ellipses on the end if the text is to long
-  const displayLabel = label.length > 30 ? `${label.substr(0, 30)}...` : label;
-  let count = 0;
+// function SketchButton({
+//   value,
+//   label,
+//   iconClass,
+//   layers,
+//   selectedScenario,
+//   onClick,
+// }: SketchButtonProps) {
+//   // put an ellipses on the end if the text is to long
+//   const displayLabel = label.length > 30 ? `${label.substr(0, 30)}...` : label;
+//   let count = 0;
 
-  layers.forEach((layer) => {
-    if (layer.layerType !== 'Samples' && layer.layerType !== 'VSP') return;
-    if (layer.sketchLayer.type === 'feature') return;
-    if (layer?.parentLayer?.id !== selectedScenario?.layerId) return;
+//   layers.forEach((layer) => {
+//     if (layer.layerType !== 'Samples' && layer.layerType !== 'VSP') return;
+//     if (layer.sketchLayer.type === 'feature') return;
+//     if (layer?.parentLayer?.id !== selectedScenario?.layerId) return;
 
-    layer.sketchLayer.graphics.forEach((graphic) => {
-      if (graphic.attributes.TYPEUUID === value) count += 1;
-    });
-  });
+//     layer.sketchLayer.graphics.forEach((graphic) => {
+//       if (graphic.attributes.TYPEUUID === value) count += 1;
+//     });
+//   });
 
-  return (
-    <button
-      id={value}
-      title={`Draw a ${label}: ${count}`}
-      className="sketch-button"
-      onClick={() => onClick()}
-      css={sketchButtonStyles}
-    >
-      <div css={textContainerStyles}>
-        <div css={textStyles}>
-          <i className={iconClass} />
-          <br />
-          {displayLabel}
-          {count > 0 && (
-            <Fragment>
-              <br />
-              <span css={sampleCountStyles}>{count}</span>
-            </Fragment>
-          )}
-        </div>
-      </div>
-    </button>
-  );
-}
+//   return (
+//     <button
+//       id={value}
+//       title={`Draw a ${label}: ${count}`}
+//       className="sketch-button"
+//       onClick={() => onClick()}
+//       css={sketchButtonStyles}
+//     >
+//       <div css={textContainerStyles}>
+//         <div css={textStyles}>
+//           <i className={iconClass} />
+//           <br />
+//           {displayLabel}
+//           {count > 0 && (
+//             <Fragment>
+//               <br />
+//               <span css={sampleCountStyles}>{count}</span>
+//             </Fragment>
+//           )}
+//         </div>
+//       </div>
+//     </button>
+//   );
+// }
 
 // --- styles (LocateSamples) ---
 const headerContainer = css`
@@ -432,9 +436,9 @@ type GenerateRandomType = {
 };
 
 function LocateSamples() {
-  const { setOptions } = useContext(DialogContext);
+  // const { setOptions } = useContext(DialogContext);
   const { setGoTo, setGoToOptions } = useContext(NavigationContext);
-  const { setSampleTypeSelections } = useContext(PublishContext);
+  // const { setSampleTypeSelections } = useContext(PublishContext);
   const {
     defaultSymbols,
     setDefaultSymbolSingle,
@@ -453,18 +457,18 @@ function LocateSamples() {
     setAoiSketchLayer,
     sketchVM,
     aoiSketchVM,
-    sampleAttributes,
-    userDefinedOptions,
-    setUserDefinedOptions,
-    userDefinedAttributes,
-    setUserDefinedAttributes,
-    allSampleOptions,
+    // sampleAttributes,
+    // userDefinedOptions,
+    // setUserDefinedOptions,
+    // userDefinedAttributes,
+    // setUserDefinedAttributes,
+    // allSampleOptions,
     displayGeometryType,
-    sceneView,
-    mapView,
+    // sceneView,
+    // mapView,
   } = useContext(SketchContext);
   const startOver = useStartOver();
-  const { createBuffer } = useGeometryTools();
+  // const { createBuffer } = useGeometryTools();
   const getPopupTemplate = useDynamicPopup();
   const layerProps = useLayerProps();
   const sampleTypeContext = useSampleTypesContext();
@@ -519,53 +523,53 @@ function LocateSamples() {
     setAoiSketchLayer(newAoiSketchLayer);
   }, [map, aoiSketchLayer, setAoiSketchLayer, layersInitialized, setLayers]);
 
-  // Handle a user clicking one of the sketch buttons
-  function sketchButtonClick(label: string) {
-    if (!sketchVM || !map || !sketchLayer || !sceneView || !mapView) return;
+  // // Handle a user clicking one of the sketch buttons
+  // function sketchButtonClick(label: string) {
+  //   if (!sketchVM || !map || !sketchLayer || !sceneView || !mapView) return;
 
-    // put the sketch layer on the map, if it isn't there already and
-    // is not part of a group layer
-    const layerIndex = map.layers.findIndex(
-      (layer) => layer.id === sketchLayer.layerId,
-    );
-    if (layerIndex === -1 && !sketchLayer.parentLayer) {
-      map.add(sketchLayer.sketchLayer);
-    }
+  //   // put the sketch layer on the map, if it isn't there already and
+  //   // is not part of a group layer
+  //   const layerIndex = map.layers.findIndex(
+  //     (layer) => layer.id === sketchLayer.layerId,
+  //   );
+  //   if (layerIndex === -1 && !sketchLayer.parentLayer) {
+  //     map.add(sketchLayer.sketchLayer);
+  //   }
 
-    // save changes from other sketchVM and disable to prevent
-    // interference
-    if (aoiSketchVM) {
-      aoiSketchVM.cancel();
-    }
+  //   // save changes from other sketchVM and disable to prevent
+  //   // interference
+  //   if (aoiSketchVM) {
+  //     aoiSketchVM.cancel();
+  //   }
 
-    // determine whether the sketch button draws points or polygons
-    const attributes = sampleAttributes[label as any];
-    let shapeType = attributes.ShapeType;
+  //   // determine whether the sketch button draws points or polygons
+  //   const attributes = sampleAttributes[label as any];
+  //   let shapeType = attributes.ShapeType;
 
-    // make the style of the button active
-    const wasSet = activateSketchButton(label);
+  //   // make the style of the button active
+  //   const wasSet = activateSketchButton(label);
 
-    // update the sketchVM symbol
-    let symbolType = 'Samples';
-    if (defaultSymbols.symbols.hasOwnProperty(label)) symbolType = label;
+  //   // update the sketchVM symbol
+  //   let symbolType = 'Samples';
+  //   if (defaultSymbols.symbols.hasOwnProperty(label)) symbolType = label;
 
-    const isPath = attributes.POINT_STYLE.includes('path|');
-    const pointProps = {
-      color: defaultSymbols.symbols[symbolType].color,
-      outline: defaultSymbols.symbols[symbolType].outline,
-      style: isPath ? 'path' : attributes.POINT_STYLE,
-    } as any;
-    if (isPath) pointProps.path = attributes.POINT_STYLE.replace('path|', '');
+  //   const isPath = attributes.POINT_STYLE.includes('path|');
+  //   const pointProps = {
+  //     color: defaultSymbols.symbols[symbolType].color,
+  //     outline: defaultSymbols.symbols[symbolType].outline,
+  //     style: isPath ? 'path' : attributes.POINT_STYLE,
+  //   } as any;
+  //   if (isPath) pointProps.path = attributes.POINT_STYLE.replace('path|', '');
 
-    sketchVM['2d'].polygonSymbol = defaultSymbols.symbols[symbolType] as any;
-    sketchVM['2d'].pointSymbol = new SimpleMarkerSymbol(pointProps);
-    sketchVM['3d'].polygonSymbol = defaultSymbols.symbols[symbolType] as any;
-    sketchVM['3d'].pointSymbol = new SimpleMarkerSymbol(pointProps);
+  //   sketchVM['2d'].polygonSymbol = defaultSymbols.symbols[symbolType] as any;
+  //   sketchVM['2d'].pointSymbol = new SimpleMarkerSymbol(pointProps);
+  //   sketchVM['3d'].polygonSymbol = defaultSymbols.symbols[symbolType] as any;
+  //   sketchVM['3d'].pointSymbol = new SimpleMarkerSymbol(pointProps);
 
-    // let the user draw/place the shape
-    if (wasSet) sketchVM[displayDimensions].create(shapeType);
-    else sketchVM[displayDimensions].cancel();
-  }
+  //   // let the user draw/place the shape
+  //   if (wasSet) sketchVM[displayDimensions].create(shapeType);
+  //   else sketchVM[displayDimensions].cancel();
+  // }
 
   // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
   // dropdown this will create an AOI layer. This also sets the sketchVM to use the
@@ -1003,268 +1007,268 @@ function LocateSamples() {
     }
   }
 
-  const [userDefinedSampleType, setUserDefinedSampleType] =
-    useState<SampleSelectType | null>(null);
-  const [editingStatus, setEditingStatus] = useState<EditType | null>(null);
-  const [sampleTypeName, setSampleTypeName] = useState<string>('');
-  const [shapeType, setShapeType] = useState<ShapeTypeSelect | null>(null);
-  const [pointStyle, setPointStyle] = useState<ShapeTypeSelect | null>(null);
-  const [ttpk, setTtpk] = useState<string | null>('');
-  const [ttc, setTtc] = useState<string | null>('');
-  const [tta, setTta] = useState<string | null>('');
-  const [ttps, setTtps] = useState<string | null>('');
-  const [lodp, setLodp] = useState<string | null>('');
-  const [lodnon, setLodnon] = useState<string | null>('');
-  const [mcps, setMcps] = useState<string | null>('');
-  const [tcps, setTcps] = useState<string | null>('');
-  const [wvps, setWvps] = useState<string | null>('');
-  const [wwps, setWwps] = useState<string | null>('');
-  const [sa, setSa] = useState<string | null>('');
-  const [alc, setAlc] = useState<string | null>('');
-  const [amc, setAmc] = useState<string | null>('');
-  const [validationMessage, setValidationMessage] = useState<
-    JSX.Element[] | string
-  >('');
+  // const [userDefinedSampleType, setUserDefinedSampleType] =
+  //   useState<SampleSelectType | null>(null);
+  // const [editingStatus, setEditingStatus] = useState<EditType | null>(null);
+  // const [sampleTypeName, setSampleTypeName] = useState<string>('');
+  // const [shapeType, setShapeType] = useState<ShapeTypeSelect | null>(null);
+  // const [pointStyle, setPointStyle] = useState<ShapeTypeSelect | null>(null);
+  // const [ttpk, setTtpk] = useState<string | null>('');
+  // const [ttc, setTtc] = useState<string | null>('');
+  // const [tta, setTta] = useState<string | null>('');
+  // const [ttps, setTtps] = useState<string | null>('');
+  // const [lodp, setLodp] = useState<string | null>('');
+  // const [lodnon, setLodnon] = useState<string | null>('');
+  // const [mcps, setMcps] = useState<string | null>('');
+  // const [tcps, setTcps] = useState<string | null>('');
+  // const [wvps, setWvps] = useState<string | null>('');
+  // const [wwps, setWwps] = useState<string | null>('');
+  // const [sa, setSa] = useState<string | null>('');
+  // const [alc, setAlc] = useState<string | null>('');
+  // const [amc, setAmc] = useState<string | null>('');
+  // const [validationMessage, setValidationMessage] = useState<
+  //   JSX.Element[] | string
+  // >('');
 
-  // Sets all of the user defined sample type inputs based on
-  // which edit type is being used.
-  function setSampleTypeInputs(editType: EditType) {
-    if (editType === 'create') {
-      setEditingStatus(editType);
-      setShapeType(null);
-      setPointStyle(null);
-      setTtpk('');
-      setTtc('');
-      setTta('');
-      setTtps('');
-      setLodp('');
-      setLodnon('');
-      setMcps('');
-      setTcps('');
-      setWvps('');
-      setWwps('');
-      setSa('');
-      setAlc('');
-      setAmc('');
-      setSampleTypeName('');
-      return;
-    }
+  // // Sets all of the user defined sample type inputs based on
+  // // which edit type is being used.
+  // function setSampleTypeInputs(editType: EditType) {
+  //   if (editType === 'create') {
+  //     setEditingStatus(editType);
+  //     setShapeType(null);
+  //     setPointStyle(null);
+  //     setTtpk('');
+  //     setTtc('');
+  //     setTta('');
+  //     setTtps('');
+  //     setLodp('');
+  //     setLodnon('');
+  //     setMcps('');
+  //     setTcps('');
+  //     setWvps('');
+  //     setWwps('');
+  //     setSa('');
+  //     setAlc('');
+  //     setAmc('');
+  //     setSampleTypeName('');
+  //     return;
+  //   }
 
-    if (!userDefinedSampleType) return;
+  //   if (!userDefinedSampleType) return;
 
-    // get the sample type name, for a clone operation
-    // add a number to the end of the name.
-    let sampleTypeUuid = userDefinedSampleType.value;
-    let sampleTypeName = userDefinedSampleType.label;
-    const attributes = sampleAttributes[sampleTypeUuid as any];
-    if (editType === 'clone') {
-      sampleTypeName = getSampleTypeName(allSampleOptions, sampleTypeName);
-    }
+  //   // get the sample type name, for a clone operation
+  //   // add a number to the end of the name.
+  //   let sampleTypeUuid = userDefinedSampleType.value;
+  //   let sampleTypeName = userDefinedSampleType.label;
+  //   const attributes = sampleAttributes[sampleTypeUuid as any];
+  //   if (editType === 'clone') {
+  //     sampleTypeName = getSampleTypeName(allSampleOptions, sampleTypeName);
+  //   }
 
-    const shapeType =
-      attributes.ShapeType === 'point'
-        ? { value: 'point', label: 'Point' }
-        : { value: 'polygon', label: 'Polygon' };
+  //   const shapeType =
+  //     attributes.ShapeType === 'point'
+  //       ? { value: 'point', label: 'Point' }
+  //       : { value: 'polygon', label: 'Polygon' };
 
-    setEditingStatus(editType);
-    setShapeType(shapeType);
-    setTtpk(attributes.TTPK ? attributes.TTPK.toString() : null);
-    setTtc(attributes.TTC ? attributes.TTC.toString() : null);
-    setTta(attributes.TTA ? attributes.TTA.toString() : null);
-    setTtps(attributes.TTPS ? attributes.TTPS.toString() : null);
-    setLodp(attributes.LOD_P ? attributes.LOD_P.toString() : null);
-    setLodnon(attributes.LOD_NON ? attributes.LOD_NON.toString() : null);
-    setMcps(attributes.MCPS ? attributes.MCPS.toString() : null);
-    setTcps(attributes.TCPS ? attributes.TCPS.toString() : null);
-    setWvps(attributes.WVPS ? attributes.WVPS.toString() : null);
-    setWwps(attributes.WWPS ? attributes.WWPS.toString() : null);
-    setSa(attributes.SA ? attributes.SA.toString() : null);
-    setAlc(attributes.ALC ? attributes.ALC.toString() : null);
-    setAmc(attributes.AMC ? attributes.AMC.toString() : null);
-    setSampleTypeName(sampleTypeName);
+  //   setEditingStatus(editType);
+  //   setShapeType(shapeType);
+  //   setTtpk(attributes.TTPK ? attributes.TTPK.toString() : null);
+  //   setTtc(attributes.TTC ? attributes.TTC.toString() : null);
+  //   setTta(attributes.TTA ? attributes.TTA.toString() : null);
+  //   setTtps(attributes.TTPS ? attributes.TTPS.toString() : null);
+  //   setLodp(attributes.LOD_P ? attributes.LOD_P.toString() : null);
+  //   setLodnon(attributes.LOD_NON ? attributes.LOD_NON.toString() : null);
+  //   setMcps(attributes.MCPS ? attributes.MCPS.toString() : null);
+  //   setTcps(attributes.TCPS ? attributes.TCPS.toString() : null);
+  //   setWvps(attributes.WVPS ? attributes.WVPS.toString() : null);
+  //   setWwps(attributes.WWPS ? attributes.WWPS.toString() : null);
+  //   setSa(attributes.SA ? attributes.SA.toString() : null);
+  //   setAlc(attributes.ALC ? attributes.ALC.toString() : null);
+  //   setAmc(attributes.AMC ? attributes.AMC.toString() : null);
+  //   setSampleTypeName(sampleTypeName);
 
-    const pointStyle = pointStyles.find(
-      (s) => s.value === attributes.POINT_STYLE,
-    );
-    setPointStyle(pointStyle || null);
-  }
+  //   const pointStyle = pointStyles.find(
+  //     (s) => s.value === attributes.POINT_STYLE,
+  //   );
+  //   setPointStyle(pointStyle || null);
+  // }
 
-  // Validates the user input.
-  // TODO: This logic needs to be updated to be more robust. Currently,
-  //        this just makes sure that all of the fields have been filled out.
-  function validateEdits() {
-    let isValid = true;
-    const messageParts: string[] = [];
+  // // Validates the user input.
+  // // TODO: This logic needs to be updated to be more robust. Currently,
+  // //        this just makes sure that all of the fields have been filled out.
+  // function validateEdits() {
+  //   let isValid = true;
+  //   const messageParts: string[] = [];
 
-    function isNumberValid(
-      numberStr: string | null,
-      valueValidation?: '' | 'greaterThan0' | 'between0-1',
-    ) {
-      if (numberStr === undefined || numberStr === null || numberStr === '') {
-        return;
-      }
+  //   function isNumberValid(
+  //     numberStr: string | null,
+  //     valueValidation?: '' | 'greaterThan0' | 'between0-1',
+  //   ) {
+  //     if (numberStr === undefined || numberStr === null || numberStr === '') {
+  //       return;
+  //     }
 
-      const number = Number(numberStr);
-      if (isNaN(number)) return false;
-      if (!valueValidation) return true;
-      if (valueValidation === 'greaterThan0' && number > 0) return true;
-      if (valueValidation === 'between0-1' && number > 0 && number <= 1)
-        return true;
+  //     const number = Number(numberStr);
+  //     if (isNaN(number)) return false;
+  //     if (!valueValidation) return true;
+  //     if (valueValidation === 'greaterThan0' && number > 0) return true;
+  //     if (valueValidation === 'between0-1' && number > 0 && number <= 1)
+  //       return true;
 
-      return false;
-    }
+  //     return false;
+  //   }
 
-    // validate any fields that need it
-    if (!sampleTypeName) {
-      isValid = false;
-      messageParts.push(
-        'User Defined types must have a decon technology name.',
-      );
-    }
-    if (
-      sampleAttributes.hasOwnProperty(sampleTypeName) &&
-      (editingStatus !== 'edit' ||
-        (editingStatus === 'edit' &&
-          userDefinedSampleType &&
-          userDefinedSampleType.value !== sampleTypeName))
-    ) {
-      isValid = false;
-      messageParts.push(
-        `The "${sampleTypeName}" name is already in use. Please rename the decon technology and try again.`,
-      );
-    }
-    if (!isNumberValid(ttpk)) {
-      isValid = false;
-      messageParts.push('Setup Time needs a numeric value.');
-    }
-    if (!isNumberValid(ttc)) {
-      isValid = false;
-      messageParts.push('Application Time needs a numeric value.');
-    }
-    if (!isNumberValid(tta)) {
-      isValid = false;
-      messageParts.push('Residence Time needs a numeric value.');
-    }
-    if (!isNumberValid(lodnon, 'between0-1')) {
-      isValid = false;
-      messageParts.push(
-        'Contamination Removal needs a numeric value between 0 and 1.',
-      );
-    }
-    if (!isNumberValid(mcps)) {
-      isValid = false;
-      messageParts.push('Setup Cost needs a numeric value.');
-    }
-    if (!isNumberValid(tcps)) {
-      isValid = false;
-      messageParts.push('Cost needs a numeric value.');
-    }
-    if (!isNumberValid(sa, 'greaterThan0')) {
-      isValid = false;
-      messageParts.push(
-        'Application Max Area needs a numeric value greater than 0.',
-      );
-    }
-    if (!isNumberValid(wvps)) {
-      isValid = false;
-      messageParts.push('Solid Waste Volume needs a numeric value.');
-    }
-    if (!isNumberValid(wwps)) {
-      isValid = false;
-      messageParts.push('Solid Waste Mass needs a numeric value.');
-    }
-    if (!isNumberValid(alc)) {
-      isValid = false;
-      messageParts.push('Liquid Waste Volume needs a numeric value.');
-    }
-    if (!isNumberValid(amc)) {
-      isValid = false;
-      messageParts.push('Liquid Waste Mass needs a numeric value.');
-    }
+  //   // validate any fields that need it
+  //   if (!sampleTypeName) {
+  //     isValid = false;
+  //     messageParts.push(
+  //       'User Defined types must have a decon technology name.',
+  //     );
+  //   }
+  //   if (
+  //     sampleAttributes.hasOwnProperty(sampleTypeName) &&
+  //     (editingStatus !== 'edit' ||
+  //       (editingStatus === 'edit' &&
+  //         userDefinedSampleType &&
+  //         userDefinedSampleType.value !== sampleTypeName))
+  //   ) {
+  //     isValid = false;
+  //     messageParts.push(
+  //       `The "${sampleTypeName}" name is already in use. Please rename the decon technology and try again.`,
+  //     );
+  //   }
+  //   if (!isNumberValid(ttpk)) {
+  //     isValid = false;
+  //     messageParts.push('Setup Time needs a numeric value.');
+  //   }
+  //   if (!isNumberValid(ttc)) {
+  //     isValid = false;
+  //     messageParts.push('Application Time needs a numeric value.');
+  //   }
+  //   if (!isNumberValid(tta)) {
+  //     isValid = false;
+  //     messageParts.push('Residence Time needs a numeric value.');
+  //   }
+  //   if (!isNumberValid(lodnon, 'between0-1')) {
+  //     isValid = false;
+  //     messageParts.push(
+  //       'Contamination Removal needs a numeric value between 0 and 1.',
+  //     );
+  //   }
+  //   if (!isNumberValid(mcps)) {
+  //     isValid = false;
+  //     messageParts.push('Setup Cost needs a numeric value.');
+  //   }
+  //   if (!isNumberValid(tcps)) {
+  //     isValid = false;
+  //     messageParts.push('Cost needs a numeric value.');
+  //   }
+  //   if (!isNumberValid(sa, 'greaterThan0')) {
+  //     isValid = false;
+  //     messageParts.push(
+  //       'Application Max Area needs a numeric value greater than 0.',
+  //     );
+  //   }
+  //   if (!isNumberValid(wvps)) {
+  //     isValid = false;
+  //     messageParts.push('Solid Waste Volume needs a numeric value.');
+  //   }
+  //   if (!isNumberValid(wwps)) {
+  //     isValid = false;
+  //     messageParts.push('Solid Waste Mass needs a numeric value.');
+  //   }
+  //   if (!isNumberValid(alc)) {
+  //     isValid = false;
+  //     messageParts.push('Liquid Waste Volume needs a numeric value.');
+  //   }
+  //   if (!isNumberValid(amc)) {
+  //     isValid = false;
+  //     messageParts.push('Liquid Waste Mass needs a numeric value.');
+  //   }
 
-    if (messageParts.length > 0) {
-      const message = messageParts.map((part, index) => {
-        return (
-          <Fragment key={index}>
-            {index !== 0 ? <br /> : ''}
-            {part}
-          </Fragment>
-        );
-      });
-      setValidationMessage(message);
-    }
+  //   if (messageParts.length > 0) {
+  //     const message = messageParts.map((part, index) => {
+  //       return (
+  //         <Fragment key={index}>
+  //           {index !== 0 ? <br /> : ''}
+  //           {part}
+  //         </Fragment>
+  //       );
+  //     });
+  //     setValidationMessage(message);
+  //   }
 
-    return isValid;
-  }
+  //   return isValid;
+  // }
 
-  // Checks to see if the sample type name changed.
-  function didSampleTypeNameChange() {
-    return (
-      editingStatus === 'edit' &&
-      userDefinedSampleType &&
-      sampleTypeName !== userDefinedSampleType.label
-    );
-  }
+  // // Checks to see if the sample type name changed.
+  // function didSampleTypeNameChange() {
+  //   return (
+  //     editingStatus === 'edit' &&
+  //     userDefinedSampleType &&
+  //     sampleTypeName !== userDefinedSampleType.label
+  //   );
+  // }
 
-  // Updates the attributes of graphics that have had property changes
-  function updateAttributes({
-    graphics,
-    newAttributes,
-    oldType,
-    symbol = null,
-  }: {
-    graphics: __esri.Graphic[];
-    newAttributes: any;
-    oldType: string;
-    symbol?: PolygonSymbol | null;
-  }) {
-    const editedGraphics: __esri.Graphic[] = [];
-    graphics.forEach((graphic: __esri.Graphic) => {
-      // update attributes for the edited type
-      if (graphic.attributes.TYPEUUID === oldType) {
-        const areaChanged = graphic.attributes.SA !== newAttributes.SA;
-        const shapeTypeChanged =
-          graphic.attributes.ShapeType !== newAttributes.ShapeType;
+  // // Updates the attributes of graphics that have had property changes
+  // function updateAttributes({
+  //   graphics,
+  //   newAttributes,
+  //   oldType,
+  //   symbol = null,
+  // }: {
+  //   graphics: __esri.Graphic[];
+  //   newAttributes: any;
+  //   oldType: string;
+  //   symbol?: PolygonSymbol | null;
+  // }) {
+  //   const editedGraphics: __esri.Graphic[] = [];
+  //   graphics.forEach((graphic: __esri.Graphic) => {
+  //     // update attributes for the edited type
+  //     if (graphic.attributes.TYPEUUID === oldType) {
+  //       const areaChanged = graphic.attributes.SA !== newAttributes.SA;
+  //       const shapeTypeChanged =
+  //         graphic.attributes.ShapeType !== newAttributes.ShapeType;
 
-        graphic.attributes.TYPE = newAttributes.TYPE;
-        graphic.attributes.ShapeType = newAttributes.ShapeType;
-        graphic.attributes.Width = newAttributes.Width;
-        graphic.attributes.SA = newAttributes.SA;
-        graphic.attributes.TTPK = newAttributes.TTPK;
-        graphic.attributes.TTC = newAttributes.TTC;
-        graphic.attributes.TTA = newAttributes.TTA;
-        graphic.attributes.TTPS = newAttributes.TTPS;
-        graphic.attributes.LOD_P = newAttributes.LOD_P;
-        graphic.attributes.LOD_NON = newAttributes.LOD_NON;
-        graphic.attributes.MCPS = newAttributes.MCPS;
-        graphic.attributes.TCPS = newAttributes.TCPS;
-        graphic.attributes.WVPS = newAttributes.WVPS;
-        graphic.attributes.WWPS = newAttributes.WWPS;
-        graphic.attributes.ALC = newAttributes.ALC;
-        graphic.attributes.AMC = newAttributes.AMC;
-        graphic.attributes.POINT_STYLE = newAttributes.POINT_STYLE;
+  //       graphic.attributes.TYPE = newAttributes.TYPE;
+  //       graphic.attributes.ShapeType = newAttributes.ShapeType;
+  //       graphic.attributes.Width = newAttributes.Width;
+  //       graphic.attributes.SA = newAttributes.SA;
+  //       graphic.attributes.TTPK = newAttributes.TTPK;
+  //       graphic.attributes.TTC = newAttributes.TTC;
+  //       graphic.attributes.TTA = newAttributes.TTA;
+  //       graphic.attributes.TTPS = newAttributes.TTPS;
+  //       graphic.attributes.LOD_P = newAttributes.LOD_P;
+  //       graphic.attributes.LOD_NON = newAttributes.LOD_NON;
+  //       graphic.attributes.MCPS = newAttributes.MCPS;
+  //       graphic.attributes.TCPS = newAttributes.TCPS;
+  //       graphic.attributes.WVPS = newAttributes.WVPS;
+  //       graphic.attributes.WWPS = newAttributes.WWPS;
+  //       graphic.attributes.ALC = newAttributes.ALC;
+  //       graphic.attributes.AMC = newAttributes.AMC;
+  //       graphic.attributes.POINT_STYLE = newAttributes.POINT_STYLE;
 
-        // redraw the graphic if the width changed or if the graphic went from a
-        // polygon to a point
-        if (
-          newAttributes.ShapeType === 'point' &&
-          (areaChanged || shapeTypeChanged)
-        ) {
-          // convert the geometry _esriPolygon if it is missing stuff
-          createBuffer(graphic as __esri.Graphic);
-        }
+  //       // redraw the graphic if the width changed or if the graphic went from a
+  //       // polygon to a point
+  //       if (
+  //         newAttributes.ShapeType === 'point' &&
+  //         (areaChanged || shapeTypeChanged)
+  //       ) {
+  //         // convert the geometry _esriPolygon if it is missing stuff
+  //         createBuffer(graphic as __esri.Graphic);
+  //       }
 
-        // update the point symbol if necessary
-        if (graphic.geometry.type === 'point') {
-          graphic.symbol = getPointSymbol(graphic, symbol);
-        }
+  //       // update the point symbol if necessary
+  //       if (graphic.geometry.type === 'point') {
+  //         graphic.symbol = getPointSymbol(graphic, symbol);
+  //       }
 
-        editedGraphics.push(graphic);
-      }
-    });
+  //       editedGraphics.push(graphic);
+  //     }
+  //   });
 
-    return editedGraphics;
-  }
+  //   return editedGraphics;
+  // }
 
   // Changes the selected layer if the scenario is changed. The first
   // available layer in the scenario will be chosen. If the scenario
@@ -1331,20 +1335,20 @@ function LocateSamples() {
     options: getSketchableLayers(layers, edits.edits),
   });
 
-  // Initialize the local user defined type symbol. Also updates this variable
-  // when the user changes the user defined sample type selection.
-  const [udtSymbol, setUdtSymbol] = useState<PolygonSymbol>(
-    defaultSymbols.symbols['Samples'],
-  );
-  useEffect(() => {
-    if (!userDefinedSampleType) return;
+  // // Initialize the local user defined type symbol. Also updates this variable
+  // // when the user changes the user defined sample type selection.
+  // const [udtSymbol, setUdtSymbol] = useState<PolygonSymbol>(
+  //   defaultSymbols.symbols['Samples'],
+  // );
+  // useEffect(() => {
+  //   if (!userDefinedSampleType) return;
 
-    if (defaultSymbols.symbols.hasOwnProperty(userDefinedSampleType.value)) {
-      setUdtSymbol(defaultSymbols.symbols[userDefinedSampleType.value]);
-    } else {
-      setUdtSymbol(defaultSymbols.symbols['Samples']);
-    }
-  }, [defaultSymbols, userDefinedSampleType]);
+  //   if (defaultSymbols.symbols.hasOwnProperty(userDefinedSampleType.value)) {
+  //     setUdtSymbol(defaultSymbols.symbols[userDefinedSampleType.value]);
+  //   } else {
+  //     setUdtSymbol(defaultSymbols.symbols['Samples']);
+  //   }
+  // }, [defaultSymbols, userDefinedSampleType]);
 
   pointStyles.sort((a, b) => a.value.localeCompare(b.value));
 
@@ -2252,7 +2256,222 @@ function LocateSamples() {
               />
             </div>
             <AccordionList>
-              <AccordionItem
+              <AccordionItem title="Assess AOI" initiallyExpanded={true}>
+                <div css={sectionContainer}>
+                  {sketchLayer?.layerType === 'VSP' && cantUseWithVspMessage}
+                  {sketchLayer?.layerType !== 'VSP' && (
+                    <Fragment>
+                      {(services.status === 'fetching' ||
+                        sampleTypeContext.status === 'fetching' ||
+                        layerProps.status === 'fetching') && <LoadingSpinner />}
+                      {(services.status === 'failure' ||
+                        sampleTypeContext.status === 'failure' ||
+                        layerProps.status === 'failure') &&
+                        featureNotAvailableMessage(
+                          'Add Multiple Random Samples',
+                        )}
+                      {services.status === 'success' &&
+                        sampleTypeContext.status === 'success' &&
+                        layerProps.status === 'success' && (
+                          <Fragment>
+                            <p>
+                              Select "Draw Sampling Mask" to draw a boundary on
+                              your map for assessing AOI or select "Use Imported
+                              Area of Interest" to use an Area of Interest file
+                              to assess the AOI. Click Submit to assess the AOI.
+                            </p>
+                            <div>
+                              <input
+                                id="draw-aoi"
+                                type="radio"
+                                name="mode"
+                                value="Draw area of Interest"
+                                disabled={
+                                  generateRandomResponse.status === 'fetching'
+                                }
+                                checked={generateRandomMode === 'draw'}
+                                onChange={(ev) => {
+                                  setGenerateRandomMode('draw');
+
+                                  const maskLayers = layers.filter(
+                                    (layer) =>
+                                      layer.layerType === 'Sampling Mask',
+                                  );
+                                  setAoiSketchLayer(maskLayers[0]);
+                                }}
+                              />
+                              <label htmlFor="draw-aoi" css={radioLabelStyles}>
+                                Draw Sampling Mask
+                              </label>
+                            </div>
+
+                            {generateRandomMode === 'draw' && (
+                              <button
+                                id="sampling-mask"
+                                title="Draw Sampling Mask"
+                                className="sketch-button"
+                                disabled={
+                                  generateRandomResponse.status === 'fetching'
+                                }
+                                onClick={() => {
+                                  if (!aoiSketchLayer) return;
+
+                                  sketchAoiButtonClick();
+                                }}
+                                css={sketchAoiButtonStyles}
+                              >
+                                <span css={sketchAoiTextStyles}>
+                                  <i className="fas fa-draw-polygon" />{' '}
+                                  <span>Draw Sampling Mask</span>
+                                </span>
+                              </button>
+                            )}
+
+                            <div>
+                              <input
+                                id="use-aoi-file"
+                                type="radio"
+                                name="mode"
+                                value="Use Imported Area of Interest"
+                                disabled={
+                                  generateRandomResponse.status === 'fetching'
+                                }
+                                checked={generateRandomMode === 'file'}
+                                onChange={(ev) => {
+                                  setGenerateRandomMode('file');
+
+                                  setAoiSketchLayer(null);
+
+                                  if (!selectedAoiFile) {
+                                    const aoiLayers = layers.filter(
+                                      (layer) =>
+                                        layer.layerType === 'Area of Interest',
+                                    );
+                                    setSelectedAoiFile(aoiLayers[0]);
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor="use-aoi-file"
+                                css={radioLabelStyles}
+                              >
+                                Use Imported Area of Interest
+                              </label>
+                            </div>
+
+                            {generateRandomMode === 'file' && (
+                              <Fragment>
+                                <label htmlFor="aoi-mask-select-input">
+                                  Area of Interest Mask
+                                </label>
+                                <div css={inlineMenuStyles}>
+                                  <Select
+                                    id="aoi-mask-select"
+                                    inputId="aoi-mask-select-input"
+                                    css={inlineSelectStyles}
+                                    styles={reactSelectStyles as any}
+                                    isClearable={true}
+                                    value={selectedAoiFile}
+                                    onChange={(ev) =>
+                                      setSelectedAoiFile(ev as LayerType)
+                                    }
+                                    options={layers.filter(
+                                      (layer) =>
+                                        layer.layerType === 'Area of Interest',
+                                    )}
+                                  />
+                                  <button
+                                    css={addButtonStyles}
+                                    disabled={
+                                      generateRandomResponse.status ===
+                                      'fetching'
+                                    }
+                                    onClick={(ev) => {
+                                      setGoTo('addData');
+                                      setGoToOptions({
+                                        from: 'file',
+                                        layerType: 'Area of Interest',
+                                      });
+                                    }}
+                                  >
+                                    Add
+                                  </button>
+                                </div>
+                              </Fragment>
+                            )}
+                            {generateRandomMode && (
+                              <Fragment>
+                                <br />
+                                {generateRandomResponse.status === 'success' &&
+                                  sketchLayer &&
+                                  generateRandomSuccessMessage(
+                                    generateRandomResponse.data.length,
+                                    sketchLayer.label,
+                                  )}
+                                {generateRandomResponse.status === 'failure' &&
+                                  webServiceErrorMessage(
+                                    generateRandomResponse.error,
+                                  )}
+                                {generateRandomResponse.status ===
+                                  'exceededTransferLimit' &&
+                                  generateRandomExceededTransferLimitMessage}
+                                {((generateRandomMode === 'draw' &&
+                                  aoiSketchLayer?.sketchLayer.type ===
+                                    'graphics' &&
+                                  aoiSketchLayer.sketchLayer.graphics.length >
+                                    0) ||
+                                  (generateRandomMode === 'file' &&
+                                    selectedAoiFile?.sketchLayer.type ===
+                                      'graphics' &&
+                                    selectedAoiFile.sketchLayer.graphics
+                                      .length > 0)) && (
+                                  <button
+                                    css={submitButtonStyles}
+                                    disabled={
+                                      generateRandomResponse.status ===
+                                      'fetching'
+                                    }
+                                    onClick={assessAoi}
+                                  >
+                                    {generateRandomResponse.status !==
+                                      'fetching' && 'Submit'}
+                                    {generateRandomResponse.status ===
+                                      'fetching' && (
+                                      <Fragment>
+                                        <i className="fas fa-spinner fa-pulse" />
+                                        &nbsp;&nbsp;Loading...
+                                      </Fragment>
+                                    )}
+                                  </button>
+                                )}
+                              </Fragment>
+                            )}
+
+                            <div>
+                              {downloadStatus === 'fetching' && (
+                                <LoadingSpinner />
+                              )}
+                              {downloadStatus === 'excel-failure' &&
+                                excelFailureMessage}
+                              {downloadStatus === 'no-data' &&
+                                noDataDownloadMessage}
+                              {downloadStatus === 'success' &&
+                                downloadSuccessMessage}
+
+                              <button
+                                css={submitButtonStyles}
+                                onClick={downloadSummary}
+                              >
+                                Download
+                              </button>
+                            </div>
+                          </Fragment>
+                        )}
+                    </Fragment>
+                  )}
+                </div>
+              </AccordionItem>
+              {/* <AccordionItem
                 title={'Apply Decontamination Technology'}
                 initiallyExpanded={true}
               >
@@ -2738,7 +2957,7 @@ function LocateSamples() {
                           css={inputStyles}
                           value={ttps ? ttps : ''}
                           onChange={(ev) => setTtps(ev.target.value)}
-                        /> */}
+                        /> /}
                         <label htmlFor="lod_p-input">
                           Log Reduction <em>(only used for reference)</em>
                         </label>
@@ -3097,222 +3316,7 @@ function LocateSamples() {
                     </div>
                   )}
                 </div>
-              </AccordionItem>
-              <AccordionItem title="Assess AOI">
-                <div css={sectionContainer}>
-                  {sketchLayer?.layerType === 'VSP' && cantUseWithVspMessage}
-                  {sketchLayer?.layerType !== 'VSP' && (
-                    <Fragment>
-                      {(services.status === 'fetching' ||
-                        sampleTypeContext.status === 'fetching' ||
-                        layerProps.status === 'fetching') && <LoadingSpinner />}
-                      {(services.status === 'failure' ||
-                        sampleTypeContext.status === 'failure' ||
-                        layerProps.status === 'failure') &&
-                        featureNotAvailableMessage(
-                          'Add Multiple Random Samples',
-                        )}
-                      {services.status === 'success' &&
-                        sampleTypeContext.status === 'success' &&
-                        layerProps.status === 'success' && (
-                          <Fragment>
-                            <p>
-                              Select "Draw Sampling Mask" to draw a boundary on
-                              your map for assessing AOI or select "Use Imported
-                              Area of Interest" to use an Area of Interest file
-                              to assess the AOI. Click Submit to assess the AOI.
-                            </p>
-                            <div>
-                              <input
-                                id="draw-aoi"
-                                type="radio"
-                                name="mode"
-                                value="Draw area of Interest"
-                                disabled={
-                                  generateRandomResponse.status === 'fetching'
-                                }
-                                checked={generateRandomMode === 'draw'}
-                                onChange={(ev) => {
-                                  setGenerateRandomMode('draw');
-
-                                  const maskLayers = layers.filter(
-                                    (layer) =>
-                                      layer.layerType === 'Sampling Mask',
-                                  );
-                                  setAoiSketchLayer(maskLayers[0]);
-                                }}
-                              />
-                              <label htmlFor="draw-aoi" css={radioLabelStyles}>
-                                Draw Sampling Mask
-                              </label>
-                            </div>
-
-                            {generateRandomMode === 'draw' && (
-                              <button
-                                id="sampling-mask"
-                                title="Draw Sampling Mask"
-                                className="sketch-button"
-                                disabled={
-                                  generateRandomResponse.status === 'fetching'
-                                }
-                                onClick={() => {
-                                  if (!aoiSketchLayer) return;
-
-                                  sketchAoiButtonClick();
-                                }}
-                                css={sketchAoiButtonStyles}
-                              >
-                                <span css={sketchAoiTextStyles}>
-                                  <i className="fas fa-draw-polygon" />{' '}
-                                  <span>Draw Sampling Mask</span>
-                                </span>
-                              </button>
-                            )}
-
-                            <div>
-                              <input
-                                id="use-aoi-file"
-                                type="radio"
-                                name="mode"
-                                value="Use Imported Area of Interest"
-                                disabled={
-                                  generateRandomResponse.status === 'fetching'
-                                }
-                                checked={generateRandomMode === 'file'}
-                                onChange={(ev) => {
-                                  setGenerateRandomMode('file');
-
-                                  setAoiSketchLayer(null);
-
-                                  if (!selectedAoiFile) {
-                                    const aoiLayers = layers.filter(
-                                      (layer) =>
-                                        layer.layerType === 'Area of Interest',
-                                    );
-                                    setSelectedAoiFile(aoiLayers[0]);
-                                  }
-                                }}
-                              />
-                              <label
-                                htmlFor="use-aoi-file"
-                                css={radioLabelStyles}
-                              >
-                                Use Imported Area of Interest
-                              </label>
-                            </div>
-
-                            {generateRandomMode === 'file' && (
-                              <Fragment>
-                                <label htmlFor="aoi-mask-select-input">
-                                  Area of Interest Mask
-                                </label>
-                                <div css={inlineMenuStyles}>
-                                  <Select
-                                    id="aoi-mask-select"
-                                    inputId="aoi-mask-select-input"
-                                    css={inlineSelectStyles}
-                                    styles={reactSelectStyles as any}
-                                    isClearable={true}
-                                    value={selectedAoiFile}
-                                    onChange={(ev) =>
-                                      setSelectedAoiFile(ev as LayerType)
-                                    }
-                                    options={layers.filter(
-                                      (layer) =>
-                                        layer.layerType === 'Area of Interest',
-                                    )}
-                                  />
-                                  <button
-                                    css={addButtonStyles}
-                                    disabled={
-                                      generateRandomResponse.status ===
-                                      'fetching'
-                                    }
-                                    onClick={(ev) => {
-                                      setGoTo('addData');
-                                      setGoToOptions({
-                                        from: 'file',
-                                        layerType: 'Area of Interest',
-                                      });
-                                    }}
-                                  >
-                                    Add
-                                  </button>
-                                </div>
-                              </Fragment>
-                            )}
-                            {generateRandomMode && (
-                              <Fragment>
-                                <br />
-                                {generateRandomResponse.status === 'success' &&
-                                  sketchLayer &&
-                                  generateRandomSuccessMessage(
-                                    generateRandomResponse.data.length,
-                                    sketchLayer.label,
-                                  )}
-                                {generateRandomResponse.status === 'failure' &&
-                                  webServiceErrorMessage(
-                                    generateRandomResponse.error,
-                                  )}
-                                {generateRandomResponse.status ===
-                                  'exceededTransferLimit' &&
-                                  generateRandomExceededTransferLimitMessage}
-                                {((generateRandomMode === 'draw' &&
-                                  aoiSketchLayer?.sketchLayer.type ===
-                                    'graphics' &&
-                                  aoiSketchLayer.sketchLayer.graphics.length >
-                                    0) ||
-                                  (generateRandomMode === 'file' &&
-                                    selectedAoiFile?.sketchLayer.type ===
-                                      'graphics' &&
-                                    selectedAoiFile.sketchLayer.graphics
-                                      .length > 0)) && (
-                                  <button
-                                    css={submitButtonStyles}
-                                    disabled={
-                                      generateRandomResponse.status ===
-                                      'fetching'
-                                    }
-                                    onClick={assessAoi}
-                                  >
-                                    {generateRandomResponse.status !==
-                                      'fetching' && 'Submit'}
-                                    {generateRandomResponse.status ===
-                                      'fetching' && (
-                                      <Fragment>
-                                        <i className="fas fa-spinner fa-pulse" />
-                                        &nbsp;&nbsp;Loading...
-                                      </Fragment>
-                                    )}
-                                  </button>
-                                )}
-                              </Fragment>
-                            )}
-
-                            <div>
-                              {downloadStatus === 'fetching' && (
-                                <LoadingSpinner />
-                              )}
-                              {downloadStatus === 'excel-failure' &&
-                                excelFailureMessage}
-                              {downloadStatus === 'no-data' &&
-                                noDataDownloadMessage}
-                              {downloadStatus === 'success' &&
-                                downloadSuccessMessage}
-
-                              <button
-                                css={submitButtonStyles}
-                                onClick={downloadSummary}
-                              >
-                                Download
-                              </button>
-                            </div>
-                          </Fragment>
-                        )}
-                    </Fragment>
-                  )}
-                </div>
-              </AccordionItem>
+              </AccordionItem> */}
             </AccordionList>
           </Fragment>
         )}
