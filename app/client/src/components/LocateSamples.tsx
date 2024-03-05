@@ -440,7 +440,8 @@ type GenerateRandomType = {
 
 function LocateSamples() {
   // const { setOptions } = useContext(DialogContext);
-  const { setGoTo, setGoToOptions } = useContext(NavigationContext);
+  const { setGoTo, setGoToOptions, setTablePanelExpanded } =
+    useContext(NavigationContext);
   // const { setSampleTypeSelections } = useContext(PublishContext);
   const {
     defaultSymbols,
@@ -2463,9 +2464,16 @@ function LocateSamples() {
 
                               <button
                                 css={submitButtonStyles}
+                                onClick={() => setTablePanelExpanded(true)}
+                              >
+                                View Results
+                              </button>
+                              <br />
+                              <button
+                                css={submitButtonStyles}
                                 onClick={downloadSummary}
                               >
-                                Download
+                                Download Results
                               </button>
                             </div>
                           </Fragment>

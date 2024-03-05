@@ -18,6 +18,7 @@ import { SketchContext } from 'contexts/Sketch';
 // utilities
 import { useSessionStorage } from 'utils/hooks';
 import { getSampleTableColumns } from 'utils/sketchUtils';
+import { parseSmallFloat } from 'utils/utils';
 // config
 import { navPanelWidth } from 'config/appConfig';
 
@@ -187,7 +188,7 @@ function App() {
   } = useContext(NavigationContext);
   const {
     displayDimensions,
-    layers,
+    // layers,
     map,
     mapView,
     sceneView,
@@ -265,23 +266,28 @@ function App() {
 
   // count the number of samples
   const sampleData: any[] = [];
-  layers.forEach((layer) => {
-    if (!layer.sketchLayer || layer.sketchLayer.type === 'feature') return;
-    if (layer?.parentLayer?.id !== selectedScenario?.layerId) return;
-    if (layer.layerType === 'Samples' || layer.layerType === 'VSP') {
-      const graphics = layer.sketchLayer.graphics.toArray();
-      graphics.sort((a, b) =>
-        a.attributes.PERMANENT_IDENTIFIER.localeCompare(
-          b.attributes.PERMANENT_IDENTIFIER,
-        ),
-      );
+  map?.layers.forEach((layer) => {
+    if (layer.id !== selectedScenario?.layerId) return;
+    if (layer.type !== 'group') return;
+    (layer as __esri.GroupLayer).layers.forEach((layer) => {
+      if (layer.title !== 'AOI Assessment') return;
+
+      const graphics = (layer as __esri.GraphicsLayer).graphics.toArray();
       graphics.forEach((sample) => {
         sampleData.push({
           graphic: sample,
           ...sample.attributes,
+          ground_elv: parseSmallFloat(
+            sample.attributes.ground_elv,
+            2,
+          ).toLocaleString(),
+          ground_elv_m: parseSmallFloat(
+            sample.attributes.ground_elv_m,
+            2,
+          ).toLocaleString(),
         });
       });
-    }
+    });
   });
 
   // calculate the width of the table
@@ -475,7 +481,7 @@ function App() {
                     <ReactTable
                       id="tots-samples-table"
                       data={sampleData}
-                      idColumn={'PERMANENT_IDENTIFIER'}
+                      idColumn={'bid'}
                       striped={true}
                       height={tablePanelHeight - resizerHeight - 30}
                       initialSelectedRowIds={initialSelectedRowIds}
@@ -518,15 +524,15 @@ function App() {
                       }}
                       sortBy={[
                         {
-                          id: 'DECISIONUNIT',
+                          id: 'cbfips',
                           desc: false,
                         },
                         {
-                          id: 'TYPE',
+                          id: 'bldgtype',
                           desc: false,
                         },
                         {
-                          id: 'PERMANENT_IDENTIFIER',
+                          id: 'bid',
                           desc: false,
                         },
                       ]}

@@ -1104,110 +1104,155 @@ export function getSampleTableColumns({
 }) {
   const baseColumnWidth = 100;
   const mediumColumnWidth = 140;
-  const largeColumnWidth = 160;
+  // const largeColumnWidth = 160;
 
   // add the base columns
   let columns: any[] = [
     {
-      Header: 'PERMANENT_IDENTIFIER',
-      accessor: 'PERMANENT_IDENTIFIER',
+      Header: 'Building ID',
+      accessor: 'bid',
       width: 0,
       show: false,
     },
     {
-      Header: 'DECISIONUNITUUID',
-      accessor: 'DECISIONUNITUUID',
+      Header: 'ID',
+      accessor: 'fd_id',
       width: 0,
       show: false,
     },
     {
-      Header: 'Layer',
-      accessor: 'DECISIONUNIT',
-      width: largeColumnWidth,
+      Header: 'Building Type',
+      accessor: 'bldgtype',
+      width: baseColumnWidth,
     },
     {
-      Header: 'Decon Technology',
-      accessor: 'TYPE',
+      Header: 'Census Block FIPS',
+      accessor: 'cbfips',
       width: mediumColumnWidth,
     },
     {
-      Header: 'Application Max Area (sq m)',
-      accessor: 'SA',
+      Header: 'Flood Zone (2021)',
+      accessor: 'firmzone',
       width: baseColumnWidth,
     },
     {
-      Header: 'Actual Surface Area (sq m)',
-      accessor: 'AA',
+      Header: 'Foundation Height (feet)',
+      accessor: 'found_ht',
       width: baseColumnWidth,
     },
     {
-      Header: 'Equivalent TODS Decon Applications',
-      accessor: 'AC',
+      Header: 'Foundation Type',
+      accessor: 'found_type',
       width: baseColumnWidth,
     },
     {
-      Header: 'Notes',
-      accessor: 'Notes',
-      width: largeColumnWidth,
-    },
-    {
-      Header: 'Setup Cost ($/application)',
-      accessor: 'MCPS',
+      Header: 'Footprint ID',
+      accessor: 'ftprntid',
       width: baseColumnWidth,
     },
     {
-      Header: 'Application Cost ($/sq m)',
-      accessor: 'TCPS',
+      Header: 'Footprint Source',
+      accessor: 'ftprntsrc',
       width: baseColumnWidth,
     },
     {
-      Header: 'Setup Time (hrs)',
-      accessor: 'TTPK',
+      Header: 'Ground Elevation (feet)',
+      accessor: 'ground_elv',
       width: baseColumnWidth,
     },
     {
-      Header: 'Application Time (hrs/sq m)',
-      accessor: 'TTC',
+      Header: 'Ground Elevation (meters)',
+      accessor: 'ground_elv_m',
       width: baseColumnWidth,
     },
     {
-      Header: 'Residence Time (hrs)',
-      accessor: 'TTA',
-      width: baseColumnWidth,
-    },
-    // {
-    //   Header: 'Total Time per Decon Application (person hrs/application)',
-    //   accessor: 'TTPS',
-    //   width: baseColumnWidth,
-    // },
-    {
-      Header: 'Log Reduction',
-      accessor: 'LOD_P',
+      Header: 'Median Year Built',
+      accessor: 'med_yr_blt',
       width: baseColumnWidth,
     },
     {
-      Header: 'Contamination Removal (%)',
-      accessor: 'LOD_NON',
+      Header: 'Number of Stories',
+      accessor: 'num_story',
       width: baseColumnWidth,
     },
     {
-      Header: 'Solid Waste Volume (cu m/sq m)',
-      accessor: 'WVPS',
+      Header: 'Percent Over 65 Disabled',
+      accessor: 'o65disable',
       width: baseColumnWidth,
     },
     {
-      Header: 'Solid Waste Mass (kg/sq m)',
-      accessor: 'WWPS',
+      Header: 'Occupancy Type',
+      accessor: 'occtype',
       width: baseColumnWidth,
     },
     {
-      Header: 'Liquid Waste Volume (cu m/sq m)',
-      accessor: 'ALC',
+      Header: 'Population Night Over 65',
+      accessor: 'pop2amo65',
       width: baseColumnWidth,
     },
     {
-      Header: 'Liquid Waste Mass (kg/sq m)',
-      accessor: 'AMC',
+      Header: 'Population Night Under 65',
+      accessor: 'pop2amu65',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Population Day Over 65',
+      accessor: 'pop2pmo65',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Population Day Under 65',
+      accessor: 'pop2pmu65',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Source',
+      accessor: 'source',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Square Feet',
+      accessor: 'sqft',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Structure Damage Category',
+      accessor: 'st_damcat',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Students',
+      accessor: 'students',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Percent Under 65 Disabled',
+      accessor: 'u65disable',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Value of Contents',
+      accessor: 'val_cont',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Value of Structure',
+      accessor: 'val_struct',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Value of Vehicles',
+      accessor: 'vale_vehic',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'X',
+      accessor: 'x',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Y',
+      accessor: 'y',
       width: baseColumnWidth,
     },
     // TODO look into adding these back in. CONTAMVAL will probably
