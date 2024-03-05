@@ -9,6 +9,8 @@ import React, {
 } from 'react';
 import { css } from '@emotion/react';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
+import IdentityManager from '@arcgis/core/identity/IdentityManager';
+import Portal from '@arcgis/core/portal/Portal';
 // components
 import {
   EditCustomSampleTypesTable,
@@ -22,7 +24,10 @@ import ShowLessMore from 'components/ShowLessMore';
 import { AuthenticationContext } from 'contexts/Authentication';
 import { useLayerProps } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
-import { defaultPlanAttributes, PublishContext } from 'contexts/Publish';
+import {
+  defaultPlanAttributes,
+  PublishContext,
+} from 'contexts/Publish';
 import { SketchContext } from 'contexts/Sketch';
 // utils
 import {
@@ -125,10 +130,14 @@ const webMapContainerCheckboxStyles = css`
 `;
 
 // --- components (Publish) ---
-export function PublishFull() {
-  const { oAuthInfo, portal, setSignedIn, setPortal, signedIn, signIn } =
-    useContext(AuthenticationContext);
-  const { goToOptions, setGoToOptions } = useContext(NavigationContext);
+function Publish() {
+  const { oAuthInfo, portal, setSignedIn, setPortal, signedIn } = useContext(
+    AuthenticationContext,
+  );
+  const {
+    goToOptions,
+    setGoToOptions,
+  } = useContext(NavigationContext);
   const {
     includeCustomSampleTypes,
     includeFullPlan,
@@ -193,7 +202,23 @@ export function PublishFull() {
     // have the user login if necessary
     if (!portal || !signedIn) {
       setGoToOptions({ continuePublish: true });
-      signIn();
+      IdentityManager.getCredential(`${oAuthInfo.portalUrl}/sharing`, {
+        oAuthPopupConfirmation: false,
+      })
+        .then(() => {
+          setSignedIn(true);
+
+          const portal = new Portal();
+          portal.authMode = 'immediate';
+          portal.load().then(() => {
+            setPortal(portal);
+          });
+        })
+        .catch((err) => {
+          console.error(err);
+          setSignedIn(false);
+          setPortal(null);
+        });
     }
   }, [
     oAuthInfo,
@@ -203,7 +228,6 @@ export function PublishFull() {
     setPortal,
     setSignedIn,
     signedIn,
-    signIn,
   ]);
 
   // Check if the scenario name is available
@@ -303,7 +327,6 @@ export function PublishFull() {
               summary: { success: '', failed: '' },
               rawData: null,
             });
-            return;
           }
         }
 
@@ -1012,6 +1035,9 @@ export function PublishFull() {
       ...defaultPlanAttributes,
       ...editsScenario.customAttributes,
     ];
+    attributesToInclude.forEach((item, index) => {
+      item.id = index + 1;
+    });
 
     // add graphics to the layer to publish while also setting
     // the DECISIONUNIT, DECISIONUNITUUID and DECISIONUNITSORT attributes
@@ -1056,23 +1082,33 @@ export function PublishFull() {
               item.attributes.PERMANENT_IDENTIFIER,
           );
 
-          attributes['GLOBALID'] = graphic.attributes['GLOBALID'];
-          attributes['OBJECTID'] = graphic.attributes['OBJECTID'];
+          if (graphic) {
+            attributes['GLOBALID'] = graphic.attributes['GLOBALID'];
+            attributes['OBJECTID'] = graphic.attributes['OBJECTID'];
 
-          attributesToInclude.forEach((attribute) => {
-            attributes[attribute.name] =
-              graphic.attributes[attribute.name] || null;
-          });
+            attributesToInclude.forEach((attribute) => {
+              attributes[attribute.name] =
+                graphic.attributes[attribute.name] || null;
+            });
+          }
         }
 
         if (attributes.length === 0) {
           attributes = { ...item.attributes };
         }
 
-        layerEdits.updates.push({
-          ...item,
-          attributes,
-        });
+        const inDeletes =
+          layer.deletes.findIndex(
+            (feat) =>
+              feat.PERMANENT_IDENTIFIER ===
+              item.attributes.PERMANENT_IDENTIFIER,
+          ) !== -1;
+        if (!inDeletes) {
+          layerEdits.updates.push({
+            ...item,
+            attributes,
+          });
+        }
       });
       layer.deletes.forEach((item) => {
         layerEdits.deletes.push({
@@ -2165,21 +2201,6 @@ export function PublishFull() {
             </button>
           </div>
         )}
-    </div>
-  );
-}
-
-function Publish() {
-  return (
-    <div css={panelContainer}>
-      <h2>Publish Output</h2>
-      <div css={sectionContainer}>
-        <MessageBox
-          severity="warning"
-          title="Feature Not Yet Available"
-          message="This feature is not available yet."
-        />
-      </div>
     </div>
   );
 }

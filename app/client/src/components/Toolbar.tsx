@@ -1031,7 +1031,7 @@ function Toolbar({ isDashboard = false, map, mapView, sceneView }: Props) {
                 onChange={(ev) => setDisplayGeometryType('polygons')}
               />
               <label htmlFor="shape-polygons">Polygons</label>
-              <br />
+              {/* <br />
 
               <input
                 id="shape-hybrid"
@@ -1041,7 +1041,7 @@ function Toolbar({ isDashboard = false, map, mapView, sceneView }: Props) {
                 checked={displayGeometryType === 'hybrid'}
                 onChange={(ev) => setDisplayGeometryType('hybrid')}
               />
-              <label htmlFor="shape-hybrid">Hybrid</label>
+              <label htmlFor="shape-hybrid">Hybrid</label> */}
             </fieldset>
 
             {displayDimensions === '3d' && (

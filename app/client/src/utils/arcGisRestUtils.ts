@@ -338,8 +338,8 @@ function createFeatureService(
           // add metadata for determining whether a feature service has a sample layer vs
           // just being a reference layer.
           categories: isTable
-            ? 'contains-epa-tots-user-defined-sample-types'
-            : 'contains-epa-tots-sample-layer',
+            ? 'contains-epa-tods-user-defined-decon-tech'
+            : 'contains-epa-tods-decon-layer',
         };
         appendEnvironmentObjectParam(indata);
 
@@ -601,8 +601,8 @@ function createFeatureLayers(
       // have one layer, but it is possible for user
       if (layer.layerType === 'Samples') {
         templatesPolygons.push({
-          id: 'epa-tots-sample-layer',
-          name: 'epa-tots-sample-layer',
+          id: 'epa-tods-decon-layer',
+          name: 'epa-tods-decon-layer',
         });
       }
       if (layer.layerType === 'VSP') {
@@ -660,8 +660,8 @@ function createFeatureLayers(
       // have one layer, but it is possible for user
       if (layer.layerType === 'Samples') {
         templatesPoints.push({
-          id: 'epa-tots-sample-points-layer',
-          name: 'epa-tots-sample-points-layer',
+          id: 'epa-tods-decon-points-layer',
+          name: 'epa-tods-decon-points-layer',
         });
       }
       if (layer.layerType === 'VSP') {
@@ -726,8 +726,8 @@ function createFeatureLayers(
 
     const tablesOut: any[] = [];
 
-    // add the sample-types table if it hasn't already been added
-    const sampleTypeTableName = `${serviceMetaData.label}-sample-types`;
+    // add the decon-type table if it hasn't already been added
+    const sampleTypeTableName = `${serviceMetaData.label}-decon-tech`;
     const hasSampleTable =
       service.featureService.tables.findIndex(
         (t: any) => t.name === sampleTypeTableName,
@@ -1691,7 +1691,7 @@ async function applyEdits({
       id: findLayerId({
         service,
         layersResponse,
-        name: `${scenarioName}-sample-types`,
+        name: `${scenarioName}-decon-tech`,
       }),
       layerProps,
     });
@@ -2638,7 +2638,7 @@ function publish({
             });
 
             layersResponse.tables?.forEach((table: any) => {
-              const isSampleTypes = table.name.endsWith('-sample-types');
+              const isSampleTypes = table.name.endsWith('-decon-tech');
               if (isSampleTypes) {
                 tableParam = {
                   id: table.id,
