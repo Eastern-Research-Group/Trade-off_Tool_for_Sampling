@@ -13,8 +13,11 @@ import Point from '@arcgis/core/geometry/Point';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
-import ColorPicker from 'components/ColorPicker';
-import { EditScenario, EditLayer } from 'components/EditLayerMetaData';
+// import ColorPicker from 'components/ColorPicker';
+import {
+  EditScenario,
+  // EditLayer,
+} from 'components/EditLayerMetaData';
 import LoadingSpinner from 'components/LoadingSpinner';
 import { buildingMapPopup } from 'components/MapPopup';
 import MessageBox from 'components/MessageBox';
@@ -35,11 +38,11 @@ import { LayerType } from 'types/Layer';
 import { EditsType, ScenarioEditsType } from 'types/Edits';
 import { ErrorType } from 'types/Misc';
 // config
-import {
-  // AttributeItems,
-  // SampleSelectType,
-  PolygonSymbol,
-} from 'config/sampleAttributes';
+// import {
+//   // AttributeItems,
+//   // SampleSelectType,
+//   // PolygonSymbol,
+// } from 'config/sampleAttributes';
 import {
   cantUseWithVspMessage,
   downloadSuccessMessage,
@@ -59,9 +62,9 @@ import {
   useStartOver,
 } from 'utils/hooks';
 import {
-  convertToPoint,
+  // convertToPoint,
   createLayer,
-  createSampleLayer,
+  // createSampleLayer,
   deepCopyObject,
   findLayerInEdits,
   generateUUID,
@@ -76,7 +79,7 @@ import {
 import {
   activateSketchButton,
   createErrorObject,
-  getLayerName,
+  // getLayerName,
   getScenarioName,
 } from 'utils/utils';
 // styles
@@ -170,10 +173,10 @@ const pointStyles: ShapeTypeSelect[] = [
 // }
 
 // --- styles (SketchButton) ---
-const buttonContainerStyles = css`
-  display: flex;
-  align-items: end;
-`;
+// const buttonContainerStyles = css`
+//   display: flex;
+//   align-items: end;
+// `;
 
 const panelContainer = css`
   display: flex;
@@ -194,9 +197,9 @@ const sectionContainer = css`
   padding: 20px;
 `;
 
-const sectionContainerWidthOnly = css`
-  padding: 0 20px;
-`;
+// const sectionContainerWidthOnly = css`
+//   padding: 0 20px;
+// `;
 
 const layerSelectStyles = css`
   margin-bottom: 10px;
@@ -441,7 +444,7 @@ function LocateSamples() {
   // const { setSampleTypeSelections } = useContext(PublishContext);
   const {
     defaultSymbols,
-    setDefaultSymbolSingle,
+    // setDefaultSymbolSingle,
     displayDimensions,
     edits,
     setEdits,
@@ -463,7 +466,7 @@ function LocateSamples() {
     // userDefinedAttributes,
     // setUserDefinedAttributes,
     // allSampleOptions,
-    displayGeometryType,
+    // displayGeometryType,
     // sceneView,
     // mapView,
   } = useContext(SketchContext);
@@ -1307,8 +1310,8 @@ function LocateSamples() {
   // scenario and layer edit UI visibility controls
   const [addScenarioVisible, setAddScenarioVisible] = useState(false);
   const [editScenarioVisible, setEditScenarioVisible] = useState(false);
-  const [addLayerVisible, setAddLayerVisible] = useState(false);
-  const [editLayerVisible, setEditLayerVisible] = useState(false);
+  // const [addLayerVisible, setAddLayerVisible] = useState(false);
+  // const [editLayerVisible, setEditLayerVisible] = useState(false);
   const [generateRandomMode, setGenerateRandomMode] = useState<
     'draw' | 'file' | ''
   >('');
@@ -1733,7 +1736,7 @@ function LocateSamples() {
             </Fragment>
           )}
 
-          {selectedScenario && !addScenarioVisible && !editScenarioVisible && (
+          {/* {selectedScenario && !addScenarioVisible && !editScenarioVisible && (
             <Fragment>
               <div css={iconButtonContainerStyles}>
                 <div css={verticalCenterTextStyles}>
@@ -2237,12 +2240,12 @@ function LocateSamples() {
                 />
               )}
             </Fragment>
-          )}
+          )} */}
         </div>
 
         {selectedScenario && (
           <Fragment>
-            <div css={sectionContainerWidthOnly}>
+            {/* <div css={sectionContainerWidthOnly}>
               <p>
                 In the panels below, select and add decontamination technologies
                 to apply to the plan.
@@ -2254,7 +2257,7 @@ function LocateSamples() {
                   setDefaultSymbolSingle('Samples', symbol);
                 }}
               />
-            </div>
+            </div> */}
             <AccordionList>
               <AccordionItem title="Assess AOI" initiallyExpanded={true}>
                 <div css={sectionContainer}>
