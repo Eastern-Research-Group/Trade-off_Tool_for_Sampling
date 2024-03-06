@@ -285,6 +285,46 @@ function App() {
             sample.attributes.ground_elv_m,
             2,
           ).toLocaleString(),
+          footprintSqM: parseSmallFloat(
+            sample.attributes.footprintSqM,
+            2,
+          ).toLocaleString(),
+          floorsSqM: parseSmallFloat(
+            sample.attributes.floorsSqM,
+            2,
+          ).toLocaleString(),
+          totalSqM: parseSmallFloat(
+            sample.attributes.totalSqM,
+            2,
+          ).toLocaleString(),
+          extWallsSqM: parseSmallFloat(
+            sample.attributes.extWallsSqM,
+            2,
+          ).toLocaleString(),
+          intWallsSqM: parseSmallFloat(
+            sample.attributes.intWallsSqM,
+            2,
+          ).toLocaleString(),
+          roofSqM: parseSmallFloat(
+            sample.attributes.roofSqM,
+            2,
+          ).toLocaleString(),
+          footprintSqFt: parseSmallFloat(
+            sample.attributes.footprintSqFt,
+            2,
+          ).toLocaleString(),
+          floorsSqFt: parseSmallFloat(
+            sample.attributes.floorsSqFt,
+            2,
+          ).toLocaleString(),
+          extWallsSqFt: parseSmallFloat(
+            sample.attributes.extWallsSqFt,
+            2,
+          ).toLocaleString(),
+          intWallsSqFt: parseSmallFloat(
+            sample.attributes.intWallsSqFt,
+            2,
+          ).toLocaleString(),
         });
       });
     });

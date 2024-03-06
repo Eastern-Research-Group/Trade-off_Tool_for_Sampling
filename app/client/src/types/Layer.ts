@@ -82,4 +82,5 @@ export type UrlLayerType = {
 export type FieldInfos = {
   fieldName: string;
   label: string;
+  format?: 'number' | null;
 }[];

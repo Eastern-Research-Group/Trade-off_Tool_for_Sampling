@@ -22,6 +22,7 @@ import {
   getZValue,
   setGeometryZValues,
 } from 'utils/sketchUtils';
+import { parseSmallFloat } from 'utils/utils';
 // styles
 import { colors, linkButtonStyles } from 'styles';
 
@@ -459,7 +460,12 @@ function MapPopupSimple({ feature, fieldInfos }: MapPopupSimpleProps) {
               {fieldInfos.map((fieldInfo, index) => {
                 if (!showMore && index > 4) return null;
 
-                const value = feature.graphic.attributes[fieldInfo.fieldName];
+                const fieldValue =
+                  feature.graphic.attributes[fieldInfo.fieldName];
+                const value =
+                  fieldInfo.format === 'number'
+                    ? (parseSmallFloat(fieldValue, 2) ?? '').toLocaleString()
+                    : fieldValue;
                 return (
                   <tr key={index}>
                     <th className="esri-feature__field-header">
@@ -528,8 +534,16 @@ export function buildingMapPopup(feature: any) {
         { label: 'Foundation Type', fieldName: 'found_type' },
         { label: 'Footprint ID', fieldName: 'ftprntid' },
         { label: 'Footprint Source', fieldName: 'ftprntsrc' },
-        { label: 'Ground Elevation (feet)', fieldName: 'ground_elv' },
-        { label: 'Ground Elevation (meters)', fieldName: 'ground_elv_m' },
+        {
+          label: 'Ground Elevation (feet)',
+          fieldName: 'ground_elv',
+          format: 'number',
+        },
+        {
+          label: 'Ground Elevation (meters)',
+          fieldName: 'ground_elv_m',
+          format: 'number',
+        },
         { label: 'Median Year Built', fieldName: 'med_yr_blt' },
         { label: 'Number of Stories', fieldName: 'num_story' },
         { label: 'Percent Over 65 Disabled', fieldName: 'o65disable' },
@@ -539,7 +553,7 @@ export function buildingMapPopup(feature: any) {
         { label: 'Population Day Over 65', fieldName: 'pop2pmo65' },
         { label: 'Population Day Under 65', fieldName: 'pop2pmu65' },
         { label: 'Source', fieldName: 'source' },
-        { label: 'Square Feet', fieldName: 'sqft' },
+        // { label: 'Square Feet', fieldName: 'sqft' },
         { label: 'Structure Damage Category', fieldName: 'st_damcat' },
         { label: 'Students', fieldName: 'students' },
         { label: 'Percent Under 65 Disabled', fieldName: 'u65disable' },
@@ -548,6 +562,69 @@ export function buildingMapPopup(feature: any) {
         { label: 'Value of Vehicles', fieldName: 'val_vehic' },
         { label: 'x', fieldName: 'x' },
         { label: 'y', fieldName: 'y' },
+        { label: 'Contamination Type', fieldName: 'CONTAMTYPE' },
+        { label: 'Activity', fieldName: 'CONTAMVAL' },
+        { label: 'Unit of Measure', fieldName: 'CONTAMUNIT' },
+        {
+          label: 'Footprint Area (square meters)',
+          fieldName: 'footprintSqM',
+          format: 'number',
+        },
+        {
+          label: 'Floors Area (square meters)',
+          fieldName: 'floorsSqM',
+          format: 'number',
+        },
+        {
+          label: 'Total Area (square meters)',
+          fieldName: 'totalSqM',
+          format: 'number',
+        },
+        {
+          label: 'Ext Walls Area (square meters)',
+          fieldName: 'extWallsSqM',
+          format: 'number',
+        },
+        {
+          label: 'Int Walls Area (square meters)',
+          fieldName: 'intWallsSqM',
+          format: 'number',
+        },
+        {
+          label: 'Roof Area (square meters)',
+          fieldName: 'roofSqM',
+          format: 'number',
+        },
+        {
+          label: 'Footprint Area (square feet)',
+          fieldName: 'footprintSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Floors Area (square feet)',
+          fieldName: 'floorsSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Total Area (square feet)',
+          fieldName: 'totalSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Ext Walls Area (square feet)',
+          fieldName: 'extWallsSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Walls Area (square feet)',
+          fieldName: 'intWallsSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Roof Area (square feet)',
+          fieldName: 'roofSqFt',
+          format: 'number',
+        },
       ]}
     />
   );

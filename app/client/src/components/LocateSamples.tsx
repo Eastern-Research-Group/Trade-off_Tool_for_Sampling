@@ -79,15 +79,17 @@ import {
   createErrorObject,
   // getLayerName,
   getScenarioName,
+  parseSmallFloat,
 } from 'utils/utils';
 // styles
 import { reactSelectStyles } from 'styles';
 
 const bldgTypeEnum = {
-  M: 'Masonry',
-  W: 'Wood',
+  C: 'Concrete',
   H: 'Manufactured',
+  M: 'Masonry',
   S: 'Steel',
+  W: 'Wood',
 };
 const foundTypeEnum = {
   C: 'Crawl',
@@ -648,6 +650,11 @@ function LocateSamples() {
     const features: any[] = [];
     let totalAoiSqM = 0;
     let totalBuildingFootprintSqM = 0;
+    let totalBuildingFloorsSqM = 0;
+    let totalBuildingSqM = 0;
+    let totalBuildingExtWallsSqM = 0;
+    let totalBuildingIntWallsSqM = 0;
+    let totalBuildingRoofSqM = 0;
     aoiMaskLayer.sketchLayer.graphics.forEach((graphic) => {
       const geometry = graphic.geometry as __esri.Polygon;
 
@@ -714,9 +721,34 @@ function LocateSamples() {
       const graphics: __esri.Graphic[] = [];
       responses.forEach((results) => {
         results.features.forEach((feature: any) => {
-          const { bldgtype, found_type, ftprntsrc, source, sqft, st_damcat } =
-            feature.properties;
-          totalBuildingFootprintSqM += sqft / 10.7639104167;
+          const {
+            bldgtype,
+            found_type,
+            ftprntsrc,
+            num_story,
+            source,
+            sqft,
+            st_damcat,
+          } = feature.properties;
+
+          // feet
+          const footprintSqFt = sqft;
+          const floorsSqFt = num_story * footprintSqFt;
+          const extWallsSqFt = Math.sqrt(floorsSqFt) * 10 * 4 * num_story;
+          const intWallsSqFt = extWallsSqFt * 3;
+
+          // meters
+          const footprintSqM = sqft / 10.7639104167;
+          const floorsSqM = num_story * footprintSqM;
+          const extWallsSqM = Math.sqrt(floorsSqM) * 10 * 4 * num_story;
+          const intWallsSqM = extWallsSqM * 3;
+          totalBuildingFootprintSqM += footprintSqM;
+          totalBuildingFloorsSqM += floorsSqM;
+          totalBuildingSqM += floorsSqM;
+          totalBuildingExtWallsSqM += extWallsSqM;
+          totalBuildingIntWallsSqM += intWallsSqM;
+          totalBuildingRoofSqM += footprintSqM;
+
           graphics.push(
             new Graphic({
               attributes: {
@@ -729,6 +761,18 @@ function LocateSamples() {
                 CONTAMTYPE: '',
                 CONTAMUNIT: '',
                 CONTAMVAL: 0,
+                footprintSqM,
+                floorsSqM,
+                totalSqM: floorsSqM,
+                extWallsSqM,
+                intWallsSqM,
+                roofSqM: footprintSqM,
+                footprintSqFt,
+                floorsSqFt,
+                totalSqFt: floorsSqFt,
+                extWallsSqFt,
+                intWallsSqFt,
+                roofSqFt: footprintSqFt,
               },
               geometry: new Point({
                 longitude: feature.geometry.coordinates[0],
@@ -756,6 +800,11 @@ function LocateSamples() {
       });
 
       console.log('totalBuildingFootprintSqM: ', totalBuildingFootprintSqM);
+      console.log('totalBuildingFloorsSqM: ', totalBuildingFloorsSqM);
+      console.log('totalBuildingSqM: ', totalBuildingSqM);
+      console.log('totalBuildingExtWallsSqM: ', totalBuildingExtWallsSqM);
+      console.log('totalBuildingIntWallsSqM: ', totalBuildingIntWallsSqM);
+      console.log('totalBuildingRoofSqM: ', totalBuildingRoofSqM);
 
       if (
         contaminationMap &&
@@ -1012,6 +1061,69 @@ function LocateSamples() {
       { label: 'Value of Vehicles', fieldName: 'val_vehic' },
       { label: 'x', fieldName: 'x' },
       { label: 'y', fieldName: 'y' },
+      { label: 'Contamination Type', fieldName: 'CONTAMTYPE' },
+      { label: 'Activity', fieldName: 'CONTAMVAL' },
+      { label: 'Unit of Measure', fieldName: 'CONTAMUNIT' },
+      {
+        label: 'Footprint Area (square meters)',
+        fieldName: 'footprintSqM',
+        format: 'number',
+      },
+      {
+        label: 'Floors Area (square meters)',
+        fieldName: 'floorsSqM',
+        format: 'number',
+      },
+      {
+        label: 'Total Area (square meters)',
+        fieldName: 'totalSqM',
+        format: 'number',
+      },
+      {
+        label: 'Ext Walls Area (square meters)',
+        fieldName: 'extWallsSqM',
+        format: 'number',
+      },
+      {
+        label: 'Int Walls Area (square meters)',
+        fieldName: 'intWallsSqM',
+        format: 'number',
+      },
+      {
+        label: 'Roof Area (square meters)',
+        fieldName: 'roofSqM',
+        format: 'number',
+      },
+      {
+        label: 'Footprint Area (square feet)',
+        fieldName: 'footprintSqFt',
+        format: 'number',
+      },
+      {
+        label: 'Floors Area (square feet)',
+        fieldName: 'floorsSqFt',
+        format: 'number',
+      },
+      {
+        label: 'Total Area (square feet)',
+        fieldName: 'totalSqFt',
+        format: 'number',
+      },
+      {
+        label: 'Ext Walls Area (square feet)',
+        fieldName: 'extWallsSqFt',
+        format: 'number',
+      },
+      {
+        label: 'Int Walls Area (square feet)',
+        fieldName: 'intWallsSqFt',
+        format: 'number',
+      },
+      {
+        label: 'Roof Area (square feet)',
+        fieldName: 'roofSqFt',
+        format: 'number',
+      },
     ];
 
     let curRow = fillOutCells({
@@ -1033,8 +1145,12 @@ function LocateSamples() {
       (graphic) => {
         rows.push(
           cols.map((col) => {
+            const fieldValue = graphic.attributes[col.fieldName];
             return {
-              value: graphic.attributes[col.fieldName],
+              value:
+                col.format === 'number'
+                  ? (parseSmallFloat(fieldValue, 2) ?? '').toLocaleString()
+                  : fieldValue,
             };
           }),
         );

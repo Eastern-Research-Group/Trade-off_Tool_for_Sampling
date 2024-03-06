@@ -1104,7 +1104,7 @@ export function getSampleTableColumns({
 }) {
   const baseColumnWidth = 100;
   const mediumColumnWidth = 140;
-  // const largeColumnWidth = 160;
+  const largeColumnWidth = 160;
 
   // add the base columns
   let columns: any[] = [
@@ -1210,11 +1210,11 @@ export function getSampleTableColumns({
       accessor: 'source',
       width: baseColumnWidth,
     },
-    {
-      Header: 'Square Feet',
-      accessor: 'sqft',
-      width: baseColumnWidth,
-    },
+    // {
+    //   Header: 'Square Feet',
+    //   accessor: 'sqft',
+    //   width: baseColumnWidth,
+    // },
     {
       Header: 'Structure Damage Category',
       accessor: 'st_damcat',
@@ -1255,23 +1255,81 @@ export function getSampleTableColumns({
       accessor: 'y',
       width: baseColumnWidth,
     },
-    // TODO look into adding these back in. CONTAMVAL will probably
-    //      be the new CFU value.
-    // {
-    //   Header: 'Contamination Type',
-    //   accessor: 'CONTAMTYPE',
-    //   width: largeColumnWidth,
-    // },
-    // {
-    //   Header: 'Activity',
-    //   accessor: 'CONTAMVAL',
-    //   width: baseColumnWidth,
-    // },
-    // {
-    //   Header: 'Unit of Measure',
-    //   accessor: 'CONTAMUNIT',
-    //   width: baseColumnWidth,
-    // },
+    {
+      Header: 'Contamination Type',
+      accessor: 'CONTAMTYPE',
+      width: largeColumnWidth,
+    },
+    {
+      Header: 'Activity',
+      accessor: 'CONTAMVAL',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Unit of Measure',
+      accessor: 'CONTAMUNIT',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Footprint Area (square meters)',
+      accessor: 'footprintSqM',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Floors Area (square meters)',
+      accessor: 'floorsSqM',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Total Area (square meters)',
+      accessor: 'totalSqM',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Ext Walls Area (square meters)',
+      accessor: 'extWallsSqM',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Int Walls Area (square meters)',
+      accessor: 'intWallsSqM',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Roof Area (square meters)',
+      accessor: 'roofSqM',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Footprint Area (square feet)',
+      accessor: 'footprintSqFt',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Floors Area (square feet)',
+      accessor: 'floorsSqFt',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Total Area (square feet)',
+      accessor: 'totalSqFt',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Ext Walls Area (square feet)',
+      accessor: 'extWallsSqFt',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Int Walls Area (square feet)',
+      accessor: 'intWallsSqFt',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Roof Area (square feet)',
+      accessor: 'roofSqFt',
+      width: baseColumnWidth,
+    },
   ];
 
   if (useEqualWidth) {
