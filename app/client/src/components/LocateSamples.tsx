@@ -2664,6 +2664,14 @@ function LocateSamples() {
                             )}
 
                             <div>
+                              <button
+                                css={submitButtonStyles}
+                                onClick={() => setTablePanelExpanded(true)}
+                              >
+                                View Results
+                              </button>
+                              <br />
+
                               {downloadStatus === 'fetching' && (
                                 <LoadingSpinner />
                               )}
@@ -2674,13 +2682,6 @@ function LocateSamples() {
                               {downloadStatus === 'success' &&
                                 downloadSuccessMessage}
 
-                              <button
-                                css={submitButtonStyles}
-                                onClick={() => setTablePanelExpanded(true)}
-                              >
-                                View Results
-                              </button>
-                              <br />
                               <button
                                 css={submitButtonStyles}
                                 onClick={downloadSummary}
