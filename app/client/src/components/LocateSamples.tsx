@@ -913,7 +913,7 @@ function LocateSamples() {
       { label: 'Census Block FIPS', fieldName: 'cbfips' },
       { label: 'ID', fieldName: 'fd_id' },
       { label: 'Flood Zone (2021)', fieldName: 'firmzone' },
-      { label: 'Foundation Height', fieldName: 'found_ht' },
+      { label: 'Foundation Height (feet)', fieldName: 'found_ht' },
       { label: 'Foundation Type', fieldName: 'found_type' },
       { label: 'Footprint ID', fieldName: 'ftprntid' },
       { label: 'Footprint Source', fieldName: 'ftprntsrc' },
