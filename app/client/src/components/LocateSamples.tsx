@@ -5,6 +5,7 @@ import { css } from '@emotion/react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import Collection from '@arcgis/core/core/Collection';
+import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import Graphic from '@arcgis/core/Graphic';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
@@ -24,6 +25,7 @@ import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 import Select from 'components/Select';
 // contexts
+import { CalculateContext } from 'contexts/Calculate';
 // import { DialogContext } from 'contexts/Dialog';
 import {
   useLayerProps,
@@ -56,11 +58,7 @@ import {
 } from 'config/errorMessages';
 // utils
 import { proxyFetch } from 'utils/fetchUtils';
-import {
-  // useGeometryTools,
-  useDynamicPopup,
-  useStartOver,
-} from 'utils/hooks';
+import { useGeometryTools, useDynamicPopup, useStartOver } from 'utils/hooks';
 import {
   // convertToPoint,
   createLayer,
@@ -431,6 +429,11 @@ const verticalCenterTextStyles = css`
   align-items: center;
 `;
 
+const fullWidthSelectStyles = css`
+  width: 100%;
+  margin-right: 10px;
+`;
+
 // --- components (LocateSamples) ---
 type GenerateRandomType = {
   status: 'none' | 'fetching' | 'success' | 'failure' | 'exceededTransferLimit';
@@ -439,6 +442,8 @@ type GenerateRandomType = {
 };
 
 function LocateSamples() {
+  const { contaminationMap, setContaminationMap } =
+    useContext(CalculateContext);
   // const { setOptions } = useContext(DialogContext);
   const { setGoTo, setGoToOptions, setTablePanelExpanded } =
     useContext(NavigationContext);
@@ -575,6 +580,8 @@ function LocateSamples() {
   //   else sketchVM[displayDimensions].cancel();
   // }
 
+  const { calculateArea } = useGeometryTools();
+
   // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
   // dropdown this will create an AOI layer. This also sets the sketchVM to use the
   // selected AOI and triggers a React useEffect to allow the user to sketch on the map.
@@ -639,8 +646,16 @@ function LocateSamples() {
     setGenerateRandomResponse({ status: 'fetching', data: [] });
 
     const features: any[] = [];
+    let totalAoiSqM = 0;
+    let totalBuildingFootprintSqM = 0;
     aoiMaskLayer.sketchLayer.graphics.forEach((graphic) => {
       const geometry = graphic.geometry as __esri.Polygon;
+
+      const areaSM = calculateArea(graphic);
+      if (typeof areaSM === 'number') {
+        totalAoiSqM += areaSM;
+        graphic.attributes.AREA = areaSM;
+      }
 
       const dim1Rings: number[][][] = [];
       geometry.rings.forEach((dim1) => {
@@ -669,63 +684,114 @@ function LocateSamples() {
         },
       });
     });
-
-    const params = {
-      type: 'FeatureCollection',
-      features,
-    };
+    console.log('totalAoiSqM: ', totalAoiSqM);
 
     try {
       // TODO - look into adding more queries here
-      const results: any = await proxyFetch(
-        `${services.data.nsi}/structures?fmt=fc`,
-        {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
+      const requests: any[] = [];
+      features.forEach((feature) => {
+        // TODO - look into adding more queries here
+        const request: any = proxyFetch(
+          `${services.data.nsi}/structures?fmt=fc`,
+          {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              type: 'FeatureCollection',
+              features: [feature],
+            }),
           },
-          body: JSON.stringify(params),
-        },
-      );
+        );
+
+        requests.push(request);
+      });
+
+      const responses = await Promise.all(requests);
 
       let editsCopy: EditsType = edits;
       const graphics: __esri.Graphic[] = [];
-      results.features.forEach((feature: any) => {
-        const { bldgtype, found_type, ftprntsrc, source, st_damcat } =
-          feature.properties;
-        graphics.push(
-          new Graphic({
-            attributes: {
-              ...feature.properties,
-              bldgtype: handleEnum(bldgtype, bldgTypeEnum),
-              found_type: handleEnum(found_type, foundTypeEnum),
-              ftprntsrc: handleEnum(ftprntsrc, ftprntsrcEnum),
-              source: handleEnum(source, sourceEnum),
-              st_damcat: handleEnum(st_damcat, stDamcatEnum),
-            },
-            geometry: new Point({
-              longitude: feature.geometry.coordinates[0],
-              latitude: feature.geometry.coordinates[1],
-              spatialReference: {
-                wkid: 102100,
+      responses.forEach((results) => {
+        results.features.forEach((feature: any) => {
+          const { bldgtype, found_type, ftprntsrc, source, sqft, st_damcat } =
+            feature.properties;
+          totalBuildingFootprintSqM += sqft / 10.7639104167;
+          graphics.push(
+            new Graphic({
+              attributes: {
+                ...feature.properties,
+                bldgtype: handleEnum(bldgtype, bldgTypeEnum),
+                found_type: handleEnum(found_type, foundTypeEnum),
+                ftprntsrc: handleEnum(ftprntsrc, ftprntsrcEnum),
+                source: handleEnum(source, sourceEnum),
+                st_damcat: handleEnum(st_damcat, stDamcatEnum),
+                CONTAMTYPE: '',
+                CONTAMUNIT: '',
+                CONTAMVAL: 0,
+              },
+              geometry: new Point({
+                longitude: feature.geometry.coordinates[0],
+                latitude: feature.geometry.coordinates[1],
+                spatialReference: {
+                  wkid: 102100,
+                },
+              }),
+              symbol: new TextSymbol({
+                text: '\ue687',
+                color: 'blue',
+                yoffset: -13,
+                font: {
+                  family: 'CalciteWebCoreIcons',
+                  size: 24,
+                },
+              }),
+              popupTemplate: {
+                title: '',
+                content: buildingMapPopup,
               },
             }),
-            symbol: new TextSymbol({
-              text: '\ue687',
-              color: 'blue',
-              yoffset: -13,
-              font: {
-                family: 'CalciteWebCoreIcons',
-                size: 24,
-              },
-            }),
-            popupTemplate: {
-              title: '',
-              content: buildingMapPopup,
-            },
-          }),
-        );
+          );
+        });
       });
+
+      console.log('totalBuildingFootprintSqM: ', totalBuildingFootprintSqM);
+
+      if (
+        contaminationMap &&
+        contaminationMap?.sketchLayer?.type === 'graphics'
+      ) {
+        // loop through structures
+        graphics.forEach((graphic) => {
+          // loop through contamination map features
+          (
+            contaminationMap.sketchLayer as __esri.GraphicsLayer
+          ).graphics.forEach((contamGraphic) => {
+            // call intersect to see if decon app intersects contamination map
+            if (
+              !graphic.geometry ||
+              !contamGraphic.geometry ||
+              !geometryEngine.intersects(
+                graphic.geometry,
+                contamGraphic.geometry,
+              )
+            ) {
+              return;
+            }
+
+            // const contamReduction = graphic.attributes.LOD_NON;
+            // console.log('contamReduction: ', contamReduction);
+            // const reductionFactor = parseSmallFloat(1 - contamReduction);
+            // console.log('parseSmallFloat 1 - contamReduction: ', reductionFactor);
+            const newCfu = contamGraphic.attributes.CONTAMVAL; // * reductionFactor;
+            graphic.attributes.CONTAMVAL = newCfu;
+            graphic.attributes.CONTAMUNIT = contamGraphic.attributes.CONTAMUNIT;
+            graphic.attributes.CONTAMTYPE = contamGraphic.attributes.CONTAMTYPE;
+          });
+        });
+      }
+
+      console.log('graphics: ', graphics);
 
       // Figure out what to add graphics to
       const aoiAssessed = selectedScenario?.layers.find(
@@ -737,6 +803,15 @@ function LocateSamples() {
           (l) => l.layerId === aoiAssessed.layerId,
         );
         if (aoiAssessedLayer?.sketchLayer?.type === 'graphics') {
+          editsCopy = updateLayerEdits({
+            edits,
+            scenario: selectedScenario,
+            layer: aoiAssessedLayer,
+            type: 'delete',
+            changes: aoiAssessedLayer?.sketchLayer.graphics,
+          });
+
+          aoiAssessedLayer?.sketchLayer.graphics.removeAll();
           aoiAssessedLayer?.sketchLayer.graphics.addMany(graphics);
 
           editsCopy = updateLayerEdits({
@@ -824,19 +899,19 @@ function LocateSamples() {
         }
       }
 
-      if (generateRandomMode === 'draw') {
-        // remove the graphics from the generate random mask
-        if (aoiMaskLayer && aoiMaskLayer.sketchLayer.type === 'graphics') {
-          editsCopy = updateLayerEdits({
-            edits: editsCopy,
-            layer: aoiMaskLayer,
-            type: 'delete',
-            changes: aoiMaskLayer.sketchLayer.graphics,
-          });
+      // if (generateRandomMode === 'draw') {
+      //   // remove the graphics from the generate random mask
+      //   if (aoiMaskLayer && aoiMaskLayer.sketchLayer.type === 'graphics') {
+      //     editsCopy = updateLayerEdits({
+      //       edits: editsCopy,
+      //       layer: aoiMaskLayer,
+      //       type: 'delete',
+      //       changes: aoiMaskLayer.sketchLayer.graphics,
+      //     });
 
-          aoiMaskLayer.sketchLayer.removeAll();
-        }
-      }
+      //     aoiMaskLayer.sketchLayer.removeAll();
+      //   }
+      // }
 
       // update the edits state
       setEdits(editsCopy);
@@ -2270,6 +2345,41 @@ function LocateSamples() {
                               Area of Interest" to use an Area of Interest file
                               to assess the AOI. Click Submit to assess the AOI.
                             </p>
+                            <div>
+                              <label htmlFor="contamination-map-select-input">
+                                Contamination map
+                              </label>
+                              <div css={inlineMenuStyles}>
+                                <Select
+                                  id="contamination-map-select"
+                                  inputId="contamination-map-select-input"
+                                  css={fullWidthSelectStyles}
+                                  styles={reactSelectStyles as any}
+                                  value={contaminationMap}
+                                  onChange={(ev) =>
+                                    setContaminationMap(ev as LayerType)
+                                  }
+                                  options={layers.filter(
+                                    (layer: any) =>
+                                      layer.layerType === 'Contamination Map',
+                                  )}
+                                />
+                                <button
+                                  css={addButtonStyles}
+                                  onClick={(ev) => {
+                                    setGoTo('addData');
+                                    setGoToOptions({
+                                      from: 'file',
+                                      layerType: 'Contamination Map',
+                                    });
+                                  }}
+                                >
+                                  Add
+                                </button>
+                              </div>
+                            </div>
+                            <br />
+
                             <div>
                               <input
                                 id="draw-aoi"

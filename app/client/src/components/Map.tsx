@@ -151,6 +151,8 @@ function Map({ height }: Props) {
           type = 'contaminationMapUpdated';
         } else if (layer.id === 'deconResults') {
           type = 'deconResults';
+        } else if (layer.title === 'Sketched Decon Mask') {
+          type = 'sketchedMask';
         } else if (layer.type === 'graphics' || groupType === 'graphics') {
           type = 'graphics';
         } else if (layer.type === 'feature' || groupType === 'feature') {
@@ -180,6 +182,7 @@ function Map({ height }: Props) {
         'map-image',
         'file',
         'feature',
+        'sketchedMask',
         'graphics',
         'contaminationMapUpdated',
         'deconResults',

@@ -886,7 +886,7 @@ export function getDefaultSamplingMaskLayer() {
   const graphicsLayer = new GraphicsLayer({
     id: layerUuid,
     title: 'Sketched Decon Mask',
-    listMode: 'hide',
+    listMode: 'show',
   });
 
   return {
@@ -903,7 +903,7 @@ export function getDefaultSamplingMaskLayer() {
     scenarioDescription: '',
     editType: 'add',
     visible: true,
-    listMode: 'hide',
+    listMode: 'show',
     sort: 0,
     geometryType: 'esriGeometryPolygon',
     addedFrom: 'sketch',
