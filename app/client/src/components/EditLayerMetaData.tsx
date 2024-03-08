@@ -280,6 +280,7 @@ function EditScenario({
           referenceLayers: [],
         },
         customAttributes: [],
+        deconTechSelections: [],
         calculateSettings: { current: settingDefaults },
       };
 

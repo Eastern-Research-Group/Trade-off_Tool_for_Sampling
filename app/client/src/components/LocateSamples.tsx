@@ -23,6 +23,7 @@ import LoadingSpinner from 'components/LoadingSpinner';
 import { buildingMapPopup } from 'components/MapPopup';
 import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
+import { ReactTableEditable } from 'components/ReactTable';
 import Select from 'components/Select';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
@@ -451,6 +452,7 @@ function LocateSamples() {
     useContext(NavigationContext);
   // const { setSampleTypeSelections } = useContext(PublishContext);
   const {
+    allSampleOptions,
     defaultSymbols,
     // setDefaultSymbolSingle,
     displayDimensions,
@@ -1546,6 +1548,76 @@ function LocateSamples() {
   // }, [defaultSymbols, userDefinedSampleType]);
 
   pointStyles.sort((a, b) => a.value.localeCompare(b.value));
+
+  const [defaultDeconSelections, setDefaultDeconSelections] = useState<any[]>(
+    [],
+  );
+  useEffect(() => {
+    if (defaultDeconSelections.length > 0) return;
+    setDefaultDeconSelections([
+      { id: 1, media: 'Soil/Vegetation', deconTech: allSampleOptions[1] }, // 'Methyl Bromide'
+      { id: 2, media: 'Streets - Asphalt', deconTech: allSampleOptions[2] }, // 'Vaporous Hydrogen Peroxide' },
+      {
+        id: 3,
+        media: 'Streets/Sidewalks - Concrete',
+        deconTech: allSampleOptions[3], // 'Low-Concentration Hydrogen Peroxide',
+      },
+      {
+        id: 4,
+        media: 'Building Exterior Walls',
+        deconTech: allSampleOptions[2], // 'Vaporous Hydrogen Peroxide',
+      },
+      {
+        id: 5,
+        media: 'Building Interior Floors',
+        deconTech: allSampleOptions[5],
+      }, // 'Bleach Spray' },
+      {
+        id: 6,
+        media: 'Building Interior Walls',
+        deconTech: allSampleOptions[5], // 'Hydrogen Peroxide PAA, Spor-klenz RTU',
+      },
+      { id: 7, media: 'Building Roofs', deconTech: allSampleOptions[1] }, // 'Methyl Bromide'
+    ]);
+  }, [allSampleOptions, defaultDeconSelections]);
+
+  const [deconSelections, setDeconSelections] = useState(
+    defaultDeconSelections,
+  );
+
+  // initialize decon selections
+  useEffect(() => {
+    if (!selectedScenario) {
+      setDeconSelections([]);
+      return;
+    }
+
+    if (selectedScenario.deconTechSelections.length > 0) {
+      setDeconSelections([...selectedScenario.deconTechSelections]);
+    } else {
+      setDeconSelections([...defaultDeconSelections]);
+
+      setEdits((edits) => {
+        const index = edits.edits.findIndex(
+          (item) =>
+            item.type === 'scenario' &&
+            item.layerId === selectedScenario.layerId,
+        );
+
+        const editedScenario = edits.edits[index] as ScenarioEditsType;
+        editedScenario.deconTechSelections = defaultDeconSelections;
+
+        return {
+          count: edits.count + 1,
+          edits: [
+            ...edits.edits.slice(0, index),
+            editedScenario,
+            ...edits.edits.slice(index + 1),
+          ],
+        };
+      });
+    }
+  }, [defaultDeconSelections, selectedScenario, setEdits]);
 
   return (
     <div css={panelContainer}>
@@ -2693,6 +2765,102 @@ function LocateSamples() {
                         )}
                     </Fragment>
                   )}
+                </div>
+              </AccordionItem>
+              <AccordionItem title="Select Decontamination Technology">
+                <div css={sectionContainer}>
+                  <p>
+                    A listing of different contamination scenarios that are
+                    present within the specified AOI is shown below. For each
+                    scenario, select an appropriate decontamination method to
+                    address the contamination. Click Specify Decon Methods to
+                    assign strategies. A{' '}
+                    <a>
+                      summary of available technologies and applicable
+                      considerations
+                    </a>{' '}
+                    is also available to review.
+                  </p>
+
+                  <ReactTableEditable
+                    id="tots-survey123-attributes-table"
+                    data={deconSelections}
+                    // data={deconSelections.map((d) => {
+                    //   return {
+                    //     ...d,
+                    //     deconTech: d.deconTech.label,
+                    //   };
+                    // })}
+                    idColumn={'ID'}
+                    striped={true}
+                    hideHeader={false}
+                    onDataChange={(
+                      rowIndex: any,
+                      columnId: any,
+                      value: any,
+                    ) => {
+                      const newTable = deconSelections.map(
+                        (row: any, index) => {
+                          // update the row if it is the row in focus and the data has changed
+                          if (index === rowIndex && row[columnId] !== value) {
+                            return {
+                              ...deconSelections[rowIndex],
+                              [columnId]: value,
+                            };
+                          }
+                          return row;
+                        },
+                      );
+                      console.log('newTable: ', newTable);
+
+                      setDeconSelections(newTable);
+
+                      const index = edits.edits.findIndex(
+                        (item) =>
+                          item.type === 'scenario' &&
+                          item.layerId === selectedScenario.layerId,
+                      );
+                      setEdits((edits) => {
+                        const editedScenario = edits.edits[
+                          index
+                        ] as ScenarioEditsType;
+                        editedScenario.deconTechSelections = newTable;
+
+                        return {
+                          count: edits.count + 1,
+                          edits: [
+                            ...edits.edits.slice(0, index),
+                            editedScenario,
+                            ...edits.edits.slice(index + 1),
+                          ],
+                        };
+                      });
+                    }}
+                    getColumns={(tableWidth: any) => {
+                      return [
+                        {
+                          Header: 'ID',
+                          accessor: 'ID',
+                          width: 0,
+                          show: false,
+                        },
+                        {
+                          Header: 'Contamination Scenario',
+                          accessor: 'media',
+                          width: 97,
+                        },
+                        {
+                          Header: 'Biological Decon Technology',
+                          accessor: 'deconTech',
+                          width: 100,
+                          editType: 'select',
+                          menuPortalTarget:
+                            document.getElementById('form-container'),
+                          options: allSampleOptions,
+                        },
+                      ];
+                    }}
+                  />
                 </div>
               </AccordionItem>
               {/* <AccordionItem

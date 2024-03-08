@@ -1517,6 +1517,7 @@ function ResultCard({ result }: ResultCardProps) {
             table,
             referenceLayersTable,
             customAttributes: newCustomAttributes,
+            deconTechSelections: [],
             calculateSettings: {
               current: calcSettings || settingDefaults,
               published: calcSettings || undefined,
