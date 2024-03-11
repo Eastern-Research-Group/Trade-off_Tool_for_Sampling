@@ -2775,7 +2775,11 @@ function LocateSamples() {
                     scenario, select an appropriate decontamination method to
                     address the contamination. Click Specify Decon Methods to
                     assign strategies. A{' '}
-                    <a>
+                    <a
+                      href="https://doc.arcgis.com/en/arcgis-online/manage-data/item-details.htm"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       summary of available technologies and applicable
                       considerations
                     </a>{' '}
@@ -2783,17 +2787,12 @@ function LocateSamples() {
                   </p>
 
                   <ReactTableEditable
-                    id="tots-survey123-attributes-table"
+                    id="tots-decon-tech-selectionstable"
                     data={deconSelections}
-                    // data={deconSelections.map((d) => {
-                    //   return {
-                    //     ...d,
-                    //     deconTech: d.deconTech.label,
-                    //   };
-                    // })}
                     idColumn={'ID'}
                     striped={true}
                     hideHeader={false}
+                    height={450}
                     onDataChange={(
                       rowIndex: any,
                       columnId: any,
@@ -2811,7 +2810,6 @@ function LocateSamples() {
                           return row;
                         },
                       );
-                      console.log('newTable: ', newTable);
 
                       setDeconSelections(newTable);
 
@@ -2852,7 +2850,7 @@ function LocateSamples() {
                         {
                           Header: 'Biological Decon Technology',
                           accessor: 'deconTech',
-                          width: 100,
+                          width: 118,
                           editType: 'select',
                           menuPortalTarget:
                             document.getElementById('form-container'),
