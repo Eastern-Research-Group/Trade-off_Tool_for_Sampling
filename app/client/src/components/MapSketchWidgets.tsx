@@ -101,6 +101,7 @@ function MapSketchWidgets({ mapView, sceneView }: Props) {
     // getTrainingMode
   } = useContext(NavigationContext);
   const {
+    setAoiData,
     defaultSymbols,
     edits,
     setEdits,
@@ -924,6 +925,43 @@ function MapSketchWidgets({ mapView, sceneView }: Props) {
       setter: null,
     });
 
+    if (updateLayer.layer.layerType === 'Sampling Mask') {
+      setAoiData((aoiDataCur) => {
+        let newGraphics: __esri.Graphic[] = [];
+
+        if (updateLayer.eventType === 'add') {
+          newGraphics = [...newGraphics, ...updateLayer.eventChanges];
+        }
+        if (updateLayer.eventType === 'update') {
+          aoiDataCur.graphics.forEach((graphic) => {
+            const updatedItem = updateLayer.eventChanges.find(
+              (i: any) =>
+                i.attributes.PERMANENT_IDENTIFIER ===
+                graphic.attributes.PERMANENT_IDENTIFIER,
+            );
+
+            newGraphics.push(updatedItem ?? graphic);
+          });
+        }
+        if (updateLayer.eventType === 'delete') {
+          aoiDataCur.graphics.forEach((graphic) => {
+            const updatedItem = updateLayer.eventChanges.find(
+              (i: any) =>
+                i.attributes.PERMANENT_IDENTIFIER ===
+                graphic.attributes.PERMANENT_IDENTIFIER,
+            );
+
+            if (!updatedItem) newGraphics.push(graphic);
+          });
+        }
+
+        return {
+          count: aoiDataCur.count + 1,
+          graphics: newGraphics,
+        };
+      });
+    }
+
     // save the layer changes
     // make a copy of the edits context variable
     const editsCopy = updateLayerEdits({
@@ -962,6 +1000,7 @@ function MapSketchWidgets({ mapView, sceneView }: Props) {
     setLayers,
     selectedScenario,
     setSelectedScenario,
+    setAoiData,
   ]);
 
   // Reactivate aoiSketchVM after the updateSketchEvent is null

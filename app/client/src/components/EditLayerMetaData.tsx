@@ -18,6 +18,7 @@ import { isServiceNameAvailable } from 'utils/arcGisRestUtils';
 import {
   createLayerEditTemplate,
   createSampleLayer,
+  generateUUID,
   updateLayerEdits,
 } from 'utils/sketchUtils';
 import { createErrorObject } from 'utils/utils';
@@ -32,6 +33,7 @@ import {
 // styles
 import { colors, linkButtonStyles } from 'styles';
 import { LayerEditsType, ScenarioEditsType } from 'types/Edits';
+import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 
 export type SaveStatusType =
   | 'none'
@@ -201,6 +203,14 @@ function EditScenario({
         title: scenarioName,
       });
 
+      const layerUuid = generateUUID();
+      const graphicsLayer = new GraphicsLayer({
+        id: layerUuid,
+        title: 'AOI Assessment',
+        listMode: 'hide',
+      });
+      groupLayer.layers.add(graphicsLayer);
+
       // hide all other plans from the map
       layers.forEach((layer) => {
         if (layer.parentLayer) {
@@ -215,6 +225,7 @@ function EditScenario({
 
       const newLayers: LayerEditsType[] = [];
       let tempSketchLayer: LayerType | null = null;
+      let tempAssessedAoiLayer: LayerType | null = null;
       if (addDefaultSampleLayer) {
         edits.edits.forEach((edit) => {
           if (
@@ -225,11 +236,36 @@ function EditScenario({
           }
         });
 
+        tempAssessedAoiLayer = {
+          id: -1,
+          pointsId: -1,
+          uuid: layerUuid,
+          layerId: layerUuid,
+          portalId: '',
+          value: 'aoiAssessed',
+          name: 'AOI Assessment',
+          label: 'AOI Assessment',
+          layerType: 'AOI Assessed',
+          editType: 'add',
+          visible: true,
+          listMode: 'hide',
+          sort: 0,
+          geometryType: 'esriGeometryPolygon',
+          addedFrom: 'sketch',
+          status: 'added',
+          sketchLayer: graphicsLayer,
+          pointsLayer: null,
+          hybridLayer: null,
+          parentLayer: groupLayer,
+        } as LayerType;
+
         if (newLayers.length === 0) {
           // no sketchable layers were available, create one
           tempSketchLayer = createSampleLayer(undefined, groupLayer);
+          newLayers.push(createLayerEditTemplate(tempAssessedAoiLayer, 'add'));
           newLayers.push(createLayerEditTemplate(tempSketchLayer, 'add'));
         } else {
+          newLayers.push(createLayerEditTemplate(tempAssessedAoiLayer, 'add'));
           // update the parentLayer of layers being added to the group layer
           setLayers((layers) => {
             newLayers.forEach((newLayer) => {
@@ -328,7 +364,9 @@ function EditScenario({
         setLayers((layers) => {
           if (!tempSketchLayer) return layers;
 
-          return [...layers, tempSketchLayer];
+          const tLayers = [...layers, tempSketchLayer];
+          if (tempAssessedAoiLayer) tLayers.push(tempAssessedAoiLayer);
+          return tLayers;
         });
 
         // update sketchLayer (clear parent layer)

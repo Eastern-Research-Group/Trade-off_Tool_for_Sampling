@@ -4,14 +4,14 @@ import React, { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import Collection from '@arcgis/core/core/Collection';
-import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
-import Graphic from '@arcgis/core/Graphic';
-import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
+// import Collection from '@arcgis/core/core/Collection';
+// import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
+// import Graphic from '@arcgis/core/Graphic';
+// import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
-import Point from '@arcgis/core/geometry/Point';
+// import Point from '@arcgis/core/geometry/Point';
 // import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
-import TextSymbol from '@arcgis/core/symbols/TextSymbol';
+// import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
 // import ColorPicker from 'components/ColorPicker';
@@ -20,7 +20,7 @@ import {
   // EditLayer,
 } from 'components/EditLayerMetaData';
 import LoadingSpinner from 'components/LoadingSpinner';
-import { buildingMapPopup } from 'components/MapPopup';
+// import { buildingMapPopup } from 'components/MapPopup';
 import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 import { ReactTableEditable } from 'components/ReactTable';
@@ -58,8 +58,8 @@ import {
   webServiceErrorMessage,
 } from 'config/errorMessages';
 // utils
-import { proxyFetch } from 'utils/fetchUtils';
-import { useGeometryTools, useDynamicPopup, useStartOver } from 'utils/hooks';
+// import { proxyFetch } from 'utils/fetchUtils';
+import { useDynamicPopup, useStartOver } from 'utils/hooks';
 import {
   // convertToPoint,
   createLayer,
@@ -77,7 +77,7 @@ import {
 } from 'utils/sketchUtils';
 import {
   activateSketchButton,
-  createErrorObject,
+  // createErrorObject,
   // getLayerName,
   getScenarioName,
   parseSmallFloat,
@@ -85,46 +85,46 @@ import {
 // styles
 import { reactSelectStyles } from 'styles';
 
-const bldgTypeEnum = {
-  C: 'Concrete',
-  H: 'Manufactured',
-  M: 'Masonry',
-  S: 'Steel',
-  W: 'Wood',
-};
-const foundTypeEnum = {
-  C: 'Crawl',
-  B: 'Basement',
-  S: 'Slab',
-  P: 'Pier',
-  I: 'Pile',
-  F: 'Fill',
-  W: 'Solid Wall',
-};
-const ftprntsrcEnum = {
-  B: 'Bing',
-  O: 'Oak Ridge National Labs',
-  N: 'National Geospatial-Intelligence Agency',
-  M: 'Map Building Layer',
-};
-const sourceEnum = {
-  P: 'Parcel',
-  E: 'ESRI',
-  H: 'HIFLD Hospital',
-  N: 'HIFLD Nursing Home',
-  S: 'National Center for Education Statistics',
-  X: 'HAZUS/NSI-2015',
-};
-const stDamcatEnum = {
-  RES: 'Residential',
-  COM: 'Commercial',
-  IND: 'Industrial',
-  PUB: 'Public',
-};
+// const bldgTypeEnum = {
+//   C: 'Concrete',
+//   H: 'Manufactured',
+//   M: 'Masonry',
+//   S: 'Steel',
+//   W: 'Wood',
+// };
+// const foundTypeEnum = {
+//   C: 'Crawl',
+//   B: 'Basement',
+//   S: 'Slab',
+//   P: 'Pier',
+//   I: 'Pile',
+//   F: 'Fill',
+//   W: 'Solid Wall',
+// };
+// const ftprntsrcEnum = {
+//   B: 'Bing',
+//   O: 'Oak Ridge National Labs',
+//   N: 'National Geospatial-Intelligence Agency',
+//   M: 'Map Building Layer',
+// };
+// const sourceEnum = {
+//   P: 'Parcel',
+//   E: 'ESRI',
+//   H: 'HIFLD Hospital',
+//   N: 'HIFLD Nursing Home',
+//   S: 'National Center for Education Statistics',
+//   X: 'HAZUS/NSI-2015',
+// };
+// const stDamcatEnum = {
+//   RES: 'Residential',
+//   COM: 'Commercial',
+//   IND: 'Industrial',
+//   PUB: 'Public',
+// };
 
-function handleEnum(value: string, obj: any) {
-  return obj.hasOwnProperty(value) ? obj[value] : value;
-}
+// function handleEnum(value: string, obj: any) {
+//   return obj.hasOwnProperty(value) ? obj[value] : value;
+// }
 
 type ShapeTypeSelect = {
   value: string;
@@ -146,6 +146,18 @@ const pointStyles: ShapeTypeSelect[] = [
     label: 'Octagon',
   },
 ];
+
+const hazardousOptions: ShapeTypeSelect[] = [
+  { label: 'Hazardous', value: 'hazardous' },
+  { label: 'Non-Hazardous', value: 'non-hazardous' },
+];
+
+// const partitionFactors = {
+//   'Building Exterior Walls': 0.5,
+//   'Building Interior Walls': 0.3,
+//   'Building Interior Floors': 0.7,
+//   'Building Roofs': 1,
+// } as any;
 
 // /**
 //  * Determines if the desired name has already been used. If it has
@@ -584,7 +596,7 @@ function LocateSamples() {
   //   else sketchVM[displayDimensions].cancel();
   // }
 
-  const { calculateArea } = useGeometryTools();
+  // const { calculateArea } = useGeometryTools();
 
   // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
   // dropdown this will create an AOI layer. This also sets the sketchVM to use the
@@ -627,364 +639,504 @@ function LocateSamples() {
     }
   }
 
-  // Handle a user generating random samples
-  async function assessAoi() {
-    if (!map || !sketchLayer) return;
+  // // Handle a user generating random samples
+  // async function assessAoi() {
+  //   if (!map || !sketchLayer) return;
 
-    activateSketchButton('disable-all-buttons');
-    sketchVM?.[displayDimensions].cancel();
-    aoiSketchVM?.cancel();
+  //   activateSketchButton('disable-all-buttons');
+  //   sketchVM?.[displayDimensions].cancel();
+  //   aoiSketchVM?.cancel();
 
-    const aoiMaskLayer: LayerType | null =
-      generateRandomMode === 'draw'
-        ? aoiSketchLayer
-        : generateRandomMode === 'file'
-          ? selectedAoiFile
-          : null;
-    if (
-      !aoiMaskLayer?.sketchLayer ||
-      aoiMaskLayer.sketchLayer.type !== 'graphics'
-    )
-      return;
+  //   const aoiMaskLayer: LayerType | null =
+  //     generateRandomMode === 'draw'
+  //       ? aoiSketchLayer
+  //       : generateRandomMode === 'file'
+  //         ? selectedAoiFile
+  //         : null;
+  //   if (
+  //     !aoiMaskLayer?.sketchLayer ||
+  //     aoiMaskLayer.sketchLayer.type !== 'graphics'
+  //   )
+  //     return;
 
-    setGenerateRandomResponse({ status: 'fetching', data: [] });
+  //   setGenerateRandomResponse({ status: 'fetching', data: [] });
 
-    const features: any[] = [];
-    let totalAoiSqM = 0;
-    let totalBuildingFootprintSqM = 0;
-    let totalBuildingFloorsSqM = 0;
-    let totalBuildingSqM = 0;
-    let totalBuildingExtWallsSqM = 0;
-    let totalBuildingIntWallsSqM = 0;
-    let totalBuildingRoofSqM = 0;
-    aoiMaskLayer.sketchLayer.graphics.forEach((graphic) => {
-      const geometry = graphic.geometry as __esri.Polygon;
+  //   const features: any[] = [];
+  //   let totalAoiSqM = 0;
+  //   let totalBuildingFootprintSqM = 0;
+  //   let totalBuildingFloorsSqM = 0;
+  //   let totalBuildingSqM = 0;
+  //   let totalBuildingExtWallsSqM = 0;
+  //   let totalBuildingIntWallsSqM = 0;
+  //   let totalBuildingRoofSqM = 0;
+  //   aoiMaskLayer.sketchLayer.graphics.forEach((graphic) => {
+  //     const geometry = graphic.geometry as __esri.Polygon;
 
-      const areaSM = calculateArea(graphic);
-      if (typeof areaSM === 'number') {
-        totalAoiSqM += areaSM;
-        graphic.attributes.AREA = areaSM;
-      }
+  //     const areaSM = calculateArea(graphic);
+  //     if (typeof areaSM === 'number') {
+  //       totalAoiSqM += areaSM;
+  //       graphic.attributes.AREA = areaSM;
+  //     }
 
-      const dim1Rings: number[][][] = [];
-      geometry.rings.forEach((dim1) => {
-        const dim2Rings: number[][] = [];
-        dim1.forEach((dim2) => {
-          const point = new Point({
-            spatialReference: {
-              wkid: 102100,
-            },
-            x: dim2[0],
-            y: dim2[1],
-          });
+  //     const dim1Rings: number[][][] = [];
+  //     geometry.rings.forEach((dim1) => {
+  //       const dim2Rings: number[][] = [];
+  //       dim1.forEach((dim2) => {
+  //         const point = new Point({
+  //           spatialReference: {
+  //             wkid: 102100,
+  //           },
+  //           x: dim2[0],
+  //           y: dim2[1],
+  //         });
 
-          dim2Rings.push([point.longitude, point.latitude]);
-        });
+  //         dim2Rings.push([point.longitude, point.latitude]);
+  //       });
 
-        dim1Rings.push(dim2Rings);
-      });
+  //       dim1Rings.push(dim2Rings);
+  //     });
 
-      features.push({
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'Polygon',
-          coordinates: dim1Rings,
-        },
-      });
-    });
-    console.log('totalAoiSqM: ', totalAoiSqM);
+  //     features.push({
+  //       type: 'Feature',
+  //       properties: {},
+  //       geometry: {
+  //         type: 'Polygon',
+  //         coordinates: dim1Rings,
+  //       },
+  //     });
+  //   });
+  //   console.log('totalAoiSqM: ', totalAoiSqM);
 
-    try {
-      // TODO - look into adding more queries here
-      const requests: any[] = [];
-      features.forEach((feature) => {
-        // TODO - look into adding more queries here
-        const request: any = proxyFetch(
-          `${services.data.nsi}/structures?fmt=fc`,
-          {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json',
-            },
-            body: JSON.stringify({
-              type: 'FeatureCollection',
-              features: [feature],
-            }),
-          },
-        );
+  //   try {
+  //     // TODO - look into adding more queries here
+  //     const requests: any[] = [];
+  //     features.forEach((feature) => {
+  //       const request: any = proxyFetch(
+  //         `${services.data.nsi}/structures?fmt=fc`,
+  //         {
+  //           method: 'POST',
+  //           headers: {
+  //             'content-type': 'application/json',
+  //           },
+  //           body: JSON.stringify({
+  //             type: 'FeatureCollection',
+  //             features: [feature],
+  //           }),
+  //         },
+  //       );
 
-        requests.push(request);
-      });
+  //       requests.push(request);
+  //     });
 
-      const responses = await Promise.all(requests);
+  //     const responses = await Promise.all(requests);
 
-      let editsCopy: EditsType = edits;
-      const graphics: __esri.Graphic[] = [];
-      responses.forEach((results) => {
-        results.features.forEach((feature: any) => {
-          const {
-            bldgtype,
-            found_type,
-            ftprntsrc,
-            num_story,
-            source,
-            sqft,
-            st_damcat,
-          } = feature.properties;
+  //     let editsCopy: EditsType = edits;
+  //     const graphics: __esri.Graphic[] = []; // TODO - store this in context
+  //     responses.forEach((results) => {
+  //       results.features.forEach((feature: any) => {
+  //         const {
+  //           bldgtype,
+  //           found_type,
+  //           ftprntsrc,
+  //           num_story,
+  //           source,
+  //           sqft,
+  //           st_damcat,
+  //         } = feature.properties;
 
-          // feet
-          const footprintSqFt = sqft;
-          const floorsSqFt = num_story * footprintSqFt;
-          const extWallsSqFt = Math.sqrt(floorsSqFt) * 10 * 4 * num_story;
-          const intWallsSqFt = extWallsSqFt * 3;
+  //         // feet
+  //         const footprintSqFt = sqft;
+  //         const floorsSqFt = num_story * footprintSqFt;
+  //         const extWallsSqFt = Math.sqrt(floorsSqFt) * 10 * 4 * num_story;
+  //         const intWallsSqFt = extWallsSqFt * 3;
 
-          // meters
-          const footprintSqM = sqft / 10.7639104167;
-          const floorsSqM = num_story * footprintSqM;
-          const extWallsSqM = Math.sqrt(floorsSqM) * 10 * 4 * num_story;
-          const intWallsSqM = extWallsSqM * 3;
-          totalBuildingFootprintSqM += footprintSqM;
-          totalBuildingFloorsSqM += floorsSqM;
-          totalBuildingSqM += floorsSqM;
-          totalBuildingExtWallsSqM += extWallsSqM;
-          totalBuildingIntWallsSqM += intWallsSqM;
-          totalBuildingRoofSqM += footprintSqM;
+  //         // meters
+  //         const footprintSqM = sqft / 10.7639104167;
+  //         const floorsSqM = num_story * footprintSqM;
+  //         const extWallsSqM = Math.sqrt(floorsSqM) * 10 * 4 * num_story;
+  //         const intWallsSqM = extWallsSqM * 3;
+  //         totalBuildingFootprintSqM += footprintSqM;
+  //         totalBuildingFloorsSqM += floorsSqM;
+  //         totalBuildingSqM += floorsSqM;
+  //         totalBuildingExtWallsSqM += extWallsSqM;
+  //         totalBuildingIntWallsSqM += intWallsSqM;
+  //         totalBuildingRoofSqM += footprintSqM;
 
-          graphics.push(
-            new Graphic({
-              attributes: {
-                ...feature.properties,
-                bldgtype: handleEnum(bldgtype, bldgTypeEnum),
-                found_type: handleEnum(found_type, foundTypeEnum),
-                ftprntsrc: handleEnum(ftprntsrc, ftprntsrcEnum),
-                source: handleEnum(source, sourceEnum),
-                st_damcat: handleEnum(st_damcat, stDamcatEnum),
-                CONTAMTYPE: '',
-                CONTAMUNIT: '',
-                CONTAMVAL: 0,
-                footprintSqM,
-                floorsSqM,
-                totalSqM: floorsSqM,
-                extWallsSqM,
-                intWallsSqM,
-                roofSqM: footprintSqM,
-                footprintSqFt,
-                floorsSqFt,
-                totalSqFt: floorsSqFt,
-                extWallsSqFt,
-                intWallsSqFt,
-                roofSqFt: footprintSqFt,
-              },
-              geometry: new Point({
-                longitude: feature.geometry.coordinates[0],
-                latitude: feature.geometry.coordinates[1],
-                spatialReference: {
-                  wkid: 102100,
-                },
-              }),
-              symbol: new TextSymbol({
-                text: '\ue687',
-                color: 'blue',
-                yoffset: -13,
-                font: {
-                  family: 'CalciteWebCoreIcons',
-                  size: 24,
-                },
-              }),
-              popupTemplate: {
-                title: '',
-                content: buildingMapPopup,
-              },
-            }),
-          );
-        });
-      });
+  //         graphics.push(
+  //           new Graphic({
+  //             attributes: {
+  //               ...feature.properties,
+  //               bldgtype: handleEnum(bldgtype, bldgTypeEnum),
+  //               found_type: handleEnum(found_type, foundTypeEnum),
+  //               ftprntsrc: handleEnum(ftprntsrc, ftprntsrcEnum),
+  //               source: handleEnum(source, sourceEnum),
+  //               st_damcat: handleEnum(st_damcat, stDamcatEnum),
+  //               CONTAMTYPE: '',
+  //               CONTAMUNIT: '',
+  //               CONTAMVAL: 0,
+  //               footprintSqM,
+  //               floorsSqM,
+  //               totalSqM: floorsSqM,
+  //               extWallsSqM,
+  //               intWallsSqM,
+  //               roofSqM: footprintSqM,
+  //               footprintSqFt,
+  //               floorsSqFt,
+  //               totalSqFt: floorsSqFt,
+  //               extWallsSqFt,
+  //               intWallsSqFt,
+  //               roofSqFt: footprintSqFt,
+  //             },
+  //             geometry: new Point({
+  //               longitude: feature.geometry.coordinates[0],
+  //               latitude: feature.geometry.coordinates[1],
+  //               spatialReference: {
+  //                 wkid: 102100,
+  //               },
+  //             }),
+  //             symbol: new TextSymbol({
+  //               text: '\ue687',
+  //               color: 'blue',
+  //               yoffset: -13,
+  //               font: {
+  //                 family: 'CalciteWebCoreIcons',
+  //                 size: 24,
+  //               },
+  //             }),
+  //             popupTemplate: {
+  //               title: '',
+  //               content: buildingMapPopup,
+  //             },
+  //           }),
+  //         );
+  //       });
+  //     });
 
-      console.log('totalBuildingFootprintSqM: ', totalBuildingFootprintSqM);
-      console.log('totalBuildingFloorsSqM: ', totalBuildingFloorsSqM);
-      console.log('totalBuildingSqM: ', totalBuildingSqM);
-      console.log('totalBuildingExtWallsSqM: ', totalBuildingExtWallsSqM);
-      console.log('totalBuildingIntWallsSqM: ', totalBuildingIntWallsSqM);
-      console.log('totalBuildingRoofSqM: ', totalBuildingRoofSqM);
+  //     // TODO - Can calculate elsewhere using graphics
+  //     console.log('totalBuildingFootprintSqM: ', totalBuildingFootprintSqM);
+  //     console.log('totalBuildingFloorsSqM: ', totalBuildingFloorsSqM);
+  //     console.log('totalBuildingSqM: ', totalBuildingSqM);
+  //     console.log('totalBuildingExtWallsSqM: ', totalBuildingExtWallsSqM);
+  //     console.log('totalBuildingIntWallsSqM: ', totalBuildingIntWallsSqM);
+  //     console.log('totalBuildingRoofSqM: ', totalBuildingRoofSqM);
+  //     const nonBuildingArea = totalAoiSqM - totalBuildingFootprintSqM;
+  //     console.log('nonBuildingArea: ', nonBuildingArea);
 
-      if (
-        contaminationMap &&
-        contaminationMap?.sketchLayer?.type === 'graphics'
-      ) {
-        // loop through structures
-        graphics.forEach((graphic) => {
-          // loop through contamination map features
-          (
-            contaminationMap.sketchLayer as __esri.GraphicsLayer
-          ).graphics.forEach((contamGraphic) => {
-            // call intersect to see if decon app intersects contamination map
-            if (
-              !graphic.geometry ||
-              !contamGraphic.geometry ||
-              !geometryEngine.intersects(
-                graphic.geometry,
-                contamGraphic.geometry,
-              )
-            ) {
-              return;
-            }
+  //     const contaminedAoiAreas: { [key: number]: number } = {};
+  //     const contaminationPercentages: { [key: number]: number } = {};
+  //     let totalBuildingCfu = 0;
+  //     if (
+  //       contaminationMap &&
+  //       contaminationMap?.sketchLayer?.type === 'graphics'
+  //     ) {
+  //       // loop through structures
+  //       graphics.forEach((graphic) => {
+  //         // loop through contamination map features
+  //         (
+  //           contaminationMap.sketchLayer as __esri.GraphicsLayer
+  //         ).graphics.forEach((contamGraphic) => {
+  //           // call intersect to see if decon app intersects contamination map
+  //           if (
+  //             !graphic.geometry ||
+  //             !contamGraphic.geometry ||
+  //             !geometryEngine.intersects(
+  //               graphic.geometry,
+  //               contamGraphic.geometry,
+  //             )
+  //           ) {
+  //             return;
+  //           }
 
-            // const contamReduction = graphic.attributes.LOD_NON;
-            // console.log('contamReduction: ', contamReduction);
-            // const reductionFactor = parseSmallFloat(1 - contamReduction);
-            // console.log('parseSmallFloat 1 - contamReduction: ', reductionFactor);
-            const newCfu = contamGraphic.attributes.CONTAMVAL; // * reductionFactor;
-            graphic.attributes.CONTAMVAL = newCfu;
-            graphic.attributes.CONTAMUNIT = contamGraphic.attributes.CONTAMUNIT;
-            graphic.attributes.CONTAMTYPE = contamGraphic.attributes.CONTAMTYPE;
-          });
-        });
-      }
+  //           // const contamReduction = graphic.attributes.LOD_NON;
+  //           // console.log('contamReduction: ', contamReduction);
+  //           // const reductionFactor = parseSmallFloat(1 - contamReduction);
+  //           // console.log('parseSmallFloat 1 - contamReduction: ', reductionFactor);
+  //           const newCfu = contamGraphic.attributes.CONTAMVAL; // * reductionFactor;
+  //           graphic.attributes.CONTAMVAL = newCfu;
+  //           graphic.attributes.CONTAMUNIT = contamGraphic.attributes.CONTAMUNIT;
+  //           graphic.attributes.CONTAMTYPE = contamGraphic.attributes.CONTAMTYPE;
 
-      console.log('graphics: ', graphics);
+  //           totalBuildingCfu += newCfu;
+  //         });
+  //       });
 
-      // Figure out what to add graphics to
-      const aoiAssessed = selectedScenario?.layers.find(
-        (l) => l.layerType === 'AOI Assessed',
-      );
+  //       // partition AOI to determine where contamination is
+  //       aoiMaskLayer.sketchLayer.graphics.forEach((graphic) => {
+  //         (
+  //           contaminationMap.sketchLayer as __esri.GraphicsLayer
+  //         ).graphics.forEach((contamGraphic) => {
+  //           const contamValue = contamGraphic.attributes.CONTAMVAL as number;
+  //           const outGeometry = geometryEngine.intersect(
+  //             graphic.geometry,
+  //             contamGraphic.geometry,
+  //           ) as __esri.Geometry;
+  //           const clippedAreaM2 = calculateArea(outGeometry);
+  //           const currArea = contaminedAoiAreas[contamValue];
+  //           if (typeof clippedAreaM2 === 'number')
+  //             contaminedAoiAreas[contamValue] = currArea
+  //               ? currArea + clippedAreaM2
+  //               : clippedAreaM2;
+  //         });
+  //       });
 
-      if (aoiAssessed) {
-        const aoiAssessedLayer = layers.find(
-          (l) => l.layerId === aoiAssessed.layerId,
-        );
-        if (aoiAssessedLayer?.sketchLayer?.type === 'graphics') {
-          editsCopy = updateLayerEdits({
-            edits,
-            scenario: selectedScenario,
-            layer: aoiAssessedLayer,
-            type: 'delete',
-            changes: aoiAssessedLayer?.sketchLayer.graphics,
-          });
+  //       Object.keys(contaminedAoiAreas).forEach((key: any) => {
+  //         contaminationPercentages[key] = contaminedAoiAreas[key] / totalAoiSqM;
+  //       });
+  //     }
+  //     console.log('contaminedAoiAreas: ', contaminedAoiAreas);
+  //     console.log('contaminationPercentages: ', contaminationPercentages);
 
-          aoiAssessedLayer?.sketchLayer.graphics.removeAll();
-          aoiAssessedLayer?.sketchLayer.graphics.addMany(graphics);
+  //     // perform calculations off percentAOI stuff
+  //     let totalFinalContam = 0;
+  //     let totalSolidWasteM3 = 0;
+  //     let totalLiquidWasteM3 = 0;
+  //     let totalDeconCost = 0;
+  //     let totalApplicationTime = 0;
+  //     let totalResidenceTime = 0;
+  //     let totalDeconTime = 0;
+  //     deconSelections.forEach((sel) => {
+  //       // find decon settings
+  //       const deconTech = sel.deconTech.value;
+  //       const media = sel.media;
+  //       if (!deconTech) return;
 
-          editsCopy = updateLayerEdits({
-            edits,
-            scenario: selectedScenario,
-            layer: aoiAssessedLayer,
-            type: 'add',
-            changes: new Collection(graphics),
-          });
-        }
-      } else {
-        const scenarioLayer = map.layers.find(
-          (l) => l.id === selectedScenario?.layerId,
-        );
-        if (scenarioLayer && scenarioLayer.type === 'group') {
-          const tmpScenarioLayer = scenarioLayer as __esri.GroupLayer;
-          //&& scenarioLayer.layerType === '') {
-          // build the layer
-          const layerUuid = generateUUID();
-          const graphicsLayer = new GraphicsLayer({
-            id: layerUuid,
-            title: 'AOI Assessment',
-            listMode: 'hide',
-            graphics,
-          });
+  //       let surfaceArea = 0;
+  //       let avgCfu = 0;
+  //       console.log('media: ', media);
+  //       if (media.includes('Building ')) {
+  //         avgCfu = totalBuildingCfu * partitionFactors[media];
 
-          // scenarioLayer..layers.add(graphicsLayer);
-          tmpScenarioLayer.layers.add(graphicsLayer);
+  //         if (media === 'Building Exterior Walls')
+  //           surfaceArea = totalBuildingExtWallsSqM;
+  //         if (media === 'Building Interior Walls')
+  //           surfaceArea = totalBuildingIntWallsSqM;
+  //         if (media === 'Building Interior Floors')
+  //           surfaceArea = totalBuildingFloorsSqM;
+  //         if (media === 'Building Roofs') surfaceArea = totalBuildingRoofSqM;
+  //       } else {
+  //         const pctFactor = sel.pctAoi * 0.01;
 
-          const layer = {
-            id: -1,
-            pointsId: -1,
-            uuid: layerUuid,
-            layerId: layerUuid,
-            portalId: '',
-            value: 'aoiAssessed',
-            name: 'AOI Assessment',
-            label: 'AOI Assessment',
-            layerType: 'AOI Assessed',
-            editType: 'add',
-            visible: true,
-            listMode: 'hide',
-            sort: 0,
-            geometryType: 'esriGeometryPolygon',
-            addedFrom: 'sketch',
-            status: 'added',
-            sketchLayer: graphicsLayer,
-            pointsLayer: null,
-            hybridLayer: null,
-            parentLayer: null,
-          } as LayerType;
+  //         // get surface area of soil, asphalt or concrete
+  //         //             60 =             100 * 0.6 surface area of concrete
+  //         surfaceArea = nonBuildingArea * pctFactor;
 
-          // add it to edits
-          editsCopy = updateLayerEdits({
-            edits,
-            scenario: selectedScenario,
-            layer,
-            type: 'add',
-            changes: new Collection(graphics),
-          });
+  //         // get total CFU for media
+  //         let totalArea = 0;
+  //         let totalCfu = 0;
+  //         Object.keys(contaminationPercentages).forEach((key: any) => {
+  //           // area of media and cfu level
+  //           const pctCfu = contaminationPercentages[key];
+  //           //                34.2 =   0.57 * 60
+  //           const surfaceAreaSfCfu = pctCfu * surfaceArea;
+  //           totalArea += surfaceAreaSfCfu;
 
-          setSelectedScenario((selectedScenario) => {
-            if (!selectedScenario) return selectedScenario;
+  //           // 34.2M  =             34.2 * 1M;
+  //           // SUM    = 35.916M CFU
+  //           totalCfu += surfaceAreaSfCfu * key;
+  //         });
 
-            const scenario = editsCopy.edits.find(
-              (edit) =>
-                edit.type === 'scenario' &&
-                edit.layerId === selectedScenario.layerId,
-            ) as ScenarioEditsType;
-            const newLayer = scenario.layers.find(
-              (l) => l.layerId === layer.layerId,
-            );
+  //         avgCfu = totalCfu / totalArea;
+  //         console.log('avgCfu: ', avgCfu);
+  //       }
+  //       console.log('surfaceArea: ', surfaceArea);
+  //       console.log('avgCfu: ', avgCfu);
 
-            if (!newLayer) return selectedScenario;
+  //       // need to lookup stuff from sampleAttributes
+  //       const {
+  //         LOD_NON: contaminationRemovalFactor,
+  //         MCPS: setupCost,
+  //         WVPS: solidWasteVolume,
+  //         ALC: liquidWasteVolume,
+  //         TTC: applicationTimeHrs,
+  //         TTA: residenceTimeHrs,
+  //       } = sampleAttributes[deconTech as any];
+  //       const contamLeftFactor = 1 - contaminationRemovalFactor;
+  //       const avgFinalContam =
+  //         avgCfu * Math.pow(contamLeftFactor, sel.numApplications);
+  //       // const aboveDetection = avgFinalContam >= detectionLimit;
+  //       // const surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications
+  //       const areaDeconApplied =
+  //         surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications;
+  //       console.log('areaDeconApplied: ', areaDeconApplied);
+  //       console.log('deconTech: ', deconTech);
+  //       console.log('solidWasteVolume: ', solidWasteVolume);
+  //       console.log('liquidWasteVolume: ', liquidWasteVolume);
+  //       const solidWasteM3 = areaDeconApplied * solidWasteVolume;
+  //       const liquidWasteM3 = areaDeconApplied * liquidWasteVolume;
 
-            return {
-              ...selectedScenario,
-              layers: [...selectedScenario.layers, newLayer],
-            };
-          });
+  //       const deconCost =
+  //         setupCost * sel.numApplications + areaDeconApplied * setupCost;
+  //       const sumApplicationTime = (areaDeconApplied * applicationTimeHrs) / 24;
+  //       const sumResidenceTime = (residenceTimeHrs * sel.numApplications) / 24;
+  //       const deconTime = sumApplicationTime + sumResidenceTime;
 
-          setLayers((layers) => {
-            return [...layers, layer];
-          });
-        }
-      }
+  //       console.log('avgFinalContam: ', avgFinalContam);
+  //       console.log('solidWasteM3: ', solidWasteM3);
+  //       console.log('liquidWasteM3: ', liquidWasteM3);
+  //       console.log('deconCost: ', deconCost);
+  //       console.log('sumApplicationTime: ', sumApplicationTime);
+  //       console.log('sumResidenceTime: ', sumResidenceTime);
+  //       console.log('deconTime: ', deconTime);
 
-      // if (generateRandomMode === 'draw') {
-      //   // remove the graphics from the generate random mask
-      //   if (aoiMaskLayer && aoiMaskLayer.sketchLayer.type === 'graphics') {
-      //     editsCopy = updateLayerEdits({
-      //       edits: editsCopy,
-      //       layer: aoiMaskLayer,
-      //       type: 'delete',
-      //       changes: aoiMaskLayer.sketchLayer.graphics,
-      //     });
+  //       totalFinalContam += avgFinalContam;
+  //       totalSolidWasteM3 += solidWasteM3;
+  //       totalLiquidWasteM3 += solidWasteM3;
+  //       totalDeconCost += deconCost;
+  //       totalApplicationTime += sumApplicationTime;
+  //       totalResidenceTime += sumResidenceTime;
+  //       totalDeconTime += deconTime;
+  //     });
 
-      //     aoiMaskLayer.sketchLayer.removeAll();
-      //   }
-      // }
+  //     console.log('totalFinalContam: ', totalFinalContam);
+  //     console.log('totalSolidWasteM3: ', totalSolidWasteM3);
+  //     console.log('totalLiquidWasteM3: ', totalLiquidWasteM3);
+  //     console.log('totalDeconCost: ', totalDeconCost);
+  //     console.log('totalApplicationTime: ', totalApplicationTime);
+  //     console.log('totalResidenceTime: ', totalResidenceTime);
+  //     console.log('totalDeconTime: ', totalDeconTime);
+  //     console.log('graphics: ', graphics);
 
-      // update the edits state
-      setEdits(editsCopy);
+  //     // Figure out what to add graphics to
+  //     const aoiAssessed = selectedScenario?.layers.find(
+  //       (l) => l.layerType === 'AOI Assessed',
+  //     );
 
-      setGenerateRandomResponse({
-        status: 'success',
-        data: graphics,
-      });
-    } catch (ex: any) {
-      console.error(ex);
-      setGenerateRandomResponse({
-        status: 'failure',
-        error: {
-          error: createErrorObject(ex),
-          message: ex.message,
-        },
-        data: [],
-      });
+  //     if (aoiAssessed) {
+  //       const aoiAssessedLayer = layers.find(
+  //         (l) => l.layerId === aoiAssessed.layerId,
+  //       );
+  //       if (aoiAssessedLayer?.sketchLayer?.type === 'graphics') {
+  //         editsCopy = updateLayerEdits({
+  //           edits,
+  //           scenario: selectedScenario,
+  //           layer: aoiAssessedLayer,
+  //           type: 'delete',
+  //           changes: aoiAssessedLayer?.sketchLayer.graphics,
+  //         });
 
-      window.logErrorToGa(ex);
-    }
-  }
+  //         aoiAssessedLayer?.sketchLayer.graphics.removeAll();
+  //         aoiAssessedLayer?.sketchLayer.graphics.addMany(graphics);
+
+  //         editsCopy = updateLayerEdits({
+  //           edits,
+  //           scenario: selectedScenario,
+  //           layer: aoiAssessedLayer,
+  //           type: 'add',
+  //           changes: new Collection(graphics),
+  //         });
+  //       }
+  //     } else {
+  //       const scenarioLayer = map.layers.find(
+  //         (l) => l.id === selectedScenario?.layerId,
+  //       );
+  //       if (scenarioLayer && scenarioLayer.type === 'group') {
+  //         const tmpScenarioLayer = scenarioLayer as __esri.GroupLayer;
+  //         //&& scenarioLayer.layerType === '') {
+  //         // build the layer
+  //         const layerUuid = generateUUID();
+  //         const graphicsLayer = new GraphicsLayer({
+  //           id: layerUuid,
+  //           title: 'AOI Assessment',
+  //           listMode: 'hide',
+  //           graphics,
+  //         });
+
+  //         // scenarioLayer..layers.add(graphicsLayer);
+  //         tmpScenarioLayer.layers.add(graphicsLayer);
+
+  //         const layer = {
+  //           id: -1,
+  //           pointsId: -1,
+  //           uuid: layerUuid,
+  //           layerId: layerUuid,
+  //           portalId: '',
+  //           value: 'aoiAssessed',
+  //           name: 'AOI Assessment',
+  //           label: 'AOI Assessment',
+  //           layerType: 'AOI Assessed',
+  //           editType: 'add',
+  //           visible: true,
+  //           listMode: 'hide',
+  //           sort: 0,
+  //           geometryType: 'esriGeometryPolygon',
+  //           addedFrom: 'sketch',
+  //           status: 'added',
+  //           sketchLayer: graphicsLayer,
+  //           pointsLayer: null,
+  //           hybridLayer: null,
+  //           parentLayer: null,
+  //         } as LayerType;
+
+  //         // add it to edits
+  //         editsCopy = updateLayerEdits({
+  //           edits,
+  //           scenario: selectedScenario,
+  //           layer,
+  //           type: 'add',
+  //           changes: new Collection(graphics),
+  //         });
+
+  //         setSelectedScenario((selectedScenario) => {
+  //           if (!selectedScenario) return selectedScenario;
+
+  //           const scenario = editsCopy.edits.find(
+  //             (edit) =>
+  //               edit.type === 'scenario' &&
+  //               edit.layerId === selectedScenario.layerId,
+  //           ) as ScenarioEditsType;
+  //           const newLayer = scenario.layers.find(
+  //             (l) => l.layerId === layer.layerId,
+  //           );
+
+  //           if (!newLayer) return selectedScenario;
+
+  //           return {
+  //             ...selectedScenario,
+  //             layers: [...selectedScenario.layers, newLayer],
+  //           };
+  //         });
+
+  //         setLayers((layers) => {
+  //           return [...layers, layer];
+  //         });
+  //       }
+  //     }
+
+  //     // if (generateRandomMode === 'draw') {
+  //     //   // remove the graphics from the generate random mask
+  //     //   if (aoiMaskLayer && aoiMaskLayer.sketchLayer.type === 'graphics') {
+  //     //     editsCopy = updateLayerEdits({
+  //     //       edits: editsCopy,
+  //     //       layer: aoiMaskLayer,
+  //     //       type: 'delete',
+  //     //       changes: aoiMaskLayer.sketchLayer.graphics,
+  //     //     });
+
+  //     //     aoiMaskLayer.sketchLayer.removeAll();
+  //     //   }
+  //     // }
+
+  //     // update the edits state
+  //     setEdits(editsCopy);
+
+  //     setGenerateRandomResponse({
+  //       status: 'success',
+  //       data: graphics,
+  //     });
+  //   } catch (ex: any) {
+  //     console.error(ex);
+  //     setGenerateRandomResponse({
+  //       status: 'failure',
+  //       error: {
+  //         error: createErrorObject(ex),
+  //         message: ex.message,
+  //       },
+  //       data: [],
+  //     });
+
+  //     window.logErrorToGa(ex);
+  //   }
+  // }
 
   type Cell = { value: any; font?: any; alignment?: any };
   type Row = Cell[];
@@ -1291,7 +1443,7 @@ function LocateSamples() {
   // }
 
   // // Validates the user input.
-  // // TODO: This logic needs to be updated to be more robust. Currently,
+  // // This logic needs to be updated to be more robust. Currently,
   // //        this just makes sure that all of the fields have been filled out.
   // function validateEdits() {
   //   let isValid = true;
@@ -1555,35 +1707,86 @@ function LocateSamples() {
   useEffect(() => {
     if (defaultDeconSelections.length > 0) return;
     setDefaultDeconSelections([
-      { id: 1, media: 'Soil/Vegetation', deconTech: allSampleOptions[1] }, // 'Methyl Bromide'
-      { id: 2, media: 'Streets - Asphalt', deconTech: allSampleOptions[2] }, // 'Vaporous Hydrogen Peroxide' },
+      {
+        id: 1,
+        media: 'Soil/Vegetation',
+        deconTech: allSampleOptions[1],
+        pctAoi: 34,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      }, // 'Methyl Bromide'
+      {
+        id: 2,
+        media: 'Streets - Asphalt',
+        deconTech: allSampleOptions[2],
+        pctAoi: 6,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      }, // 'Vaporous Hydrogen Peroxide' },
       {
         id: 3,
         media: 'Streets/Sidewalks - Concrete',
         deconTech: allSampleOptions[3], // 'Low-Concentration Hydrogen Peroxide',
+        pctAoi: 60,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
       },
       {
         id: 4,
         media: 'Building Exterior Walls',
         deconTech: allSampleOptions[2], // 'Vaporous Hydrogen Peroxide',
+        pctAoi: '',
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
       },
       {
         id: 5,
         media: 'Building Interior Floors',
         deconTech: allSampleOptions[5],
+        pctAoi: '',
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
       }, // 'Bleach Spray' },
       {
         id: 6,
         media: 'Building Interior Walls',
         deconTech: allSampleOptions[5], // 'Hydrogen Peroxide PAA, Spor-klenz RTU',
+        pctAoi: '',
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
       },
-      { id: 7, media: 'Building Roofs', deconTech: allSampleOptions[1] }, // 'Methyl Bromide'
+      {
+        id: 7,
+        media: 'Building Roofs',
+        deconTech: allSampleOptions[1],
+        pctAoi: '',
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      }, // 'Methyl Bromide'
     ]);
   }, [allSampleOptions, defaultDeconSelections]);
 
   const [deconSelections, setDeconSelections] = useState(
     defaultDeconSelections,
   );
+
+  useEffect(() => {
+    console.log('allSampleOptions: ', allSampleOptions);
+  }, [allSampleOptions]);
 
   // initialize decon selections
   useEffect(() => {
@@ -1980,6 +2183,37 @@ function LocateSamples() {
                   onSave={() => setEditScenarioVisible(false)}
                 />
               )}
+
+              <div>
+                <label htmlFor="contamination-map-select-input">
+                  Contamination map
+                </label>
+                <div css={inlineMenuStyles}>
+                  <Select
+                    id="contamination-map-select"
+                    inputId="contamination-map-select-input"
+                    css={fullWidthSelectStyles}
+                    styles={reactSelectStyles as any}
+                    value={contaminationMap}
+                    onChange={(ev) => setContaminationMap(ev as LayerType)}
+                    options={layers.filter(
+                      (layer: any) => layer.layerType === 'Contamination Map',
+                    )}
+                  />
+                  <button
+                    css={addButtonStyles}
+                    onClick={(ev) => {
+                      setGoTo('addData');
+                      setGoToOptions({
+                        from: 'file',
+                        layerType: 'Contamination Map',
+                      });
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
             </Fragment>
           )}
 
@@ -2490,7 +2724,7 @@ function LocateSamples() {
           )} */}
         </div>
 
-        {selectedScenario && (
+        {selectedScenario && contaminationMap && (
           <Fragment>
             {/* <div css={sectionContainerWidthOnly}>
               <p>
@@ -2533,40 +2767,6 @@ function LocateSamples() {
                               Area of Interest" to use an Area of Interest file
                               to assess the AOI. Click Submit to assess the AOI.
                             </p>
-                            <div>
-                              <label htmlFor="contamination-map-select-input">
-                                Contamination map
-                              </label>
-                              <div css={inlineMenuStyles}>
-                                <Select
-                                  id="contamination-map-select"
-                                  inputId="contamination-map-select-input"
-                                  css={fullWidthSelectStyles}
-                                  styles={reactSelectStyles as any}
-                                  value={contaminationMap}
-                                  onChange={(ev) =>
-                                    setContaminationMap(ev as LayerType)
-                                  }
-                                  options={layers.filter(
-                                    (layer: any) =>
-                                      layer.layerType === 'Contamination Map',
-                                  )}
-                                />
-                                <button
-                                  css={addButtonStyles}
-                                  onClick={(ev) => {
-                                    setGoTo('addData');
-                                    setGoToOptions({
-                                      from: 'file',
-                                      layerType: 'Contamination Map',
-                                    });
-                                  }}
-                                >
-                                  Add
-                                </button>
-                              </div>
-                            </div>
-                            <br />
 
                             <div>
                               <input
@@ -2703,7 +2903,7 @@ function LocateSamples() {
                                 {generateRandomResponse.status ===
                                   'exceededTransferLimit' &&
                                   generateRandomExceededTransferLimitMessage}
-                                {((generateRandomMode === 'draw' &&
+                                {/* {((generateRandomMode === 'draw' &&
                                   aoiSketchLayer?.sketchLayer.type ===
                                     'graphics' &&
                                   aoiSketchLayer.sketchLayer.graphics.length >
@@ -2731,7 +2931,7 @@ function LocateSamples() {
                                       </Fragment>
                                     )}
                                   </button>
-                                )}
+                                )} */}
                               </Fragment>
                             )}
 
@@ -2758,7 +2958,7 @@ function LocateSamples() {
                                 css={submitButtonStyles}
                                 onClick={downloadSummary}
                               >
-                                Download Results
+                                Download Building Data
                               </button>
                             </div>
                           </Fragment>
@@ -2852,9 +3052,41 @@ function LocateSamples() {
                           accessor: 'deconTech',
                           width: 118,
                           editType: 'select',
-                          menuPortalTarget:
-                            document.getElementById('form-container'),
                           options: allSampleOptions,
+                        },
+                        {
+                          Header: 'Percent of AOI',
+                          accessor: 'pctAoi',
+                          width: 97,
+                          editType: 'input',
+                        },
+                        {
+                          Header: 'Number of Applications',
+                          accessor: 'numApplications',
+                          width: 97,
+                          editType: 'input',
+                          show: false,
+                        },
+                        {
+                          Header: 'Number of Concurrent Applications',
+                          accessor: 'numConcurrentApplications',
+                          width: 97,
+                          editType: 'input',
+                        },
+                        {
+                          Header: 'Percent Decontaminated',
+                          accessor: 'pctDeconed',
+                          width: 97,
+                          editType: 'input',
+                          show: false,
+                        },
+                        {
+                          Header: 'Is Hazardous',
+                          accessor: 'isHazardous',
+                          width: 118,
+                          editType: 'select',
+                          options: hazardousOptions,
+                          show: false,
                         },
                       ];
                     }}

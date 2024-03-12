@@ -8,6 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { css } from '@emotion/react';
+import { saveAs } from 'file-saver';
 import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import Graphic from '@arcgis/core/Graphic';
 // import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
@@ -16,16 +17,16 @@ import Graphic from '@arcgis/core/Graphic';
 // import { AccordionList, AccordionItem } from 'components/Accordion';
 import LoadingSpinner from 'components/LoadingSpinner';
 import { contaminationMapPopup } from 'components/MapPopup';
-import Select from 'components/Select';
+// import Select from 'components/Select';
 import ShowLessMore from 'components/ShowLessMore';
 // import NavigationButton from 'components/NavigationButton';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 // import { useServicesContext } from 'contexts/LookupFiles';
-import { NavigationContext } from 'contexts/Navigation';
+// import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // types
-import { LayerType } from 'types/Layer';
+// import { LayerType } from 'types/Layer';
 // import { ErrorType } from 'types/Misc';
 // config
 import {
@@ -52,7 +53,7 @@ import {
   parseSmallFloat,
 } from 'utils/utils';
 // styles
-import { reactSelectStyles } from 'styles';
+// import { reactSelectStyles } from 'styles';
 
 // type ContaminationResultsType = {
 //   status:
@@ -103,14 +104,14 @@ function convertToArray(item: any | any[]) {
 }
 
 // --- styles (Calculate) ---
-const inputStyles = css`
-  width: 100%;
-  height: 36px;
-  margin: 0 0 10px 0;
-  padding-left: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-`;
+// const inputStyles = css`
+//   width: 100%;
+//   height: 36px;
+//   margin: 0 0 10px 0;
+//   padding-left: 8px;
+//   border: 1px solid #ccc;
+//   border-radius: 4px;
+// `;
 
 const submitButtonContainerStyles = css`
   margin-top: 10px;
@@ -138,40 +139,41 @@ const layerInfo = css`
   padding-bottom: 0.5em;
 `;
 
-const inlineMenuStyles = css`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-`;
+// const inlineMenuStyles = css`
+//   display: flex;
+//   align-items: center;
+//   justify-content: space-between;
+// `;
 
-const addButtonStyles = css`
-  margin: 0;
-  height: 38px; /* same height as ReactSelect */
-`;
+// const addButtonStyles = css`
+//   margin: 0;
+//   height: 38px; /* same height as ReactSelect */
+// `;
 
-const fullWidthSelectStyles = css`
-  width: 100%;
-  margin-right: 10px;
-`;
+// const fullWidthSelectStyles = css`
+//   width: 100%;
+//   margin-right: 10px;
+// `;
 
 // --- components (Calculate) ---
 function Calculate() {
-  const {
-    setGoTo,
-    setGoToOptions,
-    // trainingMode,
-  } = useContext(NavigationContext);
+  // const {
+  //   setGoTo,
+  //   setGoToOptions,
+  //   // trainingMode,
+  // } = useContext(NavigationContext);
   const {
     defaultSymbols,
     // edits,
     // setEdits,
-    layers,
+    // layers,
     // setLayers,
     map,
     mapView,
     // sketchLayer,
     selectedScenario,
     // getGpMaxRecordCount,
+    jsonDownload,
   } = useContext(SketchContext);
   const {
     calculateResults,
@@ -181,12 +183,12 @@ function Calculate() {
     // inputNumSamplingHours,
     // inputNumSamplingPersonnel,
     // inputNumSamplingShifts,
-    inputNumSamplingTeams,
+    // inputNumSamplingTeams,
     // inputSamplingLaborCost,
     // inputSurfaceArea,
     // resetCalculateContext,
     setCalculateResults,
-    setContaminationMap,
+    // setContaminationMap,
     // setInputNumLabHours,
     // setInputNumLabs,
     // setInputNumSamplingHours,
@@ -262,23 +264,23 @@ function Calculate() {
     };
   }, [closePanel]);
 
-  // Initialize the contamination map to the first available one
-  const [contamMapInitialized, setContamMapInitialized] = useState(false);
-  useEffect(() => {
-    if (contamMapInitialized) return;
+  // // Initialize the contamination map to the first available one
+  // const [contamMapInitialized, setContamMapInitialized] = useState(false);
+  // useEffect(() => {
+  //   if (contamMapInitialized) return;
 
-    setContamMapInitialized(true);
+  //   setContamMapInitialized(true);
 
-    // exit early since there is no need to set the contamination map
-    if (contaminationMap) return;
+  //   // exit early since there is no need to set the contamination map
+  //   if (contaminationMap) return;
 
-    // set the contamination map to the first available one
-    const newContamMap = layers.find(
-      (layer) => layer.layerType === 'Contamination Map',
-    );
-    if (!newContamMap) return;
-    setContaminationMap(newContamMap);
-  }, [contaminationMap, setContaminationMap, contamMapInitialized, layers]);
+  //   // set the contamination map to the first available one
+  //   const newContamMap = layers.find(
+  //     (layer) => layer.layerType === 'Contamination Map',
+  //   );
+  //   if (!newContamMap) return;
+  //   setContaminationMap(newContamMap);
+  // }, [contaminationMap, setContaminationMap, contamMapInitialized, layers]);
 
   // // updates context to run the calculations
   // function runCalculationOriginal() {
@@ -601,6 +603,19 @@ function Calculate() {
 
     // setInputNumSamplingTeams(numTeams);
     setUpdateContextValues(true);
+  }
+
+  function downloadJsonData() {
+    if (!selectedScenario) return;
+    const fileName = `tods_${selectedScenario.label}.json`;
+
+    // Create a blob of the data
+    const fileToSave = new Blob([JSON.stringify(jsonDownload)], {
+      type: 'application/json',
+    });
+
+    // Save the file
+    saveAs(fileToSave, fileName);
   }
 
   // const [
@@ -1068,7 +1083,7 @@ function Calculate() {
         </div>
 
         <div css={sectionContainer}>
-          <label htmlFor="number-teams-input">
+          {/* <label htmlFor="number-teams-input">
             Number of Concurrent Applications
           </label>
           <input
@@ -1082,7 +1097,7 @@ function Calculate() {
                 setInputNumSamplingTeams(Number(ev.target.value));
               }
             }}
-          />
+          /> */}
 
           {/* <label htmlFor="personnel-per-team-input">
             Personnel per Decon Team
@@ -1192,7 +1207,7 @@ function Calculate() {
         </div>
 
         <div css={sectionContainer}>
-          <label htmlFor="contamination-map-select-input">
+          {/* <label htmlFor="contamination-map-select-input">
             Contamination map
           </label>
           <div css={inlineMenuStyles}>
@@ -1219,7 +1234,7 @@ function Calculate() {
             >
               Add
             </button>
-          </div>
+          </div> */}
 
           {calculateResults.status === 'fetching' && <LoadingSpinner />}
           {/* {calculateResults.status === 'failure' &&
@@ -1238,6 +1253,9 @@ function Calculate() {
           <div css={submitButtonContainerStyles}>
             <button css={submitButtonStyles} onClick={runCalculation}>
               View Detailed Results
+            </button>
+            <button css={submitButtonStyles} onClick={downloadJsonData}>
+              Download Data for iWaste
             </button>
           </div>
         </div>
