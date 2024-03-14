@@ -28,6 +28,11 @@ import {
   PolygonSymbol,
 } from 'config/sampleAttributes';
 
+export const hazardousOptions: { label: string; value: string }[] = [
+  { label: 'Hazardous', value: 'hazardous' },
+  { label: 'Non-Hazardous', value: 'non-hazardous' },
+];
+
 type HomeWidgetType = {
   '2d': __esri.Home;
   '3d': __esri.Home;
@@ -69,6 +74,8 @@ type SketchType = {
   setAoiData: Dispatch<SetStateAction<AoiDataType>>;
   jsonDownload: JsonDownloadType[];
   setJsonDownload: Dispatch<SetStateAction<JsonDownloadType[]>>;
+  defaultDeconSelections: any[];
+  setDefaultDeconSelections: Dispatch<SetStateAction<any[]>>;
   deconSelections: any[];
   setDeconSelections: Dispatch<SetStateAction<any[]>>;
   homeWidget: HomeWidgetType | null;
@@ -146,6 +153,8 @@ export const SketchContext = createContext<SketchType>({
   setAoiData: () => {},
   jsonDownload: [],
   setJsonDownload: () => {},
+  defaultDeconSelections: [],
+  setDefaultDeconSelections: () => {},
   deconSelections: [],
   setDeconSelections: () => {},
   homeWidget: null,
@@ -248,6 +257,9 @@ export function SketchProvider({ children }: Props) {
     graphics: [],
   });
   const [jsonDownload, setJsonDownload] = useState<JsonDownloadType[]>([]);
+  const [defaultDeconSelections, setDefaultDeconSelections] = useState<any[]>(
+    [],
+  );
   const [deconSelections, setDeconSelections] = useState<any[]>([]);
   const [layersInitialized, setLayersInitialized] = useState(false);
   const [layers, setLayers] = useState<LayerType[]>([]);
@@ -338,6 +350,83 @@ export function SketchProvider({ children }: Props) {
     setAllSampleOptions(allSampleOptions);
   }, [userDefinedOptions, userDefinedAttributes, sampleTypeContext]);
 
+  useEffect(() => {
+    if (allSampleOptions.length === 0 || defaultDeconSelections.length > 0)
+      return;
+    setDefaultDeconSelections([
+      {
+        id: 1,
+        media: 'Soil/Vegetation',
+        deconTech: allSampleOptions[1],
+        pctAoi: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      }, // 'Methyl Bromide'
+      {
+        id: 2,
+        media: 'Streets - Asphalt',
+        deconTech: allSampleOptions[2],
+        pctAoi: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      }, // 'Vaporous Hydrogen Peroxide' },
+      {
+        id: 3,
+        media: 'Streets/Sidewalks - Concrete',
+        deconTech: allSampleOptions[3], // 'Low-Concentration Hydrogen Peroxide',
+        pctAoi: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      },
+      {
+        id: 4,
+        media: 'Building Exterior Walls',
+        deconTech: allSampleOptions[2], // 'Vaporous Hydrogen Peroxide',
+        pctAoi: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      },
+      {
+        id: 5,
+        media: 'Building Interior Floors',
+        deconTech: allSampleOptions[5],
+        pctAoi: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      }, // 'Bleach Spray' },
+      {
+        id: 6,
+        media: 'Building Interior Walls',
+        deconTech: allSampleOptions[5], // 'Hydrogen Peroxide PAA, Spor-klenz RTU',
+        pctAoi: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      },
+      {
+        id: 7,
+        media: 'Building Roofs',
+        deconTech: allSampleOptions[1],
+        pctAoi: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      }, // 'Methyl Bromide'
+    ]);
+  }, [allSampleOptions, defaultDeconSelections]);
+
   // define the context funtion for getting the max record count
   // of the gp server
   const [gpMaxRecordCount, setGpMaxRecordCount] = useState<number | null>(null);
@@ -412,6 +501,8 @@ export function SketchProvider({ children }: Props) {
         setAoiData,
         jsonDownload,
         setJsonDownload,
+        defaultDeconSelections,
+        setDefaultDeconSelections,
         deconSelections,
         setDeconSelections,
         homeWidget,

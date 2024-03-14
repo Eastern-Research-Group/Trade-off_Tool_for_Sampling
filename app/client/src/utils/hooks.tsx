@@ -1288,6 +1288,7 @@ export function useGeometryTools() {
 export function useCalculatePlan() {
   const {
     aoiData,
+    defaultDeconSelections,
     layers,
     sampleAttributes,
     selectedScenario,
@@ -1844,8 +1845,12 @@ export function useCalculatePlan() {
     let totalApplicationTime = 0;
     let totalResidenceTime = 0;
     let totalDeconTime = 0;
+    const curDeconTechSelections =
+      selectedScenario && selectedScenario?.deconTechSelections.length > 0
+        ? selectedScenario.deconTechSelections
+        : defaultDeconSelections;
     const newDeconTechSelections: any = [];
-    selectedScenario?.deconTechSelections.forEach((sel) => {
+    curDeconTechSelections.forEach((sel) => {
       // find decon settings
       const deconTech = sel.deconTech.value;
       const media = sel.media;
@@ -2138,6 +2143,7 @@ export function useCalculatePlan() {
     calculateArea,
     calculateResults,
     contaminationMap,
+    defaultDeconSelections,
     layers,
     nsiData,
     sampleAttributes,

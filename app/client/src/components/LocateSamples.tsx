@@ -41,7 +41,7 @@ import {
 } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 // import { PublishContext } from 'contexts/Publish';
-import { SketchContext } from 'contexts/Sketch';
+import { SketchContext, hazardousOptions } from 'contexts/Sketch';
 // types
 import { LayerType } from 'types/Layer';
 import { EditsType, ScenarioEditsType } from 'types/Edits';
@@ -153,11 +153,6 @@ const pointStyles: ShapeTypeSelect[] = [
       'path|M17.14 3 8.86 3 3 8.86 3 17.14 8.86 23 17.14 23 23 17.14 23 8.86 17.14 3z',
     label: 'Octagon',
   },
-];
-
-const hazardousOptions: ShapeTypeSelect[] = [
-  { label: 'Hazardous', value: 'hazardous' },
-  { label: 'Non-Hazardous', value: 'non-hazardous' },
 ];
 
 // const partitionFactors = {
@@ -471,7 +466,8 @@ function LocateSamples() {
   const { setGoTo, setGoToOptions } = useContext(NavigationContext);
   // const { setSampleTypeSelections } = useContext(PublishContext);
   const {
-    allSampleOptions,
+    // allSampleOptions,
+    defaultDeconSelections,
     defaultSymbols,
     // setDefaultSymbolSingle,
     displayDimensions,
@@ -1739,85 +1735,6 @@ function LocateSamples() {
 
   pointStyles.sort((a, b) => a.value.localeCompare(b.value));
 
-  const [defaultDeconSelections, setDefaultDeconSelections] = useState<any[]>(
-    [],
-  );
-  useEffect(() => {
-    if (defaultDeconSelections.length > 0) return;
-    setDefaultDeconSelections([
-      {
-        id: 1,
-        media: 'Soil/Vegetation',
-        deconTech: allSampleOptions[1],
-        pctAoi: 0,
-        numApplications: 1,
-        numConcurrentApplications: 1,
-        pctDeconed: 100,
-        isHazardous: hazardousOptions[1],
-      }, // 'Methyl Bromide'
-      {
-        id: 2,
-        media: 'Streets - Asphalt',
-        deconTech: allSampleOptions[2],
-        pctAoi: 0,
-        numApplications: 1,
-        numConcurrentApplications: 1,
-        pctDeconed: 100,
-        isHazardous: hazardousOptions[1],
-      }, // 'Vaporous Hydrogen Peroxide' },
-      {
-        id: 3,
-        media: 'Streets/Sidewalks - Concrete',
-        deconTech: allSampleOptions[3], // 'Low-Concentration Hydrogen Peroxide',
-        pctAoi: 0,
-        numApplications: 1,
-        numConcurrentApplications: 1,
-        pctDeconed: 100,
-        isHazardous: hazardousOptions[1],
-      },
-      {
-        id: 4,
-        media: 'Building Exterior Walls',
-        deconTech: allSampleOptions[2], // 'Vaporous Hydrogen Peroxide',
-        pctAoi: 0,
-        numApplications: 1,
-        numConcurrentApplications: 1,
-        pctDeconed: 100,
-        isHazardous: hazardousOptions[1],
-      },
-      {
-        id: 5,
-        media: 'Building Interior Floors',
-        deconTech: allSampleOptions[5],
-        pctAoi: 0,
-        numApplications: 1,
-        numConcurrentApplications: 1,
-        pctDeconed: 100,
-        isHazardous: hazardousOptions[1],
-      }, // 'Bleach Spray' },
-      {
-        id: 6,
-        media: 'Building Interior Walls',
-        deconTech: allSampleOptions[5], // 'Hydrogen Peroxide PAA, Spor-klenz RTU',
-        pctAoi: 0,
-        numApplications: 1,
-        numConcurrentApplications: 1,
-        pctDeconed: 100,
-        isHazardous: hazardousOptions[1],
-      },
-      {
-        id: 7,
-        media: 'Building Roofs',
-        deconTech: allSampleOptions[1],
-        pctAoi: 0,
-        numApplications: 1,
-        numConcurrentApplications: 1,
-        pctDeconed: 100,
-        isHazardous: hazardousOptions[1],
-      }, // 'Methyl Bromide'
-    ]);
-  }, [allSampleOptions, defaultDeconSelections]);
-
   const [deconTechPopupOpen, setDeconTechPopupOpen] = useState(false);
 
   return (
@@ -3002,7 +2919,7 @@ function LocateSamples() {
                     css={submitButtonStyles}
                     onClick={() => setDeconTechPopupOpen(true)}
                   >
-                    Edit in Popup
+                    Edit
                   </button>
 
                   <DeconSelectionTable
@@ -3874,16 +3791,17 @@ function LocateSamples() {
 }
 
 type DeconSelectionProps = {
-  autoUpdate?: boolean;
   defaultDeconSelections: any[];
+  editable?: boolean;
   performUpdate?: boolean;
 };
 
 function DeconSelectionTable({
-  autoUpdate = true,
   defaultDeconSelections,
+  editable = false,
   performUpdate = false,
 }: DeconSelectionProps) {
+  const { setCalculateResults } = useContext(CalculateContext);
   const {
     allSampleOptions,
     edits,
@@ -3936,13 +3854,7 @@ function DeconSelectionTable({
         return selectedScenario;
       });
     }
-  }, [
-    autoUpdate,
-    defaultDeconSelections,
-    selectedScenario,
-    setEdits,
-    setSelectedScenario,
-  ]);
+  }, [defaultDeconSelections, selectedScenario, setEdits, setSelectedScenario]);
 
   useEffect(() => {
     if (selectedScenario && selectedScenario.deconTechSelections.length > 0) {
@@ -3953,6 +3865,14 @@ function DeconSelectionTable({
   const updateEdits = useCallback(
     (newTable: any[] | null = null) => {
       if (!selectedScenario) return;
+
+      setCalculateResults((calculateResults) => {
+        return {
+          status: 'fetching',
+          panelOpen: calculateResults.panelOpen,
+          data: null,
+        };
+      });
 
       const index = edits.edits.findIndex(
         (item) =>
@@ -3978,7 +3898,14 @@ function DeconSelectionTable({
         return selectedScenario;
       });
     },
-    [deconSelections, selectedScenario, setSelectedScenario, edits, setEdits],
+    [
+      deconSelections,
+      selectedScenario,
+      setCalculateResults,
+      setSelectedScenario,
+      edits,
+      setEdits,
+    ],
   );
 
   const [updateEditsRan, setUpdateEditsRan] = useState(false);
@@ -3994,11 +3921,21 @@ function DeconSelectionTable({
   return (
     <ReactTableEditable
       id={tableId}
-      data={deconSelections}
+      data={
+        editable
+          ? deconSelections
+          : deconSelections.map((sel) => {
+              return {
+                ...sel,
+                deconTech: sel.deconTech.label,
+                isHazardous: sel.deconTech.label,
+              };
+            })
+      }
       idColumn={'ID'}
       striped={true}
       hideHeader={false}
-      height={450}
+      height={editable ? 450 : 330}
       onDataChange={(rowIndex: any, columnId: any, value: any) => {
         const newTable = deconSelections.map((row: any, index: number) => {
           // update the row if it is the row in focus and the data has changed
@@ -4012,8 +3949,6 @@ function DeconSelectionTable({
         });
 
         setDeconSelections(newTable);
-
-        if (autoUpdate) updateEdits(newTable);
       }}
       getColumns={(tableWidth: any) => {
         return [
@@ -4032,41 +3967,41 @@ function DeconSelectionTable({
             Header: 'Biological Decon Technology',
             accessor: 'deconTech',
             width: 150,
-            editType: 'select',
+            editType: editable ? 'select' : undefined,
             options: allSampleOptions,
           },
           {
             Header: 'Percent of AOI',
             accessor: 'pctAoi',
             width: 0,
-            editType: 'input',
+            editType: editable ? 'input' : undefined,
             show: false,
           },
           {
             Header: 'Number of Applications',
             accessor: 'numApplications',
             width: 0,
-            editType: 'input',
+            editType: editable ? 'input' : undefined,
             show: false,
           },
           {
             Header: 'Number of Concurrent Applications',
             accessor: 'numConcurrentApplications',
             width: 97,
-            editType: 'input',
+            editType: editable ? 'input' : undefined,
           },
           {
             Header: 'Percent Decontaminated',
             accessor: 'pctDeconed',
             width: 0,
-            editType: 'input',
+            editType: editable ? 'input' : undefined,
             show: false,
           },
           {
             Header: 'Is Hazardous',
             accessor: 'isHazardous',
             width: 0,
-            editType: 'select',
+            editType: editable ? 'select' : undefined,
             options: hazardousOptions,
             show: false,
           },
@@ -4152,8 +4087,8 @@ function DeconSelectionPopup({
         <h1 css={headingStyles}>Select Decontamination Technology</h1>
 
         <DeconSelectionTable
-          autoUpdate={false}
           defaultDeconSelections={defaultDeconSelections}
+          editable={true}
           performUpdate={performUpdate}
         />
         <div css={buttonContainerStyles}>
