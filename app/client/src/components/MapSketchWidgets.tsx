@@ -924,6 +924,7 @@ function MapSketchWidgets({ mapView, sceneView }: Props) {
       setter: null,
     });
 
+
     // save the layer changes
     // make a copy of the edits context variable
     const editsCopy = updateLayerEdits({

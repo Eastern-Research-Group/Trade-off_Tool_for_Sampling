@@ -4,42 +4,48 @@ import React, { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import Collection from '@arcgis/core/core/Collection';
-import Graphic from '@arcgis/core/Graphic';
-import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
+// import Collection from '@arcgis/core/core/Collection';
+// import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
+// import Graphic from '@arcgis/core/Graphic';
+// import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
-import Point from '@arcgis/core/geometry/Point';
-import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
-import TextSymbol from '@arcgis/core/symbols/TextSymbol';
+// import Point from '@arcgis/core/geometry/Point';
+// import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
+// import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
-import ColorPicker from 'components/ColorPicker';
-import { EditScenario, EditLayer } from 'components/EditLayerMetaData';
+// import ColorPicker from 'components/ColorPicker';
+import {
+  EditScenario,
+  // EditLayer,
+} from 'components/EditLayerMetaData';
 import LoadingSpinner from 'components/LoadingSpinner';
-import { buildingMapPopup } from 'components/MapPopup';
+// import { buildingMapPopup } from 'components/MapPopup';
 import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
+import { ReactTableEditable } from 'components/ReactTable';
 import Select from 'components/Select';
 // contexts
-import { DialogContext } from 'contexts/Dialog';
+import { CalculateContext } from 'contexts/Calculate';
+// import { DialogContext } from 'contexts/Dialog';
 import {
   useLayerProps,
   useSampleTypesContext,
   useServicesContext,
 } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
-import { PublishContext } from 'contexts/Publish';
+// import { PublishContext } from 'contexts/Publish';
 import { SketchContext } from 'contexts/Sketch';
 // types
 import { LayerType } from 'types/Layer';
 import { EditsType, ScenarioEditsType } from 'types/Edits';
 import { ErrorType } from 'types/Misc';
 // config
-import {
-  AttributeItems,
-  SampleSelectType,
-  PolygonSymbol,
-} from 'config/sampleAttributes';
+// import {
+//   // AttributeItems,
+//   // SampleSelectType,
+//   // PolygonSymbol,
+// } from 'config/sampleAttributes';
 import {
   cantUseWithVspMessage,
   downloadSuccessMessage,
@@ -48,82 +54,85 @@ import {
   generateRandomExceededTransferLimitMessage,
   generateRandomSuccessMessage,
   noDataDownloadMessage,
-  userDefinedValidationMessage,
+  // userDefinedValidationMessage,
   webServiceErrorMessage,
 } from 'config/errorMessages';
 // utils
-import { proxyFetch } from 'utils/fetchUtils';
-import { useGeometryTools, useDynamicPopup, useStartOver } from 'utils/hooks';
+// import { proxyFetch } from 'utils/fetchUtils';
+import { useDynamicPopup, useStartOver } from 'utils/hooks';
 import {
-  convertToPoint,
+  // convertToPoint,
   createLayer,
-  createSampleLayer,
+  // createSampleLayer,
   deepCopyObject,
   findLayerInEdits,
   generateUUID,
   getCurrentDateTime,
   getDefaultSamplingMaskLayer,
   getNextScenarioLayer,
-  getPointSymbol,
+  // getPointSymbol,
   getScenarios,
   getSketchableLayers,
   updateLayerEdits,
 } from 'utils/sketchUtils';
 import {
   activateSketchButton,
-  createErrorObject,
-  getLayerName,
+  // createErrorObject,
+  // getLayerName,
   getScenarioName,
+  parseSmallFloat,
 } from 'utils/utils';
 // styles
 import { reactSelectStyles } from 'styles';
+import { CalculateResultsType } from 'types/CalculateResults';
 
-const bldgTypeEnum = {
-  M: 'Masonry',
-  W: 'Wood',
-  H: 'Manufactured',
-  S: 'Steel',
-};
-const foundTypeEnum = {
-  C: 'Crawl',
-  B: 'Basement',
-  S: 'Slab',
-  P: 'Pier',
-  I: 'Pile',
-  F: 'Fill',
-  W: 'Solid Wall',
-};
-const ftprntsrcEnum = {
-  B: 'Bing',
-  O: 'Oak Ridge National Labs',
-  N: 'National Geospatial-Intelligence Agency',
-  M: 'Map Building Layer',
-};
-const sourceEnum = {
-  P: 'Parcel',
-  E: 'ESRI',
-  H: 'HIFLD Hospital',
-  N: 'HIFLD Nursing Home',
-  S: 'National Center for Education Statistics',
-  X: 'HAZUS/NSI-2015',
-};
-const stDamcatEnum = {
-  RES: 'Residential',
-  COM: 'Commercial',
-  IND: 'Industrial',
-  PUB: 'Public',
-};
+// const bldgTypeEnum = {
+//   C: 'Concrete',
+//   H: 'Manufactured',
+//   M: 'Masonry',
+//   S: 'Steel',
+//   W: 'Wood',
+// };
+// const foundTypeEnum = {
+//   C: 'Crawl',
+//   B: 'Basement',
+//   S: 'Slab',
+//   P: 'Pier',
+//   I: 'Pile',
+//   F: 'Fill',
+//   W: 'Solid Wall',
+// };
+// const ftprntsrcEnum = {
+//   B: 'Bing',
+//   O: 'Oak Ridge National Labs',
+//   N: 'National Geospatial-Intelligence Agency',
+//   M: 'Map Building Layer',
+// };
+// const sourceEnum = {
+//   P: 'Parcel',
+//   E: 'ESRI',
+//   H: 'HIFLD Hospital',
+//   N: 'HIFLD Nursing Home',
+//   S: 'National Center for Education Statistics',
+//   X: 'HAZUS/NSI-2015',
+// };
+// const stDamcatEnum = {
+//   RES: 'Residential',
+//   COM: 'Commercial',
+//   IND: 'Industrial',
+//   PUB: 'Public',
+// };
 
-function handleEnum(value: string, obj: any) {
-  return obj.hasOwnProperty(value) ? obj[value] : value;
-}
+// function handleEnum(value: string, obj: any) {
+//   return obj.hasOwnProperty(value) ? obj[value] : value;
+// }
 
 type ShapeTypeSelect = {
   value: string;
   label: string;
 };
 
-type EditType = 'create' | 'edit' | 'clone' | 'view';
+// type EditType = 'create' | 'edit' | 'clone' | 'view';
 
 const pointStyles: ShapeTypeSelect[] = [
   { value: 'circle', label: 'Circle' },
@@ -139,37 +148,49 @@ const pointStyles: ShapeTypeSelect[] = [
   },
 ];
 
-/**
- * Determines if the desired name has already been used. If it has
- * it appends in index to the end (i.e. '<desiredName> (2)').
- */
-function getSampleTypeName(
-  sampleTypes: SampleSelectType[],
-  desiredName: string,
-) {
-  // get a list of names in use
-  let usedNames: string[] = [];
-  sampleTypes.forEach((sampleType) => {
-    usedNames.push(sampleType.label);
-  });
+const hazardousOptions: ShapeTypeSelect[] = [
+  { label: 'Hazardous', value: 'hazardous' },
+  { label: 'Non-Hazardous', value: 'non-hazardous' },
+];
 
-  // Find a name where there is not a collision.
-  // Most of the time this loop will be skipped.
-  let duplicateCount = 0;
-  let newName = desiredName;
-  while (usedNames.includes(newName)) {
-    duplicateCount += 1;
-    newName = `${desiredName} (${duplicateCount})`;
-  }
+// const partitionFactors = {
+//   'Building Exterior Walls': 0.5,
+//   'Building Interior Walls': 0.3,
+//   'Building Interior Floors': 0.7,
+//   'Building Roofs': 1,
+// } as any;
 
-  return newName;
-}
+// /**
+//  * Determines if the desired name has already been used. If it has
+//  * it appends in index to the end (i.e. '<desiredName> (2)').
+//  */
+// function getSampleTypeName(
+//   sampleTypes: SampleSelectType[],
+//   desiredName: string,
+// ) {
+//   // get a list of names in use
+//   let usedNames: string[] = [];
+//   sampleTypes.forEach((sampleType) => {
+//     usedNames.push(sampleType.label);
+//   });
+
+//   // Find a name where there is not a collision.
+//   // Most of the time this loop will be skipped.
+//   let duplicateCount = 0;
+//   let newName = desiredName;
+//   while (usedNames.includes(newName)) {
+//     duplicateCount += 1;
+//     newName = `${desiredName} (${duplicateCount})`;
+//   }
+
+//   return newName;
+// }
 
 // --- styles (SketchButton) ---
-const buttonContainerStyles = css`
-  display: flex;
-  align-items: end;
-`;
+// const buttonContainerStyles = css`
+//   display: flex;
+//   align-items: end;
+// `;
 
 const panelContainer = css`
   display: flex;
@@ -190,58 +211,58 @@ const sectionContainer = css`
   padding: 20px;
 `;
 
-const sectionContainerWidthOnly = css`
-  padding: 0 20px;
-`;
+// const sectionContainerWidthOnly = css`
+//   padding: 0 20px;
+// `;
 
 const layerSelectStyles = css`
   margin-bottom: 10px;
 `;
 
-const sketchButtonContainerStyles = css`
-  margin-left: 1px;
-  margin-top: 1px;
-`;
+// const sketchButtonContainerStyles = css`
+//   margin-left: 1px;
+//   margin-top: 1px;
+// `;
 
-const sketchButtonStyles = css`
-  position: relative;
-  height: 110px;
-  width: 33.33%;
-  background-color: white;
-  color: black;
-  border: 1px solid #ccc;
-  border-radius: 0;
-  margin: 0 0 -1px -1px;
+// const sketchButtonStyles = css`
+//   position: relative;
+//   height: 110px;
+//   width: 33.33%;
+//   background-color: white;
+//   color: black;
+//   border: 1px solid #ccc;
+//   border-radius: 0;
+//   margin: 0 0 -1px -1px;
 
-  &::before,
-  &::after {
-    content: '';
-    display: block;
-    padding-top: 50%;
-  }
+//   &::before,
+//   &::after {
+//     content: '';
+//     display: block;
+//     padding-top: 50%;
+//   }
 
-  &:hover,
-  &:focus {
-    background-color: #e7f6f8;
-    cursor: pointer;
-  }
-`;
+//   &:hover,
+//   &:focus {
+//     background-color: #e7f6f8;
+//     cursor: pointer;
+//   }
+// `;
 
-const textContainerStyles = css`
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
+// const textContainerStyles = css`
+//   position: absolute;
+//   top: 0;
+//   left: 0;
+//   bottom: 0;
+//   right: 0;
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+// `;
 
-const textStyles = css`
-  max-height: 85px;
-  word-break: break-word;
-`;
+// const textStyles = css`
+//   max-height: 85px;
+//   word-break: break-word;
+// `;
 
 const sketchAoiButtonStyles = css`
   background-color: white;
@@ -276,20 +297,20 @@ const addButtonStyles = css`
   height: 38px; /* same height as ReactSelect */
 `;
 
-const fullWidthSelectStyles = css`
-  width: 100%;
-  margin-right: 10px;
-  margin-bottom: 10px;
-`;
+// const fullWidthSelectStyles = css`
+//   width: 100%;
+//   margin-right: 10px;
+//   margin-bottom: 10px;
+// `;
 
-const inputStyles = css`
-  width: 100%;
-  height: 36px;
-  margin: 0 0 10px 0;
-  padding-left: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-`;
+// const inputStyles = css`
+//   width: 100%;
+//   height: 36px;
+//   margin: 0 0 10px 0;
+//   padding-left: 8px;
+//   border: 1px solid #ccc;
+//   border-radius: 4px;
+// `;
 
 const inlineSelectStyles = css`
   width: 100%;
@@ -300,67 +321,67 @@ const submitButtonStyles = css`
   margin-top: 10px;
 `;
 
-const sampleCountStyles = css`
-  font-size: 26px;
-  color: #0085e3;
-`;
+// const sampleCountStyles = css`
+//   font-size: 26px;
+//   color: #0085e3;
+// `;
 
 // --- components (SketchButton) ---
-type SketchButtonProps = {
-  value: string;
-  label: string;
-  iconClass: string;
-  layers: LayerType[];
-  selectedScenario: ScenarioEditsType | null;
-  onClick: () => void;
-};
+// type SketchButtonProps = {
+//   value: string;
+//   label: string;
+//   iconClass: string;
+//   layers: LayerType[];
+//   selectedScenario: ScenarioEditsType | null;
+//   onClick: () => void;
+// };
 
-function SketchButton({
-  value,
-  label,
-  iconClass,
-  layers,
-  selectedScenario,
-  onClick,
-}: SketchButtonProps) {
-  // put an ellipses on the end if the text is to long
-  const displayLabel = label.length > 30 ? `${label.substr(0, 30)}...` : label;
-  let count = 0;
+// function SketchButton({
+//   value,
+//   label,
+//   iconClass,
+//   layers,
+//   selectedScenario,
+//   onClick,
+// }: SketchButtonProps) {
+//   // put an ellipses on the end if the text is to long
+//   const displayLabel = label.length > 30 ? `${label.substr(0, 30)}...` : label;
+//   let count = 0;
 
-  layers.forEach((layer) => {
-    if (layer.layerType !== 'Samples' && layer.layerType !== 'VSP') return;
-    if (layer.sketchLayer.type === 'feature') return;
-    if (layer?.parentLayer?.id !== selectedScenario?.layerId) return;
+//   layers.forEach((layer) => {
+//     if (layer.layerType !== 'Samples' && layer.layerType !== 'VSP') return;
+//     if (layer.sketchLayer.type === 'feature') return;
+//     if (layer?.parentLayer?.id !== selectedScenario?.layerId) return;
 
-    layer.sketchLayer.graphics.forEach((graphic) => {
-      if (graphic.attributes.TYPEUUID === value) count += 1;
-    });
-  });
+//     layer.sketchLayer.graphics.forEach((graphic) => {
+//       if (graphic.attributes.TYPEUUID === value) count += 1;
+//     });
+//   });
 
-  return (
-    <button
-      id={value}
-      title={`Draw a ${label}: ${count}`}
-      className="sketch-button"
-      onClick={() => onClick()}
-      css={sketchButtonStyles}
-    >
-      <div css={textContainerStyles}>
-        <div css={textStyles}>
-          <i className={iconClass} />
-          <br />
-          {displayLabel}
-          {count > 0 && (
-            <Fragment>
-              <br />
-              <span css={sampleCountStyles}>{count}</span>
-            </Fragment>
-          )}
-        </div>
-      </div>
-    </button>
-  );
-}
+//   return (
+//     <button
+//       id={value}
+//       title={`Draw a ${label}: ${count}`}
+//       className="sketch-button"
+//       onClick={() => onClick()}
+//       css={sketchButtonStyles}
+//     >
+//       <div css={textContainerStyles}>
+//         <div css={textStyles}>
+//           <i className={iconClass} />
+//           <br />
+//           {displayLabel}
+//           {count > 0 && (
+//             <Fragment>
+//               <br />
+//               <span css={sampleCountStyles}>{count}</span>
+//             </Fragment>
+//           )}
+//         </div>
+//       </div>
+//     </button>
+//   );
+// }
 
 // --- styles (LocateSamples) ---
 const headerContainer = css`
@@ -424,6 +445,11 @@ const verticalCenterTextStyles = css`
   align-items: center;
 `;
 
+const fullWidthSelectStyles = css`
+  width: 100%;
+  margin-right: 10px;
+`;
+
 // --- components (LocateSamples) ---
 type GenerateRandomType = {
   status: 'none' | 'fetching' | 'success' | 'failure' | 'exceededTransferLimit';
@@ -432,12 +458,15 @@ type GenerateRandomType = {
 };
 
 function LocateSamples() {
-  const { setOptions } = useContext(DialogContext);
+  const { contaminationMap, setCalculateResults, setContaminationMap } =
+    useContext(CalculateContext);
+  // const { setOptions } = useContext(DialogContext);
   const { setGoTo, setGoToOptions } = useContext(NavigationContext);
-  const { setSampleTypeSelections } = useContext(PublishContext);
+  // const { setSampleTypeSelections } = useContext(PublishContext);
   const {
+    allSampleOptions,
     defaultSymbols,
-    setDefaultSymbolSingle,
+    // setDefaultSymbolSingle,
     displayDimensions,
     edits,
     setEdits,
@@ -453,18 +482,19 @@ function LocateSamples() {
     setAoiSketchLayer,
     sketchVM,
     aoiSketchVM,
-    sampleAttributes,
-    userDefinedOptions,
-    setUserDefinedOptions,
-    userDefinedAttributes,
-    setUserDefinedAttributes,
-    allSampleOptions,
-    displayGeometryType,
-    sceneView,
-    mapView,
+    setAoiData,
+    // sampleAttributes,
+    // userDefinedOptions,
+    // setUserDefinedOptions,
+    // userDefinedAttributes,
+    // setUserDefinedAttributes,
+    // allSampleOptions,
+    // displayGeometryType,
+    // sceneView,
+    // mapView,
   } = useContext(SketchContext);
   const startOver = useStartOver();
-  const { createBuffer } = useGeometryTools();
+  // const { createBuffer } = useGeometryTools();
   const getPopupTemplate = useDynamicPopup();
   const layerProps = useLayerProps();
   const sampleTypeContext = useSampleTypesContext();
@@ -519,53 +549,55 @@ function LocateSamples() {
     setAoiSketchLayer(newAoiSketchLayer);
   }, [map, aoiSketchLayer, setAoiSketchLayer, layersInitialized, setLayers]);
 
-  // Handle a user clicking one of the sketch buttons
-  function sketchButtonClick(label: string) {
-    if (!sketchVM || !map || !sketchLayer || !sceneView || !mapView) return;
+  // // Handle a user clicking one of the sketch buttons
+  // function sketchButtonClick(label: string) {
+  //   if (!sketchVM || !map || !sketchLayer || !sceneView || !mapView) return;
 
-    // put the sketch layer on the map, if it isn't there already and
-    // is not part of a group layer
-    const layerIndex = map.layers.findIndex(
-      (layer) => layer.id === sketchLayer.layerId,
-    );
-    if (layerIndex === -1 && !sketchLayer.parentLayer) {
-      map.add(sketchLayer.sketchLayer);
-    }
+  //   // put the sketch layer on the map, if it isn't there already and
+  //   // is not part of a group layer
+  //   const layerIndex = map.layers.findIndex(
+  //     (layer) => layer.id === sketchLayer.layerId,
+  //   );
+  //   if (layerIndex === -1 && !sketchLayer.parentLayer) {
+  //     map.add(sketchLayer.sketchLayer);
+  //   }
 
-    // save changes from other sketchVM and disable to prevent
-    // interference
-    if (aoiSketchVM) {
-      aoiSketchVM.cancel();
-    }
+  //   // save changes from other sketchVM and disable to prevent
+  //   // interference
+  //   if (aoiSketchVM) {
+  //     aoiSketchVM.cancel();
+  //   }
 
-    // determine whether the sketch button draws points or polygons
-    const attributes = sampleAttributes[label as any];
-    let shapeType = attributes.ShapeType;
+  //   // determine whether the sketch button draws points or polygons
+  //   const attributes = sampleAttributes[label as any];
+  //   let shapeType = attributes.ShapeType;
 
-    // make the style of the button active
-    const wasSet = activateSketchButton(label);
+  //   // make the style of the button active
+  //   const wasSet = activateSketchButton(label);
 
-    // update the sketchVM symbol
-    let symbolType = 'Samples';
-    if (defaultSymbols.symbols.hasOwnProperty(label)) symbolType = label;
+  //   // update the sketchVM symbol
+  //   let symbolType = 'Samples';
+  //   if (defaultSymbols.symbols.hasOwnProperty(label)) symbolType = label;
 
-    const isPath = attributes.POINT_STYLE.includes('path|');
-    const pointProps = {
-      color: defaultSymbols.symbols[symbolType].color,
-      outline: defaultSymbols.symbols[symbolType].outline,
-      style: isPath ? 'path' : attributes.POINT_STYLE,
-    } as any;
-    if (isPath) pointProps.path = attributes.POINT_STYLE.replace('path|', '');
+  //   const isPath = attributes.POINT_STYLE.includes('path|');
+  //   const pointProps = {
+  //     color: defaultSymbols.symbols[symbolType].color,
+  //     outline: defaultSymbols.symbols[symbolType].outline,
+  //     style: isPath ? 'path' : attributes.POINT_STYLE,
+  //   } as any;
+  //   if (isPath) pointProps.path = attributes.POINT_STYLE.replace('path|', '');
 
-    sketchVM['2d'].polygonSymbol = defaultSymbols.symbols[symbolType] as any;
-    sketchVM['2d'].pointSymbol = new SimpleMarkerSymbol(pointProps);
-    sketchVM['3d'].polygonSymbol = defaultSymbols.symbols[symbolType] as any;
-    sketchVM['3d'].pointSymbol = new SimpleMarkerSymbol(pointProps);
+  //   sketchVM['2d'].polygonSymbol = defaultSymbols.symbols[symbolType] as any;
+  //   sketchVM['2d'].pointSymbol = new SimpleMarkerSymbol(pointProps);
+  //   sketchVM['3d'].polygonSymbol = defaultSymbols.symbols[symbolType] as any;
+  //   sketchVM['3d'].pointSymbol = new SimpleMarkerSymbol(pointProps);
 
-    // let the user draw/place the shape
-    if (wasSet) sketchVM[displayDimensions].create(shapeType);
-    else sketchVM[displayDimensions].cancel();
-  }
+  //   // let the user draw/place the shape
+  //   if (wasSet) sketchVM[displayDimensions].create(shapeType);
+  //   else sketchVM[displayDimensions].cancel();
+  // }
+
+  // const { calculateArea } = useGeometryTools();
 
   // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
   // dropdown this will create an AOI layer. This also sets the sketchVM to use the
@@ -608,14 +640,7 @@ function LocateSamples() {
     }
   }
 
-  // Handle a user generating random samples
-  async function assessAoi() {
-    if (!map || !sketchLayer) return;
-
-    activateSketchButton('disable-all-buttons');
-    sketchVM?.[displayDimensions].cancel();
-    aoiSketchVM?.cancel();
-
+  function assessAoi() {
     const aoiMaskLayer: LayerType | null =
       generateRandomMode === 'draw'
         ? aoiSketchLayer
@@ -628,229 +653,521 @@ function LocateSamples() {
     )
       return;
 
-    setGenerateRandomResponse({ status: 'fetching', data: [] });
-
-    const features: any[] = [];
-    aoiMaskLayer.sketchLayer.graphics.forEach((graphic) => {
-      const geometry = graphic.geometry as __esri.Polygon;
-
-      const dim1Rings: number[][][] = [];
-      geometry.rings.forEach((dim1) => {
-        const dim2Rings: number[][] = [];
-        dim1.forEach((dim2) => {
-          const point = new Point({
-            spatialReference: {
-              wkid: 102100,
-            },
-            x: dim2[0],
-            y: dim2[1],
-          });
-
-          dim2Rings.push([point.longitude, point.latitude]);
-        });
-
-        dim1Rings.push(dim2Rings);
-      });
-
-      features.push({
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'Polygon',
-          coordinates: dim1Rings,
-        },
-      });
+    setCalculateResults((calculateResults: CalculateResultsType) => {
+      return {
+        status: 'fetching',
+        panelOpen: calculateResults.panelOpen,
+        data: null,
+      };
     });
-
-    const params = {
-      type: 'FeatureCollection',
-      features,
-    };
-
-    try {
-      // TODO - look into adding more queries here
-      const results: any = await proxyFetch(
-        `${services.data.nsi}/structures?fmt=fc`,
-        {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify(params),
-        },
-      );
-
-      let editsCopy: EditsType = edits;
-      const graphics: __esri.Graphic[] = [];
-      results.features.forEach((feature: any) => {
-        const { bldgtype, found_type, ftprntsrc, source, st_damcat } =
-          feature.properties;
-        graphics.push(
-          new Graphic({
-            attributes: {
-              ...feature.properties,
-              bldgtype: handleEnum(bldgtype, bldgTypeEnum),
-              found_type: handleEnum(found_type, foundTypeEnum),
-              ftprntsrc: handleEnum(ftprntsrc, ftprntsrcEnum),
-              source: handleEnum(source, sourceEnum),
-              st_damcat: handleEnum(st_damcat, stDamcatEnum),
-            },
-            geometry: new Point({
-              longitude: feature.geometry.coordinates[0],
-              latitude: feature.geometry.coordinates[1],
-              spatialReference: {
-                wkid: 102100,
-              },
-            }),
-            symbol: new TextSymbol({
-              text: '\ue687',
-              color: 'blue',
-              yoffset: -13,
-              font: {
-                family: 'CalciteWebCoreIcons',
-                size: 24,
-              },
-            }),
-            popupTemplate: {
-              title: '',
-              content: buildingMapPopup,
-            },
-          }),
-        );
-      });
-
-      // Figure out what to add graphics to
-      const aoiAssessed = selectedScenario?.layers.find(
-        (l) => l.layerType === 'AOI Assessed',
-      );
-
-      if (aoiAssessed) {
-        const aoiAssessedLayer = layers.find(
-          (l) => l.layerId === aoiAssessed.layerId,
-        );
-        if (aoiAssessedLayer?.sketchLayer?.type === 'graphics') {
-          aoiAssessedLayer?.sketchLayer.graphics.addMany(graphics);
-
-          editsCopy = updateLayerEdits({
-            edits,
-            scenario: selectedScenario,
-            layer: aoiAssessedLayer,
-            type: 'add',
-            changes: new Collection(graphics),
-          });
-        }
-      } else {
-        const scenarioLayer = map.layers.find(
-          (l) => l.id === selectedScenario?.layerId,
-        );
-        if (scenarioLayer && scenarioLayer.type === 'group') {
-          const tmpScenarioLayer = scenarioLayer as __esri.GroupLayer;
-          //&& scenarioLayer.layerType === '') {
-          // build the layer
-          const layerUuid = generateUUID();
-          const graphicsLayer = new GraphicsLayer({
-            id: layerUuid,
-            title: 'AOI Assessment',
-            listMode: 'hide',
-            graphics,
-          });
-
-          // scenarioLayer..layers.add(graphicsLayer);
-          tmpScenarioLayer.layers.add(graphicsLayer);
-
-          const layer = {
-            id: -1,
-            pointsId: -1,
-            uuid: layerUuid,
-            layerId: layerUuid,
-            portalId: '',
-            value: 'aoiAssessed',
-            name: 'AOI Assessment',
-            label: 'AOI Assessment',
-            layerType: 'AOI Assessed',
-            editType: 'add',
-            visible: true,
-            listMode: 'hide',
-            sort: 0,
-            geometryType: 'esriGeometryPolygon',
-            addedFrom: 'sketch',
-            status: 'added',
-            sketchLayer: graphicsLayer,
-            pointsLayer: null,
-            hybridLayer: null,
-            parentLayer: null,
-          } as LayerType;
-
-          // add it to edits
-          editsCopy = updateLayerEdits({
-            edits,
-            scenario: selectedScenario,
-            layer,
-            type: 'add',
-            changes: new Collection(graphics),
-          });
-
-          setSelectedScenario((selectedScenario) => {
-            if (!selectedScenario) return selectedScenario;
-
-            const scenario = editsCopy.edits.find(
-              (edit) =>
-                edit.type === 'scenario' &&
-                edit.layerId === selectedScenario.layerId,
-            ) as ScenarioEditsType;
-            const newLayer = scenario.layers.find(
-              (l) => l.layerId === layer.layerId,
-            );
-
-            if (!newLayer) return selectedScenario;
-
-            return {
-              ...selectedScenario,
-              layers: [...selectedScenario.layers, newLayer],
-            };
-          });
-
-          setLayers((layers) => {
-            return [...layers, layer];
-          });
-        }
-      }
-
-      if (generateRandomMode === 'draw') {
-        // remove the graphics from the generate random mask
-        if (aoiMaskLayer && aoiMaskLayer.sketchLayer.type === 'graphics') {
-          editsCopy = updateLayerEdits({
-            edits: editsCopy,
-            layer: aoiMaskLayer,
-            type: 'delete',
-            changes: aoiMaskLayer.sketchLayer.graphics,
-          });
-
-          aoiMaskLayer.sketchLayer.removeAll();
-        }
-      }
-
-      // update the edits state
-      setEdits(editsCopy);
-
-      setGenerateRandomResponse({
-        status: 'success',
-        data: graphics,
-      });
-    } catch (ex: any) {
-      console.error(ex);
-      setGenerateRandomResponse({
-        status: 'failure',
-        error: {
-          error: createErrorObject(ex),
-          message: ex.message,
-        },
-        data: [],
-      });
-
-      window.logErrorToGa(ex);
-    }
+    setAoiData((aoiDataCur: any) => {
+      return {
+        count: aoiDataCur.count + 1,
+        graphics: (
+          aoiMaskLayer.sketchLayer as __esri.GraphicsLayer
+        ).graphics.toArray(),
+      } as any;
+    });
   }
+
+  // // Handle a user generating random samples
+  // async function assessAoi() {
+  //   if (!map || !sketchLayer) return;
+
+  //   activateSketchButton('disable-all-buttons');
+  //   sketchVM?.[displayDimensions].cancel();
+  //   aoiSketchVM?.cancel();
+
+  //   const aoiMaskLayer: LayerType | null =
+  //     generateRandomMode === 'draw'
+  //       ? aoiSketchLayer
+  //       : generateRandomMode === 'file'
+  //         ? selectedAoiFile
+  //         : null;
+  //   if (
+  //     !aoiMaskLayer?.sketchLayer ||
+  //     aoiMaskLayer.sketchLayer.type !== 'graphics'
+  //   )
+  //     return;
+
+  //   setGenerateRandomResponse({ status: 'fetching', data: [] });
+
+  //   const features: any[] = [];
+  //   let totalAoiSqM = 0;
+  //   let totalBuildingFootprintSqM = 0;
+  //   let totalBuildingFloorsSqM = 0;
+  //   let totalBuildingSqM = 0;
+  //   let totalBuildingExtWallsSqM = 0;
+  //   let totalBuildingIntWallsSqM = 0;
+  //   let totalBuildingRoofSqM = 0;
+  //   aoiMaskLayer.sketchLayer.graphics.forEach((graphic) => {
+  //     const geometry = graphic.geometry as __esri.Polygon;
+
+  //     const areaSM = calculateArea(graphic);
+  //     if (typeof areaSM === 'number') {
+  //       totalAoiSqM += areaSM;
+  //       graphic.attributes.AREA = areaSM;
+  //     }
+
+  //     const dim1Rings: number[][][] = [];
+  //     geometry.rings.forEach((dim1) => {
+  //       const dim2Rings: number[][] = [];
+  //       dim1.forEach((dim2) => {
+  //         const point = new Point({
+  //           spatialReference: {
+  //             wkid: 102100,
+  //           },
+  //           x: dim2[0],
+  //           y: dim2[1],
+  //         });
+
+  //         dim2Rings.push([point.longitude, point.latitude]);
+  //       });
+
+  //       dim1Rings.push(dim2Rings);
+  //     });
+
+  //     features.push({
+  //       type: 'Feature',
+  //       properties: {},
+  //       geometry: {
+  //         type: 'Polygon',
+  //         coordinates: dim1Rings,
+  //       },
+  //     });
+  //   });
+  //   console.log('totalAoiSqM: ', totalAoiSqM);
+
+  //   try {
+  //     // TODO - look into adding more queries here
+  //     const requests: any[] = [];
+  //     features.forEach((feature) => {
+  //       const request: any = proxyFetch(
+  //         `${services.data.nsi}/structures?fmt=fc`,
+  //         {
+  //           method: 'POST',
+  //           headers: {
+  //             'content-type': 'application/json',
+  //           },
+  //           body: JSON.stringify({
+  //             type: 'FeatureCollection',
+  //             features: [feature],
+  //           }),
+  //         },
+  //       );
+
+  //       requests.push(request);
+  //     });
+
+  //     const responses = await Promise.all(requests);
+
+  //     let editsCopy: EditsType = edits;
+  //     const graphics: __esri.Graphic[] = []; // TODO - store this in context
+  //     responses.forEach((results) => {
+  //       results.features.forEach((feature: any) => {
+  //         const {
+  //           bldgtype,
+  //           found_type,
+  //           ftprntsrc,
+  //           num_story,
+  //           source,
+  //           sqft,
+  //           st_damcat,
+  //         } = feature.properties;
+
+  //         // feet
+  //         const footprintSqFt = sqft;
+  //         const floorsSqFt = num_story * footprintSqFt;
+  //         const extWallsSqFt = Math.sqrt(floorsSqFt) * 10 * 4 * num_story;
+  //         const intWallsSqFt = extWallsSqFt * 3;
+
+  //         // meters
+  //         const footprintSqM = sqft / 10.7639104167;
+  //         const floorsSqM = num_story * footprintSqM;
+  //         const extWallsSqM = Math.sqrt(floorsSqM) * 10 * 4 * num_story;
+  //         const intWallsSqM = extWallsSqM * 3;
+  //         totalBuildingFootprintSqM += footprintSqM;
+  //         totalBuildingFloorsSqM += floorsSqM;
+  //         totalBuildingSqM += floorsSqM;
+  //         totalBuildingExtWallsSqM += extWallsSqM;
+  //         totalBuildingIntWallsSqM += intWallsSqM;
+  //         totalBuildingRoofSqM += footprintSqM;
+
+  //         graphics.push(
+  //           new Graphic({
+  //             attributes: {
+  //               ...feature.properties,
+  //               bldgtype: handleEnum(bldgtype, bldgTypeEnum),
+  //               found_type: handleEnum(found_type, foundTypeEnum),
+  //               ftprntsrc: handleEnum(ftprntsrc, ftprntsrcEnum),
+  //               source: handleEnum(source, sourceEnum),
+  //               st_damcat: handleEnum(st_damcat, stDamcatEnum),
+  //               CONTAMTYPE: '',
+  //               CONTAMUNIT: '',
+  //               CONTAMVAL: 0,
+  //               footprintSqM,
+  //               floorsSqM,
+  //               totalSqM: floorsSqM,
+  //               extWallsSqM,
+  //               intWallsSqM,
+  //               roofSqM: footprintSqM,
+  //               footprintSqFt,
+  //               floorsSqFt,
+  //               totalSqFt: floorsSqFt,
+  //               extWallsSqFt,
+  //               intWallsSqFt,
+  //               roofSqFt: footprintSqFt,
+  //             },
+  //             geometry: new Point({
+  //               longitude: feature.geometry.coordinates[0],
+  //               latitude: feature.geometry.coordinates[1],
+  //               spatialReference: {
+  //                 wkid: 102100,
+  //               },
+  //             }),
+  //             symbol: new TextSymbol({
+  //               text: '\ue687',
+  //               color: 'blue',
+  //               yoffset: -13,
+  //               font: {
+  //                 family: 'CalciteWebCoreIcons',
+  //                 size: 24,
+  //               },
+  //             }),
+  //             popupTemplate: {
+  //               title: '',
+  //               content: buildingMapPopup,
+  //             },
+  //           }),
+  //         );
+  //       });
+  //     });
+
+  //     // TODO - Can calculate elsewhere using graphics
+  //     console.log('totalBuildingFootprintSqM: ', totalBuildingFootprintSqM);
+  //     console.log('totalBuildingFloorsSqM: ', totalBuildingFloorsSqM);
+  //     console.log('totalBuildingSqM: ', totalBuildingSqM);
+  //     console.log('totalBuildingExtWallsSqM: ', totalBuildingExtWallsSqM);
+  //     console.log('totalBuildingIntWallsSqM: ', totalBuildingIntWallsSqM);
+  //     console.log('totalBuildingRoofSqM: ', totalBuildingRoofSqM);
+  //     const nonBuildingArea = totalAoiSqM - totalBuildingFootprintSqM;
+  //     console.log('nonBuildingArea: ', nonBuildingArea);
+
+  //     const contaminedAoiAreas: { [key: number]: number } = {};
+  //     const contaminationPercentages: { [key: number]: number } = {};
+  //     let totalBuildingCfu = 0;
+  //     if (
+  //       contaminationMap &&
+  //       contaminationMap?.sketchLayer?.type === 'graphics'
+  //     ) {
+  //       // loop through structures
+  //       graphics.forEach((graphic) => {
+  //         // loop through contamination map features
+  //         (
+  //           contaminationMap.sketchLayer as __esri.GraphicsLayer
+  //         ).graphics.forEach((contamGraphic) => {
+  //           // call intersect to see if decon app intersects contamination map
+  //           if (
+  //             !graphic.geometry ||
+  //             !contamGraphic.geometry ||
+  //             !geometryEngine.intersects(
+  //               graphic.geometry,
+  //               contamGraphic.geometry,
+  //             )
+  //           ) {
+  //             return;
+  //           }
+
+  //           // const contamReduction = graphic.attributes.LOD_NON;
+  //           // console.log('contamReduction: ', contamReduction);
+  //           // const reductionFactor = parseSmallFloat(1 - contamReduction);
+  //           // console.log('parseSmallFloat 1 - contamReduction: ', reductionFactor);
+  //           const newCfu = contamGraphic.attributes.CONTAMVAL; // * reductionFactor;
+  //           graphic.attributes.CONTAMVAL = newCfu;
+  //           graphic.attributes.CONTAMUNIT = contamGraphic.attributes.CONTAMUNIT;
+  //           graphic.attributes.CONTAMTYPE = contamGraphic.attributes.CONTAMTYPE;
+
+  //           totalBuildingCfu += newCfu;
+  //         });
+  //       });
+
+  //       // partition AOI to determine where contamination is
+  //       aoiMaskLayer.sketchLayer.graphics.forEach((graphic) => {
+  //         (
+  //           contaminationMap.sketchLayer as __esri.GraphicsLayer
+  //         ).graphics.forEach((contamGraphic) => {
+  //           const contamValue = contamGraphic.attributes.CONTAMVAL as number;
+  //           const outGeometry = geometryEngine.intersect(
+  //             graphic.geometry,
+  //             contamGraphic.geometry,
+  //           ) as __esri.Geometry;
+  //           const clippedAreaM2 = calculateArea(outGeometry);
+  //           const currArea = contaminedAoiAreas[contamValue];
+  //           if (typeof clippedAreaM2 === 'number')
+  //             contaminedAoiAreas[contamValue] = currArea
+  //               ? currArea + clippedAreaM2
+  //               : clippedAreaM2;
+  //         });
+  //       });
+
+  //       Object.keys(contaminedAoiAreas).forEach((key: any) => {
+  //         contaminationPercentages[key] = contaminedAoiAreas[key] / totalAoiSqM;
+  //       });
+  //     }
+  //     console.log('contaminedAoiAreas: ', contaminedAoiAreas);
+  //     console.log('contaminationPercentages: ', contaminationPercentages);
+
+  //     // perform calculations off percentAOI stuff
+  //     let totalFinalContam = 0;
+  //     let totalSolidWasteM3 = 0;
+  //     let totalLiquidWasteM3 = 0;
+  //     let totalDeconCost = 0;
+  //     let totalApplicationTime = 0;
+  //     let totalResidenceTime = 0;
+  //     let totalDeconTime = 0;
+  //     deconSelections.forEach((sel) => {
+  //       // find decon settings
+  //       const deconTech = sel.deconTech.value;
+  //       const media = sel.media;
+  //       if (!deconTech) return;
+
+  //       let surfaceArea = 0;
+  //       let avgCfu = 0;
+  //       console.log('media: ', media);
+  //       if (media.includes('Building ')) {
+  //         avgCfu = totalBuildingCfu * partitionFactors[media];
+
+  //         if (media === 'Building Exterior Walls')
+  //           surfaceArea = totalBuildingExtWallsSqM;
+  //         if (media === 'Building Interior Walls')
+  //           surfaceArea = totalBuildingIntWallsSqM;
+  //         if (media === 'Building Interior Floors')
+  //           surfaceArea = totalBuildingFloorsSqM;
+  //         if (media === 'Building Roofs') surfaceArea = totalBuildingRoofSqM;
+  //       } else {
+  //         const pctFactor = sel.pctAoi * 0.01;
+
+  //         // get surface area of soil, asphalt or concrete
+  //         //             60 =             100 * 0.6 surface area of concrete
+  //         surfaceArea = nonBuildingArea * pctFactor;
+
+  //         // get total CFU for media
+  //         let totalArea = 0;
+  //         let totalCfu = 0;
+  //         Object.keys(contaminationPercentages).forEach((key: any) => {
+  //           // area of media and cfu level
+  //           const pctCfu = contaminationPercentages[key];
+  //           //                34.2 =   0.57 * 60
+  //           const surfaceAreaSfCfu = pctCfu * surfaceArea;
+  //           totalArea += surfaceAreaSfCfu;
+
+  //           // 34.2M  =             34.2 * 1M;
+  //           // SUM    = 35.916M CFU
+  //           totalCfu += surfaceAreaSfCfu * key;
+  //         });
+
+  //         avgCfu = totalCfu / totalArea;
+  //         console.log('avgCfu: ', avgCfu);
+  //       }
+  //       console.log('surfaceArea: ', surfaceArea);
+  //       console.log('avgCfu: ', avgCfu);
+
+  //       // need to lookup stuff from sampleAttributes
+  //       const {
+  //         LOD_NON: contaminationRemovalFactor,
+  //         MCPS: setupCost,
+  //         WVPS: solidWasteVolume,
+  //         ALC: liquidWasteVolume,
+  //         TTC: applicationTimeHrs,
+  //         TTA: residenceTimeHrs,
+  //       } = sampleAttributes[deconTech as any];
+  //       const contamLeftFactor = 1 - contaminationRemovalFactor;
+  //       const avgFinalContam =
+  //         avgCfu * Math.pow(contamLeftFactor, sel.numApplications);
+  //       // const aboveDetection = avgFinalContam >= detectionLimit;
+  //       // const surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications
+  //       const areaDeconApplied =
+  //         surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications;
+  //       console.log('areaDeconApplied: ', areaDeconApplied);
+  //       console.log('deconTech: ', deconTech);
+  //       console.log('solidWasteVolume: ', solidWasteVolume);
+  //       console.log('liquidWasteVolume: ', liquidWasteVolume);
+  //       const solidWasteM3 = areaDeconApplied * solidWasteVolume;
+  //       const liquidWasteM3 = areaDeconApplied * liquidWasteVolume;
+
+  //       const deconCost =
+  //         setupCost * sel.numApplications + areaDeconApplied * setupCost;
+  //       const sumApplicationTime = (areaDeconApplied * applicationTimeHrs) / 24;
+  //       const sumResidenceTime = (residenceTimeHrs * sel.numApplications) / 24;
+  //       const deconTime = sumApplicationTime + sumResidenceTime;
+
+  //       console.log('avgFinalContam: ', avgFinalContam);
+  //       console.log('solidWasteM3: ', solidWasteM3);
+  //       console.log('liquidWasteM3: ', liquidWasteM3);
+  //       console.log('deconCost: ', deconCost);
+  //       console.log('sumApplicationTime: ', sumApplicationTime);
+  //       console.log('sumResidenceTime: ', sumResidenceTime);
+  //       console.log('deconTime: ', deconTime);
+
+  //       totalFinalContam += avgFinalContam;
+  //       totalSolidWasteM3 += solidWasteM3;
+  //       totalLiquidWasteM3 += solidWasteM3;
+  //       totalDeconCost += deconCost;
+  //       totalApplicationTime += sumApplicationTime;
+  //       totalResidenceTime += sumResidenceTime;
+  //       totalDeconTime += deconTime;
+  //     });
+
+  //     console.log('totalFinalContam: ', totalFinalContam);
+  //     console.log('totalSolidWasteM3: ', totalSolidWasteM3);
+  //     console.log('totalLiquidWasteM3: ', totalLiquidWasteM3);
+  //     console.log('totalDeconCost: ', totalDeconCost);
+  //     console.log('totalApplicationTime: ', totalApplicationTime);
+  //     console.log('totalResidenceTime: ', totalResidenceTime);
+  //     console.log('totalDeconTime: ', totalDeconTime);
+  //     console.log('graphics: ', graphics);
+
+  //     // Figure out what to add graphics to
+  //     const aoiAssessed = selectedScenario?.layers.find(
+  //       (l) => l.layerType === 'AOI Assessed',
+  //     );
+
+  //     if (aoiAssessed) {
+  //       const aoiAssessedLayer = layers.find(
+  //         (l) => l.layerId === aoiAssessed.layerId,
+  //       );
+  //       if (aoiAssessedLayer?.sketchLayer?.type === 'graphics') {
+  //         editsCopy = updateLayerEdits({
+  //           edits,
+  //           scenario: selectedScenario,
+  //           layer: aoiAssessedLayer,
+  //           type: 'delete',
+  //           changes: aoiAssessedLayer?.sketchLayer.graphics,
+  //         });
+
+  //         aoiAssessedLayer?.sketchLayer.graphics.removeAll();
+  //         aoiAssessedLayer?.sketchLayer.graphics.addMany(graphics);
+
+  //         editsCopy = updateLayerEdits({
+  //           edits,
+  //           scenario: selectedScenario,
+  //           layer: aoiAssessedLayer,
+  //           type: 'add',
+  //           changes: new Collection(graphics),
+  //         });
+  //       }
+  //     } else {
+  //       const scenarioLayer = map.layers.find(
+  //         (l) => l.id === selectedScenario?.layerId,
+  //       );
+  //       if (scenarioLayer && scenarioLayer.type === 'group') {
+  //         const tmpScenarioLayer = scenarioLayer as __esri.GroupLayer;
+  //         //&& scenarioLayer.layerType === '') {
+  //         // build the layer
+  //         const layerUuid = generateUUID();
+  //         const graphicsLayer = new GraphicsLayer({
+  //           id: layerUuid,
+  //           title: 'AOI Assessment',
+  //           listMode: 'hide',
+  //           graphics,
+  //         });
+
+  //         // scenarioLayer..layers.add(graphicsLayer);
+  //         tmpScenarioLayer.layers.add(graphicsLayer);
+
+  //         const layer = {
+  //           id: -1,
+  //           pointsId: -1,
+  //           uuid: layerUuid,
+  //           layerId: layerUuid,
+  //           portalId: '',
+  //           value: 'aoiAssessed',
+  //           name: 'AOI Assessment',
+  //           label: 'AOI Assessment',
+  //           layerType: 'AOI Assessed',
+  //           editType: 'add',
+  //           visible: true,
+  //           listMode: 'hide',
+  //           sort: 0,
+  //           geometryType: 'esriGeometryPolygon',
+  //           addedFrom: 'sketch',
+  //           status: 'added',
+  //           sketchLayer: graphicsLayer,
+  //           pointsLayer: null,
+  //           hybridLayer: null,
+  //           parentLayer: null,
+  //         } as LayerType;
+
+  //         // add it to edits
+  //         editsCopy = updateLayerEdits({
+  //           edits,
+  //           scenario: selectedScenario,
+  //           layer,
+  //           type: 'add',
+  //           changes: new Collection(graphics),
+  //         });
+
+  //         setSelectedScenario((selectedScenario) => {
+  //           if (!selectedScenario) return selectedScenario;
+
+  //           const scenario = editsCopy.edits.find(
+  //             (edit) =>
+  //               edit.type === 'scenario' &&
+  //               edit.layerId === selectedScenario.layerId,
+  //           ) as ScenarioEditsType;
+  //           const newLayer = scenario.layers.find(
+  //             (l) => l.layerId === layer.layerId,
+  //           );
+
+  //           if (!newLayer) return selectedScenario;
+
+  //           return {
+  //             ...selectedScenario,
+  //             layers: [...selectedScenario.layers, newLayer],
+  //           };
+  //         });
+
+  //         setLayers((layers) => {
+  //           return [...layers, layer];
+  //         });
+  //       }
+  //     }
+
+  //     // if (generateRandomMode === 'draw') {
+  //     //   // remove the graphics from the generate random mask
+  //     //   if (aoiMaskLayer && aoiMaskLayer.sketchLayer.type === 'graphics') {
+  //     //     editsCopy = updateLayerEdits({
+  //     //       edits: editsCopy,
+  //     //       layer: aoiMaskLayer,
+  //     //       type: 'delete',
+  //     //       changes: aoiMaskLayer.sketchLayer.graphics,
+  //     //     });
+
+  //     //     aoiMaskLayer.sketchLayer.removeAll();
+  //     //   }
+  //     // }
+
+  //     // update the edits state
+  //     setEdits(editsCopy);
+
+  //     setGenerateRandomResponse({
+  //       status: 'success',
+  //       data: graphics,
+  //     });
+  //   } catch (ex: any) {
+  //     console.error(ex);
+  //     setGenerateRandomResponse({
+  //       status: 'failure',
+  //       error: {
+  //         error: createErrorObject(ex),
+  //         message: ex.message,
+  //       },
+  //       data: [],
+  //     });
+
+  //     window.logErrorToGa(ex);
+  //   }
+  // }
 
   type Cell = { value: any; font?: any; alignment?: any };
   type Row = Cell[];
@@ -905,7 +1222,7 @@ function LocateSamples() {
       { label: 'Census Block FIPS', fieldName: 'cbfips' },
       { label: 'ID', fieldName: 'fd_id' },
       { label: 'Flood Zone (2021)', fieldName: 'firmzone' },
-      { label: 'Foundation Height', fieldName: 'found_ht' },
+      { label: 'Foundation Height (feet)', fieldName: 'found_ht' },
       { label: 'Foundation Type', fieldName: 'found_type' },
       { label: 'Footprint ID', fieldName: 'ftprntid' },
       { label: 'Footprint Source', fieldName: 'ftprntsrc' },
@@ -929,6 +1246,69 @@ function LocateSamples() {
       { label: 'Value of Vehicles', fieldName: 'val_vehic' },
       { label: 'x', fieldName: 'x' },
       { label: 'y', fieldName: 'y' },
+      { label: 'Contamination Type', fieldName: 'CONTAMTYPE' },
+      { label: 'Activity', fieldName: 'CONTAMVAL' },
+      { label: 'Unit of Measure', fieldName: 'CONTAMUNIT' },
+      {
+        label: 'Footprint Area (square meters)',
+        fieldName: 'footprintSqM',
+        format: 'number',
+      },
+      {
+        label: 'Floors Area (square meters)',
+        fieldName: 'floorsSqM',
+        format: 'number',
+      },
+      {
+        label: 'Total Area (square meters)',
+        fieldName: 'totalSqM',
+        format: 'number',
+      },
+      {
+        label: 'Ext Walls Area (square meters)',
+        fieldName: 'extWallsSqM',
+        format: 'number',
+      },
+      {
+        label: 'Int Walls Area (square meters)',
+        fieldName: 'intWallsSqM',
+        format: 'number',
+      },
+      {
+        label: 'Roof Area (square meters)',
+        fieldName: 'roofSqM',
+        format: 'number',
+      },
+      {
+        label: 'Footprint Area (square feet)',
+        fieldName: 'footprintSqFt',
+        format: 'number',
+      },
+      {
+        label: 'Floors Area (square feet)',
+        fieldName: 'floorsSqFt',
+        format: 'number',
+      },
+      {
+        label: 'Total Area (square feet)',
+        fieldName: 'totalSqFt',
+        format: 'number',
+      },
+      {
+        label: 'Ext Walls Area (square feet)',
+        fieldName: 'extWallsSqFt',
+        format: 'number',
+      },
+      {
+        label: 'Int Walls Area (square feet)',
+        fieldName: 'intWallsSqFt',
+        format: 'number',
+      },
+      {
+        label: 'Roof Area (square feet)',
+        fieldName: 'roofSqFt',
+        format: 'number',
+      },
     ];
 
     let curRow = fillOutCells({
@@ -950,8 +1330,12 @@ function LocateSamples() {
       (graphic) => {
         rows.push(
           cols.map((col) => {
+            const fieldValue = graphic.attributes[col.fieldName];
             return {
-              value: graphic.attributes[col.fieldName],
+              value:
+                col.format === 'number'
+                  ? (parseSmallFloat(fieldValue, 2) ?? '').toLocaleString()
+                  : fieldValue,
             };
           }),
         );
@@ -1003,268 +1387,268 @@ function LocateSamples() {
     }
   }
 
-  const [userDefinedSampleType, setUserDefinedSampleType] =
-    useState<SampleSelectType | null>(null);
-  const [editingStatus, setEditingStatus] = useState<EditType | null>(null);
-  const [sampleTypeName, setSampleTypeName] = useState<string>('');
-  const [shapeType, setShapeType] = useState<ShapeTypeSelect | null>(null);
-  const [pointStyle, setPointStyle] = useState<ShapeTypeSelect | null>(null);
-  const [ttpk, setTtpk] = useState<string | null>('');
-  const [ttc, setTtc] = useState<string | null>('');
-  const [tta, setTta] = useState<string | null>('');
-  const [ttps, setTtps] = useState<string | null>('');
-  const [lodp, setLodp] = useState<string | null>('');
-  const [lodnon, setLodnon] = useState<string | null>('');
-  const [mcps, setMcps] = useState<string | null>('');
-  const [tcps, setTcps] = useState<string | null>('');
-  const [wvps, setWvps] = useState<string | null>('');
-  const [wwps, setWwps] = useState<string | null>('');
-  const [sa, setSa] = useState<string | null>('');
-  const [alc, setAlc] = useState<string | null>('');
-  const [amc, setAmc] = useState<string | null>('');
-  const [validationMessage, setValidationMessage] = useState<
-    JSX.Element[] | string
-  >('');
+  // const [userDefinedSampleType, setUserDefinedSampleType] =
+  //   useState<SampleSelectType | null>(null);
+  // const [editingStatus, setEditingStatus] = useState<EditType | null>(null);
+  // const [sampleTypeName, setSampleTypeName] = useState<string>('');
+  // const [shapeType, setShapeType] = useState<ShapeTypeSelect | null>(null);
+  // const [pointStyle, setPointStyle] = useState<ShapeTypeSelect | null>(null);
+  // const [ttpk, setTtpk] = useState<string | null>('');
+  // const [ttc, setTtc] = useState<string | null>('');
+  // const [tta, setTta] = useState<string | null>('');
+  // const [ttps, setTtps] = useState<string | null>('');
+  // const [lodp, setLodp] = useState<string | null>('');
+  // const [lodnon, setLodnon] = useState<string | null>('');
+  // const [mcps, setMcps] = useState<string | null>('');
+  // const [tcps, setTcps] = useState<string | null>('');
+  // const [wvps, setWvps] = useState<string | null>('');
+  // const [wwps, setWwps] = useState<string | null>('');
+  // const [sa, setSa] = useState<string | null>('');
+  // const [alc, setAlc] = useState<string | null>('');
+  // const [amc, setAmc] = useState<string | null>('');
+  // const [validationMessage, setValidationMessage] = useState<
+  //   JSX.Element[] | string
+  // >('');
 
-  // Sets all of the user defined sample type inputs based on
-  // which edit type is being used.
-  function setSampleTypeInputs(editType: EditType) {
-    if (editType === 'create') {
-      setEditingStatus(editType);
-      setShapeType(null);
-      setPointStyle(null);
-      setTtpk('');
-      setTtc('');
-      setTta('');
-      setTtps('');
-      setLodp('');
-      setLodnon('');
-      setMcps('');
-      setTcps('');
-      setWvps('');
-      setWwps('');
-      setSa('');
-      setAlc('');
-      setAmc('');
-      setSampleTypeName('');
-      return;
-    }
+  // // Sets all of the user defined sample type inputs based on
+  // // which edit type is being used.
+  // function setSampleTypeInputs(editType: EditType) {
+  //   if (editType === 'create') {
+  //     setEditingStatus(editType);
+  //     setShapeType(null);
+  //     setPointStyle(null);
+  //     setTtpk('');
+  //     setTtc('');
+  //     setTta('');
+  //     setTtps('');
+  //     setLodp('');
+  //     setLodnon('');
+  //     setMcps('');
+  //     setTcps('');
+  //     setWvps('');
+  //     setWwps('');
+  //     setSa('');
+  //     setAlc('');
+  //     setAmc('');
+  //     setSampleTypeName('');
+  //     return;
+  //   }
 
-    if (!userDefinedSampleType) return;
+  //   if (!userDefinedSampleType) return;
 
-    // get the sample type name, for a clone operation
-    // add a number to the end of the name.
-    let sampleTypeUuid = userDefinedSampleType.value;
-    let sampleTypeName = userDefinedSampleType.label;
-    const attributes = sampleAttributes[sampleTypeUuid as any];
-    if (editType === 'clone') {
-      sampleTypeName = getSampleTypeName(allSampleOptions, sampleTypeName);
-    }
+  //   // get the sample type name, for a clone operation
+  //   // add a number to the end of the name.
+  //   let sampleTypeUuid = userDefinedSampleType.value;
+  //   let sampleTypeName = userDefinedSampleType.label;
+  //   const attributes = sampleAttributes[sampleTypeUuid as any];
+  //   if (editType === 'clone') {
+  //     sampleTypeName = getSampleTypeName(allSampleOptions, sampleTypeName);
+  //   }
 
-    const shapeType =
-      attributes.ShapeType === 'point'
-        ? { value: 'point', label: 'Point' }
-        : { value: 'polygon', label: 'Polygon' };
+  //   const shapeType =
+  //     attributes.ShapeType === 'point'
+  //       ? { value: 'point', label: 'Point' }
+  //       : { value: 'polygon', label: 'Polygon' };
 
-    setEditingStatus(editType);
-    setShapeType(shapeType);
-    setTtpk(attributes.TTPK ? attributes.TTPK.toString() : null);
-    setTtc(attributes.TTC ? attributes.TTC.toString() : null);
-    setTta(attributes.TTA ? attributes.TTA.toString() : null);
-    setTtps(attributes.TTPS ? attributes.TTPS.toString() : null);
-    setLodp(attributes.LOD_P ? attributes.LOD_P.toString() : null);
-    setLodnon(attributes.LOD_NON ? attributes.LOD_NON.toString() : null);
-    setMcps(attributes.MCPS ? attributes.MCPS.toString() : null);
-    setTcps(attributes.TCPS ? attributes.TCPS.toString() : null);
-    setWvps(attributes.WVPS ? attributes.WVPS.toString() : null);
-    setWwps(attributes.WWPS ? attributes.WWPS.toString() : null);
-    setSa(attributes.SA ? attributes.SA.toString() : null);
-    setAlc(attributes.ALC ? attributes.ALC.toString() : null);
-    setAmc(attributes.AMC ? attributes.AMC.toString() : null);
-    setSampleTypeName(sampleTypeName);
+  //   setEditingStatus(editType);
+  //   setShapeType(shapeType);
+  //   setTtpk(attributes.TTPK ? attributes.TTPK.toString() : null);
+  //   setTtc(attributes.TTC ? attributes.TTC.toString() : null);
+  //   setTta(attributes.TTA ? attributes.TTA.toString() : null);
+  //   setTtps(attributes.TTPS ? attributes.TTPS.toString() : null);
+  //   setLodp(attributes.LOD_P ? attributes.LOD_P.toString() : null);
+  //   setLodnon(attributes.LOD_NON ? attributes.LOD_NON.toString() : null);
+  //   setMcps(attributes.MCPS ? attributes.MCPS.toString() : null);
+  //   setTcps(attributes.TCPS ? attributes.TCPS.toString() : null);
+  //   setWvps(attributes.WVPS ? attributes.WVPS.toString() : null);
+  //   setWwps(attributes.WWPS ? attributes.WWPS.toString() : null);
+  //   setSa(attributes.SA ? attributes.SA.toString() : null);
+  //   setAlc(attributes.ALC ? attributes.ALC.toString() : null);
+  //   setAmc(attributes.AMC ? attributes.AMC.toString() : null);
+  //   setSampleTypeName(sampleTypeName);
 
-    const pointStyle = pointStyles.find(
-      (s) => s.value === attributes.POINT_STYLE,
-    );
-    setPointStyle(pointStyle || null);
-  }
+  //   const pointStyle = pointStyles.find(
+  //     (s) => s.value === attributes.POINT_STYLE,
+  //   );
+  //   setPointStyle(pointStyle || null);
+  // }
 
-  // Validates the user input.
-  // TODO: This logic needs to be updated to be more robust. Currently,
-  //        this just makes sure that all of the fields have been filled out.
-  function validateEdits() {
-    let isValid = true;
-    const messageParts: string[] = [];
+  // // Validates the user input.
+  // // This logic needs to be updated to be more robust. Currently,
+  // //        this just makes sure that all of the fields have been filled out.
+  // function validateEdits() {
+  //   let isValid = true;
+  //   const messageParts: string[] = [];
 
-    function isNumberValid(
-      numberStr: string | null,
-      valueValidation?: '' | 'greaterThan0' | 'between0-1',
-    ) {
-      if (numberStr === undefined || numberStr === null || numberStr === '') {
-        return;
-      }
+  //   function isNumberValid(
+  //     numberStr: string | null,
+  //     valueValidation?: '' | 'greaterThan0' | 'between0-1',
+  //   ) {
+  //     if (numberStr === undefined || numberStr === null || numberStr === '') {
+  //       return;
+  //     }
 
-      const number = Number(numberStr);
-      if (isNaN(number)) return false;
-      if (!valueValidation) return true;
-      if (valueValidation === 'greaterThan0' && number > 0) return true;
-      if (valueValidation === 'between0-1' && number > 0 && number <= 1)
-        return true;
+  //     const number = Number(numberStr);
+  //     if (isNaN(number)) return false;
+  //     if (!valueValidation) return true;
+  //     if (valueValidation === 'greaterThan0' && number > 0) return true;
+  //     if (valueValidation === 'between0-1' && number > 0 && number <= 1)
+  //       return true;
 
-      return false;
-    }
+  //     return false;
+  //   }
 
-    // validate any fields that need it
-    if (!sampleTypeName) {
-      isValid = false;
-      messageParts.push(
-        'User Defined types must have a decon technology name.',
-      );
-    }
-    if (
-      sampleAttributes.hasOwnProperty(sampleTypeName) &&
-      (editingStatus !== 'edit' ||
-        (editingStatus === 'edit' &&
-          userDefinedSampleType &&
-          userDefinedSampleType.value !== sampleTypeName))
-    ) {
-      isValid = false;
-      messageParts.push(
-        `The "${sampleTypeName}" name is already in use. Please rename the decon technology and try again.`,
-      );
-    }
-    if (!isNumberValid(ttpk)) {
-      isValid = false;
-      messageParts.push('Setup Time needs a numeric value.');
-    }
-    if (!isNumberValid(ttc)) {
-      isValid = false;
-      messageParts.push('Application Time needs a numeric value.');
-    }
-    if (!isNumberValid(tta)) {
-      isValid = false;
-      messageParts.push('Residence Time needs a numeric value.');
-    }
-    if (!isNumberValid(lodnon, 'between0-1')) {
-      isValid = false;
-      messageParts.push(
-        'Contamination Removal needs a numeric value between 0 and 1.',
-      );
-    }
-    if (!isNumberValid(mcps)) {
-      isValid = false;
-      messageParts.push('Setup Cost needs a numeric value.');
-    }
-    if (!isNumberValid(tcps)) {
-      isValid = false;
-      messageParts.push('Cost needs a numeric value.');
-    }
-    if (!isNumberValid(sa, 'greaterThan0')) {
-      isValid = false;
-      messageParts.push(
-        'Application Max Area needs a numeric value greater than 0.',
-      );
-    }
-    if (!isNumberValid(wvps)) {
-      isValid = false;
-      messageParts.push('Solid Waste Volume needs a numeric value.');
-    }
-    if (!isNumberValid(wwps)) {
-      isValid = false;
-      messageParts.push('Solid Waste Mass needs a numeric value.');
-    }
-    if (!isNumberValid(alc)) {
-      isValid = false;
-      messageParts.push('Liquid Waste Volume needs a numeric value.');
-    }
-    if (!isNumberValid(amc)) {
-      isValid = false;
-      messageParts.push('Liquid Waste Mass needs a numeric value.');
-    }
+  //   // validate any fields that need it
+  //   if (!sampleTypeName) {
+  //     isValid = false;
+  //     messageParts.push(
+  //       'User Defined types must have a decon technology name.',
+  //     );
+  //   }
+  //   if (
+  //     sampleAttributes.hasOwnProperty(sampleTypeName) &&
+  //     (editingStatus !== 'edit' ||
+  //       (editingStatus === 'edit' &&
+  //         userDefinedSampleType &&
+  //         userDefinedSampleType.value !== sampleTypeName))
+  //   ) {
+  //     isValid = false;
+  //     messageParts.push(
+  //       `The "${sampleTypeName}" name is already in use. Please rename the decon technology and try again.`,
+  //     );
+  //   }
+  //   if (!isNumberValid(ttpk)) {
+  //     isValid = false;
+  //     messageParts.push('Setup Time needs a numeric value.');
+  //   }
+  //   if (!isNumberValid(ttc)) {
+  //     isValid = false;
+  //     messageParts.push('Application Time needs a numeric value.');
+  //   }
+  //   if (!isNumberValid(tta)) {
+  //     isValid = false;
+  //     messageParts.push('Residence Time needs a numeric value.');
+  //   }
+  //   if (!isNumberValid(lodnon, 'between0-1')) {
+  //     isValid = false;
+  //     messageParts.push(
+  //       'Contamination Removal needs a numeric value between 0 and 1.',
+  //     );
+  //   }
+  //   if (!isNumberValid(mcps)) {
+  //     isValid = false;
+  //     messageParts.push('Setup Cost needs a numeric value.');
+  //   }
+  //   if (!isNumberValid(tcps)) {
+  //     isValid = false;
+  //     messageParts.push('Cost needs a numeric value.');
+  //   }
+  //   if (!isNumberValid(sa, 'greaterThan0')) {
+  //     isValid = false;
+  //     messageParts.push(
+  //       'Application Max Area needs a numeric value greater than 0.',
+  //     );
+  //   }
+  //   if (!isNumberValid(wvps)) {
+  //     isValid = false;
+  //     messageParts.push('Solid Waste Volume needs a numeric value.');
+  //   }
+  //   if (!isNumberValid(wwps)) {
+  //     isValid = false;
+  //     messageParts.push('Solid Waste Mass needs a numeric value.');
+  //   }
+  //   if (!isNumberValid(alc)) {
+  //     isValid = false;
+  //     messageParts.push('Liquid Waste Volume needs a numeric value.');
+  //   }
+  //   if (!isNumberValid(amc)) {
+  //     isValid = false;
+  //     messageParts.push('Liquid Waste Mass needs a numeric value.');
+  //   }
 
-    if (messageParts.length > 0) {
-      const message = messageParts.map((part, index) => {
-        return (
-          <Fragment key={index}>
-            {index !== 0 ? <br /> : ''}
-            {part}
-          </Fragment>
-        );
-      });
-      setValidationMessage(message);
-    }
+  //   if (messageParts.length > 0) {
+  //     const message = messageParts.map((part, index) => {
+  //       return (
+  //         <Fragment key={index}>
+  //           {index !== 0 ? <br /> : ''}
+  //           {part}
+  //         </Fragment>
+  //       );
+  //     });
+  //     setValidationMessage(message);
+  //   }
 
-    return isValid;
-  }
+  //   return isValid;
+  // }
 
-  // Checks to see if the sample type name changed.
-  function didSampleTypeNameChange() {
-    return (
-      editingStatus === 'edit' &&
-      userDefinedSampleType &&
-      sampleTypeName !== userDefinedSampleType.label
-    );
-  }
+  // // Checks to see if the sample type name changed.
+  // function didSampleTypeNameChange() {
+  //   return (
+  //     editingStatus === 'edit' &&
+  //     userDefinedSampleType &&
+  //     sampleTypeName !== userDefinedSampleType.label
+  //   );
+  // }
 
-  // Updates the attributes of graphics that have had property changes
-  function updateAttributes({
-    graphics,
-    newAttributes,
-    oldType,
-    symbol = null,
-  }: {
-    graphics: __esri.Graphic[];
-    newAttributes: any;
-    oldType: string;
-    symbol?: PolygonSymbol | null;
-  }) {
-    const editedGraphics: __esri.Graphic[] = [];
-    graphics.forEach((graphic: __esri.Graphic) => {
-      // update attributes for the edited type
-      if (graphic.attributes.TYPEUUID === oldType) {
-        const areaChanged = graphic.attributes.SA !== newAttributes.SA;
-        const shapeTypeChanged =
-          graphic.attributes.ShapeType !== newAttributes.ShapeType;
+  // // Updates the attributes of graphics that have had property changes
+  // function updateAttributes({
+  //   graphics,
+  //   newAttributes,
+  //   oldType,
+  //   symbol = null,
+  // }: {
+  //   graphics: __esri.Graphic[];
+  //   newAttributes: any;
+  //   oldType: string;
+  //   symbol?: PolygonSymbol | null;
+  // }) {
+  //   const editedGraphics: __esri.Graphic[] = [];
+  //   graphics.forEach((graphic: __esri.Graphic) => {
+  //     // update attributes for the edited type
+  //     if (graphic.attributes.TYPEUUID === oldType) {
+  //       const areaChanged = graphic.attributes.SA !== newAttributes.SA;
+  //       const shapeTypeChanged =
+  //         graphic.attributes.ShapeType !== newAttributes.ShapeType;
 
-        graphic.attributes.TYPE = newAttributes.TYPE;
-        graphic.attributes.ShapeType = newAttributes.ShapeType;
-        graphic.attributes.Width = newAttributes.Width;
-        graphic.attributes.SA = newAttributes.SA;
-        graphic.attributes.TTPK = newAttributes.TTPK;
-        graphic.attributes.TTC = newAttributes.TTC;
-        graphic.attributes.TTA = newAttributes.TTA;
-        graphic.attributes.TTPS = newAttributes.TTPS;
-        graphic.attributes.LOD_P = newAttributes.LOD_P;
-        graphic.attributes.LOD_NON = newAttributes.LOD_NON;
-        graphic.attributes.MCPS = newAttributes.MCPS;
-        graphic.attributes.TCPS = newAttributes.TCPS;
-        graphic.attributes.WVPS = newAttributes.WVPS;
-        graphic.attributes.WWPS = newAttributes.WWPS;
-        graphic.attributes.ALC = newAttributes.ALC;
-        graphic.attributes.AMC = newAttributes.AMC;
-        graphic.attributes.POINT_STYLE = newAttributes.POINT_STYLE;
+  //       graphic.attributes.TYPE = newAttributes.TYPE;
+  //       graphic.attributes.ShapeType = newAttributes.ShapeType;
+  //       graphic.attributes.Width = newAttributes.Width;
+  //       graphic.attributes.SA = newAttributes.SA;
+  //       graphic.attributes.TTPK = newAttributes.TTPK;
+  //       graphic.attributes.TTC = newAttributes.TTC;
+  //       graphic.attributes.TTA = newAttributes.TTA;
+  //       graphic.attributes.TTPS = newAttributes.TTPS;
+  //       graphic.attributes.LOD_P = newAttributes.LOD_P;
+  //       graphic.attributes.LOD_NON = newAttributes.LOD_NON;
+  //       graphic.attributes.MCPS = newAttributes.MCPS;
+  //       graphic.attributes.TCPS = newAttributes.TCPS;
+  //       graphic.attributes.WVPS = newAttributes.WVPS;
+  //       graphic.attributes.WWPS = newAttributes.WWPS;
+  //       graphic.attributes.ALC = newAttributes.ALC;
+  //       graphic.attributes.AMC = newAttributes.AMC;
+  //       graphic.attributes.POINT_STYLE = newAttributes.POINT_STYLE;
 
-        // redraw the graphic if the width changed or if the graphic went from a
-        // polygon to a point
-        if (
-          newAttributes.ShapeType === 'point' &&
-          (areaChanged || shapeTypeChanged)
-        ) {
-          // convert the geometry _esriPolygon if it is missing stuff
-          createBuffer(graphic as __esri.Graphic);
-        }
+  //       // redraw the graphic if the width changed or if the graphic went from a
+  //       // polygon to a point
+  //       if (
+  //         newAttributes.ShapeType === 'point' &&
+  //         (areaChanged || shapeTypeChanged)
+  //       ) {
+  //         // convert the geometry _esriPolygon if it is missing stuff
+  //         createBuffer(graphic as __esri.Graphic);
+  //       }
 
-        // update the point symbol if necessary
-        if (graphic.geometry.type === 'point') {
-          graphic.symbol = getPointSymbol(graphic, symbol);
-        }
+  //       // update the point symbol if necessary
+  //       if (graphic.geometry.type === 'point') {
+  //         graphic.symbol = getPointSymbol(graphic, symbol);
+  //       }
 
-        editedGraphics.push(graphic);
-      }
-    });
+  //       editedGraphics.push(graphic);
+  //     }
+  //   });
 
-    return editedGraphics;
-  }
+  //   return editedGraphics;
+  // }
 
   // Changes the selected layer if the scenario is changed. The first
   // available layer in the scenario will be chosen. If the scenario
@@ -1303,8 +1687,8 @@ function LocateSamples() {
   // scenario and layer edit UI visibility controls
   const [addScenarioVisible, setAddScenarioVisible] = useState(false);
   const [editScenarioVisible, setEditScenarioVisible] = useState(false);
-  const [addLayerVisible, setAddLayerVisible] = useState(false);
-  const [editLayerVisible, setEditLayerVisible] = useState(false);
+  // const [addLayerVisible, setAddLayerVisible] = useState(false);
+  // const [editLayerVisible, setEditLayerVisible] = useState(false);
   const [generateRandomMode, setGenerateRandomMode] = useState<
     'draw' | 'file' | ''
   >('');
@@ -1331,22 +1715,143 @@ function LocateSamples() {
     options: getSketchableLayers(layers, edits.edits),
   });
 
-  // Initialize the local user defined type symbol. Also updates this variable
-  // when the user changes the user defined sample type selection.
-  const [udtSymbol, setUdtSymbol] = useState<PolygonSymbol>(
-    defaultSymbols.symbols['Samples'],
-  );
-  useEffect(() => {
-    if (!userDefinedSampleType) return;
+  // // Initialize the local user defined type symbol. Also updates this variable
+  // // when the user changes the user defined sample type selection.
+  // const [udtSymbol, setUdtSymbol] = useState<PolygonSymbol>(
+  //   defaultSymbols.symbols['Samples'],
+  // );
+  // useEffect(() => {
+  //   if (!userDefinedSampleType) return;
 
-    if (defaultSymbols.symbols.hasOwnProperty(userDefinedSampleType.value)) {
-      setUdtSymbol(defaultSymbols.symbols[userDefinedSampleType.value]);
-    } else {
-      setUdtSymbol(defaultSymbols.symbols['Samples']);
-    }
-  }, [defaultSymbols, userDefinedSampleType]);
+  //   if (defaultSymbols.symbols.hasOwnProperty(userDefinedSampleType.value)) {
+  //     setUdtSymbol(defaultSymbols.symbols[userDefinedSampleType.value]);
+  //   } else {
+  //     setUdtSymbol(defaultSymbols.symbols['Samples']);
+  //   }
+  // }, [defaultSymbols, userDefinedSampleType]);
 
   pointStyles.sort((a, b) => a.value.localeCompare(b.value));
+
+  const [defaultDeconSelections, setDefaultDeconSelections] = useState<any[]>(
+    [],
+  );
+  useEffect(() => {
+    if (defaultDeconSelections.length > 0) return;
+    setDefaultDeconSelections([
+      {
+        id: 1,
+        media: 'Soil/Vegetation',
+        deconTech: allSampleOptions[1],
+        pctAoi: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      }, // 'Methyl Bromide'
+      {
+        id: 2,
+        media: 'Streets - Asphalt',
+        deconTech: allSampleOptions[2],
+        pctAoi: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      }, // 'Vaporous Hydrogen Peroxide' },
+      {
+        id: 3,
+        media: 'Streets/Sidewalks - Concrete',
+        deconTech: allSampleOptions[3], // 'Low-Concentration Hydrogen Peroxide',
+        pctAoi: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      },
+      {
+        id: 4,
+        media: 'Building Exterior Walls',
+        deconTech: allSampleOptions[2], // 'Vaporous Hydrogen Peroxide',
+        pctAoi: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      },
+      {
+        id: 5,
+        media: 'Building Interior Floors',
+        deconTech: allSampleOptions[5],
+        pctAoi: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      }, // 'Bleach Spray' },
+      {
+        id: 6,
+        media: 'Building Interior Walls',
+        deconTech: allSampleOptions[5], // 'Hydrogen Peroxide PAA, Spor-klenz RTU',
+        pctAoi: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      },
+      {
+        id: 7,
+        media: 'Building Roofs',
+        deconTech: allSampleOptions[1],
+        pctAoi: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+      }, // 'Methyl Bromide'
+    ]);
+  }, [allSampleOptions, defaultDeconSelections]);
+
+  const [deconSelections, setDeconSelections] = useState(
+    defaultDeconSelections,
+  );
+
+  useEffect(() => {
+    console.log('allSampleOptions: ', allSampleOptions);
+  }, [allSampleOptions]);
+
+  // initialize decon selections
+  useEffect(() => {
+    if (!selectedScenario) {
+      setDeconSelections([]);
+      return;
+    }
+
+    if (selectedScenario.deconTechSelections.length > 0) {
+      setDeconSelections([...selectedScenario.deconTechSelections]);
+    } else {
+      setDeconSelections([...defaultDeconSelections]);
+
+      setEdits((edits) => {
+        const index = edits.edits.findIndex(
+          (item) =>
+            item.type === 'scenario' &&
+            item.layerId === selectedScenario.layerId,
+        );
+
+        const editedScenario = edits.edits[index] as ScenarioEditsType;
+        editedScenario.deconTechSelections = defaultDeconSelections;
+
+        return {
+          count: edits.count + 1,
+          edits: [
+            ...edits.edits.slice(0, index),
+            editedScenario,
+            ...edits.edits.slice(index + 1),
+          ],
+        };
+      });
+    }
+  }, [defaultDeconSelections, selectedScenario, setEdits]);
 
   return (
     <div css={panelContainer}>
@@ -1364,62 +1869,67 @@ function LocateSamples() {
               onClick={() => {
                 if (!sketchVM || !sketchLayer) return;
 
-                // make a copy of the edits context variable
-                const editsCopy = updateLayerEdits({
-                  edits,
-                  layer: sketchLayer,
-                  type: 'delete',
-                  changes: sketchVM[displayDimensions].layer.graphics,
-                });
+                let editsCopy: EditsType = edits;
+
+                // Figure out what to add graphics to
+                const aoiAssessed = selectedScenario?.layers.find(
+                  (l) => l.layerType === 'AOI Assessed',
+                );
+                if (aoiAssessed) {
+                  const aoiAssessedLayer = layers.find(
+                    (l) => l.layerId === aoiAssessed.layerId,
+                  );
+                  if (aoiAssessedLayer?.sketchLayer?.type === 'graphics') {
+                    editsCopy = updateLayerEdits({
+                      edits,
+                      scenario: selectedScenario,
+                      layer: aoiAssessedLayer,
+                      type: 'delete',
+                      changes: aoiAssessedLayer?.sketchLayer.graphics,
+                    });
+
+                    aoiAssessedLayer?.sketchLayer.graphics.removeAll();
+                  }
+                }
+
+                // Figure out what to add graphics to
+                const imageAnalysis = selectedScenario?.layers.find(
+                  (l) => l.layerType === 'Image Analysis',
+                );
+                if (imageAnalysis) {
+                  const imageAnalysisLayer = layers.find(
+                    (l) => l.layerId === imageAnalysis.layerId,
+                  );
+                  if (imageAnalysisLayer?.sketchLayer?.type === 'graphics') {
+                    editsCopy = updateLayerEdits({
+                      edits,
+                      scenario: selectedScenario,
+                      layer: imageAnalysisLayer,
+                      type: 'delete',
+                      changes: imageAnalysisLayer?.sketchLayer.graphics,
+                    });
+
+                    imageAnalysisLayer?.sketchLayer.graphics.removeAll();
+                  }
+                }
 
                 setEdits(editsCopy);
-
-                sketchVM[displayDimensions].layer.removeAll();
-                (
-                  sketchVM[displayDimensions].layer as any
-                ).parent.layers.forEach((layer: any) => {
-                  if (
-                    layer.id ===
-                    sketchVM[displayDimensions].layer.id + '-points'
-                  ) {
-                    layer.removeAll();
-                  }
-                  if (
-                    layer.id ===
-                    sketchVM[displayDimensions].layer.id + '-hybrid'
-                  ) {
-                    layer.removeAll();
-                  }
-                });
               }}
             >
               <i className="fas fa-trash-alt" />
               <br />
-              Delete All Decon Applications
+              Delete All Results
             </button>
           </div>
         </div>
         <div css={lineSeparatorStyles} />
         <div css={sectionContainer}>
           {selectedScenario ? (
-            <p>
-              An empty decon layer is loaded by default. Use the "Active Decon
-              Layer" controls to link, add, modify, and/or delete the decon
-              layer associated with the active plan. You may associate multiple
-              layers with a plan by selecting decon layers from the menu and
-              clicking the link icon. The menu will display linked layers and
-              indicate other layers available for linking. Use the “unlink”
-              control to remove a layer from a plan.
-            </p>
+            <p></p>
           ) : (
             <Fragment>
               <p>
-                Create a decontamination plan with one or more layers. Layers
-                can represent the application of different and/or multiple
-                applications of various decontamination technologies, unique
-                areas of interest or decision units that are differentiated by
-                the user-defined descriptions (e.g., First application, Second
-                Application, Team 1, etc.). Enter a plan name and description
+                Create a decontamination plan. Enter a plan name and description
                 and click Save.
               </p>
               <MessageBox
@@ -1726,10 +2236,41 @@ function LocateSamples() {
                   onSave={() => setEditScenarioVisible(false)}
                 />
               )}
+
+              <div>
+                <label htmlFor="contamination-map-select-input">
+                  Contamination map
+                </label>
+                <div css={inlineMenuStyles}>
+                  <Select
+                    id="contamination-map-select"
+                    inputId="contamination-map-select-input"
+                    css={fullWidthSelectStyles}
+                    styles={reactSelectStyles as any}
+                    value={contaminationMap}
+                    onChange={(ev) => setContaminationMap(ev as LayerType)}
+                    options={layers.filter(
+                      (layer: any) => layer.layerType === 'Contamination Map',
+                    )}
+                  />
+                  <button
+                    css={addButtonStyles}
+                    onClick={(ev) => {
+                      setGoTo('addData');
+                      setGoToOptions({
+                        from: 'file',
+                        layerType: 'Contamination Map',
+                      });
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
             </Fragment>
           )}
 
-          {selectedScenario && !addScenarioVisible && !editScenarioVisible && (
+          {/* {selectedScenario && !addScenarioVisible && !editScenarioVisible && (
             <Fragment>
               <div css={iconButtonContainerStyles}>
                 <div css={verticalCenterTextStyles}>
@@ -2233,12 +2774,12 @@ function LocateSamples() {
                 />
               )}
             </Fragment>
-          )}
+          )} */}
         </div>
 
-        {selectedScenario && (
+        {selectedScenario && contaminationMap && (
           <Fragment>
-            <div css={sectionContainerWidthOnly}>
+            {/* <div css={sectionContainerWidthOnly}>
               <p>
                 In the panels below, select and add decontamination technologies
                 to apply to the plan.
@@ -2250,9 +2791,355 @@ function LocateSamples() {
                   setDefaultSymbolSingle('Samples', symbol);
                 }}
               />
-            </div>
+            </div> */}
             <AccordionList>
               <AccordionItem
+                title="Characterize Area of Interest"
+                initiallyExpanded={true}
+              >
+                <div css={sectionContainer}>
+                  {sketchLayer?.layerType === 'VSP' && cantUseWithVspMessage}
+                  {sketchLayer?.layerType !== 'VSP' && (
+                    <Fragment>
+                      {(services.status === 'fetching' ||
+                        sampleTypeContext.status === 'fetching' ||
+                        layerProps.status === 'fetching') && <LoadingSpinner />}
+                      {(services.status === 'failure' ||
+                        sampleTypeContext.status === 'failure' ||
+                        layerProps.status === 'failure') &&
+                        featureNotAvailableMessage(
+                          'Add Multiple Random Samples',
+                        )}
+                      {services.status === 'success' &&
+                        sampleTypeContext.status === 'success' &&
+                        layerProps.status === 'success' && (
+                          <Fragment>
+                            <p>
+                              Select "Draw Sampling Mask" to draw a boundary on
+                              your map for assessing AOI or select "Use Imported
+                              Area of Interest" to use an Area of Interest file
+                              to assess the AOI. Click Submit to assess the AOI.
+                            </p>
+
+                            <div>
+                              <input
+                                id="draw-aoi"
+                                type="radio"
+                                name="mode"
+                                value="Draw area of Interest"
+                                disabled={
+                                  generateRandomResponse.status === 'fetching'
+                                }
+                                checked={generateRandomMode === 'draw'}
+                                onChange={(ev) => {
+                                  setGenerateRandomMode('draw');
+
+                                  const maskLayers = layers.filter(
+                                    (layer) =>
+                                      layer.layerType === 'Sampling Mask',
+                                  );
+                                  setAoiSketchLayer(maskLayers[0]);
+                                }}
+                              />
+                              <label htmlFor="draw-aoi" css={radioLabelStyles}>
+                                Draw Sampling Mask
+                              </label>
+                            </div>
+
+                            {generateRandomMode === 'draw' && (
+                              <button
+                                id="sampling-mask"
+                                title="Draw Sampling Mask"
+                                className="sketch-button"
+                                disabled={
+                                  generateRandomResponse.status === 'fetching'
+                                }
+                                onClick={() => {
+                                  if (!aoiSketchLayer) return;
+
+                                  sketchAoiButtonClick();
+                                }}
+                                css={sketchAoiButtonStyles}
+                              >
+                                <span css={sketchAoiTextStyles}>
+                                  <i className="fas fa-draw-polygon" />{' '}
+                                  <span>Draw Sampling Mask</span>
+                                </span>
+                              </button>
+                            )}
+
+                            <div>
+                              <input
+                                id="use-aoi-file"
+                                type="radio"
+                                name="mode"
+                                value="Use Imported Area of Interest"
+                                disabled={
+                                  generateRandomResponse.status === 'fetching'
+                                }
+                                checked={generateRandomMode === 'file'}
+                                onChange={(ev) => {
+                                  setGenerateRandomMode('file');
+
+                                  setAoiSketchLayer(null);
+
+                                  if (!selectedAoiFile) {
+                                    const aoiLayers = layers.filter(
+                                      (layer) =>
+                                        layer.layerType === 'Area of Interest',
+                                    );
+                                    setSelectedAoiFile(aoiLayers[0]);
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor="use-aoi-file"
+                                css={radioLabelStyles}
+                              >
+                                Use Imported Area of Interest
+                              </label>
+                            </div>
+
+                            {generateRandomMode === 'file' && (
+                              <Fragment>
+                                <label htmlFor="aoi-mask-select-input">
+                                  Area of Interest Mask
+                                </label>
+                                <div css={inlineMenuStyles}>
+                                  <Select
+                                    id="aoi-mask-select"
+                                    inputId="aoi-mask-select-input"
+                                    css={inlineSelectStyles}
+                                    styles={reactSelectStyles as any}
+                                    isClearable={true}
+                                    value={selectedAoiFile}
+                                    onChange={(ev) =>
+                                      setSelectedAoiFile(ev as LayerType)
+                                    }
+                                    options={layers.filter(
+                                      (layer) =>
+                                        layer.layerType === 'Area of Interest',
+                                    )}
+                                  />
+                                  <button
+                                    css={addButtonStyles}
+                                    disabled={
+                                      generateRandomResponse.status ===
+                                      'fetching'
+                                    }
+                                    onClick={(ev) => {
+                                      setGoTo('addData');
+                                      setGoToOptions({
+                                        from: 'file',
+                                        layerType: 'Area of Interest',
+                                      });
+                                    }}
+                                  >
+                                    Add
+                                  </button>
+                                </div>
+                              </Fragment>
+                            )}
+                            {generateRandomMode && (
+                              <Fragment>
+                                <br />
+                                {generateRandomResponse.status === 'success' &&
+                                  sketchLayer &&
+                                  generateRandomSuccessMessage(
+                                    generateRandomResponse.data.length,
+                                    sketchLayer.label,
+                                  )}
+                                {generateRandomResponse.status === 'failure' &&
+                                  webServiceErrorMessage(
+                                    generateRandomResponse.error,
+                                  )}
+                                {generateRandomResponse.status ===
+                                  'exceededTransferLimit' &&
+                                  generateRandomExceededTransferLimitMessage}
+                                {((generateRandomMode === 'draw' &&
+                                  aoiSketchLayer?.sketchLayer.type ===
+                                    'graphics' &&
+                                  aoiSketchLayer.sketchLayer.graphics.length >
+                                    0) ||
+                                  (generateRandomMode === 'file' &&
+                                    selectedAoiFile?.sketchLayer.type ===
+                                      'graphics' &&
+                                    selectedAoiFile.sketchLayer.graphics
+                                      .length > 0)) && (
+                                  <button
+                                    css={submitButtonStyles}
+                                    disabled={
+                                      generateRandomResponse.status ===
+                                      'fetching'
+                                    }
+                                    onClick={assessAoi}
+                                  >
+                                    {generateRandomResponse.status !==
+                                      'fetching' && 'Submit'}
+                                    {generateRandomResponse.status ===
+                                      'fetching' && (
+                                      <Fragment>
+                                        <i className="fas fa-spinner fa-pulse" />
+                                        &nbsp;&nbsp;Loading...
+                                      </Fragment>
+                                    )}
+                                  </button>
+                                )}
+                              </Fragment>
+                            )}
+
+                            <div>
+                              {downloadStatus === 'fetching' && (
+                                <LoadingSpinner />
+                              )}
+                              {downloadStatus === 'excel-failure' &&
+                                excelFailureMessage}
+                              {downloadStatus === 'no-data' &&
+                                noDataDownloadMessage}
+                              {downloadStatus === 'success' &&
+                                downloadSuccessMessage}
+
+                              <button
+                                css={submitButtonStyles}
+                                onClick={downloadSummary}
+                              >
+                                Download Building Data
+                              </button>
+                            </div>
+                          </Fragment>
+                        )}
+                    </Fragment>
+                  )}
+                </div>
+              </AccordionItem>
+              <AccordionItem title="Select Decontamination Technology">
+                <div css={sectionContainer}>
+                  <p>
+                    A listing of different contamination scenarios that are
+                    present within the specified AOI is shown below. For each
+                    scenario, select an appropriate decontamination method to
+                    address the contamination. Click Specify Decon Methods to
+                    assign strategies. A{' '}
+                    <a
+                      href="https://doc.arcgis.com/en/arcgis-online/manage-data/item-details.htm"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      summary of available technologies and applicable
+                      considerations
+                    </a>{' '}
+                    is also available to review.
+                  </p>
+
+                  <ReactTableEditable
+                    id="tots-decon-tech-selectionstable"
+                    data={deconSelections}
+                    idColumn={'ID'}
+                    striped={true}
+                    hideHeader={false}
+                    height={450}
+                    onDataChange={(
+                      rowIndex: any,
+                      columnId: any,
+                      value: any,
+                    ) => {
+                      const newTable = deconSelections.map(
+                        (row: any, index) => {
+                          // update the row if it is the row in focus and the data has changed
+                          if (index === rowIndex && row[columnId] !== value) {
+                            return {
+                              ...deconSelections[rowIndex],
+                              [columnId]: value,
+                            };
+                          }
+                          return row;
+                        },
+                      );
+
+                      setDeconSelections(newTable);
+
+                      const index = edits.edits.findIndex(
+                        (item) =>
+                          item.type === 'scenario' &&
+                          item.layerId === selectedScenario.layerId,
+                      );
+                      setEdits((edits) => {
+                        const editedScenario = edits.edits[
+                          index
+                        ] as ScenarioEditsType;
+                        editedScenario.deconTechSelections = newTable;
+
+                        return {
+                          count: edits.count + 1,
+                          edits: [
+                            ...edits.edits.slice(0, index),
+                            editedScenario,
+                            ...edits.edits.slice(index + 1),
+                          ],
+                        };
+                      });
+                    }}
+                    getColumns={(tableWidth: any) => {
+                      return [
+                        {
+                          Header: 'ID',
+                          accessor: 'ID',
+                          width: 0,
+                          show: false,
+                        },
+                        {
+                          Header: 'Contamination Scenario',
+                          accessor: 'media',
+                          width: 97,
+                        },
+                        {
+                          Header: 'Biological Decon Technology',
+                          accessor: 'deconTech',
+                          width: 118,
+                          editType: 'select',
+                          options: allSampleOptions,
+                        },
+                        {
+                          Header: 'Percent of AOI',
+                          accessor: 'pctAoi',
+                          width: 97,
+                          editType: 'input',
+                          show: false,
+                        },
+                        {
+                          Header: 'Number of Applications',
+                          accessor: 'numApplications',
+                          width: 97,
+                          editType: 'input',
+                          show: false,
+                        },
+                        {
+                          Header: 'Number of Concurrent Applications',
+                          accessor: 'numConcurrentApplications',
+                          width: 97,
+                          editType: 'input',
+                        },
+                        {
+                          Header: 'Percent Decontaminated',
+                          accessor: 'pctDeconed',
+                          width: 97,
+                          editType: 'input',
+                          show: false,
+                        },
+                        {
+                          Header: 'Is Hazardous',
+                          accessor: 'isHazardous',
+                          width: 118,
+                          editType: 'select',
+                          options: hazardousOptions,
+                          show: false,
+                        },
+                      ];
+                    }}
+                  />
+                </div>
+              </AccordionItem>
+              {/* <AccordionItem
                 title={'Apply Decontamination Technology'}
                 initiallyExpanded={true}
               >
@@ -2738,7 +3625,7 @@ function LocateSamples() {
                           css={inputStyles}
                           value={ttps ? ttps : ''}
                           onChange={(ev) => setTtps(ev.target.value)}
-                        /> */}
+                        /> /}
                         <label htmlFor="lod_p-input">
                           Log Reduction <em>(only used for reference)</em>
                         </label>
@@ -3097,222 +3984,7 @@ function LocateSamples() {
                     </div>
                   )}
                 </div>
-              </AccordionItem>
-              <AccordionItem title="Assess AOI">
-                <div css={sectionContainer}>
-                  {sketchLayer?.layerType === 'VSP' && cantUseWithVspMessage}
-                  {sketchLayer?.layerType !== 'VSP' && (
-                    <Fragment>
-                      {(services.status === 'fetching' ||
-                        sampleTypeContext.status === 'fetching' ||
-                        layerProps.status === 'fetching') && <LoadingSpinner />}
-                      {(services.status === 'failure' ||
-                        sampleTypeContext.status === 'failure' ||
-                        layerProps.status === 'failure') &&
-                        featureNotAvailableMessage(
-                          'Add Multiple Random Samples',
-                        )}
-                      {services.status === 'success' &&
-                        sampleTypeContext.status === 'success' &&
-                        layerProps.status === 'success' && (
-                          <Fragment>
-                            <p>
-                              Select "Draw Sampling Mask" to draw a boundary on
-                              your map for assessing AOI or select "Use Imported
-                              Area of Interest" to use an Area of Interest file
-                              to assess the AOI. Click Submit to assess the AOI.
-                            </p>
-                            <div>
-                              <input
-                                id="draw-aoi"
-                                type="radio"
-                                name="mode"
-                                value="Draw area of Interest"
-                                disabled={
-                                  generateRandomResponse.status === 'fetching'
-                                }
-                                checked={generateRandomMode === 'draw'}
-                                onChange={(ev) => {
-                                  setGenerateRandomMode('draw');
-
-                                  const maskLayers = layers.filter(
-                                    (layer) =>
-                                      layer.layerType === 'Sampling Mask',
-                                  );
-                                  setAoiSketchLayer(maskLayers[0]);
-                                }}
-                              />
-                              <label htmlFor="draw-aoi" css={radioLabelStyles}>
-                                Draw Sampling Mask
-                              </label>
-                            </div>
-
-                            {generateRandomMode === 'draw' && (
-                              <button
-                                id="sampling-mask"
-                                title="Draw Sampling Mask"
-                                className="sketch-button"
-                                disabled={
-                                  generateRandomResponse.status === 'fetching'
-                                }
-                                onClick={() => {
-                                  if (!aoiSketchLayer) return;
-
-                                  sketchAoiButtonClick();
-                                }}
-                                css={sketchAoiButtonStyles}
-                              >
-                                <span css={sketchAoiTextStyles}>
-                                  <i className="fas fa-draw-polygon" />{' '}
-                                  <span>Draw Sampling Mask</span>
-                                </span>
-                              </button>
-                            )}
-
-                            <div>
-                              <input
-                                id="use-aoi-file"
-                                type="radio"
-                                name="mode"
-                                value="Use Imported Area of Interest"
-                                disabled={
-                                  generateRandomResponse.status === 'fetching'
-                                }
-                                checked={generateRandomMode === 'file'}
-                                onChange={(ev) => {
-                                  setGenerateRandomMode('file');
-
-                                  setAoiSketchLayer(null);
-
-                                  if (!selectedAoiFile) {
-                                    const aoiLayers = layers.filter(
-                                      (layer) =>
-                                        layer.layerType === 'Area of Interest',
-                                    );
-                                    setSelectedAoiFile(aoiLayers[0]);
-                                  }
-                                }}
-                              />
-                              <label
-                                htmlFor="use-aoi-file"
-                                css={radioLabelStyles}
-                              >
-                                Use Imported Area of Interest
-                              </label>
-                            </div>
-
-                            {generateRandomMode === 'file' && (
-                              <Fragment>
-                                <label htmlFor="aoi-mask-select-input">
-                                  Area of Interest Mask
-                                </label>
-                                <div css={inlineMenuStyles}>
-                                  <Select
-                                    id="aoi-mask-select"
-                                    inputId="aoi-mask-select-input"
-                                    css={inlineSelectStyles}
-                                    styles={reactSelectStyles as any}
-                                    isClearable={true}
-                                    value={selectedAoiFile}
-                                    onChange={(ev) =>
-                                      setSelectedAoiFile(ev as LayerType)
-                                    }
-                                    options={layers.filter(
-                                      (layer) =>
-                                        layer.layerType === 'Area of Interest',
-                                    )}
-                                  />
-                                  <button
-                                    css={addButtonStyles}
-                                    disabled={
-                                      generateRandomResponse.status ===
-                                      'fetching'
-                                    }
-                                    onClick={(ev) => {
-                                      setGoTo('addData');
-                                      setGoToOptions({
-                                        from: 'file',
-                                        layerType: 'Area of Interest',
-                                      });
-                                    }}
-                                  >
-                                    Add
-                                  </button>
-                                </div>
-                              </Fragment>
-                            )}
-                            {generateRandomMode && (
-                              <Fragment>
-                                <br />
-                                {generateRandomResponse.status === 'success' &&
-                                  sketchLayer &&
-                                  generateRandomSuccessMessage(
-                                    generateRandomResponse.data.length,
-                                    sketchLayer.label,
-                                  )}
-                                {generateRandomResponse.status === 'failure' &&
-                                  webServiceErrorMessage(
-                                    generateRandomResponse.error,
-                                  )}
-                                {generateRandomResponse.status ===
-                                  'exceededTransferLimit' &&
-                                  generateRandomExceededTransferLimitMessage}
-                                {((generateRandomMode === 'draw' &&
-                                  aoiSketchLayer?.sketchLayer.type ===
-                                    'graphics' &&
-                                  aoiSketchLayer.sketchLayer.graphics.length >
-                                    0) ||
-                                  (generateRandomMode === 'file' &&
-                                    selectedAoiFile?.sketchLayer.type ===
-                                      'graphics' &&
-                                    selectedAoiFile.sketchLayer.graphics
-                                      .length > 0)) && (
-                                  <button
-                                    css={submitButtonStyles}
-                                    disabled={
-                                      generateRandomResponse.status ===
-                                      'fetching'
-                                    }
-                                    onClick={assessAoi}
-                                  >
-                                    {generateRandomResponse.status !==
-                                      'fetching' && 'Submit'}
-                                    {generateRandomResponse.status ===
-                                      'fetching' && (
-                                      <Fragment>
-                                        <i className="fas fa-spinner fa-pulse" />
-                                        &nbsp;&nbsp;Loading...
-                                      </Fragment>
-                                    )}
-                                  </button>
-                                )}
-                              </Fragment>
-                            )}
-
-                            <div>
-                              {downloadStatus === 'fetching' && (
-                                <LoadingSpinner />
-                              )}
-                              {downloadStatus === 'excel-failure' &&
-                                excelFailureMessage}
-                              {downloadStatus === 'no-data' &&
-                                noDataDownloadMessage}
-                              {downloadStatus === 'success' &&
-                                downloadSuccessMessage}
-
-                              <button
-                                css={submitButtonStyles}
-                                onClick={downloadSummary}
-                              >
-                                Download
-                              </button>
-                            </div>
-                          </Fragment>
-                        )}
-                    </Fragment>
-                  )}
-                </div>
-              </AccordionItem>
+              </AccordionItem> */}
             </AccordionList>
           </Fragment>
         )}

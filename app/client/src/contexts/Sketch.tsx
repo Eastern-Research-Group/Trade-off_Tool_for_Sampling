@@ -38,6 +38,22 @@ export type SketchViewModelType = {
   '3d': __esri.SketchViewModel;
 };
 
+export type AoiDataType = {
+  count: number;
+  graphics: __esri.Graphic[];
+};
+
+export type JsonDownloadType = {
+  contaminationScenario: string;
+  decontaminationTechnology: string;
+  avgFinalContaminationCfuM2: number;
+  aboveDetectionLimit: boolean;
+  solidWasteVolumeM3: number;
+  liquidWasteVolumeM3: number;
+  decontaminationCost: number;
+  decontaminationTimeDays: number;
+};
+
 type SketchType = {
   autoZoom: boolean;
   setAutoZoom: Dispatch<SetStateAction<boolean>>;
@@ -49,6 +65,12 @@ type SketchType = {
   resetDefaultSymbols: Function;
   edits: EditsType;
   setEdits: Dispatch<SetStateAction<EditsType>>;
+  aoiData: AoiDataType;
+  setAoiData: Dispatch<SetStateAction<AoiDataType>>;
+  jsonDownload: JsonDownloadType[];
+  setJsonDownload: Dispatch<SetStateAction<JsonDownloadType[]>>;
+  deconSelections: any[];
+  setDeconSelections: Dispatch<SetStateAction<any[]>>;
   homeWidget: HomeWidgetType | null;
   setHomeWidget: Dispatch<SetStateAction<HomeWidgetType | null>>;
   symbolsInitialized: boolean;
@@ -120,6 +142,12 @@ export const SketchContext = createContext<SketchType>({
   resetDefaultSymbols: () => {},
   edits: { count: 0, edits: [] },
   setEdits: () => {},
+  aoiData: { count: 0, graphics: [] },
+  setAoiData: () => {},
+  jsonDownload: [],
+  setJsonDownload: () => {},
+  deconSelections: [],
+  setDeconSelections: () => {},
   homeWidget: null,
   setHomeWidget: () => {},
   symbolsInitialized: false,
@@ -215,6 +243,12 @@ export function SketchProvider({ children }: Props) {
     initialDefaultSymbols,
   );
   const [edits, setEdits] = useState<EditsType>({ count: 0, edits: [] });
+  const [aoiData, setAoiData] = useState<AoiDataType>({
+    count: 0,
+    graphics: [],
+  });
+  const [jsonDownload, setJsonDownload] = useState<JsonDownloadType[]>([]);
+  const [deconSelections, setDeconSelections] = useState<any[]>([]);
   const [layersInitialized, setLayersInitialized] = useState(false);
   const [layers, setLayers] = useState<LayerType[]>([]);
   const [portalLayers, setPortalLayers] = useState<PortalLayerType[]>([]);
@@ -374,6 +408,12 @@ export function SketchProvider({ children }: Props) {
         resetDefaultSymbols,
         edits,
         setEdits,
+        aoiData,
+        setAoiData,
+        jsonDownload,
+        setJsonDownload,
+        deconSelections,
+        setDeconSelections,
         homeWidget,
         setHomeWidget,
         symbolsInitialized,

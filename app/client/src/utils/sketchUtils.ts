@@ -630,7 +630,7 @@ export function updateLayerEdits({
     // handle property changes
     if (editsScenario) {
       editsScenario.visible = layer.visible;
-      editsScenario.listMode = layer.listMode;
+      // editsScenario.listMode = layer.listMode;
       if (editsScenario.status === 'published') editsScenario.status = 'edited';
     }
 
@@ -838,6 +838,7 @@ export function createSampleLayer(
   const graphicsLayer = new GraphicsLayer({
     id: layerUuid,
     title: name,
+    listMode: 'hide',
   });
   const pointsLayer = new GraphicsLayer({
     id: layerUuid + '-points',
@@ -863,8 +864,8 @@ export function createSampleLayer(
     label: name,
     layerType: 'Samples',
     editType: 'add',
-    visible: true,
-    listMode: 'show',
+    visible: false,
+    listMode: 'hide',
     sort: 0,
     geometryType: 'esriGeometryPolygon',
     addedFrom: 'sketch',
@@ -886,7 +887,7 @@ export function getDefaultSamplingMaskLayer() {
   const graphicsLayer = new GraphicsLayer({
     id: layerUuid,
     title: 'Sketched Decon Mask',
-    listMode: 'hide',
+    listMode: 'show',
   });
 
   return {
@@ -903,7 +904,7 @@ export function getDefaultSamplingMaskLayer() {
     scenarioDescription: '',
     editType: 'add',
     visible: true,
-    listMode: 'hide',
+    listMode: 'show',
     sort: 0,
     geometryType: 'esriGeometryPolygon',
     addedFrom: 'sketch',
@@ -1109,124 +1110,227 @@ export function getSampleTableColumns({
   // add the base columns
   let columns: any[] = [
     {
-      Header: 'PERMANENT_IDENTIFIER',
-      accessor: 'PERMANENT_IDENTIFIER',
+      Header: 'Building ID',
+      accessor: 'bid',
       width: 0,
       show: false,
     },
     {
-      Header: 'DECISIONUNITUUID',
-      accessor: 'DECISIONUNITUUID',
+      Header: 'ID',
+      accessor: 'fd_id',
       width: 0,
       show: false,
     },
     {
-      Header: 'Layer',
-      accessor: 'DECISIONUNIT',
-      width: largeColumnWidth,
+      Header: 'Building Type',
+      accessor: 'bldgtype',
+      width: baseColumnWidth,
     },
     {
-      Header: 'Decon Technology',
-      accessor: 'TYPE',
+      Header: 'Census Block FIPS',
+      accessor: 'cbfips',
       width: mediumColumnWidth,
     },
     {
-      Header: 'Application Max Area (sq m)',
-      accessor: 'SA',
+      Header: 'Flood Zone (2021)',
+      accessor: 'firmzone',
       width: baseColumnWidth,
     },
     {
-      Header: 'Actual Surface Area (sq m)',
-      accessor: 'AA',
+      Header: 'Foundation Height (feet)',
+      accessor: 'found_ht',
       width: baseColumnWidth,
     },
     {
-      Header: 'Equivalent TODS Decon Applications',
-      accessor: 'AC',
+      Header: 'Foundation Type',
+      accessor: 'found_type',
       width: baseColumnWidth,
     },
     {
-      Header: 'Notes',
-      accessor: 'Notes',
+      Header: 'Footprint ID',
+      accessor: 'ftprntid',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Footprint Source',
+      accessor: 'ftprntsrc',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Ground Elevation (feet)',
+      accessor: 'ground_elv',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Ground Elevation (meters)',
+      accessor: 'ground_elv_m',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Median Year Built',
+      accessor: 'med_yr_blt',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Number of Stories',
+      accessor: 'num_story',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Percent Over 65 Disabled',
+      accessor: 'o65disable',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Occupancy Type',
+      accessor: 'occtype',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Population Night Over 65',
+      accessor: 'pop2amo65',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Population Night Under 65',
+      accessor: 'pop2amu65',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Population Day Over 65',
+      accessor: 'pop2pmo65',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Population Day Under 65',
+      accessor: 'pop2pmu65',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Source',
+      accessor: 'source',
+      width: baseColumnWidth,
+    },
+    // {
+    //   Header: 'Square Feet',
+    //   accessor: 'sqft',
+    //   width: baseColumnWidth,
+    // },
+    {
+      Header: 'Structure Damage Category',
+      accessor: 'st_damcat',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Students',
+      accessor: 'students',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Percent Under 65 Disabled',
+      accessor: 'u65disable',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Value of Contents',
+      accessor: 'val_cont',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Value of Structure',
+      accessor: 'val_struct',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Value of Vehicles',
+      accessor: 'vale_vehic',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'X',
+      accessor: 'x',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Y',
+      accessor: 'y',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Contamination Type',
+      accessor: 'CONTAMTYPE',
       width: largeColumnWidth,
     },
     {
-      Header: 'Setup Cost ($/application)',
-      accessor: 'MCPS',
+      Header: 'Activity',
+      accessor: 'CONTAMVAL',
       width: baseColumnWidth,
     },
     {
-      Header: 'Application Cost ($/sq m)',
-      accessor: 'TCPS',
+      Header: 'Unit of Measure',
+      accessor: 'CONTAMUNIT',
       width: baseColumnWidth,
     },
     {
-      Header: 'Setup Time (hrs)',
-      accessor: 'TTPK',
+      Header: 'Footprint Area (square meters)',
+      accessor: 'footprintSqM',
       width: baseColumnWidth,
     },
     {
-      Header: 'Application Time (hrs/sq m)',
-      accessor: 'TTC',
+      Header: 'Floors Area (square meters)',
+      accessor: 'floorsSqM',
       width: baseColumnWidth,
     },
     {
-      Header: 'Residence Time (hrs)',
-      accessor: 'TTA',
-      width: baseColumnWidth,
-    },
-    // {
-    //   Header: 'Total Time per Decon Application (person hrs/application)',
-    //   accessor: 'TTPS',
-    //   width: baseColumnWidth,
-    // },
-    {
-      Header: 'Log Reduction',
-      accessor: 'LOD_P',
+      Header: 'Total Area (square meters)',
+      accessor: 'totalSqM',
       width: baseColumnWidth,
     },
     {
-      Header: 'Contamination Removal (%)',
-      accessor: 'LOD_NON',
+      Header: 'Ext Walls Area (square meters)',
+      accessor: 'extWallsSqM',
       width: baseColumnWidth,
     },
     {
-      Header: 'Solid Waste Volume (cu m/sq m)',
-      accessor: 'WVPS',
+      Header: 'Int Walls Area (square meters)',
+      accessor: 'intWallsSqM',
       width: baseColumnWidth,
     },
     {
-      Header: 'Solid Waste Mass (kg/sq m)',
-      accessor: 'WWPS',
+      Header: 'Roof Area (square meters)',
+      accessor: 'roofSqM',
       width: baseColumnWidth,
     },
     {
-      Header: 'Liquid Waste Volume (cu m/sq m)',
-      accessor: 'ALC',
+      Header: 'Footprint Area (square feet)',
+      accessor: 'footprintSqFt',
       width: baseColumnWidth,
     },
     {
-      Header: 'Liquid Waste Mass (kg/sq m)',
-      accessor: 'AMC',
+      Header: 'Floors Area (square feet)',
+      accessor: 'floorsSqFt',
       width: baseColumnWidth,
     },
-    // TODO look into adding these back in. CONTAMVAL will probably
-    //      be the new CFU value.
-    // {
-    //   Header: 'Contamination Type',
-    //   accessor: 'CONTAMTYPE',
-    //   width: largeColumnWidth,
-    // },
-    // {
-    //   Header: 'Activity',
-    //   accessor: 'CONTAMVAL',
-    //   width: baseColumnWidth,
-    // },
-    // {
-    //   Header: 'Unit of Measure',
-    //   accessor: 'CONTAMUNIT',
-    //   width: baseColumnWidth,
-    // },
+    {
+      Header: 'Total Area (square feet)',
+      accessor: 'totalSqFt',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Ext Walls Area (square feet)',
+      accessor: 'extWallsSqFt',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Int Walls Area (square feet)',
+      accessor: 'intWallsSqFt',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Roof Area (square feet)',
+      accessor: 'roofSqFt',
+      width: baseColumnWidth,
+    },
   ];
 
   if (useEqualWidth) {
@@ -1500,12 +1604,14 @@ export function createLayer({
     });
 
     polyFeatures.push(poly);
-    pointFeatures.push(convertToPoint(poly));
-    hybridFeatures.push(
-      poly.attributes.ShapeType === 'point'
-        ? convertToPoint(poly)
-        : poly.clone(),
-    );
+    if (layerType === 'Samples') {
+      pointFeatures.push(convertToPoint(poly));
+      hybridFeatures.push(
+        poly.attributes.ShapeType === 'point'
+          ? convertToPoint(poly)
+          : poly.clone(),
+      );
+    }
   });
   sketchLayer.addMany(polyFeatures);
   if (editsLayer.layerType === 'Samples' || editsLayer.layerType === 'VSP') {

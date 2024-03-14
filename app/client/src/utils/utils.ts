@@ -161,6 +161,7 @@ export function getScenarioName(edits: EditsType, desiredName: string) {
 }
 
 export function parseSmallFloat(number: number, precision: number = 15) {
+  if (typeof number !== 'number') return number;
   return parseFloat(number.toFixed(precision));
 }
 

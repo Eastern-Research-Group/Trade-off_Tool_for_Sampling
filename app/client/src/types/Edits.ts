@@ -77,6 +77,8 @@ export type ScenarioEditsType = {
   table: TableType | null;
   referenceLayersTable: ReferenceLayersTableType;
   customAttributes: AttributesType[];
+  deconTechSelections: any[];
+  deconSummaryResults: any;
   calculateSettings: CalculateSettingsType;
   // contaminationResults: LayerEditsType; // TODO add this in if time permits
 };

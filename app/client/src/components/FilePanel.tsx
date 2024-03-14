@@ -66,7 +66,7 @@ import {
 
 const layerOptions: LayerSelectType[] = [
   { value: 'Contamination Map', label: 'Contamination Map' },
-  { value: 'Samples', label: 'Decon Applications' },
+  // { value: 'Samples', label: 'Decon Applications' },
   { value: 'Reference Layer', label: 'Reference Layer' },
   { value: 'Area of Interest', label: 'Area of Interest' },
   { value: 'VSP', label: 'VSP' },

@@ -14,10 +14,7 @@ import ShowLessMore from 'components/ShowLessMore';
 import Switch from 'components/Switch';
 // contexts
 import { AuthenticationContext } from 'contexts/Authentication';
-import {
-  PublishContext,
-  defaultPlanAttributes,
-} from 'contexts/Publish';
+import { PublishContext, defaultPlanAttributes } from 'contexts/Publish';
 import { SketchContext } from 'contexts/Sketch';
 // types
 import { ScenarioEditsType } from 'types/Edits';
@@ -1274,11 +1271,13 @@ function EditAttributePopup({
                           Header: 'Label',
                           accessor: 'label',
                           width: 181,
+                          editType: 'input',
                         },
                         {
                           Header: 'Value',
                           accessor: 'value',
                           width: 181,
+                          editType: 'input',
                         },
                       ];
                     }}
