@@ -1,7 +1,8 @@
 {
   "totsGPServer": "https://geopub.epa.gov/arcgis/rest/services/ORD/TOTS/GPServer",
   "totsTestGPServer": "https://ags.erg.com/arcgis/rest/services/ORD/TOTS_TEST/GPServer",
-  "shippTestGPServer": "https://ags.erg.com/arcgis/rest/services/ORD/SHIPP/GPServer",  "proxyUrl": "https://app7.erg.com/PHP/proxy.php?",
+  "shippTestGPServer": "https://ags.erg.com/arcgis/rest/services/ORD/SHIPP/GPServer",
+  "proxyUrl": "https://app7.erg.com/PHP/proxy.php?",
   "nsi": "https://nsi.sec.usace.army.mil/nsiapi",
   "useProxyForGPServer": false,
   "googleAnalyticsMapping": [

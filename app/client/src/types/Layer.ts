@@ -8,7 +8,8 @@ export type LayerTypeName =
   | 'VSP'
   | 'Sampling Mask'
   | 'Decon Results'
-  | 'AOI Assessed';
+  | 'AOI Assessed'
+  | 'Image Analysis';
 
 export type LayerTypeLabel =
   | 'Contamination Map'

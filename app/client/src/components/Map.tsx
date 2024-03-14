@@ -182,10 +182,10 @@ function Map({ height }: Props) {
         'map-image',
         'file',
         'feature',
-        'sketchedMask',
-        'graphics',
         'contaminationMapUpdated',
         'deconResults',
+        'sketchedMask',
+        'graphics',
       ];
       map.layers.sort((a: __esri.Layer, b: __esri.Layer) => {
         return (

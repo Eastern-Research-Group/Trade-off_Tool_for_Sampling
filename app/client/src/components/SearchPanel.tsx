@@ -1518,6 +1518,23 @@ function ResultCard({ result }: ResultCardProps) {
             referenceLayersTable,
             customAttributes: newCustomAttributes,
             deconTechSelections: [],
+            deconSummaryResults: {
+              summary: {
+                totalAoiSqM: 0,
+                totalBuildingFootprintSqM: 0,
+                totalBuildingFloorsSqM: 0,
+                totalBuildingSqM: 0,
+                totalBuildingExtWallsSqM: 0,
+                totalBuildingIntWallsSqM: 0,
+                totalBuildingRoofSqM: 0,
+              },
+              aoiPercentages: {
+                asphalt: 0,
+                concrete: 0,
+                soil: 0,
+              },
+              calculateResults: null,
+            },
             calculateSettings: {
               current: calcSettings || settingDefaults,
               published: calcSettings || undefined,

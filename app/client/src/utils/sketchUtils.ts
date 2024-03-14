@@ -630,7 +630,7 @@ export function updateLayerEdits({
     // handle property changes
     if (editsScenario) {
       editsScenario.visible = layer.visible;
-      editsScenario.listMode = layer.listMode;
+      // editsScenario.listMode = layer.listMode;
       if (editsScenario.status === 'published') editsScenario.status = 'edited';
     }
 
@@ -838,6 +838,7 @@ export function createSampleLayer(
   const graphicsLayer = new GraphicsLayer({
     id: layerUuid,
     title: name,
+    listMode: 'hide',
   });
   const pointsLayer = new GraphicsLayer({
     id: layerUuid + '-points',
@@ -863,8 +864,8 @@ export function createSampleLayer(
     label: name,
     layerType: 'Samples',
     editType: 'add',
-    visible: true,
-    listMode: 'show',
+    visible: false,
+    listMode: 'hide',
     sort: 0,
     geometryType: 'esriGeometryPolygon',
     addedFrom: 'sketch',
@@ -1603,12 +1604,14 @@ export function createLayer({
     });
 
     polyFeatures.push(poly);
-    pointFeatures.push(convertToPoint(poly));
-    hybridFeatures.push(
-      poly.attributes.ShapeType === 'point'
-        ? convertToPoint(poly)
-        : poly.clone(),
-    );
+    if (layerType === 'Samples') {
+      pointFeatures.push(convertToPoint(poly));
+      hybridFeatures.push(
+        poly.attributes.ShapeType === 'point'
+          ? convertToPoint(poly)
+          : poly.clone(),
+      );
+    }
   });
   sketchLayer.addMany(polyFeatures);
   if (editsLayer.layerType === 'Samples' || editsLayer.layerType === 'VSP') {

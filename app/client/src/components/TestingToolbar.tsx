@@ -21,7 +21,7 @@ const buttonStyles = css`
 function TestingToolbar() {
   const { mapDashboard, mapViewDashboard, sceneViewDashboard } =
     useContext(DashboardContext);
-  const { layers, map, mapView, sceneView, sketchVM } =
+  const { layers, map, mapView, sceneView, selectedScenario, sketchVM } =
     useContext(SketchContext);
 
   return (
@@ -51,6 +51,14 @@ function TestingToolbar() {
         }}
       >
         Log Views
+      </button>
+      <button
+        css={buttonStyles}
+        onClick={() => {
+          console.log('selectedScenario: ', selectedScenario);
+        }}
+      >
+        Log Selected Scenario
       </button>
       {window.location.pathname !== '/dashboard' && (
         <Fragment>

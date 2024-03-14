@@ -84,6 +84,7 @@ import {
 } from 'utils/utils';
 // styles
 import { reactSelectStyles } from 'styles';
+import { CalculateResultsType } from 'types/CalculateResults';
 
 // const bldgTypeEnum = {
 //   C: 'Concrete',
@@ -457,11 +458,10 @@ type GenerateRandomType = {
 };
 
 function LocateSamples() {
-  const { contaminationMap, setContaminationMap } =
+  const { contaminationMap, setCalculateResults, setContaminationMap } =
     useContext(CalculateContext);
   // const { setOptions } = useContext(DialogContext);
-  const { setGoTo, setGoToOptions, setTablePanelExpanded } =
-    useContext(NavigationContext);
+  const { setGoTo, setGoToOptions } = useContext(NavigationContext);
   // const { setSampleTypeSelections } = useContext(PublishContext);
   const {
     allSampleOptions,
@@ -482,6 +482,7 @@ function LocateSamples() {
     setAoiSketchLayer,
     sketchVM,
     aoiSketchVM,
+    setAoiData,
     // sampleAttributes,
     // userDefinedOptions,
     // setUserDefinedOptions,
@@ -637,6 +638,36 @@ function LocateSamples() {
     } else {
       aoiSketchVM.cancel();
     }
+  }
+
+  function assessAoi() {
+    const aoiMaskLayer: LayerType | null =
+      generateRandomMode === 'draw'
+        ? aoiSketchLayer
+        : generateRandomMode === 'file'
+          ? selectedAoiFile
+          : null;
+    if (
+      !aoiMaskLayer?.sketchLayer ||
+      aoiMaskLayer.sketchLayer.type !== 'graphics'
+    )
+      return;
+
+    setCalculateResults((calculateResults: CalculateResultsType) => {
+      return {
+        status: 'fetching',
+        panelOpen: calculateResults.panelOpen,
+        data: null,
+      };
+    });
+    setAoiData((aoiDataCur: any) => {
+      return {
+        count: aoiDataCur.count + 1,
+        graphics: (
+          aoiMaskLayer.sketchLayer as __esri.GraphicsLayer
+        ).graphics.toArray(),
+      } as any;
+    });
   }
 
   // // Handle a user generating random samples
@@ -1711,7 +1742,7 @@ function LocateSamples() {
         id: 1,
         media: 'Soil/Vegetation',
         deconTech: allSampleOptions[1],
-        pctAoi: 34,
+        pctAoi: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -1721,7 +1752,7 @@ function LocateSamples() {
         id: 2,
         media: 'Streets - Asphalt',
         deconTech: allSampleOptions[2],
-        pctAoi: 6,
+        pctAoi: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -1731,7 +1762,7 @@ function LocateSamples() {
         id: 3,
         media: 'Streets/Sidewalks - Concrete',
         deconTech: allSampleOptions[3], // 'Low-Concentration Hydrogen Peroxide',
-        pctAoi: 60,
+        pctAoi: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -1741,7 +1772,7 @@ function LocateSamples() {
         id: 4,
         media: 'Building Exterior Walls',
         deconTech: allSampleOptions[2], // 'Vaporous Hydrogen Peroxide',
-        pctAoi: '',
+        pctAoi: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -1751,7 +1782,7 @@ function LocateSamples() {
         id: 5,
         media: 'Building Interior Floors',
         deconTech: allSampleOptions[5],
-        pctAoi: '',
+        pctAoi: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -1761,7 +1792,7 @@ function LocateSamples() {
         id: 6,
         media: 'Building Interior Walls',
         deconTech: allSampleOptions[5], // 'Hydrogen Peroxide PAA, Spor-klenz RTU',
-        pctAoi: '',
+        pctAoi: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -1771,7 +1802,7 @@ function LocateSamples() {
         id: 7,
         media: 'Building Roofs',
         deconTech: allSampleOptions[1],
-        pctAoi: '',
+        pctAoi: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -1838,26 +1869,48 @@ function LocateSamples() {
               onClick={() => {
                 if (!sketchVM || !sketchLayer) return;
 
+                let editsCopy: EditsType = edits;
+
                 // Figure out what to add graphics to
                 const aoiAssessed = selectedScenario?.layers.find(
                   (l) => l.layerType === 'AOI Assessed',
                 );
-                if (!aoiAssessed) return;
+                if (aoiAssessed) {
+                  const aoiAssessedLayer = layers.find(
+                    (l) => l.layerId === aoiAssessed.layerId,
+                  );
+                  if (aoiAssessedLayer?.sketchLayer?.type === 'graphics') {
+                    editsCopy = updateLayerEdits({
+                      edits,
+                      scenario: selectedScenario,
+                      layer: aoiAssessedLayer,
+                      type: 'delete',
+                      changes: aoiAssessedLayer?.sketchLayer.graphics,
+                    });
 
-                let editsCopy: EditsType = edits;
-                const aoiAssessedLayer = layers.find(
-                  (l) => l.layerId === aoiAssessed.layerId,
+                    aoiAssessedLayer?.sketchLayer.graphics.removeAll();
+                  }
+                }
+
+                // Figure out what to add graphics to
+                const imageAnalysis = selectedScenario?.layers.find(
+                  (l) => l.layerType === 'Image Analysis',
                 );
-                if (aoiAssessedLayer?.sketchLayer?.type === 'graphics') {
-                  editsCopy = updateLayerEdits({
-                    edits,
-                    scenario: selectedScenario,
-                    layer: aoiAssessedLayer,
-                    type: 'delete',
-                    changes: aoiAssessedLayer?.sketchLayer.graphics,
-                  });
+                if (imageAnalysis) {
+                  const imageAnalysisLayer = layers.find(
+                    (l) => l.layerId === imageAnalysis.layerId,
+                  );
+                  if (imageAnalysisLayer?.sketchLayer?.type === 'graphics') {
+                    editsCopy = updateLayerEdits({
+                      edits,
+                      scenario: selectedScenario,
+                      layer: imageAnalysisLayer,
+                      type: 'delete',
+                      changes: imageAnalysisLayer?.sketchLayer.graphics,
+                    });
 
-                  aoiAssessedLayer?.sketchLayer.graphics.removeAll();
+                    imageAnalysisLayer?.sketchLayer.graphics.removeAll();
+                  }
                 }
 
                 setEdits(editsCopy);
@@ -2903,7 +2956,7 @@ function LocateSamples() {
                                 {generateRandomResponse.status ===
                                   'exceededTransferLimit' &&
                                   generateRandomExceededTransferLimitMessage}
-                                {/* {((generateRandomMode === 'draw' &&
+                                {((generateRandomMode === 'draw' &&
                                   aoiSketchLayer?.sketchLayer.type ===
                                     'graphics' &&
                                   aoiSketchLayer.sketchLayer.graphics.length >
@@ -2931,19 +2984,11 @@ function LocateSamples() {
                                       </Fragment>
                                     )}
                                   </button>
-                                )} */}
+                                )}
                               </Fragment>
                             )}
 
                             <div>
-                              <button
-                                css={submitButtonStyles}
-                                onClick={() => setTablePanelExpanded(true)}
-                              >
-                                View Results
-                              </button>
-                              <br />
-
                               {downloadStatus === 'fetching' && (
                                 <LoadingSpinner />
                               )}
@@ -3059,6 +3104,7 @@ function LocateSamples() {
                           accessor: 'pctAoi',
                           width: 97,
                           editType: 'input',
+                          show: false,
                         },
                         {
                           Header: 'Number of Applications',

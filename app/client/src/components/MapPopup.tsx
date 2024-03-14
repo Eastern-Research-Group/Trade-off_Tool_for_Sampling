@@ -636,4 +636,22 @@ export function buildingMapPopup(feature: any) {
   return contentContainer;
 }
 
+export function imageryAnalysisMapPopup(feature: any) {
+  const content = (
+    <MapPopupSimple
+      feature={feature}
+      fieldInfos={[
+        { label: 'Category', fieldName: 'category' },
+        { label: 'Grid Code', fieldName: 'gridcode' },
+      ]}
+    />
+  );
+
+  // wrap the content for esri
+  const contentContainer = document.createElement('div');
+  createRoot(contentContainer).render(content);
+
+  return contentContainer;
+}
+
 export default MapPopup;

@@ -203,11 +203,19 @@ function EditScenario({
         title: scenarioName,
       });
 
+      const layerUuidImageAnalysis = generateUUID();
+      const graphicsLayerImageAnalysis = new GraphicsLayer({
+        id: layerUuidImageAnalysis,
+        title: 'Imagery Analysis Results',
+        listMode: 'show',
+      });
+      groupLayer.layers.add(graphicsLayerImageAnalysis);
+
       const layerUuid = generateUUID();
       const graphicsLayer = new GraphicsLayer({
         id: layerUuid,
         title: 'AOI Assessment',
-        listMode: 'hide',
+        listMode: 'show',
       });
       groupLayer.layers.add(graphicsLayer);
 
@@ -226,6 +234,7 @@ function EditScenario({
       const newLayers: LayerEditsType[] = [];
       let tempSketchLayer: LayerType | null = null;
       let tempAssessedAoiLayer: LayerType | null = null;
+      let tempImageAnalysisLayer: LayerType | null = null;
       if (addDefaultSampleLayer) {
         edits.edits.forEach((edit) => {
           if (
@@ -259,12 +268,41 @@ function EditScenario({
           parentLayer: groupLayer,
         } as LayerType;
 
+        tempImageAnalysisLayer = {
+          id: -1,
+          pointsId: -1,
+          uuid: layerUuidImageAnalysis,
+          layerId: layerUuidImageAnalysis,
+          portalId: '',
+          value: 'aoiAssessed',
+          name: 'Imagery Analysis Results',
+          label: 'Imagery Analysis Results',
+          layerType: 'Image Analysis',
+          editType: 'add',
+          visible: true,
+          listMode: 'hide',
+          sort: 0,
+          geometryType: 'esriGeometryPolygon',
+          addedFrom: 'sketch',
+          status: 'added',
+          sketchLayer: graphicsLayerImageAnalysis,
+          pointsLayer: null,
+          hybridLayer: null,
+          parentLayer: groupLayer,
+        } as LayerType;
+
         if (newLayers.length === 0) {
           // no sketchable layers were available, create one
           tempSketchLayer = createSampleLayer(undefined, groupLayer);
+          newLayers.push(
+            createLayerEditTemplate(tempImageAnalysisLayer, 'add'),
+          );
           newLayers.push(createLayerEditTemplate(tempAssessedAoiLayer, 'add'));
           newLayers.push(createLayerEditTemplate(tempSketchLayer, 'add'));
         } else {
+          newLayers.push(
+            createLayerEditTemplate(tempImageAnalysisLayer, 'add'),
+          );
           newLayers.push(createLayerEditTemplate(tempAssessedAoiLayer, 'add'));
           // update the parentLayer of layers being added to the group layer
           setLayers((layers) => {
@@ -317,6 +355,23 @@ function EditScenario({
         },
         customAttributes: [],
         deconTechSelections: [],
+        deconSummaryResults: {
+          summary: {
+            totalAoiSqM: 0,
+            totalBuildingFootprintSqM: 0,
+            totalBuildingFloorsSqM: 0,
+            totalBuildingSqM: 0,
+            totalBuildingExtWallsSqM: 0,
+            totalBuildingIntWallsSqM: 0,
+            totalBuildingRoofSqM: 0,
+          },
+          aoiPercentages: {
+            asphalt: 0,
+            concrete: 0,
+            soil: 0,
+          },
+          calculateResults: null,
+        },
         calculateSettings: { current: settingDefaults },
       };
 
@@ -365,6 +420,7 @@ function EditScenario({
           if (!tempSketchLayer) return layers;
 
           const tLayers = [...layers, tempSketchLayer];
+          if (tempImageAnalysisLayer) tLayers.push(tempImageAnalysisLayer);
           if (tempAssessedAoiLayer) tLayers.push(tempAssessedAoiLayer);
           return tLayers;
         });

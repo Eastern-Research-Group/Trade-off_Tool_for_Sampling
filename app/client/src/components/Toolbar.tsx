@@ -24,6 +24,7 @@ import { SketchContext } from 'contexts/Sketch';
 // utils
 import { getEnvironmentStringParam } from 'utils/arcGisRestUtils';
 import { fetchCheck } from 'utils/fetchUtils';
+import { imageAnalysisSymbols } from 'utils/hooks';
 import {
   findLayerInEdits,
   getElevationLayer,
@@ -79,7 +80,6 @@ function buildLegendListItem(event: any, isDashboard: boolean) {
   const isHybrid = item.layer.id?.toString().includes('-hybrid');
 
   const defaultSymbols: DefaultSymbolsType = (window as any).totsDefaultSymbols;
-
   // build the data for building the legend
   if (
     layer?.layerType === 'Area of Interest' ||
@@ -127,6 +127,36 @@ function buildLegendListItem(event: any, isDashboard: boolean) {
         }
       },
     );
+  }
+  if (layer?.layerType === 'AOI Assessed') {
+  }
+  if (layer?.layerType === 'Image Analysis') {
+    Object.keys(imageAnalysisSymbols).forEach((key) => {
+      const esriSymbol = (imageAnalysisSymbols as any)[key];
+      legendItems.push({
+        value: key,
+        title: key,
+        symbol: {
+          type: esriSymbol.type,
+          color: [
+            esriSymbol.color.r,
+            esriSymbol.color.g,
+            esriSymbol.color.b,
+            esriSymbol.color.a,
+          ],
+          outline: {
+            color: [
+              esriSymbol.outline.color.r,
+              esriSymbol.outline.color.g,
+              esriSymbol.outline.color.b,
+              esriSymbol.outline.color.a,
+            ],
+            width: esriSymbol.outline.width,
+          },
+        },
+        style: null,
+      });
+    });
   }
 
   // sort the legend items
