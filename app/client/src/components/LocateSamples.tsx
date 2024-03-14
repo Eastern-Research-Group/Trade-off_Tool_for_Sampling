@@ -1,6 +1,12 @@
 /** @jsxImportSource @emotion/react */
 
-import React, { Fragment, useContext, useEffect, useState } from 'react';
+import React, {
+  Fragment,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import { css } from '@emotion/react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -83,8 +89,9 @@ import {
   parseSmallFloat,
 } from 'utils/utils';
 // styles
-import { reactSelectStyles } from 'styles';
+import { colors, reactSelectStyles } from 'styles';
 import { CalculateResultsType } from 'types/CalculateResults';
+import { DialogContent, DialogOverlay } from '@reach/dialog';
 
 // const bldgTypeEnum = {
 //   C: 'Concrete',
@@ -1811,47 +1818,7 @@ function LocateSamples() {
     ]);
   }, [allSampleOptions, defaultDeconSelections]);
 
-  const [deconSelections, setDeconSelections] = useState(
-    defaultDeconSelections,
-  );
-
-  useEffect(() => {
-    console.log('allSampleOptions: ', allSampleOptions);
-  }, [allSampleOptions]);
-
-  // initialize decon selections
-  useEffect(() => {
-    if (!selectedScenario) {
-      setDeconSelections([]);
-      return;
-    }
-
-    if (selectedScenario.deconTechSelections.length > 0) {
-      setDeconSelections([...selectedScenario.deconTechSelections]);
-    } else {
-      setDeconSelections([...defaultDeconSelections]);
-
-      setEdits((edits) => {
-        const index = edits.edits.findIndex(
-          (item) =>
-            item.type === 'scenario' &&
-            item.layerId === selectedScenario.layerId,
-        );
-
-        const editedScenario = edits.edits[index] as ScenarioEditsType;
-        editedScenario.deconTechSelections = defaultDeconSelections;
-
-        return {
-          count: edits.count + 1,
-          edits: [
-            ...edits.edits.slice(0, index),
-            editedScenario,
-            ...edits.edits.slice(index + 1),
-          ],
-        };
-      });
-    }
-  }, [defaultDeconSelections, selectedScenario, setEdits]);
+  const [deconTechPopupOpen, setDeconTechPopupOpen] = useState(false);
 
   return (
     <div css={panelContainer}>
@@ -3031,111 +2998,21 @@ function LocateSamples() {
                     is also available to review.
                   </p>
 
-                  <ReactTableEditable
-                    id="tots-decon-tech-selectionstable"
-                    data={deconSelections}
-                    idColumn={'ID'}
-                    striped={true}
-                    hideHeader={false}
-                    height={450}
-                    onDataChange={(
-                      rowIndex: any,
-                      columnId: any,
-                      value: any,
-                    ) => {
-                      const newTable = deconSelections.map(
-                        (row: any, index) => {
-                          // update the row if it is the row in focus and the data has changed
-                          if (index === rowIndex && row[columnId] !== value) {
-                            return {
-                              ...deconSelections[rowIndex],
-                              [columnId]: value,
-                            };
-                          }
-                          return row;
-                        },
-                      );
+                  <button
+                    css={submitButtonStyles}
+                    onClick={() => setDeconTechPopupOpen(true)}
+                  >
+                    Edit in Popup
+                  </button>
 
-                      setDeconSelections(newTable);
+                  <DeconSelectionTable
+                    defaultDeconSelections={defaultDeconSelections}
+                  />
 
-                      const index = edits.edits.findIndex(
-                        (item) =>
-                          item.type === 'scenario' &&
-                          item.layerId === selectedScenario.layerId,
-                      );
-                      setEdits((edits) => {
-                        const editedScenario = edits.edits[
-                          index
-                        ] as ScenarioEditsType;
-                        editedScenario.deconTechSelections = newTable;
-
-                        return {
-                          count: edits.count + 1,
-                          edits: [
-                            ...edits.edits.slice(0, index),
-                            editedScenario,
-                            ...edits.edits.slice(index + 1),
-                          ],
-                        };
-                      });
-                    }}
-                    getColumns={(tableWidth: any) => {
-                      return [
-                        {
-                          Header: 'ID',
-                          accessor: 'ID',
-                          width: 0,
-                          show: false,
-                        },
-                        {
-                          Header: 'Contamination Scenario',
-                          accessor: 'media',
-                          width: 97,
-                        },
-                        {
-                          Header: 'Biological Decon Technology',
-                          accessor: 'deconTech',
-                          width: 118,
-                          editType: 'select',
-                          options: allSampleOptions,
-                        },
-                        {
-                          Header: 'Percent of AOI',
-                          accessor: 'pctAoi',
-                          width: 97,
-                          editType: 'input',
-                          show: false,
-                        },
-                        {
-                          Header: 'Number of Applications',
-                          accessor: 'numApplications',
-                          width: 97,
-                          editType: 'input',
-                          show: false,
-                        },
-                        {
-                          Header: 'Number of Concurrent Applications',
-                          accessor: 'numConcurrentApplications',
-                          width: 97,
-                          editType: 'input',
-                        },
-                        {
-                          Header: 'Percent Decontaminated',
-                          accessor: 'pctDeconed',
-                          width: 97,
-                          editType: 'input',
-                          show: false,
-                        },
-                        {
-                          Header: 'Is Hazardous',
-                          accessor: 'isHazardous',
-                          width: 118,
-                          editType: 'select',
-                          options: hazardousOptions,
-                          show: false,
-                        },
-                      ];
-                    }}
+                  <DeconSelectionPopup
+                    defaultDeconSelections={defaultDeconSelections}
+                    isOpen={deconTechPopupOpen}
+                    onClose={() => setDeconTechPopupOpen(false)}
                   />
                 </div>
               </AccordionItem>
@@ -3993,6 +3870,317 @@ function LocateSamples() {
         <NavigationButton goToPanel="calculate" />
       </div>
     </div>
+  );
+}
+
+type DeconSelectionProps = {
+  autoUpdate?: boolean;
+  defaultDeconSelections: any[];
+  performUpdate?: boolean;
+};
+
+function DeconSelectionTable({
+  autoUpdate = true,
+  defaultDeconSelections,
+  performUpdate = false,
+}: DeconSelectionProps) {
+  const {
+    allSampleOptions,
+    edits,
+    selectedScenario,
+    setEdits,
+    setSelectedScenario,
+  } = useContext(SketchContext);
+  const [tableId] = useState(
+    `tots-decon-tech-selectionstable-${generateUUID()}`,
+  );
+
+  const [deconSelections, setDeconSelections] = useState(
+    defaultDeconSelections,
+  );
+  // initialize decon selections
+  useEffect(() => {
+    if (!selectedScenario) {
+      setDeconSelections([]);
+      return;
+    }
+
+    if (selectedScenario.deconTechSelections.length > 0) {
+      setDeconSelections([...selectedScenario.deconTechSelections]);
+    } else {
+      setDeconSelections([...defaultDeconSelections]);
+
+      setEdits((edits) => {
+        const index = edits.edits.findIndex(
+          (item) =>
+            item.type === 'scenario' &&
+            item.layerId === selectedScenario.layerId,
+        );
+
+        const editedScenario = edits.edits[index] as ScenarioEditsType;
+        editedScenario.deconTechSelections = [...defaultDeconSelections];
+
+        return {
+          count: edits.count + 1,
+          edits: [
+            ...edits.edits.slice(0, index),
+            editedScenario,
+            ...edits.edits.slice(index + 1),
+          ],
+        };
+      });
+
+      setSelectedScenario((selectedScenario) => {
+        if (selectedScenario)
+          selectedScenario.deconTechSelections = [...defaultDeconSelections];
+        return selectedScenario;
+      });
+    }
+  }, [
+    autoUpdate,
+    defaultDeconSelections,
+    selectedScenario,
+    setEdits,
+    setSelectedScenario,
+  ]);
+
+  useEffect(() => {
+    if (selectedScenario && selectedScenario.deconTechSelections.length > 0) {
+      setDeconSelections([...selectedScenario.deconTechSelections]);
+    }
+  }, [edits, selectedScenario]);
+
+  const updateEdits = useCallback(
+    (newTable: any[] | null = null) => {
+      if (!selectedScenario) return;
+
+      const index = edits.edits.findIndex(
+        (item) =>
+          item.type === 'scenario' && item.layerId === selectedScenario.layerId,
+      );
+      setEdits((edits) => {
+        const editedScenario = edits.edits[index] as ScenarioEditsType;
+        editedScenario.deconTechSelections = newTable ?? deconSelections;
+
+        return {
+          count: edits.count + 1,
+          edits: [
+            ...edits.edits.slice(0, index),
+            editedScenario,
+            ...edits.edits.slice(index + 1),
+          ],
+        };
+      });
+
+      setSelectedScenario((selectedScenario) => {
+        if (selectedScenario)
+          selectedScenario.deconTechSelections = newTable ?? deconSelections;
+        return selectedScenario;
+      });
+    },
+    [deconSelections, selectedScenario, setSelectedScenario, edits, setEdits],
+  );
+
+  const [updateEditsRan, setUpdateEditsRan] = useState(false);
+  useEffect(() => {
+    if (!performUpdate || updateEditsRan) return;
+
+    setUpdateEditsRan(true);
+    updateEdits();
+  }, [performUpdate, updateEdits, updateEditsRan]);
+
+  if (!selectedScenario) return <p>Please select a plan.</p>;
+
+  return (
+    <ReactTableEditable
+      id={tableId}
+      data={deconSelections}
+      idColumn={'ID'}
+      striped={true}
+      hideHeader={false}
+      height={450}
+      onDataChange={(rowIndex: any, columnId: any, value: any) => {
+        const newTable = deconSelections.map((row: any, index: number) => {
+          // update the row if it is the row in focus and the data has changed
+          if (index === rowIndex && row[columnId] !== value) {
+            return {
+              ...deconSelections[rowIndex],
+              [columnId]: value,
+            };
+          }
+          return row;
+        });
+
+        setDeconSelections(newTable);
+
+        if (autoUpdate) updateEdits(newTable);
+      }}
+      getColumns={(tableWidth: any) => {
+        return [
+          {
+            Header: 'ID',
+            accessor: 'ID',
+            width: 0,
+            show: false,
+          },
+          {
+            Header: 'Contamination Scenario',
+            accessor: 'media',
+            width: 118,
+          },
+          {
+            Header: 'Biological Decon Technology',
+            accessor: 'deconTech',
+            width: 150,
+            editType: 'select',
+            options: allSampleOptions,
+          },
+          {
+            Header: 'Percent of AOI',
+            accessor: 'pctAoi',
+            width: 0,
+            editType: 'input',
+            show: false,
+          },
+          {
+            Header: 'Number of Applications',
+            accessor: 'numApplications',
+            width: 0,
+            editType: 'input',
+            show: false,
+          },
+          {
+            Header: 'Number of Concurrent Applications',
+            accessor: 'numConcurrentApplications',
+            width: 97,
+            editType: 'input',
+          },
+          {
+            Header: 'Percent Decontaminated',
+            accessor: 'pctDeconed',
+            width: 0,
+            editType: 'input',
+            show: false,
+          },
+          {
+            Header: 'Is Hazardous',
+            accessor: 'isHazardous',
+            width: 0,
+            editType: 'select',
+            options: hazardousOptions,
+            show: false,
+          },
+        ];
+      }}
+    />
+  );
+}
+
+const overlayStyles = css`
+  &[data-reach-dialog-overlay] {
+    z-index: 100;
+    background-color: ${colors.black(0.75)};
+  }
+`;
+
+const dialogStyles = css`
+  color: ${colors.black()};
+  background-color: ${colors.white()};
+  max-height: 80vh;
+  overflow: auto;
+
+  &[data-reach-dialog-content] {
+    position: relative;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    padding: 1.5rem;
+    width: auto;
+    max-width: 42rem;
+  }
+
+  p,
+  li {
+    font-size: 0.875rem;
+    line-height: 1.375;
+  }
+`;
+
+const headingStyles = css`
+  font-size: 117.6471%;
+  text-align: center;
+`;
+
+const saveAttributesButtonStyles = css`
+  background-color: #0071bc;
+  border: 0;
+  color: #fff;
+  font-weight: bold;
+  line-height: 1;
+  margin: 0 0.5em 1.5em 0;
+  padding: 0.5882em 1.1765em;
+  font-size: 16px;
+`;
+
+const buttonContainerStyles = css`
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+`;
+
+type DeconSelectionPopupProps = {
+  defaultDeconSelections: any[];
+  isOpen: boolean;
+  onClose: Function;
+};
+
+function DeconSelectionPopup({
+  defaultDeconSelections,
+  isOpen,
+  onClose,
+}: DeconSelectionPopupProps) {
+  const [performUpdate, setPerformUpdate] = useState(false);
+
+  return (
+    <DialogOverlay
+      css={overlayStyles}
+      isOpen={isOpen}
+      data-testid="tots-getting-started"
+    >
+      <DialogContent css={dialogStyles} aria-label="Edit Attribute">
+        <h1 css={headingStyles}>Select Decontamination Technology</h1>
+
+        <DeconSelectionTable
+          autoUpdate={false}
+          defaultDeconSelections={defaultDeconSelections}
+          performUpdate={performUpdate}
+        />
+        <div css={buttonContainerStyles}>
+          <button
+            css={saveAttributesButtonStyles}
+            onClick={() => {
+              setPerformUpdate(true);
+
+              setTimeout(() => {
+                setPerformUpdate(false);
+                onClose();
+              }, 500);
+            }}
+          >
+            Save
+          </button>
+          <button
+            css={saveAttributesButtonStyles}
+            onClick={() => {
+              onClose();
+            }}
+          >
+            Close
+          </button>
+        </div>
+      </DialogContent>
+    </DialogOverlay>
   );
 }
 
