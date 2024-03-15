@@ -1258,7 +1258,6 @@ function Calculate() {
             >
               View Detailed Results
             </button>
-            <DownloadIWasteData isSubmitStyle={true} />
           </div>
           <CalculateResultsPopup
             isOpen={resultsOpen}
