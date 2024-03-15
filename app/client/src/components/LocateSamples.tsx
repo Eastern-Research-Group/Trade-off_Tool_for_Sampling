@@ -8,8 +8,6 @@ import React, {
   useState,
 } from 'react';
 import { css } from '@emotion/react';
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
 // import Collection from '@arcgis/core/core/Collection';
 // import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 // import Graphic from '@arcgis/core/Graphic';
@@ -54,12 +52,9 @@ import { ErrorType } from 'types/Misc';
 // } from 'config/sampleAttributes';
 import {
   cantUseWithVspMessage,
-  downloadSuccessMessage,
-  excelFailureMessage,
   featureNotAvailableMessage,
   generateRandomExceededTransferLimitMessage,
   generateRandomSuccessMessage,
-  noDataDownloadMessage,
   // userDefinedValidationMessage,
   webServiceErrorMessage,
 } from 'config/errorMessages';
@@ -86,7 +81,6 @@ import {
   // createErrorObject,
   // getLayerName,
   getScenarioName,
-  parseSmallFloat,
 } from 'utils/utils';
 // styles
 import { colors, reactSelectStyles } from 'styles';
@@ -1171,224 +1165,6 @@ function LocateSamples() {
   //     window.logErrorToGa(ex);
   //   }
   // }
-
-  type Cell = { value: any; font?: any; alignment?: any };
-  type Row = Cell[];
-
-  type DownloadStatus =
-    | 'none'
-    | 'fetching'
-    | 'success'
-    | 'no-data'
-    | 'excel-failure';
-  const [
-    downloadStatus,
-    setDownloadStatus, //
-  ] = useState<DownloadStatus>('none');
-  async function downloadSummary() {
-    // find the layer
-    const aoiAssessed = selectedScenario?.layers.find(
-      (l) => l.layerType === 'AOI Assessed',
-    );
-    console.log('aoiAssessed: ', aoiAssessed);
-    if (!aoiAssessed) {
-      setDownloadStatus('no-data');
-      return;
-    }
-
-    const aoiAssessedLayer = layers.find(
-      (l) => l.layerId === aoiAssessed.layerId,
-    );
-    if (
-      !aoiAssessedLayer ||
-      (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.length ===
-        0
-    ) {
-      setDownloadStatus('no-data');
-      return;
-    }
-
-    setDownloadStatus('fetching');
-
-    const workbook = new ExcelJS.Workbook();
-
-    // create the styles
-    const defaultFont = { name: 'Calibri', size: 12 };
-    const labelFont = { name: 'Calibri', bold: true, size: 12 };
-
-    // add the sheet
-    const summarySheet = workbook.addWorksheet('Building Data');
-
-    const cols = [
-      { label: 'Building ID', fieldName: 'bid' },
-      { label: 'Building Type', fieldName: 'bldgtype' },
-      { label: 'Census Block FIPS', fieldName: 'cbfips' },
-      { label: 'ID', fieldName: 'fd_id' },
-      { label: 'Flood Zone (2021)', fieldName: 'firmzone' },
-      { label: 'Foundation Height (feet)', fieldName: 'found_ht' },
-      { label: 'Foundation Type', fieldName: 'found_type' },
-      { label: 'Footprint ID', fieldName: 'ftprntid' },
-      { label: 'Footprint Source', fieldName: 'ftprntsrc' },
-      { label: 'Ground Elevation (feet)', fieldName: 'ground_elv' },
-      { label: 'Ground Elevation (meters)', fieldName: 'ground_elv_m' },
-      { label: 'Median Year Built', fieldName: 'med_yr_blt' },
-      { label: 'Number of Stories', fieldName: 'num_story' },
-      { label: 'Percent Over 65 Disabled', fieldName: 'o65disable' },
-      { label: 'Occupancy Type', fieldName: 'occtype' },
-      { label: 'Population Night Over 65', fieldName: 'pop2amo65' },
-      { label: 'Population Night Under 65', fieldName: 'pop2amu65' },
-      { label: 'Population Day Over 65', fieldName: 'pop2pmo65' },
-      { label: 'Population Day Under 65', fieldName: 'pop2pmu65' },
-      { label: 'Source', fieldName: 'source' },
-      { label: 'Square Feet', fieldName: 'sqft' },
-      { label: 'Structure Damage Category', fieldName: 'st_damcat' },
-      { label: 'Students', fieldName: 'students' },
-      { label: 'Percent Under 65 Disabled', fieldName: 'u65disable' },
-      { label: 'Value of Contents', fieldName: 'val_cont' },
-      { label: 'Value of Structure', fieldName: 'val_struct' },
-      { label: 'Value of Vehicles', fieldName: 'val_vehic' },
-      { label: 'x', fieldName: 'x' },
-      { label: 'y', fieldName: 'y' },
-      { label: 'Contamination Type', fieldName: 'CONTAMTYPE' },
-      { label: 'Activity', fieldName: 'CONTAMVAL' },
-      { label: 'Unit of Measure', fieldName: 'CONTAMUNIT' },
-      {
-        label: 'Footprint Area (square meters)',
-        fieldName: 'footprintSqM',
-        format: 'number',
-      },
-      {
-        label: 'Floors Area (square meters)',
-        fieldName: 'floorsSqM',
-        format: 'number',
-      },
-      {
-        label: 'Total Area (square meters)',
-        fieldName: 'totalSqM',
-        format: 'number',
-      },
-      {
-        label: 'Ext Walls Area (square meters)',
-        fieldName: 'extWallsSqM',
-        format: 'number',
-      },
-      {
-        label: 'Int Walls Area (square meters)',
-        fieldName: 'intWallsSqM',
-        format: 'number',
-      },
-      {
-        label: 'Roof Area (square meters)',
-        fieldName: 'roofSqM',
-        format: 'number',
-      },
-      {
-        label: 'Footprint Area (square feet)',
-        fieldName: 'footprintSqFt',
-        format: 'number',
-      },
-      {
-        label: 'Floors Area (square feet)',
-        fieldName: 'floorsSqFt',
-        format: 'number',
-      },
-      {
-        label: 'Total Area (square feet)',
-        fieldName: 'totalSqFt',
-        format: 'number',
-      },
-      {
-        label: 'Ext Walls Area (square feet)',
-        fieldName: 'extWallsSqFt',
-        format: 'number',
-      },
-      {
-        label: 'Int Walls Area (square feet)',
-        fieldName: 'intWallsSqFt',
-        format: 'number',
-      },
-      {
-        label: 'Roof Area (square feet)',
-        fieldName: 'roofSqFt',
-        format: 'number',
-      },
-    ];
-
-    let curRow = fillOutCells({
-      sheet: summarySheet,
-      rows: [
-        [
-          ...cols.map((col) => {
-            return {
-              value: col.label,
-              font: labelFont,
-            };
-          }),
-        ],
-      ],
-    });
-
-    const rows: Row[] = [];
-    (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
-      (graphic) => {
-        rows.push(
-          cols.map((col) => {
-            const fieldValue = graphic.attributes[col.fieldName];
-            return {
-              value:
-                col.format === 'number'
-                  ? (parseSmallFloat(fieldValue, 2) ?? '').toLocaleString()
-                  : fieldValue,
-            };
-          }),
-        );
-      },
-    );
-
-    fillOutCells({
-      sheet: summarySheet,
-      rows,
-      startRow: curRow,
-    });
-
-    function fillOutCells({
-      sheet,
-      rows,
-      startRow = 1,
-    }: {
-      sheet: ExcelJS.Worksheet;
-      rows: Row[];
-      startRow?: number;
-    }) {
-      let rowIdx = startRow;
-      rows.forEach((rowData, index) => {
-        if (index !== 0) rowIdx += 1;
-        rowData.forEach((cellData, cellIdx) => {
-          const cell = sheet.getCell(rowIdx, cellIdx + 1);
-          cell.value = cellData.value;
-          cell.font = cellData.font ?? defaultFont;
-          if (cellData.alignment) cell.alignment = cellData.alignment;
-        });
-      });
-
-      return rowIdx + 1;
-    }
-
-    // download the file
-    try {
-      const buffer = await workbook.xlsx.writeBuffer();
-      saveAs(
-        new Blob([buffer]),
-        `tods_${selectedScenario?.scenarioName}_aoi_assessment.xlsx`,
-      );
-      setDownloadStatus('success');
-    } catch (err: any) {
-      console.error(err);
-      setDownloadStatus('excel-failure');
-
-      window.logErrorToGa(err);
-    }
-  }
 
   // const [userDefinedSampleType, setUserDefinedSampleType] =
   //   useState<SampleSelectType | null>(null);
@@ -2871,25 +2647,6 @@ function LocateSamples() {
                                 )}
                               </Fragment>
                             )}
-
-                            <div>
-                              {downloadStatus === 'fetching' && (
-                                <LoadingSpinner />
-                              )}
-                              {downloadStatus === 'excel-failure' &&
-                                excelFailureMessage}
-                              {downloadStatus === 'no-data' &&
-                                noDataDownloadMessage}
-                              {downloadStatus === 'success' &&
-                                downloadSuccessMessage}
-
-                              <button
-                                css={submitButtonStyles}
-                                onClick={downloadSummary}
-                              >
-                                Download Building Data
-                              </button>
-                            </div>
                           </Fragment>
                         )}
                     </Fragment>

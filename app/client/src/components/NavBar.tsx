@@ -12,7 +12,7 @@ import { css } from '@emotion/react';
 // components
 import AddData from 'components/AddData';
 import Calculate from 'components/Calculate';
-import CalculateResults from 'components/CalculateResults';
+// import CalculateResults from 'components/CalculateResults';
 import ConfigureOutput from 'components/ConfigureOutput';
 import LoadingSpinner from 'components/LoadingSpinner';
 import LocateSamples from 'components/LocateSamples';
@@ -259,13 +259,13 @@ const floatPanelScrollContainerStyles = css`
   height: 100%;
 `;
 
-const resultsFloatPanelContentStyles = css`
-  ${floatPanelContentStyles()}
+// const resultsFloatPanelContentStyles = css`
+//   ${floatPanelContentStyles()}
 
-  width: ${resultsPanelWidth};
-  color: white;
-  background-color: ${colors.darkblue()};
-`;
+//   width: ${resultsPanelWidth};
+//   color: white;
+//   background-color: ${colors.darkblue()};
+// `;
 
 const floatPanelButtonContainer = (expanded: boolean) => {
   return css`
@@ -299,17 +299,17 @@ const collapsePanelButton = css`
   pointer-events: all;
 `;
 
-const resultsCollapsePanelButton = css`
-  display: flex;
-  justify-content: center;
-  width: ${panelCollapseButtonWidth};
-  padding: 1.5em 1em;
-  margin: 0;
-  border-radius: 0;
-  background-color: ${colors.darkblue()};
-  color: white;
-  pointer-events: all;
-`;
+// const resultsCollapsePanelButton = css`
+//   display: flex;
+//   justify-content: center;
+//   width: ${panelCollapseButtonWidth};
+//   padding: 1.5em 1em;
+//   margin: 0;
+//   border-radius: 0;
+//   background-color: ${colors.darkblue()};
+//   color: white;
+//   pointer-events: all;
+// `;
 
 // --- components (NavBar) ---
 type Props = {
@@ -555,7 +555,7 @@ function NavBar({ height }: Props) {
           </div>
         </div>
       )}
-      {currentPanel?.value === 'calculate' &&
+      {/* {currentPanel?.value === 'calculate' &&
         calculateResults.panelOpen === true && (
           <div
             css={floatPanelStyles({
@@ -572,7 +572,7 @@ function NavBar({ height }: Props) {
               <CalculateResults />
             </div>
           </div>
-        )}
+        )} */}
       {(currentPanel || calculateResults.panelOpen === true) && (
         <div
           css={floatPanelStyles({
@@ -603,7 +603,7 @@ function NavBar({ height }: Props) {
                     />
                   </button>
                 )}
-                {currentPanel?.value === 'calculate' &&
+                {/* {currentPanel?.value === 'calculate' &&
                   calculateResults.panelOpen === true && (
                     <button
                       css={resultsCollapsePanelButton}
@@ -620,7 +620,7 @@ function NavBar({ height }: Props) {
                         }
                       />
                     </button>
-                  )}
+                  )} */}
               </div>
             </div>
           </div>

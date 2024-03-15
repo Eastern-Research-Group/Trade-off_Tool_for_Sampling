@@ -43,6 +43,16 @@ export type CalculateResultsDataType = {
   'Total Remaining Contaminated Area': number;
   'Percent Contaminated Remaining': number;
   'Contamination Type': string;
+  resultsTable: {
+    contaminationScenario: string;
+    decontaminationTechnology: string;
+    avgFinalContaminationCfuM2: number;
+    aboveDetectionLimit: boolean;
+    solidWasteVolumeM3: number;
+    liquidWasteVolumeM3: number;
+    decontaminationCost: number;
+    decontaminationTimeDays: number;
+  }[];
 };
 
 export type CalculateResultsTotsDataType = {

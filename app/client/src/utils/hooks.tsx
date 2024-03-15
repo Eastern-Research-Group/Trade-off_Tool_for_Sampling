@@ -2045,6 +2045,7 @@ export function useCalculatePlan() {
       'Total Decontaminated Area': 0, //totals.totalDecontaminatedArea,
       'Percent Contaminated Remaining': 0, //(contaminatedAreaRemaining / totals.totalContaminatedArea) * 100,
       'Contamination Type': '', //totals.contaminationType,
+      resultsTable: jsonDownload,
     };
     // console.log('resultObject: ', resultObject);
     // console.log('jsonDownload: ', jsonDownload);
@@ -2057,7 +2058,6 @@ export function useCalculatePlan() {
       (l: any) => l.layerType === 'Image Analysis',
     );
 
-    // console.log('aoiAssessed: ', aoiAssessed);
     if (aoiAssessed && imageAnalysis) {
       const aoiAssessedLayer = layers.find(
         (l) => l.layerId === aoiAssessed.layerId,
@@ -2065,7 +2065,6 @@ export function useCalculatePlan() {
       const imageAnalysisLayer = layers.find(
         (l: any) => l.layerId === imageAnalysis.layerId,
       );
-      // console.log('aoiAssessedLayer: ', aoiAssessedLayer);
       setEdits((edits) => {
         let editsCopy: EditsType = edits;
         if (aoiAssessedLayer?.sketchLayer?.type === 'graphics') {
@@ -2124,7 +2123,10 @@ export function useCalculatePlan() {
           calculateResults: resultObject,
         };
 
-        return editsCopy;
+        return {
+          ...editsCopy,
+          count: editsCopy.count + 1,
+        };
       });
     }
 
