@@ -267,55 +267,55 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
 
   // Gets the graphics to be highlighted and highlights them
   const [handles] = useState(new Handles());
-  useEffect(() => {
-    if (!map || !selectedScenario || selectedScenario.layers.length === 0) {
-      return;
-    }
+  // useEffect(() => {
+  //   if (!map || !selectedScenario || selectedScenario.layers.length === 0) {
+  //     return;
+  //   }
 
-    const group = 'contamination-highlights-group';
-    try {
-      handles.remove(group);
-    } catch (e) {}
+  //   const group = 'contamination-highlights-group';
+  //   try {
+  //     handles.remove(group);
+  //   } catch (e) {}
 
-    // find the group layer
-    const groupLayer = map.findLayerById(
-      selectedScenario.layerId,
-    ) as __esri.GroupLayer;
+  //   // find the group layer
+  //   const groupLayer = map.findLayerById(
+  //     selectedScenario.layerId,
+  //   ) as __esri.GroupLayer;
 
-    // Get any graphics that have a contam value
-    if (groupLayer) {
-      // if (trainingMode && groupLayer) {
-      groupLayer.layers.forEach((layer) => {
-        if (layer.type !== 'graphics') return;
+  //   // Get any graphics that have a contam value
+  //   if (groupLayer) {
+  //     // if (trainingMode && groupLayer) {
+  //     groupLayer.layers.forEach((layer) => {
+  //       if (layer.type !== 'graphics') return;
 
-        const highlightGraphics: __esri.Graphic[] = [];
-        const tempLayer = layer as __esri.GraphicsLayer;
-        tempLayer.graphics.forEach((graphic) => {
-          if (graphic.attributes.CONTAMVAL) {
-            highlightGraphics.push(graphic);
-          }
-        });
+  //       const highlightGraphics: __esri.Graphic[] = [];
+  //       const tempLayer = layer as __esri.GraphicsLayer;
+  //       tempLayer.graphics.forEach((graphic) => {
+  //         if (graphic.attributes.CONTAMVAL) {
+  //           highlightGraphics.push(graphic);
+  //         }
+  //       });
 
-        // Highlight the graphics with a contam value
-        if (highlightGraphics.length === 0) return;
+  //       // Highlight the graphics with a contam value
+  //       if (highlightGraphics.length === 0) return;
 
-        const view = displayDimensions === '3d' ? sceneView : mapView;
-        view.whenLayerView(tempLayer).then((layerView) => {
-          const handle = layerView.highlight(highlightGraphics);
-          handles.add(handle, group);
-        });
-      });
-    }
-  }, [
-    displayDimensions,
-    map,
-    handles,
-    edits,
-    selectedScenario,
-    mapView,
-    sceneView,
-    // trainingMode,
-  ]);
+  //       const view = displayDimensions === '3d' ? sceneView : mapView;
+  //       view.whenLayerView(tempLayer).then((layerView) => {
+  //         const handle = layerView.highlight(highlightGraphics);
+  //         handles.add(handle, group);
+  //       });
+  //     });
+  //   }
+  // }, [
+  //   displayDimensions,
+  //   map,
+  //   handles,
+  //   edits,
+  //   selectedScenario,
+  //   mapView,
+  //   sceneView,
+  //   // trainingMode,
+  // ]);
 
   useEffect(() => {
     if (!map) {
@@ -358,24 +358,41 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
 
     const samples: any = {};
     selectedSampleIds.forEach((sample) => {
-      if (!samples.hasOwnProperty(sample.DECISIONUNITUUID)) {
-        samples[sample.DECISIONUNITUUID] = [sample.PERMANENT_IDENTIFIER];
+      const layerId = sample.graphic.layer.id;
+      if (!samples.hasOwnProperty(layerId)) {
+        samples[layerId] = [sample.PERMANENT_IDENTIFIER];
       } else {
-        samples[sample.DECISIONUNITUUID].push(sample.PERMANENT_IDENTIFIER);
+        samples[layerId].push(sample.PERMANENT_IDENTIFIER);
       }
     });
 
-    Object.keys(samples).forEach((layerUuid) => {
-      // find the layer
-      const sampleUuids = samples[layerUuid];
-      const layer = layers.find((layer) => layer.uuid === layerUuid);
+    Object.keys(samples).forEach((layerId) => {
+      const sampleUuids = samples[layerId];
+      const layer = layers.find((layer) => layer.layerId === layerId);
 
-      if (!layer) return;
-
-      highlightGraphics(layer.sketchLayer, sampleUuids);
-      highlightGraphics(layer.pointsLayer, sampleUuids);
-      highlightGraphics(layer.hybridLayer, sampleUuids);
+      if (layer) highlightGraphics(layer.sketchLayer, sampleUuids);
     });
+
+    // const samples: any = {};
+    // selectedSampleIds.forEach((sample) => {
+    //   if (!samples.hasOwnProperty(sample.DECISIONUNITUUID)) {
+    //     samples[sample.DECISIONUNITUUID] = [sample.PERMANENT_IDENTIFIER];
+    //   } else {
+    //     samples[sample.DECISIONUNITUUID].push(sample.PERMANENT_IDENTIFIER);
+    //   }
+    // });
+
+    // Object.keys(samples).forEach((layerUuid) => {
+    //   // find the layer
+    //   const sampleUuids = samples[layerUuid];
+    //   const layer = layers.find((layer) => layer.uuid === layerUuid);
+
+    //   if (!layer) return;
+
+    //   highlightGraphics(layer.sketchLayer, sampleUuids);
+    //   highlightGraphics(layer.pointsLayer, sampleUuids);
+    //   highlightGraphics(layer.hybridLayer, sampleUuids);
+    // });
   }, [
     map,
     handles,

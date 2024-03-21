@@ -381,19 +381,19 @@ function EditScenario({
           return idx === -1;
         });
 
-        newEdits.forEach((edit) => {
-          let visible = edit.visible;
+        // newEdits.forEach((edit) => {
+        //   let visible = edit.visible;
 
-          if (edit.type === 'scenario') {
-            visible = edit.layerId === newScenario.layerId ? true : false;
-          }
-          if (edit.type === 'layer') {
-            if (edit.layerType === 'Samples' || edit.layerType === 'VSP') {
-              visible = false;
-            }
-          }
-          edit.visible = visible;
-        });
+        //   if (edit.type === 'scenario') {
+        //     visible = edit.layerId === newScenario.layerId ? true : false;
+        //   }
+        //   if (edit.type === 'layer') {
+        //     if (edit.layerType === 'Samples' || edit.layerType === 'VSP') {
+        //       visible = false;
+        //     }
+        //   }
+        //   edit.visible = visible;
+        // });
 
         return {
           count: edits.count + 1,

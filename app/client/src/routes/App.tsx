@@ -621,6 +621,7 @@ function App() {
                                 PERMANENT_IDENTIFIER,
                                 DECISIONUNITUUID,
                                 selection_method: 'row-click',
+                                graphic: sample.graphic,
                               };
                             });
                           }
@@ -631,6 +632,7 @@ function App() {
                               PERMANENT_IDENTIFIER,
                               DECISIONUNITUUID,
                               selection_method: 'row-click',
+                              graphic: row.original.graphic,
                             },
                           ];
                         });
@@ -671,13 +673,14 @@ function App() {
                                         DECISIONUNITUUID:
                                           row.original.DECISIONUNITUUID,
                                         selection_method: 'row-click',
+                                        graphic: row.original.graphic,
                                       },
                                     ]);
 
                                     // zoom to the graphic
                                     if (displayDimensions === '2d' && mapView) {
                                       mapView.goTo(row.original.graphic);
-                                      mapView.zoom = mapView.zoom - 1;
+                                      mapView.zoom = 16;
                                     } else if (
                                       displayDimensions === '3d' &&
                                       sceneView

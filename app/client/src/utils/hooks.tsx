@@ -2558,7 +2558,6 @@ function useEditsLayerStorage() {
     });
     setEdits(edits);
 
-    const planGraphics: AoiGraphics = {};
     const newLayers: LayerType[] = [];
     const graphicsLayers: (__esri.GraphicsLayer | __esri.GroupLayer)[] = [];
     edits.edits.forEach((editsLayer) => {
@@ -2586,8 +2585,8 @@ function useEditsLayerStorage() {
         const groupLayer = new GroupLayer({
           id: editsLayer.layerId,
           title: editsLayer.scenarioName,
-          visible: editsLayer.visible,
-          listMode: editsLayer.listMode,
+          visible: true,
+          listMode: 'show',
         });
 
         const sortBy = ['other', 'Samples', 'Image Analysis', 'AOI Assessed'];
@@ -2808,6 +2807,10 @@ function useEditsLayerStorage() {
       }
     });
 
+    const newLayersOutput = [...layers];
+    if (newLayers.length > 0) newLayersOutput.push(...newLayers);
+
+    const newAoiData: AoiGraphics = {};
     const scenarios = edits.edits.filter(
       (e) => e.type === 'scenario',
     ) as ScenarioEditsType[];
@@ -2826,7 +2829,7 @@ function useEditsLayerStorage() {
           (l) => l.layerType === 'Samples',
         );
         console.log('aoiEditsLayer: ', aoiEditsLayer);
-        aoiLayer = layers.find(
+        aoiLayer = newLayersOutput.find(
           (l) =>
             l.layerType === 'Samples' && l.layerId === aoiEditsLayer?.layerId,
         );
@@ -2835,7 +2838,7 @@ function useEditsLayerStorage() {
 
       if (scenario.aoiLayerMode === 'file' && scenario.importedAoiLayer) {
         // locate the layer
-        aoiLayer = layers.find(
+        aoiLayer = newLayersOutput.find(
           (l) =>
             l.layerType === 'Area of Interest' &&
             l.layerId === scenario.importedAoiLayer?.layerId,
@@ -2845,13 +2848,19 @@ function useEditsLayerStorage() {
       if (aoiLayer?.sketchLayer && aoiLayer.sketchLayer.type === 'graphics') {
         console.log('graphics: ', aoiLayer.sketchLayer.graphics.toArray());
         // aoiGraphics.push(...aoiLayer.sketchLayer.graphics.toArray());
-        planGraphics[scenario.layerId] =
-          aoiLayer.sketchLayer.graphics.toArray();
+        newAoiData[scenario.layerId] = aoiLayer.sketchLayer.graphics.toArray();
       }
     });
 
+    setAoiData((aoiData) => {
+      return {
+        count: aoiData.count + 1,
+        graphics: newAoiData,
+      };
+    });
+
     if (newLayers.length > 0) {
-      setLayers([...layers, ...newLayers]);
+      setLayers(newLayersOutput);
       map.addMany(graphicsLayers);
     }
 
