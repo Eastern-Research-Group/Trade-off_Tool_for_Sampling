@@ -21,6 +21,7 @@ import { getSampleTableColumns } from 'utils/sketchUtils';
 import { parseSmallFloat } from 'utils/utils';
 // config
 import { navPanelWidth } from 'config/appConfig';
+import { ScenarioEditsType } from 'types/Edits';
 
 const resizerHeight = 10;
 const esrifooterheight = 16;
@@ -188,13 +189,14 @@ function App() {
   } = useContext(NavigationContext);
   const {
     displayDimensions,
-    // layers,
+    edits,
+    layers,
     map,
     mapView,
     sceneView,
     selectedSampleIds,
     setSelectedSampleIds,
-    selectedScenario,
+    // selectedScenario,
   } = useContext(SketchContext);
 
   useSessionStorage();
@@ -266,14 +268,21 @@ function App() {
 
   // count the number of samples
   const sampleData: any[] = [];
-  map?.layers.forEach((layer) => {
-    if (layer.id !== selectedScenario?.layerId) return;
-    if (layer.type !== 'group') return;
-    (layer as __esri.GroupLayer).layers.forEach((layer) => {
-      if (layer.title !== 'AOI Assessment') return;
+  const scenarios = edits.edits.filter(
+    (e) => e.type === 'scenario',
+  ) as ScenarioEditsType[];
+  scenarios.forEach((scenario) => {
+    const aoiAssessed = scenario.layers.find(
+      (l) => l.layerType === 'AOI Assessed',
+    );
+    const aoiAssessedLayer = layers.find(
+      (l) =>
+        l.layerType === 'AOI Assessed' && l.layerId === aoiAssessed?.layerId,
+    );
+    if (!aoiAssessedLayer) return;
 
-      const graphics = (layer as __esri.GraphicsLayer).graphics.toArray();
-      graphics.forEach((sample) => {
+    (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
+      (sample) => {
         sampleData.push({
           graphic: sample,
           ...sample.attributes,
@@ -326,9 +335,73 @@ function App() {
             2,
           ).toLocaleString(),
         });
-      });
-    });
+      },
+    );
   });
+
+  // map?.layers.forEach((layer) => {
+  //   if (layer.id !== selectedScenario?.layerId) return;
+  //   if (layer.type !== 'group') return;
+  //   (layer as __esri.GroupLayer).layers.forEach((layer) => {
+  //     if (layer.title !== 'AOI Assessment') return;
+
+  //     const graphics = (layer as __esri.GraphicsLayer).graphics.toArray();
+  //     graphics.forEach((sample) => {
+  //       sampleData.push({
+  //         graphic: sample,
+  //         ...sample.attributes,
+  //         ground_elv: parseSmallFloat(
+  //           sample.attributes.ground_elv,
+  //           2,
+  //         ).toLocaleString(),
+  //         ground_elv_m: parseSmallFloat(
+  //           sample.attributes.ground_elv_m,
+  //           2,
+  //         ).toLocaleString(),
+  //         footprintSqM: parseSmallFloat(
+  //           sample.attributes.footprintSqM,
+  //           2,
+  //         ).toLocaleString(),
+  //         floorsSqM: parseSmallFloat(
+  //           sample.attributes.floorsSqM,
+  //           2,
+  //         ).toLocaleString(),
+  //         totalSqM: parseSmallFloat(
+  //           sample.attributes.totalSqM,
+  //           2,
+  //         ).toLocaleString(),
+  //         extWallsSqM: parseSmallFloat(
+  //           sample.attributes.extWallsSqM,
+  //           2,
+  //         ).toLocaleString(),
+  //         intWallsSqM: parseSmallFloat(
+  //           sample.attributes.intWallsSqM,
+  //           2,
+  //         ).toLocaleString(),
+  //         roofSqM: parseSmallFloat(
+  //           sample.attributes.roofSqM,
+  //           2,
+  //         ).toLocaleString(),
+  //         footprintSqFt: parseSmallFloat(
+  //           sample.attributes.footprintSqFt,
+  //           2,
+  //         ).toLocaleString(),
+  //         floorsSqFt: parseSmallFloat(
+  //           sample.attributes.floorsSqFt,
+  //           2,
+  //         ).toLocaleString(),
+  //         extWallsSqFt: parseSmallFloat(
+  //           sample.attributes.extWallsSqFt,
+  //           2,
+  //         ).toLocaleString(),
+  //         intWallsSqFt: parseSmallFloat(
+  //           sample.attributes.intWallsSqFt,
+  //           2,
+  //         ).toLocaleString(),
+  //       });
+  //     });
+  //   });
+  // });
 
   // calculate the width of the table
   let tablePanelWidth = 150;

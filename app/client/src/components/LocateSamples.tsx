@@ -39,7 +39,12 @@ import {
 } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 // import { PublishContext } from 'contexts/Publish';
-import { SketchContext, hazardousOptions, AoiGraphics } from 'contexts/Sketch';
+import {
+  SketchContext,
+  hazardousOptions,
+  AoiGraphics,
+  PlanSettings,
+} from 'contexts/Sketch';
 // types
 import { LayerType } from 'types/Layer';
 import { EditsType, LayerEditsType, ScenarioEditsType } from 'types/Edits';
@@ -450,6 +455,40 @@ const fullWidthSelectStyles = css`
   margin-right: 10px;
 `;
 
+const inputStyles = css`
+  width: 100%;
+  height: 36px;
+  margin: 0 0 10px 0;
+  padding-left: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+`;
+
+const saveButtonContainerStyles = css`
+  display: flex;
+  justify-content: flex-end;
+`;
+
+const saveButtonStyles = (status: string) => {
+  let backgroundColor = '';
+  if (status === 'success') {
+    backgroundColor = `background-color: ${colors.green()};`;
+  }
+  if (status === 'failure' || status === 'name-not-available') {
+    backgroundColor = `background-color: ${colors.red()};`;
+  }
+
+  return css`
+    margin: 5px 0;
+    ${backgroundColor}
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.65;
+    }
+  `;
+};
+
 // --- components (LocateSamples) ---
 type GenerateRandomType = {
   status: 'none' | 'fetching' | 'success' | 'failure' | 'exceededTransferLimit';
@@ -468,6 +507,8 @@ function LocateSamples() {
     defaultDeconSelections,
     // defaultSymbols,
     // setDefaultSymbolSingle,
+    planSettings,
+    setPlanSettings,
     displayDimensions,
     edits,
     setEdits,
@@ -690,13 +731,13 @@ function LocateSamples() {
       }
     });
 
-    setCalculateResults((calculateResults: CalculateResultsType) => {
-      return {
-        status: 'fetching',
-        panelOpen: calculateResults.panelOpen,
-        data: null,
-      };
-    });
+    // setCalculateResults((calculateResults: CalculateResultsType) => {
+    //   return {
+    //     status: 'fetching',
+    //     panelOpen: calculateResults.panelOpen,
+    //     data: null,
+    //   };
+    // });
     setAoiData((aoiDataCur: any) => {
       return {
         count: aoiDataCur.count + 1,
@@ -1509,6 +1550,9 @@ function LocateSamples() {
   // scenario and layer edit UI visibility controls
   const [addScenarioVisible, setAddScenarioVisible] = useState(false);
   const [editScenarioVisible, setEditScenarioVisible] = useState(false);
+  const [editPlanVisible, setEditPlanVisible] = useState(!planSettings.name);
+  const [tempPlanSettings, setTempPlanSettings] =
+    useState<PlanSettings>(planSettings);
   // const [addLayerVisible, setAddLayerVisible] = useState(false);
   // const [editLayerVisible, setEditLayerVisible] = useState(false);
   const [generateRandomMode, setGenerateRandomMode] = useState<
@@ -1573,6 +1617,10 @@ function LocateSamples() {
     );
     if (layer) setSelectedAoiFile(layer);
   }, [layers, selectedScenario]);
+
+  const planSettingsSaved =
+    planSettings.name === tempPlanSettings.name &&
+    planSettings.description === tempPlanSettings.description;
 
   return (
     <div css={panelContainer}>
@@ -1661,7 +1709,83 @@ function LocateSamples() {
             </Fragment>
           )}
 
-          {scenarios.length === 0 ? (
+          <div css={iconButtonContainerStyles}>
+            <div css={verticalCenterTextStyles}>
+              <label htmlFor="scenario-select-input">Plan Name</label>
+            </div>
+            <div>
+              <button
+                css={iconButtonStyles}
+                title={editPlanVisible ? 'Cancel' : 'Edit Plan'}
+                onClick={() => {
+                  setEditPlanVisible(!editPlanVisible);
+                }}
+              >
+                <i
+                  className={editPlanVisible ? 'fas fa-times' : 'fas fa-edit'}
+                />
+                <span className="sr-only">
+                  {editPlanVisible ? 'Cancel' : 'Edit Plan'}
+                </span>
+              </button>
+            </div>
+          </div>
+          <input
+            css={inputStyles}
+            disabled={!editPlanVisible}
+            value={editPlanVisible ? tempPlanSettings.name : planSettings.name}
+            onChange={(ev) => {
+              setTempPlanSettings((planSettings) => {
+                return {
+                  ...planSettings,
+                  name: ev.target.value,
+                };
+              });
+            }}
+          />
+          {editPlanVisible && (
+            <Fragment>
+              <label htmlFor="scenario-description-input">
+                Plan Description
+              </label>
+              <input
+                id="scenario-description-input"
+                css={inputStyles}
+                maxLength={2048}
+                placeholder="Enter Plan Description (2048 characters)"
+                value={tempPlanSettings.description}
+                onChange={(ev) => {
+                  setTempPlanSettings((planSettings) => {
+                    return {
+                      ...planSettings,
+                      description: ev.target.value,
+                    };
+                  });
+                }}
+              />
+
+              <div css={saveButtonContainerStyles}>
+                <button
+                  css={saveButtonStyles(planSettingsSaved ? 'success' : '')}
+                  disabled={planSettingsSaved}
+                  onClick={() => {
+                    setPlanSettings(tempPlanSettings);
+                    setEditPlanVisible(false);
+                  }}
+                >
+                  {planSettingsSaved ? (
+                    <Fragment>
+                      <i className="fas fa-check" /> Saved
+                    </Fragment>
+                  ) : (
+                    'Save'
+                  )}
+                </button>
+              </div>
+            </Fragment>
+          )}
+
+          {scenarios.length === 0 || !planSettings.name ? (
             <EditScenario addDefaultSampleLayer={true} />
           ) : (
             <Fragment>
@@ -1676,7 +1800,7 @@ function LocateSamples() {
                     <Fragment>
                       <button
                         css={iconButtonStyles}
-                        title="Delete Plan"
+                        title="Delete Layer"
                         onClick={() => {
                           // remove all of the child layers
                           setLayers((layers) => {
@@ -1723,7 +1847,7 @@ function LocateSamples() {
                         }}
                       >
                         <i className="fas fa-trash-alt" />
-                        <span className="sr-only">Delete Plan</span>
+                        <span className="sr-only">Delete Layer</span>
                       </button>
                       {/* <button
                         css={iconButtonStyles}
@@ -1856,7 +1980,7 @@ function LocateSamples() {
                       {selectedScenario.status !== 'published' && (
                         <button
                           css={iconButtonStyles}
-                          title={editScenarioVisible ? 'Cancel' : 'Edit Plan'}
+                          title={editScenarioVisible ? 'Cancel' : 'Edit Layer'}
                           onClick={() => {
                             setAddScenarioVisible(false);
                             setEditScenarioVisible(!editScenarioVisible);
@@ -1870,7 +1994,7 @@ function LocateSamples() {
                             }
                           />
                           <span className="sr-only">
-                            {editScenarioVisible ? 'Cancel' : 'Edit Plan'}
+                            {editScenarioVisible ? 'Cancel' : 'Edit Layer'}
                           </span>
                         </button>
                       )}
@@ -1878,7 +2002,7 @@ function LocateSamples() {
                   )}
                   <button
                     css={iconButtonStyles}
-                    title={addScenarioVisible ? 'Cancel' : 'Add Plan'}
+                    title={addScenarioVisible ? 'Cancel' : 'Add Layer'}
                     onClick={() => {
                       setEditScenarioVisible(false);
                       setAddScenarioVisible(!addScenarioVisible);
@@ -1890,7 +2014,7 @@ function LocateSamples() {
                       }
                     />
                     <span className="sr-only">
-                      {addScenarioVisible ? 'Cancel' : 'Add Plan'}
+                      {addScenarioVisible ? 'Cancel' : 'Add Layer'}
                     </span>
                   </button>
                 </div>
@@ -2520,7 +2644,7 @@ function LocateSamples() {
             </div> */}
             <AccordionList>
               <AccordionItem
-                title="Characterize Area of Interest"
+                title="1) Characterize Area of Interest"
                 initiallyExpanded={true}
               >
                 <div css={sectionContainer}>
@@ -2831,7 +2955,7 @@ function LocateSamples() {
                 </div>
               </AccordionItem>
               <AccordionItem
-                title="Select Decontamination Technology"
+                title="2) Select Decontamination Technology"
                 initiallyExpanded={true}
               >
                 <div css={sectionContainer}>

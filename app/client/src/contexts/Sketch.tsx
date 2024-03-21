@@ -61,6 +61,11 @@ export type JsonDownloadType = {
   decontaminationTimeDays: number;
 };
 
+export type PlanSettings = {
+  name: string;
+  description: string;
+};
+
 type SketchType = {
   autoZoom: boolean;
   setAutoZoom: Dispatch<SetStateAction<boolean>>;
@@ -80,6 +85,8 @@ type SketchType = {
   setDefaultDeconSelections: Dispatch<SetStateAction<any[]>>;
   deconSelections: any[];
   setDeconSelections: Dispatch<SetStateAction<any[]>>;
+  planSettings: PlanSettings;
+  setPlanSettings: Dispatch<SetStateAction<PlanSettings>>;
   homeWidget: HomeWidgetType | null;
   setHomeWidget: Dispatch<SetStateAction<HomeWidgetType | null>>;
   symbolsInitialized: boolean;
@@ -159,6 +166,8 @@ export const SketchContext = createContext<SketchType>({
   setDefaultDeconSelections: () => {},
   deconSelections: [],
   setDeconSelections: () => {},
+  planSettings: { name: '', description: '' },
+  setPlanSettings: () => {},
   homeWidget: null,
   setHomeWidget: () => {},
   symbolsInitialized: false,
@@ -263,6 +272,10 @@ export function SketchProvider({ children }: Props) {
     [],
   );
   const [deconSelections, setDeconSelections] = useState<any[]>([]);
+  const [planSettings, setPlanSettings] = useState<PlanSettings>({
+    name: '',
+    description: '',
+  });
   const [layersInitialized, setLayersInitialized] = useState(false);
   const [layers, setLayers] = useState<LayerType[]>([]);
   const [portalLayers, setPortalLayers] = useState<PortalLayerType[]>([]);
@@ -521,6 +534,8 @@ export function SketchProvider({ children }: Props) {
         setDefaultDeconSelections,
         deconSelections,
         setDeconSelections,
+        planSettings,
+        setPlanSettings,
         homeWidget,
         setHomeWidget,
         symbolsInitialized,

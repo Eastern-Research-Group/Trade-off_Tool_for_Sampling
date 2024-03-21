@@ -62,6 +62,7 @@ import { colors } from 'styles';
 import { DialogContent, DialogOverlay } from '@reach/dialog';
 import { generateUUID, getGraphicsArray } from 'utils/sketchUtils';
 import { ReactTable } from './ReactTable';
+import { ScenarioEditsType } from 'types/Edits';
 // styles
 // import { reactSelectStyles } from 'styles';
 
@@ -187,6 +188,7 @@ function Calculate() {
     selectedScenario,
     // getGpMaxRecordCount,
     // jsonDownload,
+    planSettings,
   } = useContext(SketchContext);
   const {
     calculateResults,
@@ -1073,14 +1075,11 @@ function Calculate() {
           </p>
           <p css={layerInfo}>
             <strong>Plan Name: </strong>
-            {selectedScenario?.scenarioName}
+            {planSettings.name}
           </p>
           <p css={layerInfo}>
             <strong>Plan Description: </strong>
-            <ShowLessMore
-              text={selectedScenario?.scenarioDescription}
-              charLimit={20}
-            />
+            <ShowLessMore text={planSettings.description} charLimit={20} />
           </p>
         </div>
 
@@ -1433,7 +1432,7 @@ function CalculateResultsPopup({
   isOpen,
   onClose,
 }: CalculateResultsPopupProps) {
-  const { jsonDownload } = useContext(SketchContext);
+  const { edits, jsonDownload, planSettings } = useContext(SketchContext);
   const [tableId] = useState(
     `tots-decon-results-selectionstable-${generateUUID()}`,
   );
@@ -1442,15 +1441,8 @@ function CalculateResultsPopup({
     calculateResults,
     contaminationMap, //
   } = useContext(CalculateContext);
-  const {
-    aoiSketchLayer,
-    displayDimensions,
-    layers,
-    map,
-    mapView,
-    sceneView,
-    selectedScenario,
-  } = useContext(SketchContext);
+  const { aoiSketchLayer, displayDimensions, layers, map, mapView, sceneView } =
+    useContext(SketchContext);
 
   const [
     downloadStatus,
@@ -1468,14 +1460,7 @@ function CalculateResultsPopup({
   ] = useState<__esri.Screenshot | null>(null);
   useEffect(() => {
     if (screenshotInitialized) return;
-    if (
-      !map ||
-      !mapView ||
-      !sceneView ||
-      !selectedScenario ||
-      downloadStatus !== 'fetching'
-    )
-      return;
+    if (!map || !mapView || !sceneView || downloadStatus !== 'fetching') return;
 
     const view = displayDimensions === '3d' ? sceneView : mapView;
 
@@ -1492,8 +1477,6 @@ function CalculateResultsPopup({
     layers.forEach((layer) => {
       if (layer.parentLayer) {
         layer.parentLayer.visible = true;
-        // layer.parentLayer.visible =
-        //   layer.parentLayer.id === selectedScenario.layerId ? true : false;
         return;
       }
 
@@ -1510,10 +1493,16 @@ function CalculateResultsPopup({
       layer.sketchLayer.visible = false;
     });
 
+    const scenarioIds: string[] = [];
+    edits.edits.forEach((e) => {
+      if (e.type !== 'scenario') return;
+      scenarioIds.push(e.layerId);
+    });
+
     // get the sample layers for the selected scenario
     const sampleLayers = layers.filter(
       (layer) =>
-        layer.parentLayer && layer.parentLayer.id === selectedScenario.layerId,
+        layer.parentLayer && scenarioIds.includes(layer.parentLayer.id),
     );
 
     // zoom to the graphics for the active layers
@@ -1563,12 +1552,12 @@ function CalculateResultsPopup({
     contaminationMap,
     displayDimensions,
     downloadStatus,
+    edits,
     layers,
     map,
     mapView,
     sceneView,
     screenshotInitialized,
-    selectedScenario,
   ]);
 
   // convert the screenshot to base64
@@ -1619,7 +1608,6 @@ function CalculateResultsPopup({
   // export the excel doc
   useEffect(() => {
     if (
-      !selectedScenario ||
       downloadStatus !== 'fetching' ||
       !base64Screenshot.image ||
       calculateResults.status !== 'success' ||
@@ -1658,10 +1646,7 @@ function CalculateResultsPopup({
     workbook.xlsx
       .writeBuffer()
       .then((buffer: any) => {
-        saveAs(
-          new Blob([buffer]),
-          `tods_${selectedScenario?.scenarioName}.xlsx`,
-        );
+        saveAs(new Blob([buffer]), `tods_${planSettings.name}.xlsx`);
         setDownloadStatus('success');
       })
       .catch((err: any) => {
@@ -1675,7 +1660,7 @@ function CalculateResultsPopup({
 
     function addSummarySheet() {
       // only here to satisfy typescript
-      if (!selectedScenario || !calculateResults.data) return;
+      if (!calculateResults.data) return;
 
       // add the sheet
       const summarySheet = workbook.addWorksheet('Summary');
@@ -1701,11 +1686,11 @@ function CalculateResultsPopup({
       summarySheet.getCell(4, 1).font = underlinedLabelFont;
       summarySheet.getCell(4, 1).value = 'Plan Name';
       summarySheet.getCell(4, 2).font = defaultFont;
-      summarySheet.getCell(4, 2).value = selectedScenario.scenarioName;
+      summarySheet.getCell(4, 2).value = planSettings.name;
       summarySheet.getCell(5, 1).font = underlinedLabelFont;
       summarySheet.getCell(5, 1).value = 'Plan Description';
       summarySheet.getCell(5, 2).font = defaultFont;
-      summarySheet.getCell(5, 2).value = selectedScenario.scenarioDescription;
+      summarySheet.getCell(5, 2).value = planSettings.description;
 
       summarySheet.mergeCells(7, 5, 7, 6);
       summarySheet.getCell(7, 5).alignment = columnTitleAlignment;
@@ -1791,11 +1776,6 @@ function CalculateResultsPopup({
     }
 
     function addSampleSheet() {
-      // only here to satisfy typescript
-      if (!map || !selectedScenario || selectedScenario.layers.length === 0) {
-        return;
-      }
-
       // add the sheet
       const summarySheet = workbook.addWorksheet('Building Data');
 
@@ -1914,48 +1894,46 @@ function CalculateResultsPopup({
         ],
       });
 
-      // get the group layer for the scenario
-      const scenarioGroupLayer = map.layers.find(
-        (layer) =>
-          layer.type === 'group' && layer.id === selectedScenario.layerId,
-      ) as __esri.GroupLayer;
-      if (!scenarioGroupLayer) return;
+      const graphics: __esri.Graphic[] = [];
+      const scenarios = edits.edits.filter(
+        (e) => e.type === 'scenario',
+      ) as ScenarioEditsType[];
+      scenarios.forEach((scenario) => {
+        const aoiAssessed = scenario.layers.find(
+          (l) => l.layerType === 'AOI Assessed',
+        );
+        const aoiAssessedLayer = layers.find(
+          (l) =>
+            l.layerType === 'AOI Assessed' &&
+            l.layerId === aoiAssessed?.layerId,
+        );
+        if (!aoiAssessedLayer) return;
 
-      // find the layer
-      const aoiAssessed = selectedScenario?.layers.find(
-        (l) => l.layerType === 'AOI Assessed',
-      );
-      console.log('aoiAssessed: ', aoiAssessed);
-      if (!aoiAssessed) return;
+        graphics.push(
+          ...(
+            aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer
+          ).graphics.toArray(),
+        );
+      });
 
-      const aoiAssessedLayer = layers.find(
-        (l) => l.layerId === aoiAssessed.layerId,
-      );
-      if (
-        !aoiAssessedLayer ||
-        (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics
-          .length === 0
-      )
-        return;
+      if (graphics.length === 0) return;
 
       const rows: Row[] = [];
-      (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
-        (graphic) => {
-          rows.push(
-            cols.map((col) => {
-              const fieldValue = graphic.attributes[col.fieldName];
-              return {
-                value:
-                  col.format && ['currency', 'number'].includes(col.format)
-                    ? (parseSmallFloat(fieldValue, 2) ?? '').toLocaleString()
-                    : fieldValue,
-                numFmt:
-                  col.format === 'currency' ? currencyNumberFormat : undefined,
-              };
-            }),
-          );
-        },
-      );
+      graphics.forEach((graphic) => {
+        rows.push(
+          cols.map((col) => {
+            const fieldValue = graphic.attributes[col.fieldName];
+            return {
+              value:
+                col.format && ['currency', 'number'].includes(col.format)
+                  ? (parseSmallFloat(fieldValue, 2) ?? '').toLocaleString()
+                  : fieldValue,
+              numFmt:
+                col.format === 'currency' ? currencyNumberFormat : undefined,
+            };
+          }),
+        );
+      });
 
       fillOutCells({
         sheet: summarySheet,
@@ -1991,10 +1969,11 @@ function CalculateResultsPopup({
     base64Screenshot,
     calculateResults,
     downloadStatus,
+    edits,
     jsonDownload,
     layers,
     map,
-    selectedScenario,
+    planSettings,
   ]);
 
   return (

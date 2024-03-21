@@ -2000,7 +2000,7 @@ export function useCalculatePlan() {
     nsiData,
     sampleAttributes,
     // selectedScenario,
-    setCalculateResults,
+    // setCalculateResults,
     setEdits,
     setJsonDownload,
   ]);
@@ -4203,6 +4203,35 @@ function useDashboardPlanStorage() {
   ]);
 }
 
+// Uses browser storage for holding the training mode selection.
+function usePlanSettingsStorage() {
+  const key = 'tots_plan_settings';
+
+  const { setOptions } = useContext(DialogContext);
+  const { planSettings, setPlanSettings } = useContext(SketchContext);
+
+  // Retreives training mode data from browser storage when the app loads
+  const [localPlanSettingsInitialized, setLocalPlanSettingsInitialized] =
+    useState(false);
+  useEffect(() => {
+    if (localPlanSettingsInitialized) return;
+
+    setLocalPlanSettingsInitialized(true);
+
+    const planSettingsStr = readFromStorage(key);
+    if (!planSettingsStr) return;
+
+    const planSettings = JSON.parse(planSettingsStr);
+    setPlanSettings(planSettings);
+  }, [localPlanSettingsInitialized, setPlanSettings]);
+
+  useEffect(() => {
+    if (!localPlanSettingsInitialized) return;
+
+    writeToStorage(key, planSettings, setOptions);
+  }, [planSettings, localPlanSettingsInitialized, setOptions]);
+}
+
 // Saves/Retrieves data to browser storage
 export function useSessionStorage() {
   // useTrainingModeStorage();
@@ -4226,4 +4255,5 @@ export function useSessionStorage() {
   usePublishStorage();
   useDisplayModeStorage();
   useDashboardPlanStorage();
+  usePlanSettingsStorage();
 }
