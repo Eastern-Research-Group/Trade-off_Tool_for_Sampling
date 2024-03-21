@@ -175,8 +175,8 @@ function MapSketchWidgets({ mapView, sceneView }: Props) {
     const svm2d = new SketchViewModel({
       layer: sketchLayer.sketchLayer,
       view: mapView,
-      polygonSymbol: defaultSymbols.symbols['Samples'],
-      pointSymbol: defaultSymbols.symbols['Samples'] as any,
+      polygonSymbol: defaultSymbols.symbols['Area of Interest'],
+      pointSymbol: defaultSymbols.symbols['Area of Interest'] as any,
       defaultCreateOptions: {
         hasZ: false,
       },
@@ -193,8 +193,8 @@ function MapSketchWidgets({ mapView, sceneView }: Props) {
     const svm3d = new SketchViewModel({
       layer: sketchLayer.sketchLayer,
       view: sceneView,
-      polygonSymbol: defaultSymbols.symbols['Samples'],
-      pointSymbol: defaultSymbols.symbols['Samples'] as any,
+      polygonSymbol: defaultSymbols.symbols['Area of Interest'],
+      pointSymbol: defaultSymbols.symbols['Area of Interest'] as any,
       defaultCreateOptions: {
         hasZ: true,
       },
@@ -390,16 +390,20 @@ function MapSketchWidgets({ mapView, sceneView }: Props) {
     if (!sketchVM || !sketchLayer?.sketchLayer || !mapView || !sceneView)
       return;
 
-    sketchVM['2d'].polygonSymbol = defaultSymbols.symbols['Samples'] as any;
-    sketchVM['2d'].pointSymbol = {
-      ...defaultSymbols.symbols['Samples'],
-      type: 'simple-marker',
-    } as any;
-    sketchVM['3d'].polygonSymbol = defaultSymbols.symbols['Samples'] as any;
-    sketchVM['3d'].pointSymbol = {
-      ...defaultSymbols.symbols['Samples'],
-      type: 'simple-marker',
-    } as any;
+    sketchVM['2d'].polygonSymbol = defaultSymbols.symbols[
+      'Area of Interest'
+    ] as any;
+    // sketchVM['2d'].pointSymbol = {
+    //   ...defaultSymbols.symbols['Samples'],
+    //   type: 'simple-marker',
+    // } as any;
+    sketchVM['3d'].polygonSymbol = defaultSymbols.symbols[
+      'Area of Interest'
+    ] as any;
+    // sketchVM['3d'].pointSymbol = {
+    //   ...defaultSymbols.symbols['Samples'],
+    //   type: 'simple-marker',
+    // } as any;
 
     sketchLayer.sketchLayer.elevationInfo =
       displayDimensions === '3d' ? { mode: 'absolute-height' } : (null as any);
@@ -408,24 +412,24 @@ function MapSketchWidgets({ mapView, sceneView }: Props) {
     const button = document.querySelector('.sketch-button-selected');
     const id = button && button.id;
     if (id && sampleAttributes.hasOwnProperty(id)) {
-      // determine whether the sketch button draws points or polygons
-      const attributes = sampleAttributes[id as any];
-      if (attributes.POINT_STYLE.includes('path|')) {
-        (sketchVM['2d'].pointSymbol as any).style = 'path';
-        (sketchVM['2d'].pointSymbol as any).path =
-          attributes.POINT_STYLE.replace('path|', '');
-        (sketchVM['3d'].pointSymbol as any).style = 'path';
-        (sketchVM['3d'].pointSymbol as any).path =
-          attributes.POINT_STYLE.replace('path|', '');
-      } else {
-        (sketchVM['2d'].pointSymbol as any).style = attributes.POINT_STYLE;
-        (sketchVM['3d'].pointSymbol as any).style = attributes.POINT_STYLE;
-      }
+      // // determine whether the sketch button draws points or polygons
+      // const attributes = sampleAttributes[id as any];
+      // if (attributes.POINT_STYLE.includes('path|')) {
+      //   (sketchVM['2d'].pointSymbol as any).style = 'path';
+      //   (sketchVM['2d'].pointSymbol as any).path =
+      //     attributes.POINT_STYLE.replace('path|', '');
+      //   (sketchVM['3d'].pointSymbol as any).style = 'path';
+      //   (sketchVM['3d'].pointSymbol as any).path =
+      //     attributes.POINT_STYLE.replace('path|', '');
+      // } else {
+      //   (sketchVM['2d'].pointSymbol as any).style = attributes.POINT_STYLE;
+      //   (sketchVM['3d'].pointSymbol as any).style = attributes.POINT_STYLE;
+      // }
 
-      let shapeType = attributes.ShapeType;
-
-      sketchVM[displayDimensions === '2d' ? '3d' : '2d'].cancel();
-      sketchVM[displayDimensions].create(shapeType);
+      sketchVM['2d'].cancel();
+      sketchVM['3d'].cancel();
+      // sketchVM[displayDimensions === '2d' ? '3d' : '2d'].cancel();
+      // sketchVM[displayDimensions].create('polygon');
     }
   }, [
     defaultSymbols,
@@ -504,7 +508,7 @@ function MapSketchWidgets({ mapView, sceneView }: Props) {
 
       sketchViewModel.on('create', (event) => {
         const { graphic } = event;
-        if (!graphic) return;
+        if (!graphic?.geometry) return;
 
         if (!firstPoint) {
           if (graphic.geometry.type === 'point') {
@@ -615,12 +619,14 @@ function MapSketchWidgets({ mapView, sceneView }: Props) {
 
           firstPoint = null;
 
-          if (id !== 'sampling-mask') {
-            // start next graphic
-            setTimeout(() => {
-              sketchViewModel.create(graphic.attributes.ShapeType);
-            }, 100);
-          }
+          // if (id !== 'sampling-mask') {
+          //   // start next graphic
+          //   setTimeout(() => {
+          //     sketchViewModel.create(graphic.attributes.ShapeType);
+          //   }, 100);
+          // }
+
+          sketchViewModel.cancel();
         }
 
         // place the graphic on the map when the drawing is complete
@@ -923,7 +929,6 @@ function MapSketchWidgets({ mapView, sceneView }: Props) {
       layerIndex: -1,
       setter: null,
     });
-
 
     // save the layer changes
     // make a copy of the edits context variable

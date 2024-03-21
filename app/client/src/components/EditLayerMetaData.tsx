@@ -139,9 +139,7 @@ function EditScenario({
   const [scenarioName, setScenarioName] = useState(
     initialScenario ? initialScenario.scenarioName : '',
   );
-  const [scenarioDescription, setScenarioDescription] = useState(
-    initialScenario ? initialScenario.scenarioDescription : '',
-  );
+  const [scenarioDescription] = useState('');
 
   // Updates the scenario metadata.
   function updateScenario() {
@@ -209,7 +207,6 @@ function EditScenario({
         title: 'Imagery Analysis Results',
         listMode: 'show',
       });
-      groupLayer.layers.add(graphicsLayerImageAnalysis);
 
       const layerUuid = generateUUID();
       const graphicsLayer = new GraphicsLayer({
@@ -217,19 +214,18 @@ function EditScenario({
         title: 'AOI Assessment',
         listMode: 'show',
       });
-      groupLayer.layers.add(graphicsLayer);
 
-      // hide all other plans from the map
-      layers.forEach((layer) => {
-        if (layer.parentLayer) {
-          layer.parentLayer.visible = false;
-          return;
-        }
+      // // hide all other plans from the map
+      // layers.forEach((layer) => {
+      //   if (layer.parentLayer) {
+      //     layer.parentLayer.visible = false;
+      //     return;
+      //   }
 
-        if (layer.layerType === 'Samples' || layer.layerType === 'VSP') {
-          layer.sketchLayer.visible = false;
-        }
-      });
+      //   if (layer.layerType === 'Samples' || layer.layerType === 'VSP') {
+      //     layer.sketchLayer.visible = false;
+      //   }
+      // });
 
       const newLayers: LayerEditsType[] = [];
       let tempSketchLayer: LayerType | null = null;
@@ -257,7 +253,7 @@ function EditScenario({
           layerType: 'AOI Assessed',
           editType: 'add',
           visible: true,
-          listMode: 'hide',
+          listMode: 'show',
           sort: 0,
           geometryType: 'esriGeometryPolygon',
           addedFrom: 'sketch',
@@ -280,7 +276,7 @@ function EditScenario({
           layerType: 'Image Analysis',
           editType: 'add',
           visible: true,
-          listMode: 'hide',
+          listMode: 'show',
           sort: 0,
           geometryType: 'esriGeometryPolygon',
           addedFrom: 'sketch',
@@ -373,6 +369,8 @@ function EditScenario({
           calculateResults: null,
         },
         calculateSettings: { current: settingDefaults },
+        importedAoiLayer: null,
+        aoiLayerMode: '',
       };
 
       // make a copy of the edits context variable
@@ -415,19 +413,29 @@ function EditScenario({
           groupLayer.add(tempSketchLayer.hybridLayer);
         }
 
-        // update layers (set parent layer)
-        setLayers((layers) => {
-          if (!tempSketchLayer) return layers;
+        const tLayers = [...layers];
+        if (tempSketchLayer) tLayers.push(tempSketchLayer);
+        if (tempImageAnalysisLayer) tLayers.push(tempImageAnalysisLayer);
+        if (tempAssessedAoiLayer) tLayers.push(tempAssessedAoiLayer);
 
-          const tLayers = [...layers, tempSketchLayer];
-          if (tempImageAnalysisLayer) tLayers.push(tempImageAnalysisLayer);
-          if (tempAssessedAoiLayer) tLayers.push(tempAssessedAoiLayer);
-          return tLayers;
-        });
+        // update layers (set parent layer)
+        (window as any).totsLayers = tLayers;
+        setLayers(tLayers);
+        // setLayers((layers) => {
+        //   const tLayers = [...layers];
+        //   if (tempSketchLayer) tLayers.push(tempSketchLayer);
+        //   if (tempImageAnalysisLayer) tLayers.push(tempImageAnalysisLayer);
+        //   if (tempAssessedAoiLayer) tLayers.push(tempAssessedAoiLayer);
+        //   (window as any).totsLayers = tLayers;
+        //   return tLayers;
+        // });
 
         // update sketchLayer (clear parent layer)
         setSketchLayer(tempSketchLayer);
       }
+
+      groupLayer.layers.add(graphicsLayerImageAnalysis);
+      groupLayer.layers.add(graphicsLayer);
 
       // add the scenario group layer to the map
       map.add(groupLayer);
@@ -493,7 +501,7 @@ function EditScenario({
         ev.preventDefault();
       }}
     >
-      <label htmlFor="scenario-name-input">Plan Name</label>
+      <label htmlFor="scenario-name-input">Layer Name</label>
       <input
         id="scenario-name-input"
         disabled={
@@ -508,7 +516,7 @@ function EditScenario({
           setSaveStatus({ status: 'changes' });
         }}
       />
-      <label htmlFor="scenario-description-input">Plan Description</label>
+      {/* <label htmlFor="scenario-description-input">Plan Description</label>
       <input
         id="scenario-description-input"
         disabled={
@@ -522,7 +530,7 @@ function EditScenario({
           setScenarioDescription(ev.target.value);
           setSaveStatus({ status: 'changes' });
         }}
-      />
+      /> */}
 
       {saveStatus.status === 'fetching' && <LoadingSpinner />}
       {saveStatus.status === 'failure' &&

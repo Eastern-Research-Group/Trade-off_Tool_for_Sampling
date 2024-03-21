@@ -206,3 +206,7 @@ export function activateSketchButton(id: string) {
 
   return wasSet;
 }
+
+export function formatNumber(value: number, precision: number = 0) {
+  return parseSmallFloat(value, precision).toLocaleString();
+}

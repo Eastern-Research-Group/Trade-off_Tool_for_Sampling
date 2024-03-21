@@ -37,7 +37,7 @@ import { colors } from 'styles';
 import {
   DefaultSymbolsType,
   PolygonSymbol,
-  SampleSelectType,
+  // SampleSelectType,
 } from 'config/sampleAttributes';
 import { LayerType } from 'types/Layer';
 
@@ -76,8 +76,8 @@ function buildLegendListItem(event: any, isDashboard: boolean) {
       layer.hybridLayer?.id === item?.layer?.id,
   );
 
-  const isPoints = item.layer.id?.toString().includes('-points');
-  const isHybrid = item.layer.id?.toString().includes('-hybrid');
+  // const isPoints = item.layer.id?.toString().includes('-points');
+  // const isHybrid = item.layer.id?.toString().includes('-hybrid');
 
   const defaultSymbols: DefaultSymbolsType = (window as any).totsDefaultSymbols;
   // build the data for building the legend
@@ -101,32 +101,38 @@ function buildLegendListItem(event: any, isDashboard: boolean) {
     });
   }
   if (layer?.layerType === 'Samples' || layer?.layerType === 'VSP') {
-    subtitle = 'Decon Technology';
+    legendItems.push({
+      value: 'Area of Interest',
+      title: 'Area of Interest',
+      symbol: defaultSymbols.symbols['Area of Interest'],
+      style: null,
+    });
+    // subtitle = 'Decon Technology';
 
-    (window as any).totsAllSampleOptions?.forEach(
-      (option: SampleSelectType) => {
-        const attributes = (window as any).totsSampleAttributes[option.value];
-        const style =
-          isPoints || (isHybrid && attributes.ShapeType === 'point')
-            ? attributes?.POINT_STYLE || null
-            : null;
-        if (defaultSymbols.symbols.hasOwnProperty(option.value)) {
-          legendItems.push({
-            value: option.value,
-            title: option.label,
-            symbol: defaultSymbols.symbols[option.value],
-            style,
-          });
-        } else {
-          legendItems.push({
-            value: 'Samples',
-            title: option.label,
-            symbol: defaultSymbols.symbols['Samples'],
-            style,
-          });
-        }
-      },
-    );
+    // (window as any).totsAllSampleOptions?.forEach(
+    //   (option: SampleSelectType) => {
+    //     const attributes = (window as any).totsSampleAttributes[option.value];
+    //     const style =
+    //       isPoints || (isHybrid && attributes.ShapeType === 'point')
+    //         ? attributes?.POINT_STYLE || null
+    //         : null;
+    //     if (defaultSymbols.symbols.hasOwnProperty(option.value)) {
+    //       legendItems.push({
+    //         value: option.value,
+    //         title: option.label,
+    //         symbol: defaultSymbols.symbols[option.value],
+    //         style,
+    //       });
+    //     } else {
+    //       legendItems.push({
+    //         value: 'Samples',
+    //         title: option.label,
+    //         symbol: defaultSymbols.symbols['Samples'],
+    //         style,
+    //       });
+    //     }
+    //   },
+    // );
   }
   if (layer?.layerType === 'AOI Assessed') {
   }

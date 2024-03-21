@@ -1539,6 +1539,8 @@ function ResultCard({ result }: ResultCardProps) {
               current: calcSettings || settingDefaults,
               published: calcSettings || undefined,
             },
+            importedAoiLayer: null,
+            aoiLayerMode: '',
           };
 
           // make a copy of the edits context variable

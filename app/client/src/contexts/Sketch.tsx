@@ -43,16 +43,18 @@ export type SketchViewModelType = {
   '3d': __esri.SketchViewModel;
 };
 
+export type AoiGraphics = {
+  [planId: string]: __esri.Graphic[];
+};
+
 export type AoiDataType = {
   count: number;
-  graphics: __esri.Graphic[];
+  graphics: AoiGraphics | null;
 };
 
 export type JsonDownloadType = {
   contaminationScenario: string;
   decontaminationTechnology: string;
-  avgFinalContaminationCfuM2: number;
-  aboveDetectionLimit: boolean;
   solidWasteVolumeM3: number;
   liquidWasteVolumeM3: number;
   decontaminationCost: number;
@@ -149,7 +151,7 @@ export const SketchContext = createContext<SketchType>({
   resetDefaultSymbols: () => {},
   edits: { count: 0, edits: [] },
   setEdits: () => {},
-  aoiData: { count: 0, graphics: [] },
+  aoiData: { count: 0, graphics: null },
   setAoiData: () => {},
   jsonDownload: [],
   setJsonDownload: () => {},
@@ -254,7 +256,7 @@ export function SketchProvider({ children }: Props) {
   const [edits, setEdits] = useState<EditsType>({ count: 0, edits: [] });
   const [aoiData, setAoiData] = useState<AoiDataType>({
     count: 0,
-    graphics: [],
+    graphics: null,
   });
   const [jsonDownload, setJsonDownload] = useState<JsonDownloadType[]>([]);
   const [defaultDeconSelections, setDefaultDeconSelections] = useState<any[]>(
@@ -356,9 +358,11 @@ export function SketchProvider({ children }: Props) {
     setDefaultDeconSelections([
       {
         id: 1,
-        media: 'Soil/Vegetation',
-        deconTech: allSampleOptions[1],
+        media: 'Soil',
+        deconTech: null,
         pctAoi: 0,
+        surfaceArea: 0,
+        avgCfu: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -367,8 +371,10 @@ export function SketchProvider({ children }: Props) {
       {
         id: 2,
         media: 'Streets - Asphalt',
-        deconTech: allSampleOptions[2],
+        deconTech: null,
         pctAoi: 0,
+        surfaceArea: 0,
+        avgCfu: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -377,8 +383,10 @@ export function SketchProvider({ children }: Props) {
       {
         id: 3,
         media: 'Streets/Sidewalks - Concrete',
-        deconTech: allSampleOptions[3], // 'Low-Concentration Hydrogen Peroxide',
+        deconTech: null,
         pctAoi: 0,
+        surfaceArea: 0,
+        avgCfu: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -387,8 +395,10 @@ export function SketchProvider({ children }: Props) {
       {
         id: 4,
         media: 'Building Exterior Walls',
-        deconTech: allSampleOptions[2], // 'Vaporous Hydrogen Peroxide',
+        deconTech: null,
         pctAoi: 0,
+        surfaceArea: 0,
+        avgCfu: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -397,8 +407,10 @@ export function SketchProvider({ children }: Props) {
       {
         id: 5,
         media: 'Building Interior Floors',
-        deconTech: allSampleOptions[5],
+        deconTech: null,
         pctAoi: 0,
+        surfaceArea: 0,
+        avgCfu: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -407,8 +419,10 @@ export function SketchProvider({ children }: Props) {
       {
         id: 6,
         media: 'Building Interior Walls',
-        deconTech: allSampleOptions[5], // 'Hydrogen Peroxide PAA, Spor-klenz RTU',
+        deconTech: null,
         pctAoi: 0,
+        surfaceArea: 0,
+        avgCfu: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -417,8 +431,10 @@ export function SketchProvider({ children }: Props) {
       {
         id: 7,
         media: 'Building Roofs',
-        deconTech: allSampleOptions[1],
+        deconTech: null,
         pctAoi: 0,
+        surfaceArea: 0,
+        avgCfu: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,

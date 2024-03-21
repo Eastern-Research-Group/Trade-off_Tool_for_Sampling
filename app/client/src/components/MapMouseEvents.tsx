@@ -6,7 +6,7 @@ import { SketchContext, SketchViewModelType } from 'contexts/Sketch';
 
 let ctrl = false;
 let shift = false;
-let sampleAttributesG: any[] = [];
+// let sampleAttributesG: any[] = [];
 let sketchVMG: __esri.SketchViewModel | null = null;
 let updateGraphics: __esri.Graphic[] = [];
 
@@ -33,7 +33,7 @@ type Props = {
 function MapMouseEvents({ mapView, sceneView }: Props) {
   const {
     displayDimensions,
-    sampleAttributes,
+    // sampleAttributes,
     setSelectedSampleIds,
     sketchVM,
   } = useContext(SketchContext);
@@ -167,14 +167,14 @@ function MapMouseEvents({ mapView, sceneView }: Props) {
         if (sceneView) sceneView.closePopup();
 
         // re-activate sketch tools if necessary
-        const button = document.querySelector('.sketch-button-selected');
-        if (button?.id && sketchVMG) {
-          const id = button.id;
+        // const button = document.querySelector('.sketch-button-selected');
+        // if (button?.id && sketchVMG) {
+        //   const id = button.id;
 
-          // determine whether the sketch button draws points or polygons
-          let shapeType = sampleAttributesG[id as any].ShapeType;
-          sketchVMG.create(shapeType);
-        }
+        //   // determine whether the sketch button draws points or polygons
+        //   let shapeType = sampleAttributesG[id as any].ShapeType;
+        //   sketchVMG.create(shapeType);
+        // }
       }
     };
 
@@ -199,10 +199,10 @@ function MapMouseEvents({ mapView, sceneView }: Props) {
     setInitialized(true);
   }, [handleMapClick, initialized, mapView, sceneView]);
 
-  // syncs the sampleAttributesG variable with the sampleAttributes context value
-  useEffect(() => {
-    sampleAttributesG = sampleAttributes;
-  }, [sampleAttributes]);
+  // // syncs the sampleAttributesG variable with the sampleAttributes context value
+  // useEffect(() => {
+  //   sampleAttributesG = sampleAttributes;
+  // }, [sampleAttributes]);
 
   // syncs the sketchVMG variable with the sketchVM context value
   useEffect(() => {

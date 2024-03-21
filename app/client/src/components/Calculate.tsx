@@ -53,6 +53,7 @@ import { CalculateResultsType } from 'types/CalculateResults';
 //   // updateLayerEdits
 // } from 'utils/sketchUtils';
 import {
+  formatNumber,
   // chunkArray,
   // createErrorObject,
   parseSmallFloat,
@@ -1437,10 +1438,6 @@ function CalculateResultsPopup({
     `tots-decon-results-selectionstable-${generateUUID()}`,
   );
 
-  function formatNumber(value: number, precision: number = 0) {
-    return parseSmallFloat(value, precision).toLocaleString();
-  }
-
   const {
     calculateResults,
     contaminationMap, //
@@ -1494,8 +1491,9 @@ function CalculateResultsPopup({
     // adjust the visiblity
     layers.forEach((layer) => {
       if (layer.parentLayer) {
-        layer.parentLayer.visible =
-          layer.parentLayer.id === selectedScenario.layerId ? true : false;
+        layer.parentLayer.visible = true;
+        // layer.parentLayer.visible =
+        //   layer.parentLayer.id === selectedScenario.layerId ? true : false;
         return;
       }
 
@@ -1721,12 +1719,6 @@ function CalculateResultsPopup({
           fieldName: 'decontaminationTechnology',
         },
         {
-          label: 'Average Final Contamination (CFU/m²)',
-          fieldName: 'avgFinalContaminationCfuM2',
-          format: 'number',
-        },
-        { label: 'Above / Below DL', fieldName: 'aboveDetectionLimit' },
-        {
           label: 'Solid Waste (m³)',
           fieldName: 'solidWasteVolumeM3',
           format: 'number',
@@ -1781,7 +1773,7 @@ function CalculateResultsPopup({
         );
       });
 
-      fillOutCells({
+      curRow = fillOutCells({
         sheet: summarySheet,
         rows,
         startRow: curRow,
@@ -1793,7 +1785,7 @@ function CalculateResultsPopup({
         extension: 'jpeg',
       });
       summarySheet.addImage(screenshotImageId, {
-        tl: { col: 1, row: 17 },
+        tl: { col: 1, row: curRow + 1 },
         ext: { width: base64Screenshot.width, height: base64Screenshot.height },
       });
     }
@@ -2019,13 +2011,6 @@ function CalculateResultsPopup({
           data={jsonDownload.map((d) => {
             return {
               ...d,
-              avgFinalContaminationCfuM2: formatNumber(
-                d.avgFinalContaminationCfuM2,
-                2,
-              ),
-              aboveDetectionLimit: d.aboveDetectionLimit
-                ? 'Above DL'
-                : 'Below DL',
               solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3),
               liquidWasteVolumeM3: formatNumber(d.liquidWasteVolumeM3),
               decontaminationCost: formatNumber(d.decontaminationCost),
@@ -2046,16 +2031,6 @@ function CalculateResultsPopup({
                 Header: 'Selected Decontamination Technology',
                 accessor: 'decontaminationTechnology',
                 width: 190,
-              },
-              {
-                Header: 'Average Final Contamination (CFU/m²)',
-                accessor: 'avgFinalContaminationCfuM2',
-                width: 150,
-              },
-              {
-                Header: 'Above / Below DL',
-                accessor: 'aboveDetectionLimit',
-                width: baseWidth,
               },
               {
                 Header: 'Solid Waste (m³)',

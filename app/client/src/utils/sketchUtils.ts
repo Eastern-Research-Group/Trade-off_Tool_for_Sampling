@@ -837,8 +837,9 @@ export function createSampleLayer(
   const layerUuid = generateUUID();
   const graphicsLayer = new GraphicsLayer({
     id: layerUuid,
-    title: name,
-    listMode: 'hide',
+    title: 'AOI Layer',
+    visible: true,
+    listMode: 'show',
   });
   const pointsLayer = new GraphicsLayer({
     id: layerUuid + '-points',
@@ -864,8 +865,8 @@ export function createSampleLayer(
     label: name,
     layerType: 'Samples',
     editType: 'add',
-    visible: false,
-    listMode: 'hide',
+    visible: true,
+    listMode: 'show',
     sort: 0,
     geometryType: 'esriGeometryPolygon',
     addedFrom: 'sketch',
@@ -1531,26 +1532,26 @@ export function createLayer({
     visible: editsLayer.visible,
     listMode: editsLayer.listMode,
   });
-  const pointsLayer = new GraphicsLayer({
-    title: editsLayer.label,
-    id: editsLayer.uuid + '-points',
-    visible: false,
-    listMode: 'hide',
-  });
-  const hybridLayer = new GraphicsLayer({
-    title: editsLayer.label,
-    id: editsLayer.uuid + '-hybrid',
-    visible: false,
-    listMode: 'hide',
-  });
+  // const pointsLayer = new GraphicsLayer({
+  //   title: editsLayer.label,
+  //   id: editsLayer.uuid + '-points',
+  //   visible: false,
+  //   listMode: 'hide',
+  // });
+  // const hybridLayer = new GraphicsLayer({
+  //   title: editsLayer.label,
+  //   id: editsLayer.uuid + '-hybrid',
+  //   visible: false,
+  //   listMode: 'hide',
+  // });
 
   const popupTemplate = getPopupTemplate(
     editsLayer.layerType,
     editsLayer.hasContaminationRan,
   );
   const polyFeatures: __esri.Graphic[] = [];
-  const pointFeatures: __esri.Graphic[] = [];
-  const hybridFeatures: __esri.Graphic[] = [];
+  // const pointFeatures: __esri.Graphic[] = [];
+  // const hybridFeatures: __esri.Graphic[] = [];
   const idsUsed: string[] = [];
   const displayedFeatures: FeatureEditsType[] = [];
 
@@ -1583,13 +1584,14 @@ export function createLayer({
   displayedFeatures.forEach((graphic) => {
     let layerType = editsLayer.layerType;
     if (layerType === 'VSP') layerType = 'Samples';
+    if (layerType === 'Samples') layerType = 'Area of Interest';
     if (layerType === 'Sampling Mask') layerType = 'Area of Interest';
 
     // set the symbol styles based on sample/layer type
     let symbol = defaultSymbols.symbols[layerType] as any;
-    if (defaultSymbols.symbols.hasOwnProperty(graphic.attributes.TYPEUUID)) {
-      symbol = defaultSymbols.symbols[graphic.attributes.TYPEUUID];
-    }
+    // if (defaultSymbols.symbols.hasOwnProperty(graphic.attributes.TYPEUUID)) {
+    //   symbol = defaultSymbols.symbols[graphic.attributes.TYPEUUID];
+    // }
 
     const poly = new Graphic({
       attributes: { ...graphic.attributes },
@@ -1604,20 +1606,20 @@ export function createLayer({
     });
 
     polyFeatures.push(poly);
-    if (layerType === 'Samples') {
-      pointFeatures.push(convertToPoint(poly));
-      hybridFeatures.push(
-        poly.attributes.ShapeType === 'point'
-          ? convertToPoint(poly)
-          : poly.clone(),
-      );
-    }
+    // if (layerType === 'Samples') {
+    //   pointFeatures.push(convertToPoint(poly));
+    //   hybridFeatures.push(
+    //     poly.attributes.ShapeType === 'point'
+    //       ? convertToPoint(poly)
+    //       : poly.clone(),
+    //   );
+    // }
   });
   sketchLayer.addMany(polyFeatures);
-  if (editsLayer.layerType === 'Samples' || editsLayer.layerType === 'VSP') {
-    pointsLayer.addMany(pointFeatures);
-    hybridLayer.addMany(hybridFeatures);
-  }
+  // if (editsLayer.layerType === 'Samples' || editsLayer.layerType === 'VSP') {
+  //   pointsLayer.addMany(pointFeatures);
+  //   hybridLayer.addMany(hybridFeatures);
+  // }
 
   newLayers.push({
     id: editsLayer.id,
@@ -1637,18 +1639,12 @@ export function createLayer({
     sort: editsLayer.sort,
     geometryType: 'esriGeometryPolygon',
     sketchLayer,
-    pointsLayer:
-      editsLayer.layerType === 'Samples' || editsLayer.layerType === 'VSP'
-        ? pointsLayer
-        : null,
-    hybridLayer:
-      editsLayer.layerType === 'Samples' || editsLayer.layerType === 'VSP'
-        ? hybridLayer
-        : null,
+    pointsLayer: null,
+    hybridLayer: null,
     parentLayer,
   });
 
-  return [sketchLayer, pointsLayer, hybridLayer];
+  return [sketchLayer]; //, pointsLayer, hybridLayer];
 }
 
 /**

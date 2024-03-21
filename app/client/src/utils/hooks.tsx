@@ -52,7 +52,12 @@ import {
 } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext } from 'contexts/Publish';
-import { SketchContext } from 'contexts/Sketch';
+import {
+  AoiDataType,
+  AoiGraphics,
+  JsonDownloadType,
+  SketchContext,
+} from 'contexts/Sketch';
 // types
 import {
   CalculateResultsType,
@@ -60,6 +65,7 @@ import {
 } from 'types/CalculateResults';
 import {
   EditsType,
+  LayerEditsType,
   // FeatureEditsType,
   ScenarioEditsType,
   ServiceMetaDataType,
@@ -104,6 +110,13 @@ type AoiPercentages = {
   // aoiId: string;
 };
 
+type PlanGraphics = {
+  [planId: string]: {
+    graphics: __esri.Graphic[];
+    imageGraphics: __esri.Graphic[];
+  };
+};
+
 const bldgTypeEnum = {
   C: 'Concrete',
   H: 'Manufactured',
@@ -144,7 +157,7 @@ const stDamcatEnum = {
 const mediaToBeepEnum = {
   'Streets - Asphalt': 'asphalt',
   'Streets/Sidewalks - Concrete': 'concrete',
-  'Soil/Vegetation': 'soil',
+  Soil: 'soil',
 };
 
 const partitionFactors = {
@@ -204,6 +217,32 @@ export const imageAnalysisSymbols = {
     },
   }),
 };
+
+function hasGraphics(aoiData: AoiDataType | PlanGraphics) {
+  if (!aoiData.graphics || Object.keys(aoiData.graphics).length === 0)
+    return false;
+
+  for (let g of Object.values(aoiData.graphics)) {
+    if (g.length > 0) return true;
+  }
+
+  return false;
+}
+
+// gets a layer type value used for sorting
+function getLayerType(layer: LayerEditsType) {
+  let type = 'other';
+
+  if (layer.layerType === 'Samples') {
+    type = 'Samples';
+  } else if (layer.layerType === 'Image Analysis') {
+    type = 'Image Analysis';
+  } else if (layer.layerType === 'AOI Assessed') {
+    type = 'AOI Assessed';
+  }
+
+  return type;
+}
 
 function handleEnum(value: string, obj: any) {
   return obj.hasOwnProperty(value) ? obj[value] : value;
@@ -376,7 +415,7 @@ export function useStartOver() {
 
     setAoiData({
       count: 0,
-      graphics: [],
+      graphics: null,
     });
     setJsonDownload([]);
     setDeconSelections([]);
@@ -1289,9 +1328,10 @@ export function useCalculatePlan() {
   const {
     aoiData,
     defaultDeconSelections,
+    edits,
     layers,
     sampleAttributes,
-    selectedScenario,
+    // selectedScenario,
     setEdits,
     setJsonDownload,
   } = useContext(SketchContext);
@@ -1301,15 +1341,19 @@ export function useCalculatePlan() {
 
   const { calculateArea } = useGeometryTools();
 
+  useEffect(() => {
+    console.log('aoiData: ', aoiData);
+  }, [aoiData]);
+
   // Reset the calculateResults context variable, whenever anything
   // changes that will cause a re-calculation.
   useEffect(() => {
     // exit early
-    if (!selectedScenario || aoiData.graphics.length === 0) {
+    if (!hasGraphics(aoiData)) {
       setCalculateResults({ status: 'none', panelOpen: false, data: null });
       return;
     }
-    if (selectedScenario.editType === 'properties') return;
+    // if (selectedScenario.editType === 'properties') return;
 
     // // to improve performance, do not perform calculations if
     // // only the scenario name/description changed
@@ -1328,8 +1372,7 @@ export function useCalculatePlan() {
     });
     setNsiData({
       status: 'none',
-      graphics: [],
-      imageryGraphics: [],
+      planGraphics: {},
       summary: {
         totalAoiSqM: 0,
         totalBuildingFootprintSqM: 0,
@@ -1345,12 +1388,11 @@ export function useCalculatePlan() {
         soil: 0,
       },
     });
-  }, [aoiData, selectedScenario, setCalculateResults]);
+  }, [aoiData, setCalculateResults]);
 
   const [nsiData, setNsiData] = useState<{
     status: 'none' | 'fetching' | 'success' | 'failure';
-    graphics: __esri.Graphic[];
-    imageryGraphics: __esri.Graphic[];
+    planGraphics: PlanGraphics;
     summary: {
       totalAoiSqM: number;
       totalBuildingFootprintSqM: number;
@@ -1363,8 +1405,7 @@ export function useCalculatePlan() {
     aoiPercentages: AoiPercentages;
   }>({
     status: 'none',
-    graphics: [],
-    imageryGraphics: [],
+    planGraphics: {},
     summary: {
       totalAoiSqM: 0,
       totalBuildingFootprintSqM: 0,
@@ -1384,14 +1425,13 @@ export function useCalculatePlan() {
   // fetch building data for AOI
   useEffect(() => {
     if (services.status !== 'success') return;
-    if (aoiData.graphics.length === 0) return;
+    if (!hasGraphics(aoiData)) return;
     if (calculateResults.status !== 'fetching') return;
     if (nsiData.status !== 'none') return;
 
     setNsiData({
       status: 'fetching',
-      graphics: [],
-      imageryGraphics: [],
+      planGraphics: {},
       summary: {
         totalAoiSqM: 0,
         totalBuildingFootprintSqM: 0,
@@ -1409,6 +1449,7 @@ export function useCalculatePlan() {
     });
 
     async function fetchAoiData() {
+      if (!aoiData.graphics) return;
       const features: any[] = [];
       let totalAoiSqM = 0;
       let totalBuildingFootprintSqM = 0;
@@ -1417,43 +1458,62 @@ export function useCalculatePlan() {
       let totalBuildingExtWallsSqM = 0;
       let totalBuildingIntWallsSqM = 0;
       let totalBuildingRoofSqM = 0;
-      aoiData.graphics.forEach((graphic: any) => {
-        const geometry = graphic.geometry as __esri.Polygon;
+      let responseIndexes: string[] = [];
+      let planGraphics: PlanGraphics = {};
+      const aoiGraphics: __esri.Graphic[] = [];
+      Object.keys(aoiData.graphics).forEach((planId: string) => {
+        if (!aoiData.graphics?.[planId]) return;
 
-        const areaSM = calculateArea(graphic);
-        if (typeof areaSM === 'number') {
-          totalAoiSqM += areaSM;
-          graphic.attributes.AREA = areaSM;
-        }
+        aoiGraphics.push(...aoiData.graphics[planId]);
+        aoiData.graphics[planId].forEach((graphic: any) => {
+          const geometry = graphic.geometry as __esri.Polygon;
 
-        const dim1Rings: number[][][] = [];
-        geometry.rings.forEach((dim1) => {
-          const dim2Rings: number[][] = [];
-          dim1.forEach((dim2) => {
-            const point = new Point({
-              spatialReference: {
-                wkid: 102100,
-              },
-              x: dim2[0],
-              y: dim2[1],
+          const areaSM = calculateArea(graphic);
+          if (typeof areaSM === 'number') {
+            totalAoiSqM += areaSM;
+            graphic.attributes.AREA = areaSM;
+          }
+
+          const dim1Rings: number[][][] = [];
+          geometry.rings.forEach((dim1) => {
+            const dim2Rings: number[][] = [];
+            dim1.forEach((dim2) => {
+              const point = new Point({
+                spatialReference: {
+                  wkid: 102100,
+                },
+                x: dim2[0],
+                y: dim2[1],
+              });
+
+              dim2Rings.push([point.longitude, point.latitude]);
             });
 
-            dim2Rings.push([point.longitude, point.latitude]);
+            dim1Rings.push(dim2Rings);
           });
 
-          dim1Rings.push(dim2Rings);
+          responseIndexes.push(planId);
+
+          const feature = {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'Polygon',
+              coordinates: dim1Rings,
+            },
+          };
+          features.push(feature);
         });
 
-        features.push({
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'Polygon',
-            coordinates: dim1Rings,
-          },
-        });
+        if (!planGraphics.hasOwnProperty(planId)) {
+          planGraphics[planId] = {
+            graphics: [],
+            imageGraphics: [],
+          };
+        }
       });
-      // console.log('totalAoiSqM: ', totalAoiSqM);
+      console.log('responseIndexes: ', responseIndexes);
+      console.log('planGraphics: ', planGraphics);
 
       try {
         // TODO - look into adding more queries here
@@ -1477,8 +1537,8 @@ export function useCalculatePlan() {
         });
 
         const responses = await Promise.all(requests);
-        const graphics: __esri.Graphic[] = [];
-        responses.forEach((results) => {
+
+        responses.forEach((results, index) => {
           results.features.forEach((feature: any) => {
             const {
               bldgtype,
@@ -1508,8 +1568,9 @@ export function useCalculatePlan() {
             totalBuildingIntWallsSqM += intWallsSqM;
             totalBuildingRoofSqM += footprintSqM;
 
+            const planId = responseIndexes[index];
             const permId = generateUUID();
-            graphics.push(
+            planGraphics[planId].graphics.push(
               new Graphic({
                 attributes: {
                   ...feature.properties,
@@ -1560,129 +1621,107 @@ export function useCalculatePlan() {
           });
         });
 
-        // console.log('totalBuildingFootprintSqM: ', totalBuildingFootprintSqM);
-        // console.log('totalBuildingFloorsSqM: ', totalBuildingFloorsSqM);
-        // console.log('totalBuildingSqM: ', totalBuildingSqM);
-        // console.log('totalBuildingExtWallsSqM: ', totalBuildingExtWallsSqM);
-        // console.log('totalBuildingIntWallsSqM: ', totalBuildingIntWallsSqM);
-        // console.log('totalBuildingRoofSqM: ', totalBuildingRoofSqM);
-        // const nonBuildingArea = totalAoiSqM - totalBuildingFootprintSqM;
-        // console.log('nonBuildingArea: ', nonBuildingArea);
-
-        let aoiGraphics: __esri.Graphic[] = [...aoiData.graphics];
-        aoiGraphics.forEach((graphic) => {
+        const iaResponses: any[] = [];
+        for (let graphic of aoiGraphics) {
           removeZValues(graphic);
-        });
-        const featureSet = new FeatureSet({
-          displayFieldName: '',
-          geometryType: 'polygon',
-          spatialReference: {
-            wkid: 3857,
-          },
-          fields: [
-            {
-              name: 'OBJECTID',
-              type: 'oid',
-              alias: 'OBJECTID',
-            },
-            {
-              name: 'PERMANENT_IDENTIFIER',
-              type: 'guid',
-              alias: 'PERMANENT_IDENTIFIER',
-            },
-          ],
-          features: aoiGraphics,
-        });
 
-        // call gp service
-        const props = {
-          f: 'json',
-          Feature_Set: featureSet.toJSON(),
-          Imagery_Layer_URL:
-            'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
-        };
-        appendEnvironmentObjectParam(props);
+          const featureSet = new FeatureSet({
+            displayFieldName: '',
+            geometryType: 'polygon',
+            spatialReference: {
+              wkid: 3857,
+            },
+            fields: [
+              {
+                name: 'OBJECTID',
+                type: 'oid',
+                alias: 'OBJECTID',
+              },
+              {
+                name: 'PERMANENT_IDENTIFIER',
+                type: 'guid',
+                alias: 'PERMANENT_IDENTIFIER',
+              },
+            ],
+            features: [graphic],
+          });
 
-        const result = await geoprocessorFetch({
-          url: `${services.data.shippTestGPServer}/Classify%20AOI`,
-          inputParameters: props,
-        });
-        // console.log('result: ', result);
+          // call gp service
+          const props = {
+            f: 'json',
+            Feature_Set: featureSet.toJSON(),
+            Imagery_Layer_URL:
+              'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
+          };
+          appendEnvironmentObjectParam(props);
+
+          iaResponses.push(
+            await geoprocessorFetch({
+              url: `${services.data.shippTestGPServer}/Classify%20AOI`,
+              inputParameters: props,
+            }),
+          );
+        }
 
         let totalAsphalt = 0;
         let totalConcrete = 0;
         let totalSoil = 0;
         let numAois = 0;
-        const summaryOutput = result.results.find(
-          (r: any) => r.paramName === 'Output_Classification_Summary',
-        );
-        if (summaryOutput) {
-          // console.log('aoiData: ', aoiData.graphics);
-          numAois = summaryOutput.value.features.length;
-          summaryOutput.value.features.forEach((f: any, index: number) => {
-            totalAsphalt += f.attributes.ASPHALT;
-            totalConcrete += f.attributes.CONCRETE;
-            totalSoil += f.attributes.SOIL;
-            // aoiPercentages.push({
-            //   asphalt: f.attributes.ASPHALT,
-            //   concrete: f.attributes.CONCRETE,
-            //   soil: f.attributes.SOIL,
-            //   zone: f.attributes.ZONE,
-            //   aoiId: aoiData.graphics[index].attributes.PERMANENT_IDENTIFIER,
-            // });
-          });
-        }
+        iaResponses.forEach((response, index) => {
+          console.log('response: ', response);
+          const summaryOutput = response.results.find(
+            (r: any) => r.paramName === 'Output_Classification_Summary',
+          );
+          if (summaryOutput) {
+            numAois += summaryOutput.value.features.length;
+            summaryOutput.value.features.forEach((f: any, index: number) => {
+              totalAsphalt += f.attributes.ASPHALT;
+              totalConcrete += f.attributes.CONCRETE;
+              totalSoil += f.attributes.SOIL;
+            });
+          }
+
+          // Figure out what to add graphics to
+          const featuresOutput = response.results.find(
+            (r: any) => r.paramName === 'Output_Classification_Features',
+          );
+          if (featuresOutput) {
+            featuresOutput.value.features.forEach((f: any) => {
+              const category = f.attributes.category;
+              const symbol = imageAnalysisSymbols.hasOwnProperty(category)
+                ? (imageAnalysisSymbols as any)[category]
+                : backupImagerySymbol;
+
+              const planId = responseIndexes[index];
+              const permId = generateUUID();
+
+              planGraphics[planId].imageGraphics.push(
+                new Graphic({
+                  attributes: {
+                    ...f.attributes,
+                    PERMANENT_IDENTIFIER: permId,
+                  },
+                  geometry: f.geometry,
+                  symbol,
+                  popupTemplate: {
+                    title: '',
+                    content: imageryAnalysisMapPopup,
+                  },
+                }),
+              );
+            });
+          }
+        });
+
         const aoiPercentages: AoiPercentages = {
           asphalt: totalAsphalt / numAois,
           concrete: totalConcrete / numAois,
           soil: totalSoil / numAois,
         };
-        // console.log('aoiPercentages: ', aoiPercentages);
-
-        // Figure out what to add graphics to
-        const featuresOutput = result.results.find(
-          (r: any) => r.paramName === 'Output_Classification_Features',
-        );
-        const imageAnalysis = selectedScenario?.layers.find(
-          (l: any) => l.layerType === 'Image Analysis',
-        );
-        const imageGraphics: __esri.Graphic[] = [];
-        if (imageAnalysis && featuresOutput) {
-          featuresOutput.value.features.forEach((f: any) => {
-            const category = f.attributes.category;
-            const symbol = imageAnalysisSymbols.hasOwnProperty(category)
-              ? (imageAnalysisSymbols as any)[category]
-              : backupImagerySymbol;
-            const permId = generateUUID();
-            imageGraphics.push(
-              new Graphic({
-                attributes: {
-                  ...f.attributes,
-                  PERMANENT_IDENTIFIER: permId,
-                },
-                geometry: f.geometry,
-                symbol,
-                popupTemplate: {
-                  title: '',
-                  content: imageryAnalysisMapPopup,
-                },
-              }),
-            );
-          });
-
-          // const imageAnalysisLayer = layers.find(
-          //   (l: any) => l.layerId === imageAnalysis.layerId,
-          // );
-          // if (imageAnalysisLayer?.sketchLayer?.type === 'graphics') {
-          //   imageAnalysisLayer?.sketchLayer.graphics.removeAll();
-          //   imageAnalysisLayer?.sketchLayer.graphics.addMany(imageGraphics);
-          // }
-        }
 
         setNsiData({
           status: 'success',
-          graphics,
-          imageryGraphics: imageGraphics,
+          planGraphics,
           summary: {
             totalAoiSqM,
             totalBuildingFootprintSqM,
@@ -1698,8 +1737,7 @@ export function useCalculatePlan() {
         console.error(ex);
         setNsiData({
           status: 'failure',
-          graphics: [],
-          imageryGraphics: [],
+          planGraphics: {},
           summary: {
             totalAoiSqM: 0,
             totalBuildingFootprintSqM: 0,
@@ -1725,36 +1763,30 @@ export function useCalculatePlan() {
     calculateResults,
     layers,
     nsiData,
-    selectedScenario,
+    // selectedScenario,
     services,
   ]);
 
+  // do calculations for decon tech selection table
   useEffect(() => {
     if (
       ['none', 'success'].includes(calculateResults.status) ||
       ['none', 'failure', 'fetching'].includes(nsiData.status)
     )
       return;
-    if (nsiData.graphics.length === 0) {
-      if (calculateResults.status !== 'none') {
-        console.log('setting calculate results to none 2...');
-        setCalculateResults({ status: 'none', panelOpen: false, data: null });
-      }
-      return;
-    }
+    // if (!hasGraphics(nsiData.planGraphics)) {
+    //   if (calculateResults.status !== 'none') {
+    //     console.log('setting calculate results to none 2...');
+    //     setCalculateResults({ status: 'none', panelOpen: false, data: null });
+    //   }
+    //   return;
+    // }
 
-    const jsonDownload: {
-      contaminationScenario: string;
-      decontaminationTechnology: string;
-      avgFinalContaminationCfuM2: number;
-      aboveDetectionLimit: boolean;
-      solidWasteVolumeM3: number;
-      liquidWasteVolumeM3: number;
-      decontaminationCost: number;
-      decontaminationTimeDays: number;
-    }[] = [];
+    const graphics: __esri.Graphic[] = [];
+    Object.values(nsiData.planGraphics).forEach((planGraphics) => {
+      graphics.push(...planGraphics.graphics);
+    });
 
-    const graphics = nsiData.graphics;
     const {
       totalAoiSqM,
       totalBuildingFootprintSqM,
@@ -1775,10 +1807,12 @@ export function useCalculatePlan() {
       contaminationMap?.sketchLayer?.type === 'graphics'
     ) {
       // loop through structures
-      graphics.forEach((graphic) => {
-        // loop through contamination map features
-        (contaminationMap.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
-          (contamGraphic) => {
+      Object.values(nsiData.planGraphics).forEach((planGraphics) => {
+        planGraphics.graphics.forEach((graphic) => {
+          // loop through contamination map features
+          (
+            contaminationMap.sketchLayer as __esri.GraphicsLayer
+          ).graphics.forEach((contamGraphic) => {
             // call intersect to see if decon app intersects contamination map
             if (
               !graphic.geometry ||
@@ -1801,30 +1835,34 @@ export function useCalculatePlan() {
             graphic.attributes.CONTAMTYPE = contamGraphic.attributes.CONTAMTYPE;
 
             totalBuildingCfu += newCfu;
-          },
-        );
+          });
+        });
       });
 
-      // partition AOI to determine where contamination is
-      aoiData.graphics.forEach((graphic) => {
-        (contaminationMap.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
-          (contamGraphic) => {
-            const contamValue = contamGraphic.attributes.CONTAMVAL as number;
-            const outGeometry = geometryEngine.intersect(
-              graphic.geometry,
-              contamGraphic.geometry,
-            ) as __esri.Geometry;
-            if (!outGeometry) return;
+      if (aoiData.graphics) {
+        // partition AOI to determine where contamination is
+        Object.values(aoiData.graphics).forEach((planGraphics) => {
+          planGraphics.forEach((graphic) => {
+            (
+              contaminationMap.sketchLayer as __esri.GraphicsLayer
+            ).graphics.forEach((contamGraphic) => {
+              const contamValue = contamGraphic.attributes.CONTAMVAL as number;
+              const outGeometry = geometryEngine.intersect(
+                graphic.geometry,
+                contamGraphic.geometry,
+              ) as __esri.Geometry;
+              if (!outGeometry) return;
 
-            const clippedAreaM2 = calculateArea(outGeometry);
-            const currArea = contaminedAoiAreas[contamValue];
-            if (typeof clippedAreaM2 === 'number')
-              contaminedAoiAreas[contamValue] = currArea
-                ? currArea + clippedAreaM2
-                : clippedAreaM2;
-          },
-        );
-      });
+              const clippedAreaM2 = calculateArea(outGeometry);
+              const currArea = contaminedAoiAreas[contamValue];
+              if (typeof clippedAreaM2 === 'number')
+                contaminedAoiAreas[contamValue] = currArea
+                  ? currArea + clippedAreaM2
+                  : clippedAreaM2;
+            });
+          });
+        });
+      }
 
       Object.keys(contaminedAoiAreas).forEach((key: any) => {
         contaminationPercentages[key] = contaminedAoiAreas[key] / totalAoiSqM;
@@ -1836,6 +1874,168 @@ export function useCalculatePlan() {
     // console.log('contaminationPercentages: ', contaminationPercentages);
 
     // perform calculations off percentAOI stuff
+    let editsCopy: EditsType = edits;
+    const scenarios = editsCopy.edits.filter(
+      (i) => i.type === 'scenario',
+    ) as ScenarioEditsType[];
+    scenarios.forEach((scenario) => {
+      const curDeconTechSelections =
+        scenario.deconTechSelections.length > 0
+          ? scenario.deconTechSelections
+          : defaultDeconSelections;
+      const newDeconTechSelections: any = [];
+      curDeconTechSelections.forEach((sel) => {
+        // find decon settings
+        const media = sel.media;
+
+        let surfaceArea = 0;
+        let avgCfu = 0;
+        let pctAoi = 0;
+        if (media.includes('Building ')) {
+          avgCfu = totalBuildingCfu * partitionFactors[media];
+
+          if (media === 'Building Exterior Walls')
+            surfaceArea = totalBuildingExtWallsSqM;
+          if (media === 'Building Interior Walls')
+            surfaceArea = totalBuildingIntWallsSqM;
+          if (media === 'Building Interior Floors')
+            surfaceArea = totalBuildingFloorsSqM;
+          if (media === 'Building Roofs') surfaceArea = totalBuildingRoofSqM;
+        } else {
+          pctAoi = (nsiData.aoiPercentages as any)[
+            (mediaToBeepEnum as any)[sel.media]
+          ] as number;
+          // console.log('pctAoi: ', pctAoi);
+          const pctFactor = pctAoi * 0.01;
+
+          // get surface area of soil, asphalt or concrete
+          //             60 =             100 * 0.6 surface area of concrete
+          surfaceArea = nonBuildingArea * pctFactor;
+
+          // get total CFU for media
+          let totalArea = 0;
+          let totalCfu = 0;
+          Object.keys(contaminationPercentages).forEach((key: any) => {
+            // area of media and cfu level
+            const pctCfu = contaminationPercentages[key];
+            //                34.2 =   0.57 * 60
+            const surfaceAreaSfCfu = pctCfu * surfaceArea;
+            totalArea += surfaceAreaSfCfu;
+
+            // 34.2M  =             34.2 * 1M;
+            // SUM    = 35.916M CFU
+            totalCfu += surfaceAreaSfCfu * key;
+          });
+
+          avgCfu = totalCfu / totalArea;
+        }
+        // console.log('surfaceArea: ', surfaceArea);
+        // console.log('avgCfu: ', avgCfu);
+
+        newDeconTechSelections.push({
+          ...sel,
+          pctAoi,
+          surfaceArea,
+          avgCfu,
+        });
+      });
+
+      // Figure out what to add graphics to
+      const aoiAssessed = scenario?.layers.find(
+        (l) => l.layerType === 'AOI Assessed',
+      );
+      const imageAnalysis = scenario?.layers.find(
+        (l: any) => l.layerType === 'Image Analysis',
+      );
+      const deconAoi = scenario?.layers.find(
+        (l: any) => l.layerType === 'Samples',
+      );
+
+      if (aoiAssessed && imageAnalysis && deconAoi) {
+        const aoiAssessedLayer = layers.find(
+          (l) => l.layerId === aoiAssessed.layerId,
+        );
+        const imageAnalysisLayer = layers.find(
+          (l: any) => l.layerId === imageAnalysis.layerId,
+        );
+        const deconAoiLayer = layers.find(
+          (l: any) => l.layerId === deconAoi.layerId,
+        );
+
+        // tie graphics and imageryGraphics to a scenario
+        const planData = nsiData.planGraphics[scenario.layerId];
+        if (
+          aoiAssessedLayer?.sketchLayer?.type === 'graphics' &&
+          planData?.graphics
+        ) {
+          aoiAssessedLayer?.sketchLayer.graphics.removeAll();
+          aoiAssessedLayer?.sketchLayer.graphics.addMany(planData.graphics);
+        }
+        if (
+          imageAnalysisLayer?.sketchLayer?.type === 'graphics' &&
+          planData?.imageGraphics
+        ) {
+          imageAnalysisLayer?.sketchLayer.graphics.removeAll();
+          imageAnalysisLayer?.sketchLayer.graphics.addMany(
+            planData.imageGraphics,
+          );
+        }
+        if (deconAoiLayer) {
+          deconAoiLayer.sketchLayer.visible = false;
+        }
+
+        scenario.deconTechSelections = newDeconTechSelections;
+      }
+    });
+
+    setEdits(editsCopy);
+  }, [
+    aoiData,
+    calculateArea,
+    calculateResults,
+    contaminationMap,
+    defaultDeconSelections,
+    edits,
+    layers,
+    nsiData,
+    sampleAttributes,
+    // selectedScenario,
+    setCalculateResults,
+    setEdits,
+    setJsonDownload,
+  ]);
+
+  // perform final calcs
+  useEffect(() => {
+    if (
+      ['none', 'success'].includes(calculateResults.status) ||
+      nsiData.status !== 'success'
+    )
+      return;
+
+    let editsCopy: EditsType = edits;
+    const scenarios = editsCopy.edits.filter(
+      (i) => i.type === 'scenario',
+    ) as ScenarioEditsType[];
+
+    let hasAllDeconTechSelections = true;
+    scenarios.forEach((scenario) => {
+      if (scenario.deconTechSelections.length === 0)
+        hasAllDeconTechSelections = false;
+
+      scenario.deconTechSelections.forEach((tech) => {
+        if (!tech.deconTech) hasAllDeconTechSelections = false;
+      });
+    });
+    console.log('hasAllDeconTechSelections: ', hasAllDeconTechSelections);
+    if (!hasAllDeconTechSelections) {
+      setCalculateResults({ status: 'none', panelOpen: false, data: null });
+      return;
+    }
+
+    const jsonDownload: JsonDownloadType[] = [];
+
+    // perform calculations off percentAOI stuff
     // let totalFinalContam = 0;
     let totalSolidWasteM3 = 0;
     let totalLiquidWasteM3 = 0;
@@ -1845,149 +2045,104 @@ export function useCalculatePlan() {
     let totalApplicationTime = 0;
     let totalResidenceTime = 0;
     let totalDeconTime = 0;
-    const curDeconTechSelections =
-      selectedScenario && selectedScenario?.deconTechSelections.length > 0
-        ? selectedScenario.deconTechSelections
-        : defaultDeconSelections;
-    const newDeconTechSelections: any = [];
-    curDeconTechSelections.forEach((sel) => {
-      // find decon settings
-      const deconTech = sel.deconTech.value;
-      const media = sel.media;
-      if (!deconTech) return;
+    scenarios.forEach((scenario) => {
+      const curDeconTechSelections =
+        scenario.deconTechSelections.length > 0
+          ? scenario.deconTechSelections
+          : defaultDeconSelections;
+      curDeconTechSelections.forEach((sel) => {
+        // find decon settings
+        const deconTech = sel.deconTech.value;
+        const media = sel.media;
+        if (!deconTech) return;
 
-      let surfaceArea = 0;
-      let avgCfu = 0;
-      let pctAoi = 0;
-      if (media.includes('Building ')) {
-        avgCfu = totalBuildingCfu * partitionFactors[media];
+        // need to lookup stuff from sampleAttributes
+        const {
+          // LOD_NON: contaminationRemovalFactor,
+          MCPS: setupCost,
+          WVPS: solidWasteVolume,
+          WWPS: solidWasteM,
+          ALC: liquidWasteVolume,
+          AMC: liquidWasteM,
+          TTC: applicationTimeHrs,
+          TTA: residenceTimeHrs,
+        } = sampleAttributes[deconTech as any];
+        // const contamLeftFactor = 1 - contaminationRemovalFactor;
+        // const avgFinalContam =
+        //   avgCfu * Math.pow(contamLeftFactor, sel.numApplications);
+        // const aboveDetection = avgFinalContam >= 100; //detectionLimit;
+        // const surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications
+        const areaDeconApplied =
+          sel.surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications;
+        const solidWasteM3 = areaDeconApplied * solidWasteVolume;
+        const solidWasteMass = areaDeconApplied * solidWasteM;
+        const liquidWasteM3 = areaDeconApplied * liquidWasteVolume;
+        const liquidWasteMass = areaDeconApplied * liquidWasteM;
 
-        if (media === 'Building Exterior Walls')
-          surfaceArea = totalBuildingExtWallsSqM;
-        if (media === 'Building Interior Walls')
-          surfaceArea = totalBuildingIntWallsSqM;
-        if (media === 'Building Interior Floors')
-          surfaceArea = totalBuildingFloorsSqM;
-        if (media === 'Building Roofs') surfaceArea = totalBuildingRoofSqM;
-      } else {
-        // console.log('nsiData.aoiPercentages: ', nsiData.aoiPercentages);
-        // console.log('sel.media: ', sel.media);
-        // console.log(
-        //   '(mediaToBeepEnum as any)[sel.media]: ',
-        //   (mediaToBeepEnum as any)[sel.media],
-        // );
-        pctAoi = (nsiData.aoiPercentages as any)[
-          (mediaToBeepEnum as any)[sel.media]
-        ] as number;
-        // console.log('pctAoi: ', pctAoi);
-        const pctFactor = pctAoi * 0.01;
+        const deconCost =
+          setupCost * sel.numApplications + areaDeconApplied * setupCost;
+        const sumApplicationTime =
+          (areaDeconApplied * applicationTimeHrs) /
+          24 /
+          sel.numConcurrentApplications;
+        const sumResidenceTime =
+          (residenceTimeHrs * sel.numApplications) /
+          24 /
+          sel.numConcurrentApplications;
+        const deconTime = sumApplicationTime + sumResidenceTime;
 
-        // get surface area of soil, asphalt or concrete
-        //             60 =             100 * 0.6 surface area of concrete
-        surfaceArea = nonBuildingArea * pctFactor;
-
-        // get total CFU for media
-        let totalArea = 0;
-        let totalCfu = 0;
-        Object.keys(contaminationPercentages).forEach((key: any) => {
-          // area of media and cfu level
-          const pctCfu = contaminationPercentages[key];
-          //                34.2 =   0.57 * 60
-          const surfaceAreaSfCfu = pctCfu * surfaceArea;
-          totalArea += surfaceAreaSfCfu;
-
-          // 34.2M  =             34.2 * 1M;
-          // SUM    = 35.916M CFU
-          totalCfu += surfaceAreaSfCfu * key;
+        jsonDownload.push({
+          contaminationScenario: media,
+          decontaminationTechnology: deconTech,
+          solidWasteVolumeM3: solidWasteM3,
+          liquidWasteVolumeM3: liquidWasteM3,
+          decontaminationCost: deconCost,
+          decontaminationTimeDays: deconTime,
         });
 
-        avgCfu = totalCfu / totalArea;
-      }
-      // console.log('surfaceArea: ', surfaceArea);
-      // console.log('avgCfu: ', avgCfu);
-
-      newDeconTechSelections.push({
-        ...sel,
-        pctAoi,
+        // totalFinalContam += avgFinalContam;
+        totalSolidWasteM3 += solidWasteM3;
+        totalSolidWasteMass += solidWasteMass;
+        totalLiquidWasteM3 += liquidWasteM3;
+        totalLiquidWasteMass += liquidWasteMass;
+        totalDeconCost += deconCost;
+        totalApplicationTime += sumApplicationTime;
+        totalResidenceTime += sumResidenceTime;
+        totalDeconTime += deconTime;
       });
-
-      // need to lookup stuff from sampleAttributes
-      const {
-        LOD_NON: contaminationRemovalFactor,
-        MCPS: setupCost,
-        WVPS: solidWasteVolume,
-        WWPS: solidWasteM,
-        ALC: liquidWasteVolume,
-        AMC: liquidWasteM,
-        TTC: applicationTimeHrs,
-        TTA: residenceTimeHrs,
-      } = sampleAttributes[deconTech as any];
-      const contamLeftFactor = 1 - contaminationRemovalFactor;
-      const avgFinalContam =
-        avgCfu * Math.pow(contamLeftFactor, sel.numApplications);
-      const aboveDetection = avgFinalContam >= 100; //detectionLimit;
-      // const surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications
-      const areaDeconApplied =
-        surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications;
-      // console.log('areaDeconApplied: ', areaDeconApplied);
-      // console.log('deconTech: ', deconTech);
-      // console.log('solidWasteVolume: ', solidWasteVolume);
-      // console.log('liquidWasteVolume: ', liquidWasteVolume);
-      const solidWasteM3 = areaDeconApplied * solidWasteVolume;
-      const solidWasteMass = areaDeconApplied * solidWasteM;
-      const liquidWasteM3 = areaDeconApplied * liquidWasteVolume;
-      const liquidWasteMass = areaDeconApplied * liquidWasteM;
-
-      const deconCost =
-        setupCost * sel.numApplications + areaDeconApplied * setupCost;
-      const sumApplicationTime =
-        (areaDeconApplied * applicationTimeHrs) /
-        24 /
-        sel.numConcurrentApplications;
-      const sumResidenceTime =
-        (residenceTimeHrs * sel.numApplications) /
-        24 /
-        sel.numConcurrentApplications;
-      const deconTime = sumApplicationTime + sumResidenceTime;
-
-      jsonDownload.push({
-        contaminationScenario: media,
-        decontaminationTechnology: deconTech,
-        avgFinalContaminationCfuM2: avgFinalContam,
-        aboveDetectionLimit: aboveDetection,
-        solidWasteVolumeM3: solidWasteM3,
-        liquidWasteVolumeM3: liquidWasteM3,
-        decontaminationCost: deconCost,
-        decontaminationTimeDays: deconTime,
-      });
-
-      // console.log('avgFinalContam: ', avgFinalContam);
-      // console.log('solidWasteM3: ', solidWasteM3);
-      // console.log('liquidWasteM3: ', liquidWasteM3);
-      // console.log('deconCost: ', deconCost);
-      // console.log('sumApplicationTime: ', sumApplicationTime);
-      // console.log('sumResidenceTime: ', sumResidenceTime);
-      // console.log('deconTime: ', deconTime);
-
-      // totalFinalContam += avgFinalContam;
-      totalSolidWasteM3 += solidWasteM3;
-      totalSolidWasteMass += solidWasteMass;
-      totalLiquidWasteM3 += liquidWasteM3;
-      totalLiquidWasteMass += liquidWasteMass;
-      totalDeconCost += deconCost;
-      totalApplicationTime += sumApplicationTime;
-      totalResidenceTime += sumResidenceTime;
-      totalDeconTime += deconTime;
     });
 
-    // console.log('totalFinalContam: ', totalFinalContam);
-    // console.log('totalSolidWasteM3: ', totalSolidWasteM3);
-    // console.log('totalLiquidWasteM3: ', totalLiquidWasteM3);
-    // console.log('totalDeconCost: ', totalDeconCost);
-    // console.log('totalApplicationTime: ', totalApplicationTime);
-    // console.log('totalResidenceTime: ', totalResidenceTime);
-    // console.log('totalDeconTime: ', totalDeconTime);
-    // console.log('graphics: ', graphics);
+    const jsonDownloadSummarized: JsonDownloadType[] = [];
+    const scenariosIncluded: string[] = [];
+    jsonDownload.forEach((item) => {
+      if (scenariosIncluded.includes(item.contaminationScenario)) return;
+      scenariosIncluded.push(item.contaminationScenario);
+    });
+    scenariosIncluded.forEach((scenario) => {
+      const scenarioItems = jsonDownload.filter(
+        (j) => j.contaminationScenario === scenario,
+      );
+
+      const tech: { [deconTech: string]: JsonDownloadType } = {};
+      scenarioItems.forEach((item) => {
+        const deconTech = item.decontaminationTechnology;
+        if (tech.hasOwnProperty(deconTech)) {
+          tech[deconTech].decontaminationCost += item.decontaminationCost;
+          tech[deconTech].decontaminationTimeDays +=
+            item.decontaminationTimeDays;
+          tech[deconTech].solidWasteVolumeM3 += item.solidWasteVolumeM3;
+          tech[deconTech].liquidWasteVolumeM3 += item.liquidWasteVolumeM3;
+        } else {
+          tech[deconTech] = {
+            ...item,
+          };
+        }
+      });
+
+      Object.values(tech).forEach((deconTech) => {
+        jsonDownloadSummarized.push(deconTech);
+      });
+    });
 
     const resultObject: CalculateResultsDataType = {
       // assign input parameters
@@ -2045,92 +2200,23 @@ export function useCalculatePlan() {
       'Total Decontaminated Area': 0, //totals.totalDecontaminatedArea,
       'Percent Contaminated Remaining': 0, //(contaminatedAreaRemaining / totals.totalContaminatedArea) * 100,
       'Contamination Type': '', //totals.contaminationType,
-      resultsTable: jsonDownload,
+      resultsTable: jsonDownloadSummarized,
     };
+
+    scenarios.forEach((scenario) => {
+      scenario.deconSummaryResults = {
+        summary: nsiData.summary,
+        aoiPercentages: nsiData.aoiPercentages,
+        calculateResults: resultObject,
+      };
+    });
+
     // console.log('resultObject: ', resultObject);
     // console.log('jsonDownload: ', jsonDownload);
 
-    // Figure out what to add graphics to
-    const aoiAssessed = selectedScenario?.layers.find(
-      (l) => l.layerType === 'AOI Assessed',
-    );
-    const imageAnalysis = selectedScenario?.layers.find(
-      (l: any) => l.layerType === 'Image Analysis',
-    );
+    setEdits(editsCopy);
 
-    if (aoiAssessed && imageAnalysis) {
-      const aoiAssessedLayer = layers.find(
-        (l) => l.layerId === aoiAssessed.layerId,
-      );
-      const imageAnalysisLayer = layers.find(
-        (l: any) => l.layerId === imageAnalysis.layerId,
-      );
-      setEdits((edits) => {
-        let editsCopy: EditsType = edits;
-        if (aoiAssessedLayer?.sketchLayer?.type === 'graphics') {
-          // editsCopy = updateLayerEdits({
-          //   edits,
-          //   scenario: selectedScenario,
-          //   layer: aoiAssessedLayer,
-          //   type: 'delete',
-          //   changes: aoiAssessedLayer?.sketchLayer.graphics,
-          // });
-
-          aoiAssessedLayer?.sketchLayer.graphics.removeAll();
-          aoiAssessedLayer?.sketchLayer.graphics.addMany(graphics);
-
-          // editsCopy = updateLayerEdits({
-          //   edits,
-          //   scenario: selectedScenario,
-          //   layer: aoiAssessedLayer,
-          //   type: 'add',
-          //   changes: new Collection(graphics),
-          // });
-        }
-        if (imageAnalysisLayer?.sketchLayer?.type === 'graphics') {
-          // editsCopy = updateLayerEdits({
-          //   edits,
-          //   scenario: selectedScenario,
-          //   layer: imageAnalysisLayer,
-          //   type: 'delete',
-          //   changes: imageAnalysisLayer?.sketchLayer.graphics,
-          // });
-
-          imageAnalysisLayer?.sketchLayer.graphics.removeAll();
-          imageAnalysisLayer?.sketchLayer.graphics.addMany(
-            nsiData.imageryGraphics,
-          );
-
-          // editsCopy = updateLayerEdits({
-          //   edits,
-          //   scenario: selectedScenario,
-          //   layer: imageAnalysisLayer,
-          //   type: 'add',
-          //   changes: new Collection(nsiData.imageryGraphics),
-          // });
-        }
-
-        const index = editsCopy.edits.findIndex(
-          (item) =>
-            item.type === 'scenario' &&
-            item.layerId === selectedScenario?.layerId,
-        );
-        const editedScenario = editsCopy.edits[index] as ScenarioEditsType;
-        editedScenario.deconTechSelections = newDeconTechSelections;
-        editedScenario.deconSummaryResults = {
-          summary: nsiData.summary,
-          aoiPercentages: nsiData.aoiPercentages,
-          calculateResults: resultObject,
-        };
-
-        return {
-          ...editsCopy,
-          count: editsCopy.count + 1,
-        };
-      });
-    }
-
-    setJsonDownload(jsonDownload);
+    setJsonDownload(jsonDownloadSummarized);
 
     // display loading spinner for 1 second
     setCalculateResults((calculateResults: CalculateResultsType) => {
@@ -2146,10 +2232,11 @@ export function useCalculatePlan() {
     calculateResults,
     contaminationMap,
     defaultDeconSelections,
+    edits,
     layers,
     nsiData,
     sampleAttributes,
-    selectedScenario,
+    // selectedScenario,
     setCalculateResults,
     setEdits,
     setJsonDownload,
@@ -2471,6 +2558,7 @@ function useEditsLayerStorage() {
     });
     setEdits(edits);
 
+    const planGraphics: AoiGraphics = {};
     const newLayers: LayerType[] = [];
     const graphicsLayers: (__esri.GraphicsLayer | __esri.GroupLayer)[] = [];
     edits.edits.forEach((editsLayer) => {
@@ -2484,14 +2572,14 @@ function useEditsLayerStorage() {
         });
         graphicsLayers.push(...outLayers);
 
-        if (editsLayer.layerType === 'Sampling Mask') {
-          setAoiData((aoiDataCur: any) => {
-            return {
-              count: aoiDataCur.count + 1,
-              graphics: outLayers[0].graphics.toArray(),
-            } as any;
-          });
-        }
+        // if (editsLayer.layerType === 'Sampling Mask') {
+        //   setAoiData((aoiDataCur: any) => {
+        //     return {
+        //       count: aoiDataCur.count + 1,
+        //       graphics: outLayers[0].graphics.toArray(),
+        //     } as any;
+        //   });
+        // }
       }
       // scenarios need to be added to a group layer first
       if (editsLayer.type === 'scenario') {
@@ -2502,9 +2590,17 @@ function useEditsLayerStorage() {
           listMode: editsLayer.listMode,
         });
 
+        const sortBy = ['other', 'Samples', 'Image Analysis', 'AOI Assessed'];
+        const layersCopy = [...editsLayer.layers];
+        layersCopy.sort((a, b) => {
+          return (
+            sortBy.indexOf(getLayerType(a)) - sortBy.indexOf(getLayerType(b))
+          );
+        });
+
         // create the layers and add them to the group layer
         const scenarioLayers: __esri.GraphicsLayer[] = [];
-        editsLayer.layers.forEach((layer) => {
+        layersCopy.forEach((layer) => {
           // if (layer.layerType === 'AOI Assessed') {
           //   // create graphics layer
           //   const graphicsLayer = new GraphicsLayer({
@@ -2709,6 +2805,48 @@ function useEditsLayerStorage() {
         groupLayer.addMany(scenarioLayers);
 
         graphicsLayers.push(groupLayer);
+      }
+    });
+
+    const scenarios = edits.edits.filter(
+      (e) => e.type === 'scenario',
+    ) as ScenarioEditsType[];
+    scenarios.forEach((scenario) => {
+      console.log('scenario.label: ', scenario.label);
+      console.log('scenario.aoiLayerMode: ', scenario.aoiLayerMode);
+      if (!scenario.aoiLayerMode) return;
+
+      console.log('scenario.importedAoiLayer: ', scenario.importedAoiLayer);
+
+      let aoiLayer: LayerType | undefined = undefined;
+
+      // locate the layer
+      if (scenario.aoiLayerMode === 'draw') {
+        const aoiEditsLayer = scenario.layers.find(
+          (l) => l.layerType === 'Samples',
+        );
+        console.log('aoiEditsLayer: ', aoiEditsLayer);
+        aoiLayer = layers.find(
+          (l) =>
+            l.layerType === 'Samples' && l.layerId === aoiEditsLayer?.layerId,
+        );
+        console.log('aoiLayer: ', aoiLayer);
+      }
+
+      if (scenario.aoiLayerMode === 'file' && scenario.importedAoiLayer) {
+        // locate the layer
+        aoiLayer = layers.find(
+          (l) =>
+            l.layerType === 'Area of Interest' &&
+            l.layerId === scenario.importedAoiLayer?.layerId,
+        );
+      }
+
+      if (aoiLayer?.sketchLayer && aoiLayer.sketchLayer.type === 'graphics') {
+        console.log('graphics: ', aoiLayer.sketchLayer.graphics.toArray());
+        // aoiGraphics.push(...aoiLayer.sketchLayer.graphics.toArray());
+        planGraphics[scenario.layerId] =
+          aoiLayer.sketchLayer.graphics.toArray();
       }
     });
 

@@ -80,6 +80,8 @@ export type ScenarioEditsType = {
   deconTechSelections: any[];
   deconSummaryResults: any;
   calculateSettings: CalculateSettingsType;
+  importedAoiLayer: LayerEditsType | null;
+  aoiLayerMode: '' | 'draw' | 'file';
   // contaminationResults: LayerEditsType; // TODO add this in if time permits
 };
 

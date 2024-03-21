@@ -1,3 +1,5 @@
+import { JsonDownloadType } from 'contexts/Sketch';
+
 export type CalculateResultsDataType = {
   'Total Number of User-Defined Decon Technologies': number;
   'User Specified Number of Concurrent Applications': number;
@@ -43,16 +45,7 @@ export type CalculateResultsDataType = {
   'Total Remaining Contaminated Area': number;
   'Percent Contaminated Remaining': number;
   'Contamination Type': string;
-  resultsTable: {
-    contaminationScenario: string;
-    decontaminationTechnology: string;
-    avgFinalContaminationCfuM2: number;
-    aboveDetectionLimit: boolean;
-    solidWasteVolumeM3: number;
-    liquidWasteVolumeM3: number;
-    decontaminationCost: number;
-    decontaminationTimeDays: number;
-  }[];
+  resultsTable: JsonDownloadType[];
 };
 
 export type CalculateResultsTotsDataType = {

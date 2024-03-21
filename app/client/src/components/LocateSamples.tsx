@@ -12,7 +12,7 @@ import { css } from '@emotion/react';
 // import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 // import Graphic from '@arcgis/core/Graphic';
 // import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
-import GroupLayer from '@arcgis/core/layers/GroupLayer';
+// import GroupLayer from '@arcgis/core/layers/GroupLayer';
 // import Point from '@arcgis/core/geometry/Point';
 // import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 // import TextSymbol from '@arcgis/core/symbols/TextSymbol';
@@ -39,10 +39,10 @@ import {
 } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 // import { PublishContext } from 'contexts/Publish';
-import { SketchContext, hazardousOptions } from 'contexts/Sketch';
+import { SketchContext, hazardousOptions, AoiGraphics } from 'contexts/Sketch';
 // types
 import { LayerType } from 'types/Layer';
-import { EditsType, ScenarioEditsType } from 'types/Edits';
+import { EditsType, LayerEditsType, ScenarioEditsType } from 'types/Edits';
 import { ErrorType } from 'types/Misc';
 // config
 // import {
@@ -60,15 +60,18 @@ import {
 } from 'config/errorMessages';
 // utils
 // import { proxyFetch } from 'utils/fetchUtils';
-import { useDynamicPopup, useStartOver } from 'utils/hooks';
+import {
+  // useDynamicPopup,
+  useStartOver,
+} from 'utils/hooks';
 import {
   // convertToPoint,
-  createLayer,
+  // createLayer,
   // createSampleLayer,
-  deepCopyObject,
-  findLayerInEdits,
+  // deepCopyObject,
+  // findLayerInEdits,
   generateUUID,
-  getCurrentDateTime,
+  // getCurrentDateTime,
   getDefaultSamplingMaskLayer,
   getNextScenarioLayer,
   // getPointSymbol,
@@ -78,9 +81,10 @@ import {
 } from 'utils/sketchUtils';
 import {
   activateSketchButton,
+  formatNumber,
   // createErrorObject,
   // getLayerName,
-  getScenarioName,
+  // getScenarioName,
 } from 'utils/utils';
 // styles
 import { colors, reactSelectStyles } from 'styles';
@@ -462,7 +466,7 @@ function LocateSamples() {
   const {
     // allSampleOptions,
     defaultDeconSelections,
-    defaultSymbols,
+    // defaultSymbols,
     // setDefaultSymbolSingle,
     displayDimensions,
     edits,
@@ -487,12 +491,12 @@ function LocateSamples() {
     // setUserDefinedAttributes,
     // allSampleOptions,
     // displayGeometryType,
-    // sceneView,
-    // mapView,
+    sceneView,
+    mapView,
   } = useContext(SketchContext);
   const startOver = useStartOver();
   // const { createBuffer } = useGeometryTools();
-  const getPopupTemplate = useDynamicPopup();
+  // const getPopupTemplate = useDynamicPopup();
   const layerProps = useLayerProps();
   const sampleTypeContext = useSampleTypesContext();
   const services = useServicesContext();
@@ -607,48 +611,84 @@ function LocateSamples() {
     data: [],
   });
   function sketchAoiButtonClick() {
-    if (!map || !aoiSketchVM || !aoiSketchLayer) return;
+    if (!map || !sketchVM || !sketchLayer || !sceneView || !mapView) return;
 
     setGenerateRandomResponse({
       status: 'none',
       data: [],
     });
 
-    // put the sketch layer on the map, if it isn't there already
-    const layerIndex = map.layers.findIndex(
-      (layer) => layer.id === aoiSketchLayer.layerId,
-    );
-    if (layerIndex === -1) map.add(aoiSketchLayer.sketchLayer);
+    // // put the sketch layer on the map, if it isn't there already
+    // const layerIndex = map.layers.findIndex(
+    //   (layer) => layer.id === sketchLayer.layerId,
+    // );
+    // if (layerIndex === -1) map.add(sketchLayer.sketchLayer);
 
     // save changes from other sketchVM and disable to prevent
     // interference
-    if (sketchVM) {
-      sketchVM[displayDimensions].cancel();
-    }
+    if (aoiSketchVM) aoiSketchVM.cancel();
 
     // make the style of the button active
     const wasSet = activateSketchButton('sampling-mask');
 
     if (wasSet) {
       // let the user draw/place the shape
-      aoiSketchVM.create('polygon');
+      sketchVM[displayDimensions].create('polygon');
     } else {
-      aoiSketchVM.cancel();
+      sketchVM[displayDimensions].cancel();
     }
   }
 
   function assessAoi() {
-    const aoiMaskLayer: LayerType | null =
-      generateRandomMode === 'draw'
-        ? aoiSketchLayer
-        : generateRandomMode === 'file'
-          ? selectedAoiFile
-          : null;
-    if (
-      !aoiMaskLayer?.sketchLayer ||
-      aoiMaskLayer.sketchLayer.type !== 'graphics'
-    )
-      return;
+    // const aoiMaskLayer: LayerType | null =
+    //   generateRandomMode === 'draw'
+    //     ? aoiSketchLayer
+    //     : generateRandomMode === 'file'
+    //       ? selectedAoiFile
+    //       : null;
+    // if (
+    //   !aoiMaskLayer?.sketchLayer ||
+    //   aoiMaskLayer.sketchLayer.type !== 'graphics'
+    // )
+    //   return;
+
+    // const aoiGraphics: __esri.Graphic[] = [];
+
+    const scenarios = edits.edits.filter(
+      (i) => i.type === 'scenario',
+    ) as ScenarioEditsType[];
+    const planGraphics: AoiGraphics = {};
+    scenarios.forEach((scenario) => {
+      if (!scenario.aoiLayerMode) return;
+
+      let aoiLayer: LayerType | undefined = undefined;
+
+      // locate the layer
+      if (scenario.aoiLayerMode === 'draw') {
+        const aoiEditsLayer = scenario.layers.find(
+          (l) => l.layerType === 'Samples',
+        );
+        aoiLayer = layers.find(
+          (l) =>
+            l.layerType === 'Samples' && l.layerId === aoiEditsLayer?.layerId,
+        );
+      }
+
+      if (scenario.aoiLayerMode === 'file' && scenario.importedAoiLayer) {
+        // locate the layer
+        aoiLayer = layers.find(
+          (l) =>
+            l.layerType === 'Area of Interest' &&
+            l.layerId === scenario.importedAoiLayer?.layerId,
+        );
+      }
+
+      if (aoiLayer?.sketchLayer && aoiLayer.sketchLayer.type === 'graphics') {
+        // aoiGraphics.push(...aoiLayer.sketchLayer.graphics.toArray());
+        planGraphics[scenario.layerId] =
+          aoiLayer.sketchLayer.graphics.toArray();
+      }
+    });
 
     setCalculateResults((calculateResults: CalculateResultsType) => {
       return {
@@ -660,9 +700,7 @@ function LocateSamples() {
     setAoiData((aoiDataCur: any) => {
       return {
         count: aoiDataCur.count + 1,
-        graphics: (
-          aoiMaskLayer.sketchLayer as __esri.GraphicsLayer
-        ).graphics.toArray(),
+        graphics: planGraphics,
       } as any;
     });
   }
@@ -1444,8 +1482,13 @@ function LocateSamples() {
 
     // select the first layer within the selected scenario
     if (selectedScenario.layers.length > 0) {
+      const deconLayer = selectedScenario.layers.find(
+        (l) => l.layerType === 'Samples',
+      );
       const newSketchLayer = layers.find(
-        (layer) => layer.layerId === selectedScenario.layers[0].layerId,
+        (layer) =>
+          (deconLayer && layer.layerId === deconLayer.layerId) ||
+          (!deconLayer && layer.layerId === selectedScenario.layers[0].layerId),
       );
       if (newSketchLayer) {
         setSketchLayer(newSketchLayer);
@@ -1512,6 +1555,24 @@ function LocateSamples() {
   pointStyles.sort((a, b) => a.value.localeCompare(b.value));
 
   const [deconTechPopupOpen, setDeconTechPopupOpen] = useState(false);
+
+  useEffect(() => {
+    if (!selectedScenario) {
+      setSelectedAoiFile(null);
+      setGenerateRandomMode('');
+      return;
+    }
+
+    setGenerateRandomMode(selectedScenario.aoiLayerMode);
+
+    if (!selectedScenario.importedAoiLayer) return;
+
+    // find the layer
+    const layer = layers.find(
+      (l) => l.layerId === selectedScenario.importedAoiLayer?.layerId,
+    );
+    if (layer) setSelectedAoiFile(layer);
+  }, [layers, selectedScenario]);
 
   return (
     <div css={panelContainer}>
@@ -1606,7 +1667,9 @@ function LocateSamples() {
             <Fragment>
               <div css={iconButtonContainerStyles}>
                 <div css={verticalCenterTextStyles}>
-                  <label htmlFor="scenario-select-input">Specify Plan</label>
+                  <label htmlFor="scenario-select-input">
+                    Active Decon Layer
+                  </label>
                 </div>
                 <div>
                   {selectedScenario && (
@@ -1662,7 +1725,7 @@ function LocateSamples() {
                         <i className="fas fa-trash-alt" />
                         <span className="sr-only">Delete Plan</span>
                       </button>
-                      <button
+                      {/* <button
                         css={iconButtonStyles}
                         title="Clone Scenario"
                         onClick={(ev) => {
@@ -1789,7 +1852,7 @@ function LocateSamples() {
                       >
                         <i className="fas fa-clone" />
                         <span className="sr-only">Clone Scenario</span>
-                      </button>
+                      </button> */}
                       {selectedScenario.status !== 'published' && (
                         <button
                           css={iconButtonStyles}
@@ -1842,53 +1905,56 @@ function LocateSamples() {
                   const newScenario = ev as ScenarioEditsType;
                   setSelectedScenario(newScenario);
 
-                  // update the visiblity of layers
-                  layers.forEach((layer) => {
-                    if (layer.parentLayer) {
-                      layer.parentLayer.visible =
-                        layer.parentLayer.id === newScenario.layerId
-                          ? true
-                          : false;
-                      return;
-                    }
+                  // // update the visiblity of layers
+                  // layers.forEach((layer) => {
+                  //   if (layer.parentLayer) {
+                  //     layer.parentLayer.visible =
+                  //       layer.parentLayer.id === newScenario.layerId
+                  //         ? true
+                  //         : false;
+                  //     return;
+                  //   }
 
-                    if (
-                      layer.layerType === 'Samples' ||
-                      layer.layerType === 'VSP'
-                    ) {
-                      layer.sketchLayer.visible = false;
-                    }
-                  });
+                  //   if (
+                  //     layer.layerType === 'Samples' ||
+                  //     layer.layerType === 'VSP'
+                  //   ) {
+                  //     layer.sketchLayer.visible = false;
+                  //   }
+                  // });
 
-                  setEdits((edits) => ({
-                    count: edits.count + 1,
-                    edits: edits.edits.map((edit) => {
-                      let visible = edit.visible;
+                  // setEdits((edits) => ({
+                  //   count: edits.count + 1,
+                  //   edits: edits.edits.map((edit) => {
+                  //     let visible = edit.visible;
 
-                      if (edit.type === 'scenario') {
-                        visible =
-                          edit.layerId === newScenario.layerId ? true : false;
-                      }
-                      if (edit.type === 'layer') {
-                        if (
-                          edit.layerType === 'Samples' ||
-                          edit.layerType === 'VSP'
-                        ) {
-                          visible = false;
-                        }
-                      }
+                  //     if (edit.type === 'scenario') {
+                  //       visible =
+                  //         edit.layerId === newScenario.layerId ? true : false;
+                  //     }
+                  //     if (edit.type === 'layer') {
+                  //       if (
+                  //         edit.layerType === 'Samples' ||
+                  //         edit.layerType === 'VSP'
+                  //       ) {
+                  //         visible = false;
+                  //       }
+                  //     }
 
-                      return {
-                        ...edit,
-                        visible,
-                      };
-                    }),
-                  }));
+                  //     return {
+                  //       ...edit,
+                  //       visible,
+                  //     };
+                  //   }),
+                  // }));
                 }}
                 options={scenarios}
               />
               {addScenarioVisible && (
-                <EditScenario onSave={() => setAddScenarioVisible(false)} />
+                <EditScenario
+                  addDefaultSampleLayer={true}
+                  onSave={() => setAddScenarioVisible(false)}
+                />
               )}
               {editScenarioVisible && (
                 <EditScenario
@@ -2499,6 +2565,29 @@ function LocateSamples() {
                                       layer.layerType === 'Sampling Mask',
                                   );
                                   setAoiSketchLayer(maskLayers[0]);
+
+                                  setEdits((edits) => {
+                                    const index = edits.edits.findIndex(
+                                      (item) =>
+                                        item.type === 'scenario' &&
+                                        item.layerId ===
+                                          selectedScenario.layerId,
+                                    );
+                                    const editedScenario = edits.edits[
+                                      index
+                                    ] as ScenarioEditsType;
+
+                                    editedScenario.aoiLayerMode = 'draw';
+
+                                    return {
+                                      count: edits.count + 1,
+                                      edits: [
+                                        ...edits.edits.slice(0, index),
+                                        editedScenario,
+                                        ...edits.edits.slice(index + 1),
+                                      ],
+                                    };
+                                  });
                                 }}
                               />
                               <label htmlFor="draw-aoi" css={radioLabelStyles}>
@@ -2543,13 +2632,50 @@ function LocateSamples() {
 
                                   setAoiSketchLayer(null);
 
+                                  let aoiLayer: LayerType | null = null;
                                   if (!selectedAoiFile) {
                                     const aoiLayers = layers.filter(
                                       (layer) =>
                                         layer.layerType === 'Area of Interest',
                                     );
-                                    setSelectedAoiFile(aoiLayers[0]);
+                                    aoiLayer = aoiLayers[0];
+                                    setSelectedAoiFile(aoiLayer);
                                   }
+
+                                  setEdits((edits) => {
+                                    const index = edits.edits.findIndex(
+                                      (item) =>
+                                        item.type === 'scenario' &&
+                                        item.layerId ===
+                                          selectedScenario.layerId,
+                                    );
+                                    const editedScenario = edits.edits[
+                                      index
+                                    ] as ScenarioEditsType;
+
+                                    const importedAoi = edits.edits.find(
+                                      (l) =>
+                                        aoiLayer &&
+                                        l.type === 'layer' &&
+                                        l.layerType === 'Area of Interest' &&
+                                        l.layerId === aoiLayer.layerId,
+                                    );
+
+                                    if (importedAoi)
+                                      editedScenario.importedAoiLayer =
+                                        importedAoi as LayerEditsType;
+
+                                    editedScenario.aoiLayerMode = 'file';
+
+                                    return {
+                                      count: edits.count + 1,
+                                      edits: [
+                                        ...edits.edits.slice(0, index),
+                                        editedScenario,
+                                        ...edits.edits.slice(index + 1),
+                                      ],
+                                    };
+                                  });
                                 }}
                               />
                               <label
@@ -2573,9 +2699,42 @@ function LocateSamples() {
                                     styles={reactSelectStyles as any}
                                     isClearable={true}
                                     value={selectedAoiFile}
-                                    onChange={(ev) =>
-                                      setSelectedAoiFile(ev as LayerType)
-                                    }
+                                    onChange={(ev) => {
+                                      setSelectedAoiFile(ev as LayerType);
+
+                                      setEdits((edits) => {
+                                        const index = edits.edits.findIndex(
+                                          (item) =>
+                                            item.type === 'scenario' &&
+                                            item.layerId ===
+                                              selectedScenario.layerId,
+                                        );
+                                        const editedScenario = edits.edits[
+                                          index
+                                        ] as ScenarioEditsType;
+
+                                        const importedAoi = edits.edits.find(
+                                          (l) =>
+                                            l.type === 'layer' &&
+                                            l.layerType ===
+                                              'Area of Interest' &&
+                                            l.layerId ===
+                                              (ev as LayerType).layerId,
+                                        );
+
+                                        if (importedAoi)
+                                          editedScenario.importedAoiLayer =
+                                            importedAoi as LayerEditsType;
+                                        return {
+                                          count: edits.count + 1,
+                                          edits: [
+                                            ...edits.edits.slice(0, index),
+                                            editedScenario,
+                                            ...edits.edits.slice(index + 1),
+                                          ],
+                                        };
+                                      });
+                                    }}
                                     options={layers.filter(
                                       (layer) =>
                                         layer.layerType === 'Area of Interest',
@@ -2616,7 +2775,25 @@ function LocateSamples() {
                                 {generateRandomResponse.status ===
                                   'exceededTransferLimit' &&
                                   generateRandomExceededTransferLimitMessage}
-                                {((generateRandomMode === 'draw' &&
+
+                                <button
+                                  css={submitButtonStyles}
+                                  disabled={
+                                    generateRandomResponse.status === 'fetching'
+                                  }
+                                  onClick={assessAoi}
+                                >
+                                  {generateRandomResponse.status !==
+                                    'fetching' && 'Submit'}
+                                  {generateRandomResponse.status ===
+                                    'fetching' && (
+                                    <Fragment>
+                                      <i className="fas fa-spinner fa-pulse" />
+                                      &nbsp;&nbsp;Loading...
+                                    </Fragment>
+                                  )}
+                                </button>
+                                {/* {((generateRandomMode === 'draw' &&
                                   aoiSketchLayer?.sketchLayer.type ===
                                     'graphics' &&
                                   aoiSketchLayer.sketchLayer.graphics.length >
@@ -2644,7 +2821,7 @@ function LocateSamples() {
                                       </Fragment>
                                     )}
                                   </button>
-                                )}
+                                )} */}
                               </Fragment>
                             )}
                           </Fragment>
@@ -3613,11 +3790,11 @@ function DeconSelectionTable({
     }
   }, [defaultDeconSelections, selectedScenario, setEdits, setSelectedScenario]);
 
-  useEffect(() => {
-    if (selectedScenario && selectedScenario.deconTechSelections.length > 0) {
-      setDeconSelections([...selectedScenario.deconTechSelections]);
-    }
-  }, [edits, selectedScenario]);
+  // useEffect(() => {
+  //   if (selectedScenario && selectedScenario.deconTechSelections.length > 0) {
+  //     setDeconSelections([...selectedScenario.deconTechSelections]);
+  //   }
+  // }, [edits, selectedScenario]);
 
   const updateEdits = useCallback(
     (newTable: any[] | null = null) => {
@@ -3678,17 +3855,16 @@ function DeconSelectionTable({
   return (
     <ReactTableEditable
       id={tableId}
-      data={
-        editable
-          ? deconSelections
-          : deconSelections.map((sel) => {
-              return {
-                ...sel,
-                deconTech: sel.deconTech.label,
-                isHazardous: sel.deconTech.label,
-              };
-            })
-      }
+      data={deconSelections.map((sel) => {
+        return {
+          ...sel,
+          deconTech: editable ? sel.deconTech : sel.deconTech?.label,
+          isHazardous: editable ? sel.deconTech : sel.deconTech?.label,
+          pctAoi: formatNumber(sel.pctAoi),
+          surfaceArea: formatNumber(sel.surfaceArea),
+          avgCfu: formatNumber(sel.avgCfu),
+        };
+      })}
       idColumn={'ID'}
       striped={true}
       hideHeader={false}
@@ -3721,18 +3897,26 @@ function DeconSelectionTable({
             width: 118,
           },
           {
+            Header: 'Percent of AOI',
+            accessor: 'pctAoi',
+            width: 97,
+          },
+          {
+            Header: 'Surface Area',
+            accessor: 'surfaceArea',
+            width: 97,
+          },
+          {
+            Header: 'Average Initial Contamination (CFU/m²)',
+            accessor: 'avgCfu',
+            width: 97,
+          },
+          {
             Header: 'Biological Decon Technology',
             accessor: 'deconTech',
             width: 150,
             editType: editable ? 'select' : undefined,
             options: allSampleOptions,
-          },
-          {
-            Header: 'Percent of AOI',
-            accessor: 'pctAoi',
-            width: 0,
-            editType: editable ? 'input' : undefined,
-            show: false,
           },
           {
             Header: 'Number of Applications',
@@ -3789,7 +3973,7 @@ const dialogStyles = css`
     margin: 0;
     padding: 1.5rem;
     width: auto;
-    max-width: 42rem;
+    max-width: 90%;
   }
 
   p,
