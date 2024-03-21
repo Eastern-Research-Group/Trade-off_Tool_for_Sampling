@@ -95,11 +95,11 @@ type Props = {
 
 function MapWidgets({ map, mapView, sceneView }: Props) {
   const {
-    edits,
+    // edits,
     homeWidget,
     setHomeWidget,
     selectedSampleIds,
-    selectedScenario,
+    // selectedScenario,
     displayGeometryType,
     layers,
     displayDimensions,

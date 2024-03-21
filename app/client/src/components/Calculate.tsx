@@ -1976,6 +1976,32 @@ function CalculateResultsPopup({
     planSettings,
   ]);
 
+  let totalSolidWasteVolume = 0;
+  let totalLiquidWasteVolume = 0;
+  let totalDeconCost = 0;
+  let totalDeconTime = 0;
+  const tableData = jsonDownload.map((d) => {
+    totalSolidWasteVolume += d.solidWasteVolumeM3;
+    totalLiquidWasteVolume += d.liquidWasteVolumeM3;
+    totalDeconCost += d.decontaminationCost;
+    totalDeconTime += d.decontaminationTimeDays;
+    return {
+      ...d,
+      solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3),
+      liquidWasteVolumeM3: formatNumber(d.liquidWasteVolumeM3),
+      decontaminationCost: formatNumber(d.decontaminationCost),
+      decontaminationTimeDays: formatNumber(d.decontaminationTimeDays),
+    };
+  });
+  tableData.push({
+    contaminationScenario: 'TOTALS',
+    decontaminationTechnology: '',
+    solidWasteVolumeM3: formatNumber(totalSolidWasteVolume),
+    liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume),
+    decontaminationCost: formatNumber(totalDeconCost),
+    decontaminationTimeDays: formatNumber(totalDeconTime),
+  });
+
   return (
     <DialogOverlay
       css={overlayStyles}
@@ -1987,15 +2013,7 @@ function CalculateResultsPopup({
 
         <ReactTable
           id={tableId}
-          data={jsonDownload.map((d) => {
-            return {
-              ...d,
-              solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3),
-              liquidWasteVolumeM3: formatNumber(d.liquidWasteVolumeM3),
-              decontaminationCost: formatNumber(d.decontaminationCost),
-              decontaminationTimeDays: formatNumber(d.decontaminationTimeDays),
-            };
-          })}
+          data={tableData}
           idColumn={'contaminationScenario'}
           striped={true}
           height={350}
@@ -2080,13 +2098,13 @@ type DownloadIWasteProps = {
 };
 
 function DownloadIWasteData({ isSubmitStyle = false }: DownloadIWasteProps) {
-  const { jsonDownload, selectedScenario } = useContext(SketchContext);
+  const { jsonDownload, planSettings } = useContext(SketchContext);
   return (
     <button
       css={isSubmitStyle ? submitButtonStyles : saveAttributesButtonStyles}
       onClick={() => {
-        if (!selectedScenario) return;
-        const fileName = `tods_${selectedScenario.label}.json`;
+        if (!planSettings.name) return;
+        const fileName = `tods_${planSettings.name}.json`;
 
         // Create a blob of the data
         const fileToSave = new Blob([JSON.stringify(jsonDownload)], {
