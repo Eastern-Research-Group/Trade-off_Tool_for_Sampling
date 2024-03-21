@@ -24,10 +24,7 @@ import ShowLessMore from 'components/ShowLessMore';
 import { AuthenticationContext } from 'contexts/Authentication';
 import { useLayerProps } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
-import {
-  defaultPlanAttributes,
-  PublishContext,
-} from 'contexts/Publish';
+import { defaultPlanAttributes, PublishContext } from 'contexts/Publish';
 import { SketchContext } from 'contexts/Sketch';
 // utils
 import {
@@ -130,14 +127,11 @@ const webMapContainerCheckboxStyles = css`
 `;
 
 // --- components (Publish) ---
-function Publish() {
+export function PublishFull() {
   const { oAuthInfo, portal, setSignedIn, setPortal, signedIn } = useContext(
     AuthenticationContext,
   );
-  const {
-    goToOptions,
-    setGoToOptions,
-  } = useContext(NavigationContext);
+  const { goToOptions, setGoToOptions } = useContext(NavigationContext);
   const {
     includeCustomSampleTypes,
     includeFullPlan,
@@ -2201,6 +2195,21 @@ function Publish() {
             </button>
           </div>
         )}
+    </div>
+  );
+}
+
+function Publish() {
+  return (
+    <div css={panelContainer}>
+      <h2>Publish Output</h2>
+      <div css={sectionContainer}>
+        <MessageBox
+          severity="warning"
+          title="Feature Not Yet Available"
+          message="This feature is not available yet."
+        />
+      </div>
     </div>
   );
 }

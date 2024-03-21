@@ -30,6 +30,7 @@ import {
 import { notLoggedInMessage } from 'config/errorMessages';
 // styles
 import { colors } from 'styles';
+import MessageBox from './MessageBox';
 
 export type SaveStatusType =
   | 'none'
@@ -147,7 +148,7 @@ const nestedAccordionStyles = css`
 `;
 
 // --- components (ConfigureOutput) ---
-function ConfigureOutput() {
+export function ConfigureOutputFull() {
   const { signedIn } = useContext(AuthenticationContext);
   const {
     publishSamplesMode,
@@ -791,6 +792,23 @@ function ConfigureOutput() {
         </p>
 
         <NavigationButton goToPanel="publish" />
+      </div>
+    </div>
+  );
+}
+
+function ConfigureOutput() {
+  return (
+    <div css={panelContainer}>
+      <div>
+        <div css={sectionContainer}>
+          <h2>Configure Output</h2>
+          <MessageBox
+            severity="warning"
+            title="Feature Not Yet Available"
+            message="This feature is not available yet."
+          />
+        </div>
       </div>
     </div>
   );
