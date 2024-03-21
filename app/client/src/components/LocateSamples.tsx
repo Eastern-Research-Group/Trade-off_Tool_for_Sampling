@@ -93,7 +93,7 @@ import {
 } from 'utils/utils';
 // styles
 import { colors, reactSelectStyles } from 'styles';
-import { CalculateResultsType } from 'types/CalculateResults';
+// import { CalculateResultsType } from 'types/CalculateResults';
 import { DialogContent, DialogOverlay } from '@reach/dialog';
 
 // const bldgTypeEnum = {
@@ -497,8 +497,11 @@ type GenerateRandomType = {
 };
 
 function LocateSamples() {
-  const { contaminationMap, setCalculateResults, setContaminationMap } =
-    useContext(CalculateContext);
+  const {
+    contaminationMap,
+    // setCalculateResults,
+    setContaminationMap,
+  } = useContext(CalculateContext);
   // const { setOptions } = useContext(DialogContext);
   const { setGoTo, setGoToOptions } = useContext(NavigationContext);
   // const { setSampleTypeSelections } = useContext(PublishContext);
