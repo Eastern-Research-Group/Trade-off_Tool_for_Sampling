@@ -2830,7 +2830,10 @@ function LocateSamples() {
                   )}
                 </div>
               </AccordionItem>
-              <AccordionItem title="Select Decontamination Technology">
+              <AccordionItem
+                title="Select Decontamination Technology"
+                initiallyExpanded={true}
+              >
                 <div css={sectionContainer}>
                   <p>
                     A listing of different contamination scenarios that are
@@ -2853,12 +2856,12 @@ function LocateSamples() {
                     css={submitButtonStyles}
                     onClick={() => setDeconTechPopupOpen(true)}
                   >
-                    Edit
+                    View/Edit Decontamination Technology Selections
                   </button>
 
-                  <DeconSelectionTable
+                  {/*<DeconSelectionTable
                     defaultDeconSelections={defaultDeconSelections}
-                  />
+                  />*/}
 
                   <DeconSelectionPopup
                     defaultDeconSelections={defaultDeconSelections}
