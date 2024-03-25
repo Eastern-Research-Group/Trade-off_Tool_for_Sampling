@@ -200,22 +200,22 @@ export const imageAnalysisSymbols = {
       style: 'solid',
     },
   }),
-  Vegetation: new SimpleFillSymbol({
-    color: [191, 217, 153, 0.5],
-    outline: {
-      color: [191, 217, 153, 1],
-      width: 1,
-      style: 'solid',
-    },
-  }),
-  Water: new SimpleFillSymbol({
-    color: [191, 217, 242, 0.5],
-    outline: {
-      color: [191, 217, 242, 1],
-      width: 1,
-      style: 'solid',
-    },
-  }),
+  // Vegetation: new SimpleFillSymbol({
+  //   color: [191, 217, 153, 0.5],
+  //   outline: {
+  //     color: [191, 217, 153, 1],
+  //     width: 1,
+  //     style: 'solid',
+  //   },
+  // }),
+  // Water: new SimpleFillSymbol({
+  //   color: [191, 217, 242, 0.5],
+  //   outline: {
+  //     color: [191, 217, 242, 1],
+  //     width: 1,
+  //     style: 'solid',
+  //   },
+  // }),
 };
 
 function hasGraphics(aoiData: AoiDataType | PlanGraphics) {
@@ -2018,17 +2018,30 @@ export function useCalculatePlan() {
       (i) => i.type === 'scenario',
     ) as ScenarioEditsType[];
 
-    let hasAllDeconTechSelections = true;
-    scenarios.forEach((scenario) => {
-      if (scenario.deconTechSelections.length === 0)
-        hasAllDeconTechSelections = false;
+    // let hasAllDeconTechSelections = true;
+    // scenarios.forEach((scenario) => {
+    //   if (scenario.deconTechSelections.length === 0)
+    //     hasAllDeconTechSelections = false;
 
+    //   let atleastOneSelected = false;
+    //   scenario.deconTechSelections.forEach((tech) => {
+    //     if (tech.deconTech) atleastOneSelected = true;
+    //   });
+    //   if (!atleastOneSelected) hasAllDeconTechSelections = false;
+    // });
+    // console.log('hasAllDeconTechSelections: ', hasAllDeconTechSelections);
+    // if (!hasAllDeconTechSelections) {
+    //   setCalculateResults({ status: 'none', panelOpen: false, data: null });
+    //   return;
+    // }
+    let atLeastOneDeconTechSelection = false;
+    scenarios.forEach((scenario) => {
       scenario.deconTechSelections.forEach((tech) => {
-        if (!tech.deconTech) hasAllDeconTechSelections = false;
+        if (tech.deconTech) atLeastOneDeconTechSelection = true;
       });
     });
-    console.log('hasAllDeconTechSelections: ', hasAllDeconTechSelections);
-    if (!hasAllDeconTechSelections) {
+    console.log('atLeastOneDeconTechSelection: ', atLeastOneDeconTechSelection);
+    if (!atLeastOneDeconTechSelection) {
       setCalculateResults({ status: 'none', panelOpen: false, data: null });
       return;
     }
@@ -2052,7 +2065,7 @@ export function useCalculatePlan() {
           : defaultDeconSelections;
       curDeconTechSelections.forEach((sel) => {
         // find decon settings
-        const deconTech = sel.deconTech.value;
+        const deconTech = sel.deconTech?.value;
         const media = sel.media;
         if (!deconTech) return;
 
@@ -2071,7 +2084,7 @@ export function useCalculatePlan() {
         // const avgFinalContam =
         //   avgCfu * Math.pow(contamLeftFactor, sel.numApplications);
         // const aboveDetection = avgFinalContam >= 100; //detectionLimit;
-        // const surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications
+        // const surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications;
         const areaDeconApplied =
           sel.surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications;
         const solidWasteM3 = areaDeconApplied * solidWasteVolume;

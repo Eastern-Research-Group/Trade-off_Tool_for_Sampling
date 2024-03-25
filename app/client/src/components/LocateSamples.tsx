@@ -2668,10 +2668,16 @@ function LocateSamples() {
                         layerProps.status === 'success' && (
                           <Fragment>
                             <p>
-                              Select "Draw Sampling Mask" to draw a boundary on
-                              your map for assessing AOI or select "Use Imported
-                              Area of Interest" to use an Area of Interest file
-                              to assess the AOI. Click Submit to assess the AOI.
+                              Select "Draw Area of Interest" to draw a boundary
+                              on your map or select "Use Imported Area of
+                              Interest" to use an Area of Interest file to
+                              designate a decontamination zone or decision unit.
+                              The tool will retrieve and analyze building data
+                              and ground surface characteristics to inform
+                              decontamination strategy decisions. Click Submit
+                              to automatically generate a summary of
+                              contamination scenarios that are present within
+                              the designated AOI.
                             </p>
 
                             <div>
@@ -2739,7 +2745,7 @@ function LocateSamples() {
                               >
                                 <span css={sketchAoiTextStyles}>
                                   <i className="fas fa-draw-polygon" />{' '}
-                                  <span>Draw Sampling Mask</span>
+                                  <span>Draw Area of Interest</span>
                                 </span>
                               </button>
                             )}
@@ -2963,20 +2969,11 @@ function LocateSamples() {
               >
                 <div css={sectionContainer}>
                   <p>
-                    A listing of different contamination scenarios that are
-                    present within the specified AOI is shown below. For each
-                    scenario, select an appropriate decontamination method to
-                    address the contamination. Click Specify Decon Methods to
-                    assign strategies. A{' '}
-                    <a
-                      href="https://doc.arcgis.com/en/arcgis-online/manage-data/item-details.htm"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      summary of available technologies and applicable
-                      considerations
-                    </a>{' '}
-                    is also available to review.
+                    The tool generates a listing of different contamination
+                    scenarios that are present within the specified AOI. Click
+                    Select Decon Strategies to review a summary of relevant
+                    characteristics and assign an appropriate decontamination
+                    method to address the contamination.
                   </p>
 
                   <button
@@ -4037,7 +4034,7 @@ function DeconSelectionTable({
             width: 97,
           },
           {
-            Header: 'Average Initial Contamination (CFU/m²)',
+            Header: 'Average Initial Contamination (CFUs/m²)',
             accessor: 'avgCfu',
             width: 97,
           },
@@ -4146,6 +4143,7 @@ function DeconSelectionPopup({
   isOpen,
   onClose,
 }: DeconSelectionPopupProps) {
+  const { selectedScenario } = useContext(SketchContext);
   const [performUpdate, setPerformUpdate] = useState(false);
 
   return (
@@ -4155,7 +4153,23 @@ function DeconSelectionPopup({
       data-testid="tots-getting-started"
     >
       <DialogContent css={dialogStyles} aria-label="Edit Attribute">
-        <h1 css={headingStyles}>Select Decontamination Technology</h1>
+        <h1 css={headingStyles}>
+          Specify Decon Strategies for Contamination Scenarios{' '}
+          {selectedScenario ? `in ${selectedScenario?.label}` : ''}
+        </h1>
+
+        <p>
+          For each contamination scenario listed, choose a decontamination
+          method from the drop-down menu. An{' '}
+          <a
+            href="https://www.epa.gov/emergency-response-research/analysis-coastal-operational-resiliency"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            overview of available technologies and applicable considerations
+          </a>{' '}
+          is also available to review.
+        </p>
 
         <DeconSelectionTable
           defaultDeconSelections={defaultDeconSelections}

@@ -1067,9 +1067,7 @@ function Calculate() {
           <h2>Calculate Resources</h2>
           <p>
             Default resource constraints are provided to estimate the cost and
-            time required to implement the designed plan. You can change the
-            default parameters to reflect scenario-specific constraints and to
-            support conducting "what-if" scenarios. Click{' '}
+            time required to implement the designed plan. Click{' '}
             <strong>View Detailed Results</strong> to display a detailed summary
             of the results.
           </p>
@@ -2009,7 +2007,35 @@ function CalculateResultsPopup({
       data-testid="tots-getting-started"
     >
       <DialogContent css={dialogStyles} aria-label="Edit Attribute">
-        <h1 css={headingStyles}>Select Decontamination Technology</h1>
+        <h1 css={headingStyles}>Decon Resource Demand Summary</h1>
+
+        {calculateResults.status === 'success' && calculateResults.data && (
+          <div css={resourceTallyContainerStyles}>
+            <div css={mainTallyStyles}>
+              <strong>Total Cost:</strong> $
+              {Math.round(calculateResults.data['Total Cost']).toLocaleString()}
+            </div>
+            <div css={mainTallyStyles}>
+              <strong>Max Time day(s):</strong>{' '}
+              {calculateResults.data['Total Time'].toLocaleString()}
+            </div>
+            <div css={mainTallyStyles}>
+              <strong>
+                Total Waste Volume (m<sup>3</sup>):
+              </strong>{' '}
+              {Math.round(
+                calculateResults.data['Total Waste Volume'],
+              ).toLocaleString()}
+            </div>
+            <div css={mainTallyStyles}>
+              <strong>Total Waste Mass (kg):</strong>{' '}
+              {Math.round(
+                calculateResults.data['Total Waste Mass'],
+              ).toLocaleString()}
+            </div>
+          </div>
+        )}
+        <br />
 
         <ReactTable
           id={tableId}
@@ -2076,7 +2102,7 @@ function CalculateResultsPopup({
               });
             }}
           >
-            Download Excel
+            Download Summary Data
           </button>
           <DownloadIWasteData />
           <button
@@ -2115,9 +2141,12 @@ function DownloadIWasteData({ isSubmitStyle = false }: DownloadIWasteProps) {
         saveAs(fileToSave, fileName);
       }}
     >
-      Download Data for iWaste
+      Download Data for Waste Planning
     </button>
   );
 }
 
 export default Calculate;
+
+const resourceTallyContainerStyles = css``;
+const mainTallyStyles = css``;

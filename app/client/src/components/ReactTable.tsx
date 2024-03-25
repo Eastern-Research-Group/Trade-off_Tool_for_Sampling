@@ -687,6 +687,7 @@ export function ReactTableEditableCell({
           setValue(ev as any);
           updateMyData(index, id, ev);
         }}
+        isClearable={true}
       />
     );
 
