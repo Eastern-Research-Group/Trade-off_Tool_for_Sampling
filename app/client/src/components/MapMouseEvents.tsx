@@ -175,10 +175,9 @@ function MapMouseEvents({ mapView, sceneView }: Props) {
           const id = button.id;
 
           // determine whether the sketch button draws points or polygons
-          let shapeType =
-            id === 'sampling-mask'
-              ? 'polygon'
-              : sampleAttributesG[id as any].ShapeType;
+          const shapeType = id.includes('-sampling-mask')
+            ? 'polygon'
+            : sampleAttributesG[id as any].ShapeType;
           startSketch(shapeType);
         }
       }

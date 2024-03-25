@@ -29,6 +29,44 @@ import {
   SampleIssuesOutput,
 } from 'config/sampleAttributes';
 
+const sketchSelectedClass = 'sketch-button-selected';
+
+/**
+ * Toggles the active status of sketch buttons.
+ *
+ * @param id of target sketch button
+ * @returns whether or not button was made active or not
+ */
+export function activateSketchButton(id: string) {
+  let wasSet = false;
+  const sketchButtons = document.getElementsByClassName('sketch-button');
+  for (let i = 0; i < sketchButtons.length; i++) {
+    const sketchButton = sketchButtons[i];
+
+    // make the button active if the id matches the provided id
+    if (sketchButton.id === id) {
+      // make the style of the button active
+      if (!sketchButton.classList.contains(sketchSelectedClass)) {
+        sketchButton.classList.add(sketchSelectedClass);
+        wasSet = true;
+      } else {
+        // toggle the button off
+        sketchButton.classList.remove(sketchSelectedClass);
+        const activeElm = document?.activeElement as any;
+        activeElm?.blur();
+      }
+      continue;
+    }
+
+    // remove the selected class from all other buttons
+    if (sketchButton.classList.contains(sketchSelectedClass)) {
+      sketchButton.classList.remove(sketchSelectedClass);
+    }
+  }
+
+  return wasSet;
+}
+
 /**
  * Calculates the area of the provided graphic using a
  * spatial reference system based on where the sample is located.
