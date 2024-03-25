@@ -46,7 +46,9 @@ export const webServiceErrorMessage = (
           />
           <br />
           <button
-            onClick={() => {
+            onClick={(ev) => {
+              ev.preventDefault();
+
               // get the text area input
               const textArea = document.getElementById(id) as HTMLInputElement;
               if (!textArea) return;

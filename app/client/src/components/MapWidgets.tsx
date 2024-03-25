@@ -739,7 +739,7 @@ function MapWidgets({ mapView, sceneView }: Props) {
           // get the button and it's id
           const button = document.querySelector('.sketch-button-selected');
           const id = button && button.id;
-          if (id === 'sampling-mask') {
+          if (id?.includes('-sampling-mask')) {
             deactivateButtons();
           }
 
@@ -751,7 +751,7 @@ function MapWidgets({ mapView, sceneView }: Props) {
           // get the predefined attributes using the id of the clicked button
           const uuid = generateUUID();
           let layerType: LayerTypeName = 'Samples';
-          if (id === 'sampling-mask') {
+          if (id.includes('-sampling-mask')) {
             layerType = 'Sampling Mask';
             graphic.attributes = {
               DECISIONUNITUUID: graphic.layer.id,
@@ -800,7 +800,7 @@ function MapWidgets({ mapView, sceneView }: Props) {
 
           graphic.symbol = sketchViewModel.polygonSymbol;
 
-          if (id !== 'sampling-mask') {
+          if (!id.includes('-sampling-mask')) {
             // find the points version of the layer
             const layerId = graphic.layer.id;
             const pointLayer = (graphic.layer as any).parent.layers.find(
@@ -827,7 +827,7 @@ function MapWidgets({ mapView, sceneView }: Props) {
 
           firstPoint = null;
 
-          if (id !== 'sampling-mask') {
+          if (!id.includes('-sampling-mask')) {
             // start next graphic
             setTimeout(() => {
               sketchViewModel.create(graphic.attributes.ShapeType);

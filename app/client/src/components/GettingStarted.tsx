@@ -114,12 +114,13 @@ function GettingStarted({ isOpen, children }: Props) {
           <li>
             <strong>Create Plan</strong> – Give a plan a name and description,
             select the layer on which to base the plan, and add targeted samples
-            or use the “Add Multiple Random Samples” to draw multiple samples of
-            the same type in a specified area of interest. A Resource Tally will
-            update as the plan is built. A companion summary table is also
-            available detailing the attributes of any samples that are added to
-            the plan. Create custom sample types or clone existing sample types
-            to support conducting “what-if” scenarios.
+            or use the “Add Multiple Random Samples” or "Add Statistical
+            Sampling Approach" to draw multiple samples of the same type in a
+            specified area of interest. A Resource Tally will update as the plan
+            is built. A companion summary table is also available detailing the
+            attributes of any samples that are added to the plan. Create custom
+            sample types or clone existing sample types to support conducting
+            “what-if” scenarios.
           </li>
           <li>
             <strong>Calculate Resources</strong> – Review the default resource
