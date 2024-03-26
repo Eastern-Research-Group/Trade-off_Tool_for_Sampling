@@ -114,6 +114,8 @@ type PlanGraphics = {
   [planId: string]: {
     graphics: __esri.Graphic[];
     imageGraphics: __esri.Graphic[];
+    aoiArea: number;
+    buildingFootprint: number;
   };
 };
 
@@ -223,6 +225,7 @@ function hasGraphics(aoiData: AoiDataType | PlanGraphics) {
     return false;
 
   for (let g of Object.values(aoiData.graphics)) {
+    if (typeof g === 'number') continue;
     if (g.length > 0) return true;
   }
 
@@ -1471,11 +1474,13 @@ export function useCalculatePlan() {
         if (!aoiData.graphics?.[planId]) return;
 
         aoiGraphics.push(...aoiData.graphics[planId]);
+        let planAoiArea = 0;
         aoiData.graphics[planId].forEach((graphic: any) => {
           const geometry = graphic.geometry as __esri.Polygon;
 
           const areaSM = calculateArea(graphic);
           if (typeof areaSM === 'number') {
+            planAoiArea += areaSM;
             totalAoiSqM += areaSM;
             graphic.attributes.AREA = areaSM;
           }
@@ -1515,7 +1520,11 @@ export function useCalculatePlan() {
           planGraphics[planId] = {
             graphics: [],
             imageGraphics: [],
+            aoiArea: planAoiArea,
+            buildingFootprint: 0,
           };
+        } else {
+          planGraphics[planId].aoiArea = planAoiArea;
         }
       });
       console.log('responseIndexes: ', responseIndexes);
@@ -1624,6 +1633,8 @@ export function useCalculatePlan() {
                 },
               }),
             );
+
+            planGraphics[planId].buildingFootprint += footprintSqFt;
           });
         });
 
@@ -1887,6 +1898,10 @@ export function useCalculatePlan() {
       (i) => i.type === 'scenario',
     ) as ScenarioEditsType[];
     scenarios.forEach((scenario) => {
+      scenario.aoiSummary.area = nsiData.planGraphics[scenario.layerId].aoiArea;
+      scenario.aoiSummary.buildingFootprint =
+        nsiData.planGraphics[scenario.layerId].buildingFootprint;
+
       const curDeconTechSelections =
         scenario.deconTechSelections.length > 0
           ? scenario.deconTechSelections
@@ -2067,6 +2082,11 @@ export function useCalculatePlan() {
     let totalResidenceTime = 0;
     let totalDeconTime = 0;
     scenarios.forEach((scenario) => {
+      scenario.deconLayerResults.resultsTable = [];
+      scenario.deconLayerResults.cost = 0;
+      scenario.deconLayerResults.time = 0;
+      scenario.deconLayerResults.wasteMass = 0;
+      scenario.deconLayerResults.wasteVolume = 0;
       const curDeconTechSelections =
         scenario.deconTechSelections.length > 0
           ? scenario.deconTechSelections
@@ -2112,14 +2132,23 @@ export function useCalculatePlan() {
           sel.numConcurrentApplications;
         const deconTime = sumApplicationTime + sumResidenceTime;
 
-        jsonDownload.push({
+        const jsonItem = {
           contaminationScenario: media,
           decontaminationTechnology: deconTech,
           solidWasteVolumeM3: solidWasteM3,
           liquidWasteVolumeM3: liquidWasteM3,
           decontaminationCost: deconCost,
           decontaminationTimeDays: deconTime,
-        });
+        };
+
+        jsonDownload.push(jsonItem);
+
+        scenario.deconLayerResults.cost += deconCost;
+        scenario.deconLayerResults.time += deconTime;
+        scenario.deconLayerResults.wasteVolume += solidWasteM3 + liquidWasteM3;
+        scenario.deconLayerResults.wasteMass +=
+          solidWasteMass + liquidWasteMass;
+        scenario.deconLayerResults.resultsTable.push(jsonItem);
 
         // totalFinalContam += avgFinalContam;
         totalSolidWasteM3 += solidWasteM3;

@@ -1535,6 +1535,17 @@ function ResultCard({ result }: ResultCardProps) {
               },
               calculateResults: null,
             },
+            aoiSummary: {
+              area: 0,
+              buildingFootprint: 0,
+            },
+            deconLayerResults: {
+              cost: 0,
+              time: 0,
+              wasteVolume: 0,
+              wasteMass: 0,
+              resultsTable: [],
+            },
             calculateSettings: {
               current: calcSettings || settingDefaults,
               published: calcSettings || undefined,

@@ -3962,6 +3962,8 @@ function DeconSelectionTable({
           selectedScenario.deconTechSelections = newTable ?? deconSelections;
         return selectedScenario;
       });
+
+      setUpdateEditsRan(false);
     },
     [
       deconSelections,
@@ -4148,6 +4150,7 @@ function DeconSelectionPopup({
   onClose,
 }: DeconSelectionPopupProps) {
   const { selectedScenario } = useContext(SketchContext);
+  const { calculateResults } = useContext(CalculateContext);
   const [performUpdate, setPerformUpdate] = useState(false);
 
   return (
@@ -4175,6 +4178,59 @@ function DeconSelectionPopup({
           is also available to review.
         </p>
 
+        <div css={resourceTallyContainerStyles}>
+          <div>
+            <div>
+              <strong>{selectedScenario?.label} size: </strong>{' '}
+              {selectedScenario?.aoiSummary.area.toLocaleString() ?? 0} m²
+            </div>
+            <div>
+              <strong>Total Building Footprint:</strong>{' '}
+              {selectedScenario?.aoiSummary.buildingFootprint.toLocaleString() ??
+                0}{' '}
+              ft²
+            </div>
+            <div>
+              <strong>Detection Limit:</strong> 100 (CFU/m²)
+            </div>
+            <div>
+              <strong>Assumed Percent of Surface Decontaminated:</strong> 100%
+            </div>
+          </div>
+          <div>
+            {calculateResults.status === 'fetching' && <LoadingSpinner />}
+            {calculateResults.status === 'success' && calculateResults.data && (
+              <Fragment>
+                <div>
+                  <strong>Total Cost:</strong> $
+                  {Math.round(
+                    selectedScenario?.deconLayerResults.cost ?? 0,
+                  ).toLocaleString()}
+                </div>
+                <div>
+                  <strong>Max Time day(s):</strong>{' '}
+                  {selectedScenario?.deconLayerResults.time.toLocaleString() ??
+                    0}
+                </div>
+                <div>
+                  <strong>
+                    Total Waste Volume (m<sup>3</sup>):
+                  </strong>{' '}
+                  {Math.round(
+                    selectedScenario?.deconLayerResults.wasteVolume ?? 0,
+                  ).toLocaleString()}
+                </div>
+                <div>
+                  <strong>Total Waste Mass (kg):</strong>{' '}
+                  {Math.round(
+                    selectedScenario?.deconLayerResults.wasteMass ?? 0,
+                  ).toLocaleString()}
+                </div>
+              </Fragment>
+            )}
+          </div>
+        </div>
+
         <DeconSelectionTable
           defaultDeconSelections={defaultDeconSelections}
           editable={true}
@@ -4188,7 +4244,7 @@ function DeconSelectionPopup({
 
               setTimeout(() => {
                 setPerformUpdate(false);
-                onClose();
+                // onClose();
               }, 500);
             }}
           >
@@ -4209,3 +4265,8 @@ function DeconSelectionPopup({
 }
 
 export default LocateSamples;
+
+const resourceTallyContainerStyles = css`
+  display: flex;
+  justify-content: space-around;
+`;

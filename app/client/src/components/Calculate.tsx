@@ -1,6 +1,7 @@
 /** @jsxImportSource @emotion/react */
 
 import React, {
+  Fragment,
   // Fragment,
   useCallback,
   useContext,
@@ -1387,11 +1388,14 @@ const dialogStyles = css`
     font-size: 0.875rem;
     line-height: 1.375;
   }
-`;
 
-const headingStyles = css`
-  font-size: 117.6471%;
-  text-align: center;
+  h1 {
+    font-size: 117.6471%;
+    text-align: center;
+  }
+  h2 {
+    font-size: 100%;
+  }
 `;
 
 const saveAttributesButtonStyles = css`
@@ -2009,6 +2013,10 @@ function CalculateResultsPopup({
     decontaminationTimeDays: formatNumber(totalDeconTime),
   });
 
+  const scenarios = edits.edits.filter(
+    (e) => e.type === 'scenario',
+  ) as ScenarioEditsType[];
+
   return (
     <DialogOverlay
       css={overlayStyles}
@@ -2016,7 +2024,7 @@ function CalculateResultsPopup({
       data-testid="tots-getting-started"
     >
       <DialogContent css={dialogStyles} aria-label="Edit Attribute">
-        <h1 css={headingStyles}>Decon Resource Demand Summary</h1>
+        <h1>Decon Resource Demand Summary</h1>
 
         {calculateResults.status === 'success' && calculateResults.data && (
           <div css={resourceTallyContainerStyles}>
@@ -2046,6 +2054,7 @@ function CalculateResultsPopup({
         )}
         <br />
 
+        <h2>Overall Summary</h2>
         <ReactTable
           id={tableId}
           data={tableData}
@@ -2088,6 +2097,85 @@ function CalculateResultsPopup({
             ];
           }}
         />
+
+        {scenarios.map((scenario, index) => {
+          let totalSolidWasteVolume = 0;
+          let totalLiquidWasteVolume = 0;
+          let totalDeconCost = 0;
+          let totalDeconTime = 0;
+
+          const tableData = scenario.deconLayerResults.resultsTable.map((d) => {
+            totalSolidWasteVolume += d.solidWasteVolumeM3;
+            totalLiquidWasteVolume += d.liquidWasteVolumeM3;
+            totalDeconCost += d.decontaminationCost;
+            totalDeconTime += d.decontaminationTimeDays;
+            return {
+              ...d,
+              solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3),
+              liquidWasteVolumeM3: formatNumber(d.liquidWasteVolumeM3),
+              decontaminationCost: formatNumber(d.decontaminationCost),
+              decontaminationTimeDays: formatNumber(d.decontaminationTimeDays),
+            };
+          });
+          tableData.push({
+            contaminationScenario: 'TOTALS',
+            decontaminationTechnology: '',
+            solidWasteVolumeM3: formatNumber(totalSolidWasteVolume),
+            liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume),
+            decontaminationCost: formatNumber(totalDeconCost),
+            decontaminationTimeDays: formatNumber(totalDeconTime),
+          });
+
+          return (
+            <Fragment>
+              <h2>{scenario.label} Summary</h2>
+
+              <ReactTable
+                id={tableId + index}
+                data={tableData}
+                idColumn={'contaminationScenario'}
+                striped={true}
+                height={350}
+                getColumns={(tableWidth: any) => {
+                  return [
+                    {
+                      Header: 'Contamination Scenario',
+                      accessor: 'contaminationScenario',
+                      width: 190,
+                    },
+                    {
+                      Header: 'Selected Decontamination Technology',
+                      accessor: 'decontaminationTechnology',
+                      width: 190,
+                    },
+                    {
+                      Header: 'Solid Waste (m³)',
+                      accessor: 'solidWasteVolumeM3',
+                      width: baseWidth,
+                    },
+                    {
+                      Header: 'Liquid Waste (m³)',
+                      accessor: 'liquidWasteVolumeM3',
+                      width: baseWidth,
+                    },
+                    {
+                      Header:
+                        'Decontamination Cost ($) [Setup and Operational]',
+                      accessor: 'decontaminationCost',
+                      width: 175,
+                    },
+                    {
+                      Header:
+                        'Decontamination Time (days) [Application and Residence]',
+                      accessor: 'decontaminationTimeDays',
+                      width: 170,
+                    },
+                  ];
+                }}
+              />
+            </Fragment>
+          );
+        })}
 
         {downloadStatus === 'fetching' && <LoadingSpinner />}
         {downloadStatus === 'screenshot-failure' && screenshotFailureMessage}
