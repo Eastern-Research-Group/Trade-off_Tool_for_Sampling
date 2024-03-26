@@ -71,7 +71,7 @@ const tableStyles = ({
   height?: number;
   hideHeader: boolean;
 }) => css`
-  ${height ? `height: ${height}px;` : 'max-height: 400px;'}
+  ${height === -1 ? '' : height ? `height: ${height}px;` : 'max-height: 400px;'}
   border: 1px solid rgba(0, 0, 0, 0.1);
 
   /* These styles are suggested for the table fill all available space in its containing element */

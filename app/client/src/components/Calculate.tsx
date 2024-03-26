@@ -1642,6 +1642,7 @@ function CalculateResultsPopup({
 
     // create the sheets
     addSummarySheet();
+    addLayerSummarySheet();
     addSampleSheet();
 
     // download the file
@@ -1774,6 +1775,116 @@ function CalculateResultsPopup({
       summarySheet.addImage(screenshotImageId, {
         tl: { col: 1, row: curRow + 1 },
         ext: { width: base64Screenshot.width, height: base64Screenshot.height },
+      });
+    }
+
+    function addLayerSummarySheet() {
+      // only here to satisfy typescript
+      if (!calculateResults.data) return;
+
+      // add the sheet
+      const summarySheet = workbook.addWorksheet('Layer Summaries');
+
+      // add the header
+      summarySheet.getCell(1, 1).font = sheetTitleFont;
+      summarySheet.getCell(1, 1).value = 'Layer Summaries';
+
+      // setup column widths
+      summarySheet.columns = [
+        { width: 30 },
+        { width: 40 },
+        { width: 39 },
+        { width: 18 },
+        { width: 18 },
+        { width: 18 },
+        { width: 51 },
+        { width: 59 },
+      ];
+
+      const cols = [
+        { label: 'Contamination Scenario', fieldName: 'contaminationScenario' },
+        {
+          label: 'Selected Decontamination Technology',
+          fieldName: 'decontaminationTechnology',
+        },
+        {
+          label: 'Solid Waste (m³)',
+          fieldName: 'solidWasteVolumeM3',
+          format: 'number',
+        },
+        {
+          label: 'Liquid Waste (m³)',
+          fieldName: 'liquidWasteVolumeM3',
+          format: 'number',
+        },
+        {
+          label: 'Decontamination Cost ($) [Setup and Operational]',
+          fieldName: 'decontaminationCost',
+          format: 'currency',
+        },
+        {
+          label: 'Decontamination Time (days) [Application and Residence]',
+          fieldName: 'decontaminationTimeDays',
+          format: 'number',
+        },
+      ];
+
+      let curRow = 3;
+      const scenarios = edits.edits.filter(
+        (e) => e.type === 'scenario',
+      ) as ScenarioEditsType[];
+      scenarios.forEach((scenario) => {
+        // summarySheet.getCell(curRow, 1).font = underlinedLabelFont;
+        // summarySheet.getCell(curRow, 1).value = 'Layer: ';
+        // summarySheet.getCell(curRow, 2).font = defaultFont;
+        // summarySheet.getCell(curRow, 2).value = scenario.label;
+        summarySheet.getCell(curRow, 1).value = {
+          richText: [
+            { text: 'Layer:', font: underlinedLabelFont },
+            { text: ` ${scenario.label}`, font: defaultFont },
+          ],
+        };
+        curRow += 1;
+
+        curRow = fillOutCells({
+          sheet: summarySheet,
+          startRow: curRow,
+          rows: [
+            [
+              ...cols.map((col) => {
+                return {
+                  value: col.label,
+                  font: labelFont,
+                };
+              }),
+            ],
+          ],
+        });
+
+        const rows: Row[] = [];
+        scenario.deconLayerResults.resultsTable.forEach((item) => {
+          rows.push(
+            cols.map((col) => {
+              const fieldValue = (item as any)[col.fieldName];
+              return {
+                value:
+                  col.format && ['currency', 'number'].includes(col.format)
+                    ? (parseSmallFloat(fieldValue, 2) ?? '').toLocaleString()
+                    : fieldValue,
+                numFmt:
+                  col.format === 'currency' ? currencyNumberFormat : undefined,
+              };
+            }),
+          );
+        });
+
+        curRow = fillOutCells({
+          sheet: summarySheet,
+          rows,
+          startRow: curRow,
+        });
+
+        curRow += 2;
       });
     }
 
@@ -2060,7 +2171,7 @@ function CalculateResultsPopup({
           data={tableData}
           idColumn={'contaminationScenario'}
           striped={true}
-          height={350}
+          height={-1}
           getColumns={(tableWidth: any) => {
             return [
               {
@@ -2135,7 +2246,7 @@ function CalculateResultsPopup({
                 data={tableData}
                 idColumn={'contaminationScenario'}
                 striped={true}
-                height={350}
+                height={-1}
                 getColumns={(tableWidth: any) => {
                   return [
                     {

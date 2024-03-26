@@ -1659,10 +1659,10 @@ function LocateSamples() {
                       scenario: selectedScenario,
                       layer: aoiAssessedLayer,
                       type: 'delete',
-                      changes: aoiAssessedLayer?.sketchLayer.graphics,
+                      changes: aoiAssessedLayer.sketchLayer.graphics,
                     });
 
-                    aoiAssessedLayer?.sketchLayer.graphics.removeAll();
+                    aoiAssessedLayer.sketchLayer.graphics.removeAll();
                   }
                 }
 
@@ -1680,14 +1680,42 @@ function LocateSamples() {
                       scenario: selectedScenario,
                       layer: imageAnalysisLayer,
                       type: 'delete',
-                      changes: imageAnalysisLayer?.sketchLayer.graphics,
+                      changes: imageAnalysisLayer.sketchLayer.graphics,
                     });
 
-                    imageAnalysisLayer?.sketchLayer.graphics.removeAll();
+                    imageAnalysisLayer.sketchLayer.graphics.removeAll();
+                  }
+                }
+
+                // Figure out what to add graphics to
+                const aoi = selectedScenario?.layers.find(
+                  (l) => l.layerType === 'Samples',
+                );
+                if (aoi) {
+                  const aoiLayer = layers.find(
+                    (l) => l.layerId === aoi.layerId,
+                  );
+                  if (aoiLayer?.sketchLayer?.type === 'graphics') {
+                    editsCopy = updateLayerEdits({
+                      edits,
+                      scenario: selectedScenario,
+                      layer: aoiLayer,
+                      type: 'delete',
+                      changes: aoiLayer.sketchLayer.graphics,
+                    });
+
+                    aoiLayer.sketchLayer.graphics.removeAll();
+                    aoiLayer.sketchLayer.visible = true;
                   }
                 }
 
                 setEdits(editsCopy);
+                setAoiData((aoiData) => {
+                  return {
+                    count: aoiData.count + 1,
+                    graphics: {},
+                  };
+                });
               }}
             >
               <i className="fas fa-trash-alt" />
@@ -1828,6 +1856,16 @@ function LocateSamples() {
                             ),
                           };
                           setEdits(newEdits);
+
+                          setAoiData((aoiData) => {
+                            const graphicsCopy = { ...aoiData.graphics };
+                            delete graphicsCopy[selectedScenario.layerId];
+
+                            return {
+                              count: aoiData.count + 1,
+                              graphics: graphicsCopy,
+                            };
+                          });
 
                           // select the next available scenario
                           const scenarios = getScenarios(newEdits);
@@ -3993,7 +4031,7 @@ function DeconSelectionTable({
           ...sel,
           deconTech: editable ? sel.deconTech : sel.deconTech?.label,
           isHazardous: editable ? sel.deconTech : sel.deconTech?.label,
-          pctAoi: `${formatNumber(sel.pctAoi)}%`,
+          pctAoi: sel.pctAoi ? `${formatNumber(sel.pctAoi)}%` : '',
           surfaceArea: `${formatNumber(sel.surfaceArea)} m²`,
           avgCfu: formatNumber(sel.avgCfu),
         };
@@ -4001,7 +4039,7 @@ function DeconSelectionTable({
       idColumn={'ID'}
       striped={true}
       hideHeader={false}
-      height={editable ? 450 : 330}
+      height={-1}
       onDataChange={(rowIndex: any, columnId: any, value: any) => {
         const newTable = deconSelections.map((row: any, index: number) => {
           // update the row if it is the row in focus and the data has changed
@@ -4199,7 +4237,13 @@ function DeconSelectionPopup({
           </div>
           <div>
             {calculateResults.status === 'fetching' && <LoadingSpinner />}
-            {calculateResults.status === 'success' && calculateResults.data && (
+            {calculateResults.status === 'success' &&
+            calculateResults.data &&
+            selectedScenario &&
+            (selectedScenario.deconLayerResults.cost ||
+              selectedScenario.deconLayerResults.time ||
+              selectedScenario.deconLayerResults.wasteVolume ||
+              selectedScenario.deconLayerResults.wasteMass) ? (
               <Fragment>
                 <div>
                   <strong>Total Cost:</strong> $
@@ -4227,7 +4271,7 @@ function DeconSelectionPopup({
                   ).toLocaleString()}
                 </div>
               </Fragment>
-            )}
+            ) : null}
           </div>
         </div>
 

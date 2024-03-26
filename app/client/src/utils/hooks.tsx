@@ -102,13 +102,14 @@ import {
 import { appendEnvironmentObjectParam } from './arcGisRestUtils';
 import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
 
-type AoiPercentages = {
-  asphalt: number;
-  concrete: number;
-  soil: number;
-  // zone: number;
-  // aoiId: string;
-};
+// type AoiPercentages = {
+//   numAois: number;
+//   asphalt: number;
+//   concrete: number;
+//   soil: number;
+//   // zone: number;
+//   // aoiId: string;
+// };
 
 type PlanGraphics = {
   [planId: string]: {
@@ -116,6 +117,21 @@ type PlanGraphics = {
     imageGraphics: __esri.Graphic[];
     aoiArea: number;
     buildingFootprint: number;
+    summary: {
+      totalAoiSqM: number;
+      totalBuildingFootprintSqM: number;
+      totalBuildingFloorsSqM: number;
+      totalBuildingSqM: number;
+      totalBuildingExtWallsSqM: number;
+      totalBuildingIntWallsSqM: number;
+      totalBuildingRoofSqM: number;
+    };
+    aoiPercentages: {
+      numAois: number;
+      asphalt: number;
+      concrete: number;
+      soil: number;
+    };
   };
 };
 
@@ -220,7 +236,7 @@ export const imageAnalysisSymbols = {
   // }),
 };
 
-function hasGraphics(aoiData: AoiDataType | PlanGraphics) {
+function hasGraphics(aoiData: AoiDataType) {
   if (!aoiData.graphics || Object.keys(aoiData.graphics).length === 0)
     return false;
 
@@ -1382,53 +1398,15 @@ export function useCalculatePlan() {
     setNsiData({
       status: 'none',
       planGraphics: {},
-      summary: {
-        totalAoiSqM: 0,
-        totalBuildingFootprintSqM: 0,
-        totalBuildingFloorsSqM: 0,
-        totalBuildingSqM: 0,
-        totalBuildingExtWallsSqM: 0,
-        totalBuildingIntWallsSqM: 0,
-        totalBuildingRoofSqM: 0,
-      },
-      aoiPercentages: {
-        asphalt: 0,
-        concrete: 0,
-        soil: 0,
-      },
     });
   }, [aoiData, setCalculateResults]);
 
   const [nsiData, setNsiData] = useState<{
     status: 'none' | 'fetching' | 'success' | 'failure';
     planGraphics: PlanGraphics;
-    summary: {
-      totalAoiSqM: number;
-      totalBuildingFootprintSqM: number;
-      totalBuildingFloorsSqM: number;
-      totalBuildingSqM: number;
-      totalBuildingExtWallsSqM: number;
-      totalBuildingIntWallsSqM: number;
-      totalBuildingRoofSqM: number;
-    };
-    aoiPercentages: AoiPercentages;
   }>({
     status: 'none',
     planGraphics: {},
-    summary: {
-      totalAoiSqM: 0,
-      totalBuildingFootprintSqM: 0,
-      totalBuildingFloorsSqM: 0,
-      totalBuildingSqM: 0,
-      totalBuildingExtWallsSqM: 0,
-      totalBuildingIntWallsSqM: 0,
-      totalBuildingRoofSqM: 0,
-    },
-    aoiPercentages: {
-      asphalt: 0,
-      concrete: 0,
-      soil: 0,
-    },
   });
 
   // fetch building data for AOI
@@ -1441,32 +1419,12 @@ export function useCalculatePlan() {
     setNsiData({
       status: 'fetching',
       planGraphics: {},
-      summary: {
-        totalAoiSqM: 0,
-        totalBuildingFootprintSqM: 0,
-        totalBuildingFloorsSqM: 0,
-        totalBuildingSqM: 0,
-        totalBuildingExtWallsSqM: 0,
-        totalBuildingIntWallsSqM: 0,
-        totalBuildingRoofSqM: 0,
-      },
-      aoiPercentages: {
-        asphalt: 0,
-        concrete: 0,
-        soil: 0,
-      },
     });
 
     async function fetchAoiData() {
       if (!aoiData.graphics) return;
       const features: any[] = [];
-      let totalAoiSqM = 0;
-      let totalBuildingFootprintSqM = 0;
-      let totalBuildingFloorsSqM = 0;
-      let totalBuildingSqM = 0;
-      let totalBuildingExtWallsSqM = 0;
-      let totalBuildingIntWallsSqM = 0;
-      let totalBuildingRoofSqM = 0;
+      // let totalAoiSqM = 0;
       let responseIndexes: string[] = [];
       let planGraphics: PlanGraphics = {};
       const aoiGraphics: __esri.Graphic[] = [];
@@ -1481,7 +1439,7 @@ export function useCalculatePlan() {
           const areaSM = calculateArea(graphic);
           if (typeof areaSM === 'number') {
             planAoiArea += areaSM;
-            totalAoiSqM += areaSM;
+            // totalAoiSqM += areaSM;
             graphic.attributes.AREA = areaSM;
           }
 
@@ -1522,9 +1480,25 @@ export function useCalculatePlan() {
             imageGraphics: [],
             aoiArea: planAoiArea,
             buildingFootprint: 0,
+            summary: {
+              totalAoiSqM: planAoiArea,
+              totalBuildingFootprintSqM: 0,
+              totalBuildingFloorsSqM: 0,
+              totalBuildingSqM: 0,
+              totalBuildingExtWallsSqM: 0,
+              totalBuildingIntWallsSqM: 0,
+              totalBuildingRoofSqM: 0,
+            },
+            aoiPercentages: {
+              numAois: 0,
+              asphalt: 0,
+              concrete: 0,
+              soil: 0,
+            },
           };
         } else {
           planGraphics[planId].aoiArea = planAoiArea;
+          planGraphics[planId].summary.totalAoiSqM = planAoiArea;
         }
       });
       console.log('responseIndexes: ', responseIndexes);
@@ -1576,12 +1550,6 @@ export function useCalculatePlan() {
             const floorsSqM = num_story * footprintSqM;
             const extWallsSqM = Math.sqrt(floorsSqM) * 10 * 4 * num_story;
             const intWallsSqM = extWallsSqM * 3;
-            totalBuildingFootprintSqM += footprintSqM;
-            totalBuildingFloorsSqM += floorsSqM;
-            totalBuildingSqM += floorsSqM;
-            totalBuildingExtWallsSqM += extWallsSqM;
-            totalBuildingIntWallsSqM += intWallsSqM;
-            totalBuildingRoofSqM += footprintSqM;
 
             const planId = responseIndexes[index];
             const permId = generateUUID();
@@ -1634,7 +1602,15 @@ export function useCalculatePlan() {
               }),
             );
 
-            planGraphics[planId].buildingFootprint += footprintSqFt;
+            planGraphics[planId].summary.totalBuildingFootprintSqM +=
+              footprintSqM;
+            planGraphics[planId].summary.totalBuildingFloorsSqM += floorsSqM;
+            planGraphics[planId].summary.totalBuildingSqM += floorsSqM;
+            planGraphics[planId].summary.totalBuildingExtWallsSqM +=
+              extWallsSqM;
+            planGraphics[planId].summary.totalBuildingIntWallsSqM +=
+              intWallsSqM;
+            planGraphics[planId].summary.totalBuildingRoofSqM += footprintSqM;
           });
         });
 
@@ -1680,21 +1656,27 @@ export function useCalculatePlan() {
           );
         }
 
-        let totalAsphalt = 0;
-        let totalConcrete = 0;
-        let totalSoil = 0;
-        let numAois = 0;
         iaResponses.forEach((response, index) => {
           console.log('response: ', response);
           const summaryOutput = response.results.find(
             (r: any) => r.paramName === 'Output_Classification_Summary',
           );
           if (summaryOutput) {
-            numAois += summaryOutput.value.features.length;
+            const planId = responseIndexes[index];
+            planGraphics[planId].aoiPercentages.numAois +=
+              summaryOutput.value.features.length;
+            // numAois += summaryOutput.value.features.length;
+
             summaryOutput.value.features.forEach((f: any, index: number) => {
-              totalAsphalt += f.attributes.ASPHALT;
-              totalConcrete += f.attributes.CONCRETE;
-              totalSoil += f.attributes.SOIL;
+              planGraphics[planId].aoiPercentages.asphalt +=
+                f.attributes.ASPHALT;
+              planGraphics[planId].aoiPercentages.concrete +=
+                f.attributes.CONCRETE;
+              planGraphics[planId].aoiPercentages.soil += f.attributes.SOIL;
+
+              // totalAsphalt += f.attributes.ASPHALT;
+              // totalConcrete += f.attributes.CONCRETE;
+              // totalSoil += f.attributes.SOIL;
             });
           }
 
@@ -1730,45 +1712,50 @@ export function useCalculatePlan() {
           }
         });
 
-        const aoiPercentages: AoiPercentages = {
-          asphalt: totalAsphalt / numAois,
-          concrete: totalConcrete / numAois,
-          soil: totalSoil / numAois,
-        };
+        Object.keys(planGraphics).forEach((planId) => {
+          const { numAois, asphalt, concrete, soil } =
+            planGraphics[planId].aoiPercentages;
+          planGraphics[planId].aoiPercentages = {
+            numAois,
+            asphalt: asphalt / numAois,
+            concrete: concrete / numAois,
+            soil: soil / numAois,
+          };
+        });
 
         setNsiData({
           status: 'success',
           planGraphics,
-          summary: {
-            totalAoiSqM,
-            totalBuildingFootprintSqM,
-            totalBuildingFloorsSqM,
-            totalBuildingSqM,
-            totalBuildingExtWallsSqM,
-            totalBuildingIntWallsSqM,
-            totalBuildingRoofSqM,
-          },
-          aoiPercentages,
+          // summary: {
+          //   totalAoiSqM,
+          //   totalBuildingFootprintSqM,
+          //   totalBuildingFloorsSqM,
+          //   totalBuildingSqM,
+          //   totalBuildingExtWallsSqM,
+          //   totalBuildingIntWallsSqM,
+          //   totalBuildingRoofSqM,
+          // },
+          // aoiPercentages,
         });
       } catch (ex) {
         console.error(ex);
         setNsiData({
           status: 'failure',
           planGraphics: {},
-          summary: {
-            totalAoiSqM: 0,
-            totalBuildingFootprintSqM: 0,
-            totalBuildingFloorsSqM: 0,
-            totalBuildingSqM: 0,
-            totalBuildingExtWallsSqM: 0,
-            totalBuildingIntWallsSqM: 0,
-            totalBuildingRoofSqM: 0,
-          },
-          aoiPercentages: {
-            asphalt: 0,
-            concrete: 0,
-            soil: 0,
-          },
+          // summary: {
+          //   totalAoiSqM: 0,
+          //   totalBuildingFootprintSqM: 0,
+          //   totalBuildingFloorsSqM: 0,
+          //   totalBuildingSqM: 0,
+          //   totalBuildingExtWallsSqM: 0,
+          //   totalBuildingIntWallsSqM: 0,
+          //   totalBuildingRoofSqM: 0,
+          // },
+          // aoiPercentages: {
+          //   asphalt: 0,
+          //   concrete: 0,
+          //   soil: 0,
+          // },
         });
       }
     }
@@ -1806,27 +1793,19 @@ export function useCalculatePlan() {
       graphics.push(...planGraphics.graphics);
     });
 
-    const {
-      totalAoiSqM,
-      totalBuildingFootprintSqM,
-      totalBuildingFloorsSqM,
-      // totalBuildingSqM,
-      totalBuildingExtWallsSqM,
-      totalBuildingIntWallsSqM,
-      totalBuildingRoofSqM,
-    } = nsiData.summary;
-    const nonBuildingArea = totalAoiSqM - totalBuildingFootprintSqM;
-    // console.log('nonBuildingArea: ', nonBuildingArea);
-
-    const contaminedAoiAreas: { [key: number]: number } = {};
-    const contaminationPercentages: { [key: number]: number } = {};
-    let totalBuildingCfu = 0;
+    const contaminedAoiAreas: { [planId: string]: { [key: number]: number } } =
+      {};
+    const contaminationPercentages: {
+      [planId: string]: { [key: number]: number };
+    } = {};
+    const planBuildingCfu: { [planId: string]: number } = {};
     if (
       contaminationMap &&
       contaminationMap?.sketchLayer?.type === 'graphics'
     ) {
       // loop through structures
-      Object.values(nsiData.planGraphics).forEach((planGraphics) => {
+      Object.keys(nsiData.planGraphics).forEach((planId) => {
+        const planGraphics = nsiData.planGraphics[planId];
         planGraphics.graphics.forEach((graphic) => {
           // loop through contamination map features
           (
@@ -1853,14 +1832,21 @@ export function useCalculatePlan() {
             graphic.attributes.CONTAMUNIT = contamGraphic.attributes.CONTAMUNIT;
             graphic.attributes.CONTAMTYPE = contamGraphic.attributes.CONTAMTYPE;
 
-            totalBuildingCfu += newCfu;
+            if (planBuildingCfu.hasOwnProperty(planId)) {
+              planBuildingCfu[planId] += newCfu;
+            } else {
+              planBuildingCfu[planId] = newCfu;
+            }
+
+            // totalBuildingCfu += newCfu;
           });
         });
       });
 
       if (aoiData.graphics) {
         // partition AOI to determine where contamination is
-        Object.values(aoiData.graphics).forEach((planGraphics) => {
+        Object.keys(aoiData.graphics).forEach((key) => {
+          const planGraphics = aoiData.graphics?.[key] ?? [];
           planGraphics.forEach((graphic) => {
             (
               contaminationMap.sketchLayer as __esri.GraphicsLayer
@@ -1873,18 +1859,29 @@ export function useCalculatePlan() {
               if (!outGeometry) return;
 
               const clippedAreaM2 = calculateArea(outGeometry);
-              const currArea = contaminedAoiAreas[contamValue];
-              if (typeof clippedAreaM2 === 'number')
-                contaminedAoiAreas[contamValue] = currArea
+              const currArea = contaminedAoiAreas?.[key]?.[contamValue];
+              if (typeof clippedAreaM2 === 'number') {
+                if (!contaminedAoiAreas.hasOwnProperty(key)) {
+                  contaminedAoiAreas[key] = {};
+                }
+                contaminedAoiAreas[key][contamValue] = currArea
                   ? currArea + clippedAreaM2
                   : clippedAreaM2;
+              }
             });
           });
         });
       }
 
-      Object.keys(contaminedAoiAreas).forEach((key: any) => {
-        contaminationPercentages[key] = contaminedAoiAreas[key] / totalAoiSqM;
+      Object.keys(contaminedAoiAreas).forEach((planId: any) => {
+        const totalAoiSqM = nsiData.planGraphics[planId].summary.totalAoiSqM;
+        Object.keys(contaminedAoiAreas[planId]).forEach((key: any) => {
+          if (!contaminationPercentages.hasOwnProperty(planId)) {
+            contaminationPercentages[planId] = {};
+          }
+          contaminationPercentages[planId][key] =
+            contaminedAoiAreas[planId][key] / totalAoiSqM;
+        });
       });
 
       contaminationMap.sketchLayer.listMode = 'show';
@@ -1898,9 +1895,22 @@ export function useCalculatePlan() {
       (i) => i.type === 'scenario',
     ) as ScenarioEditsType[];
     scenarios.forEach((scenario) => {
-      scenario.aoiSummary.area = nsiData.planGraphics[scenario.layerId].aoiArea;
-      scenario.aoiSummary.buildingFootprint =
-        nsiData.planGraphics[scenario.layerId].buildingFootprint;
+      const planGraphics = nsiData.planGraphics[scenario.layerId];
+      const {
+        totalAoiSqM,
+        totalBuildingFootprintSqM,
+        totalBuildingFloorsSqM,
+        // totalBuildingSqM,
+        totalBuildingExtWallsSqM,
+        totalBuildingIntWallsSqM,
+        totalBuildingRoofSqM,
+      } = planGraphics.summary;
+      console.log('totalAoiSqM: ', totalAoiSqM);
+      console.log('totalBuildingFootprintSqM: ', totalBuildingFootprintSqM);
+      const nonBuildingArea = totalAoiSqM - totalBuildingFootprintSqM;
+
+      scenario.aoiSummary.area = planGraphics.aoiArea;
+      scenario.aoiSummary.buildingFootprint = totalBuildingFootprintSqM;
 
       const curDeconTechSelections =
         scenario.deconTechSelections.length > 0
@@ -1915,7 +1925,7 @@ export function useCalculatePlan() {
         let avgCfu = 0;
         let pctAoi = 0;
         if (media.includes('Building ')) {
-          avgCfu = totalBuildingCfu * partitionFactors[media];
+          avgCfu = planBuildingCfu[scenario.layerId] * partitionFactors[media];
 
           if (media === 'Building Exterior Walls')
             surfaceArea = totalBuildingExtWallsSqM;
@@ -1925,7 +1935,7 @@ export function useCalculatePlan() {
             surfaceArea = totalBuildingFloorsSqM;
           if (media === 'Building Roofs') surfaceArea = totalBuildingRoofSqM;
         } else {
-          pctAoi = (nsiData.aoiPercentages as any)[
+          pctAoi = (planGraphics.aoiPercentages as any)[
             (mediaToBeepEnum as any)[sel.media]
           ] as number;
           // console.log('pctAoi: ', pctAoi);
@@ -1938,17 +1948,22 @@ export function useCalculatePlan() {
           // get total CFU for media
           let totalArea = 0;
           let totalCfu = 0;
-          Object.keys(contaminationPercentages).forEach((key: any) => {
-            // area of media and cfu level
-            const pctCfu = contaminationPercentages[key];
-            //                34.2 =   0.57 * 60
-            const surfaceAreaSfCfu = pctCfu * surfaceArea;
-            totalArea += surfaceAreaSfCfu;
+          console.log('contaminationPercentages: ', contaminationPercentages);
+          if (contaminationPercentages.hasOwnProperty(scenario.layerId)) {
+            Object.keys(contaminationPercentages[scenario.layerId]).forEach(
+              (key: any) => {
+                // area of media and cfu level
+                const pctCfu = contaminationPercentages[scenario.layerId][key];
+                //                34.2 =   0.57 * 60
+                const surfaceAreaSfCfu = pctCfu * surfaceArea;
+                totalArea += surfaceAreaSfCfu;
 
-            // 34.2M  =             34.2 * 1M;
-            // SUM    = 35.916M CFU
-            totalCfu += surfaceAreaSfCfu * key;
-          });
+                // 34.2M  =             34.2 * 1M;
+                // SUM    = 35.916M CFU
+                totalCfu += surfaceAreaSfCfu * key;
+              },
+            );
+          }
 
           avgCfu = totalCfu === 0 && totalArea === 0 ? 0 : totalCfu / totalArea;
         }
@@ -2255,8 +2270,8 @@ export function useCalculatePlan() {
 
     scenarios.forEach((scenario) => {
       scenario.deconSummaryResults = {
-        summary: nsiData.summary,
-        aoiPercentages: nsiData.aoiPercentages,
+        summary: nsiData.planGraphics[scenario.layerId].summary,
+        aoiPercentages: nsiData.planGraphics[scenario.layerId].aoiPercentages,
         calculateResults: resultObject,
       };
     });
