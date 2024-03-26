@@ -63,6 +63,7 @@ import {
   userCanceledMessage,
   webServiceErrorMessage,
 } from 'config/errorMessages';
+import { CalculateContext } from 'contexts/Calculate';
 
 const layerOptions: LayerSelectType[] = [
   { value: 'Contamination Map', label: 'Contamination Map' },
@@ -222,6 +223,7 @@ type UploadStatusType =
 
 function FilePanel() {
   const { portal, userInfo } = useContext(AuthenticationContext);
+  const { setContaminationMap } = useContext(CalculateContext);
   const { setOptions } = useContext(DialogContext);
   const {
     goToOptions,
@@ -1128,6 +1130,10 @@ function FilePanel() {
         setSketchLayer(layerToAdd);
       }
 
+      if (layerType.value === 'Contamination Map') {
+        setContaminationMap(layerToAdd);
+      }
+
       // zoom to the layer unless it is a contamination map
       if (graphics.length > 0 && layerType.value !== 'Contamination Map') {
         if (selectedScenario && groupLayer && isSamplesOrVsp) {
@@ -1169,6 +1175,7 @@ function FilePanel() {
     setSelectedScenario,
     sceneView,
     setSketchLayer,
+    setContaminationMap,
     // trainingMode,
   ]);
 

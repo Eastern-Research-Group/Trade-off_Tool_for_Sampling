@@ -6,7 +6,7 @@ import { useWindowSize } from '@reach/window-size';
 // components
 import NavBar from 'components/NavBar';
 import Toolbar from 'components/Toolbar';
-import SplashScreen from 'components/SplashScreen';
+// import SplashScreen from 'components/SplashScreen';
 import TestingToolbar from 'components/TestingToolbar';
 import Map from 'components/Map';
 import { ReactTable } from 'components/ReactTable';
@@ -286,6 +286,8 @@ function App() {
         sampleData.push({
           graphic: sample,
           ...sample.attributes,
+          layerName:
+            aoiAssessedLayer.parentLayer?.title ?? aoiAssessedLayer.label,
           ground_elv: parseSmallFloat(
             sample.attributes.ground_elv,
             2,
@@ -436,7 +438,7 @@ function App() {
 
   return (
     <div className="tots" ref={totsRef}>
-      <SplashScreen />
+      {/* <SplashScreen /> */}
       <div css={appStyles(offset)}>
         <div css={containerStyles}>
           <div ref={toolbarRef}>
@@ -587,7 +589,7 @@ function App() {
                 >
                   <div css={tablePanelHeaderStyles}>
                     <span css={sampleTableHeaderStyles}>
-                      Samples (Count: {sampleData.length})
+                      Buildings (Count: {sampleData.length})
                     </span>
                   </div>
                   <div>
@@ -638,6 +640,10 @@ function App() {
                         });
                       }}
                       sortBy={[
+                        {
+                          id: 'layerName',
+                          desc: false,
+                        },
                         {
                           id: 'cbfips',
                           desc: false,

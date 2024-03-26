@@ -521,10 +521,13 @@ export function contaminationMapPopup(feature: any) {
 }
 
 export function buildingMapPopup(feature: any) {
+  feature.graphic.attributes.layerName =
+    feature.graphic.layer.parent?.title ?? feature.graphic.layer.title;
   const content = (
     <MapPopupSimple
       feature={feature}
       fieldInfos={[
+        { label: 'Layer', fieldName: 'layerName' },
         { label: 'Building ID', fieldName: 'bid' },
         { label: 'Building Type', fieldName: 'bldgtype' },
         { label: 'Census Block FIPS', fieldName: 'cbfips' },
@@ -637,10 +640,13 @@ export function buildingMapPopup(feature: any) {
 }
 
 export function imageryAnalysisMapPopup(feature: any) {
+  feature.graphic.attributes.layerName =
+    feature.graphic.layer.parent?.title ?? feature.graphic.layer.title;
   const content = (
     <MapPopupSimple
       feature={feature}
       fieldInfos={[
+        { label: 'Layer', fieldName: 'layerName' },
         { label: 'Category', fieldName: 'category' },
         { label: 'Grid Code', fieldName: 'gridcode' },
       ]}

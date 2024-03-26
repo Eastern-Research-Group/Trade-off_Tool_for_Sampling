@@ -501,7 +501,7 @@ function EditScenario({
         ev.preventDefault();
       }}
     >
-      <label htmlFor="scenario-name-input">Layer Name</label>
+      <label htmlFor="scenario-name-input">Decon Layer Name</label>
       <input
         id="scenario-name-input"
         disabled={
@@ -771,12 +771,12 @@ function EditLayer({
         </button>{' '}
         to import an existing decon layer.
       </p>
-      <label htmlFor="layer-name-input">Layer Name</label>
+      <label htmlFor="layer-name-input">Decon Layer Name</label>
       <input
         id="layer-name-input"
         css={inputStyles}
         maxLength={250}
-        placeholder="Enter Layer Name"
+        placeholder="Enter Decon Layer Name"
         value={layerName}
         onChange={(ev) => {
           setLayerName(ev.target.value);

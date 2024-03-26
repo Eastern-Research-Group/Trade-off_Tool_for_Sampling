@@ -1782,6 +1782,7 @@ function CalculateResultsPopup({
       summarySheet.getCell(1, 1).value = 'Building Data';
 
       const cols = [
+        { label: 'Layer', fieldName: 'layerName' },
         { label: 'Building ID', fieldName: 'bid' },
         { label: 'Building Type', fieldName: 'bldgtype' },
         { label: 'Census Block FIPS', fieldName: 'cbfips' },
@@ -1907,11 +1908,19 @@ function CalculateResultsPopup({
         );
         if (!aoiAssessedLayer) return;
 
-        graphics.push(
-          ...(
-            aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer
-          ).graphics.toArray(),
+        (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
+          (graphic) => {
+            graphic.attributes.layerName =
+              aoiAssessedLayer.parentLayer?.title ?? aoiAssessedLayer.label;
+            graphics.push(graphic);
+          },
         );
+
+        // graphics.push(
+        //   ...(
+        //     aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer
+        //   ).graphics.toArray(),
+        // );
       });
 
       if (graphics.length === 0) return;

@@ -1621,9 +1621,11 @@ function LocateSamples() {
     if (layer) setSelectedAoiFile(layer);
   }, [layers, selectedScenario]);
 
-  const planSettingsSaved =
+  const planSettingsSame =
     planSettings.name === tempPlanSettings.name &&
     planSettings.description === tempPlanSettings.description;
+
+  const planSettingsSaved = Boolean(planSettings.name) && planSettingsSame;
 
   return (
     <div css={panelContainer}>
@@ -1770,7 +1772,7 @@ function LocateSamples() {
               <div css={saveButtonContainerStyles}>
                 <button
                   css={saveButtonStyles(planSettingsSaved ? 'success' : '')}
-                  disabled={planSettingsSaved}
+                  disabled={planSettingsSame}
                   onClick={() => {
                     setPlanSettings(tempPlanSettings);
                     setEditPlanVisible(false);
@@ -1784,6 +1786,7 @@ function LocateSamples() {
                     'Save'
                   )}
                 </button>
+                <br />
               </div>
             </Fragment>
           )}
@@ -2971,16 +2974,17 @@ function LocateSamples() {
                   <p>
                     The tool generates a listing of different contamination
                     scenarios that are present within the specified AOI. Click
-                    Select Decon Strategies to review a summary of relevant
-                    characteristics and assign an appropriate decontamination
-                    method to address the contamination.
+                    "Select/Edit Decontamination Technology Selections" to
+                    review a summary of relevant characteristics and assign an
+                    appropriate decontamination method to address the
+                    contamination.
                   </p>
 
                   <button
                     css={submitButtonStyles}
                     onClick={() => setDeconTechPopupOpen(true)}
                   >
-                    View/Edit Decontamination Technology Selections
+                    Select/Edit Decontamination Technology Selections
                   </button>
 
                   {/*<DeconSelectionTable
@@ -3987,8 +3991,8 @@ function DeconSelectionTable({
           ...sel,
           deconTech: editable ? sel.deconTech : sel.deconTech?.label,
           isHazardous: editable ? sel.deconTech : sel.deconTech?.label,
-          pctAoi: formatNumber(sel.pctAoi),
-          surfaceArea: formatNumber(sel.surfaceArea),
+          pctAoi: `${formatNumber(sel.pctAoi)}%`,
+          surfaceArea: `${formatNumber(sel.surfaceArea)} m²`,
           avgCfu: formatNumber(sel.avgCfu),
         };
       })}

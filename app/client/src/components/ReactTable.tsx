@@ -511,11 +511,15 @@ export function ReactTableEditable({
       data,
       defaultColumn,
       updateMyData: onDataChange,
+      initialState: {
+        sortBy: [],
+      } as any,
     } as any,
     useResizeColumns,
     useBlockLayout,
     useFlexLayout,
     useFilters,
+    useSortBy,
   ) as any;
 
   // measures the table width
@@ -547,7 +551,7 @@ export function ReactTableEditable({
                   <div
                     className="rt-th"
                     role="columnheader"
-                    {...column.getHeaderProps()}
+                    {...column.getHeaderProps(column.getSortByToggleProps())}
                   >
                     <div>
                       <div className="rt-col-title">
@@ -679,7 +683,9 @@ export function ReactTableEditableCell({
   if (editType === 'select')
     return (
       <Select
-        styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+        styles={{
+          menuPortal: (base) => ({ ...base, fontSize: '0.78em', zIndex: 9999 }),
+        }}
         value={value}
         options={options}
         menuPortalTarget={document.body}

@@ -358,6 +358,7 @@ export function useStartOver() {
     setAoiData,
     setJsonDownload,
     setDeconSelections,
+    setPlanSettings,
   } = useContext(SketchContext);
 
   function startOver() {
@@ -412,6 +413,11 @@ export function useStartOver() {
     setIncludeCustomSampleTypes(false);
     setWebMapReferenceLayerSelections([]);
     setWebSceneReferenceLayerSelections([]);
+
+    setPlanSettings({
+      name: '',
+      description: '',
+    });
 
     setAoiData({
       count: 0,
@@ -1774,6 +1780,8 @@ export function useCalculatePlan() {
       ['none', 'failure', 'fetching'].includes(nsiData.status)
     )
       return;
+
+    console.log('nsiData: ', nsiData);
     // if (!hasGraphics(nsiData.planGraphics)) {
     //   if (calculateResults.status !== 'none') {
     //     console.log('setting calculate results to none 2...');
@@ -1927,7 +1935,7 @@ export function useCalculatePlan() {
             totalCfu += surfaceAreaSfCfu * key;
           });
 
-          avgCfu = totalCfu / totalArea;
+          avgCfu = totalCfu === 0 && totalArea === 0 ? 0 : totalCfu / totalArea;
         }
         // console.log('surfaceArea: ', surfaceArea);
         // console.log('avgCfu: ', avgCfu);
@@ -2546,6 +2554,7 @@ function useEditsLayerStorage() {
     setAoiData,
   } = useContext(SketchContext);
   const getPopupTemplate = useDynamicPopup();
+  const { loadedProjection } = useGeometryTools();
 
   // Retreives edit data from browser storage when the app loads
   useEffect(() => {
@@ -2554,7 +2563,8 @@ function useEditsLayerStorage() {
       !setEdits ||
       !setLayers ||
       !symbolsInitialized ||
-      layersInitialized
+      layersInitialized ||
+      !loadedProjection
     )
       return;
 
@@ -2889,6 +2899,7 @@ function useEditsLayerStorage() {
     setLayersInitialized,
     map,
     symbolsInitialized,
+    loadedProjection,
   ]);
 
   // Saves the edits to browser storage everytime they change

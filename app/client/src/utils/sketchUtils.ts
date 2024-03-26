@@ -831,7 +831,7 @@ export function getCurrentDateTime() {
  * @returns LayerType The default sample layer
  */
 export function createSampleLayer(
-  name: string = 'Default Decon Layer',
+  name: string = 'Area of Interest',
   parentLayer: __esri.GroupLayer | null = null,
 ) {
   const layerUuid = generateUUID();
@@ -1078,7 +1078,7 @@ export function getNextScenarioLayer(
   }
 
   const defaultLayerIndex = sketchableLayers.findIndex(
-    (layer) => layer.name === 'Default Decon Layer',
+    (layer) => layer.name === 'Area of Interest',
   );
 
   return {
@@ -1121,6 +1121,11 @@ export function getSampleTableColumns({
       accessor: 'fd_id',
       width: 0,
       show: false,
+    },
+    {
+      Header: 'Layer',
+      accessor: 'layerName',
+      width: baseColumnWidth,
     },
     {
       Header: 'Building Type',
