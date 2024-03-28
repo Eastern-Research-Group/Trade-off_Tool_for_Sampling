@@ -1896,6 +1896,8 @@ export function useCalculatePlan() {
     ) as ScenarioEditsType[];
     scenarios.forEach((scenario) => {
       const planGraphics = nsiData.planGraphics[scenario.layerId];
+      if (!planGraphics) return;
+
       const {
         totalAoiSqM,
         totalBuildingFootprintSqM,
@@ -1925,7 +1927,9 @@ export function useCalculatePlan() {
         let avgCfu = 0;
         let pctAoi = 0;
         if (media.includes('Building ')) {
-          avgCfu = planBuildingCfu[scenario.layerId] * partitionFactors[media];
+          avgCfu =
+            (planBuildingCfu[scenario.layerId] ?? 0) *
+            (partitionFactors[media] ?? 0);
 
           if (media === 'Building Exterior Walls')
             surfaceArea = totalBuildingExtWallsSqM;
@@ -1965,7 +1969,7 @@ export function useCalculatePlan() {
             );
           }
 
-          avgCfu = totalCfu === 0 && totalArea === 0 ? 0 : totalCfu / totalArea;
+          avgCfu = !totalCfu && !totalArea ? 0 : totalCfu / totalArea;
         }
         // console.log('surfaceArea: ', surfaceArea);
         // console.log('avgCfu: ', avgCfu);
@@ -2096,6 +2100,7 @@ export function useCalculatePlan() {
     let totalApplicationTime = 0;
     let totalResidenceTime = 0;
     let totalDeconTime = 0;
+    const detectionLimit = 100;
     scenarios.forEach((scenario) => {
       scenario.deconLayerResults.resultsTable = [];
       scenario.deconLayerResults.cost = 0;
@@ -2110,11 +2115,15 @@ export function useCalculatePlan() {
         // find decon settings
         const deconTech = sel.deconTech?.value;
         const media = sel.media;
-        if (!deconTech) return;
+        if (!deconTech) {
+          sel.avgFinalContamination = sel.avgCfu;
+          sel.aboveDetectionLimit = sel.avgCfu >= detectionLimit;
+          return;
+        }
 
         // need to lookup stuff from sampleAttributes
         const {
-          // LOD_NON: contaminationRemovalFactor,
+          LOD_NON: contaminationRemovalFactor,
           MCPS: setupCost,
           TCPS: costM2,
           WVPS: solidWasteVolume,
@@ -2124,10 +2133,14 @@ export function useCalculatePlan() {
           TTC: applicationTimeHrs,
           TTA: residenceTimeHrs,
         } = sampleAttributes[deconTech as any];
-        // const contamLeftFactor = 1 - contaminationRemovalFactor;
-        // const avgFinalContam =
-        //   avgCfu * Math.pow(contamLeftFactor, sel.numApplications);
-        // const aboveDetection = avgFinalContam >= 100; //detectionLimit;
+
+        // calculate final contamination
+        const contamLeftFactor = 1 - contaminationRemovalFactor;
+        const avgFinalContam =
+          sel.avgCfu * Math.pow(contamLeftFactor, sel.numApplications);
+        sel.avgFinalContamination = avgFinalContam;
+        sel.aboveDetectionLimit = avgFinalContam >= detectionLimit;
+
         // const surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications;
         const areaDeconApplied =
           sel.surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications;
@@ -2155,6 +2168,9 @@ export function useCalculatePlan() {
           liquidWasteVolumeM3: liquidWasteM3,
           decontaminationCost: deconCost,
           decontaminationTimeDays: deconTime,
+          averageInitialContamination: sel.avgCfu,
+          averageFinalContamination: sel.avgFinalContamination,
+          aboveDetectionLimit: sel.aboveDetectionLimit,
         };
 
         jsonDownload.push(jsonItem);
@@ -2271,8 +2287,9 @@ export function useCalculatePlan() {
 
     scenarios.forEach((scenario) => {
       scenario.deconSummaryResults = {
-        summary: nsiData.planGraphics[scenario.layerId].summary,
-        aoiPercentages: nsiData.planGraphics[scenario.layerId].aoiPercentages,
+        summary: nsiData.planGraphics?.[scenario.layerId]?.summary,
+        aoiPercentages:
+          nsiData.planGraphics?.[scenario.layerId]?.aoiPercentages,
         calculateResults: resultObject,
       };
     });

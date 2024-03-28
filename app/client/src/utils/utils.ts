@@ -208,5 +208,6 @@ export function activateSketchButton(id: string) {
 }
 
 export function formatNumber(value: number, precision: number = 0) {
-  return parseSmallFloat(value, precision).toLocaleString();
+  const output = parseSmallFloat(value, precision);
+  return output ? output.toLocaleString() : output;
 }

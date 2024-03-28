@@ -59,6 +59,9 @@ export type JsonDownloadType = {
   liquidWasteVolumeM3: number;
   decontaminationCost: number;
   decontaminationTimeDays: number;
+  averageInitialContamination: number;
+  averageFinalContamination: number;
+  aboveDetectionLimit: boolean;
 };
 
 export type PlanSettings = {
@@ -380,7 +383,9 @@ export function SketchProvider({ children }: Props) {
         numConcurrentApplications: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
-      }, // 'Methyl Bromide'
+        avgFinalContamination: null,
+        aboveDetectionLimit: '',
+      },
       {
         id: 2,
         media: 'Streets - Asphalt',
@@ -392,7 +397,9 @@ export function SketchProvider({ children }: Props) {
         numConcurrentApplications: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
-      }, // 'Vaporous Hydrogen Peroxide' },
+        avgFinalContamination: null,
+        aboveDetectionLimit: '',
+      },
       {
         id: 3,
         media: 'Streets/Sidewalks - Concrete',
@@ -404,6 +411,8 @@ export function SketchProvider({ children }: Props) {
         numConcurrentApplications: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
+        avgFinalContamination: null,
+        aboveDetectionLimit: '',
       },
       {
         id: 4,
@@ -416,6 +425,8 @@ export function SketchProvider({ children }: Props) {
         numConcurrentApplications: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
+        avgFinalContamination: null,
+        aboveDetectionLimit: '',
       },
       {
         id: 5,
@@ -428,7 +439,9 @@ export function SketchProvider({ children }: Props) {
         numConcurrentApplications: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
-      }, // 'Bleach Spray' },
+        avgFinalContamination: null,
+        aboveDetectionLimit: '',
+      },
       {
         id: 6,
         media: 'Building Interior Walls',
@@ -440,6 +453,8 @@ export function SketchProvider({ children }: Props) {
         numConcurrentApplications: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
+        avgFinalContamination: null,
+        aboveDetectionLimit: '',
       },
       {
         id: 7,
@@ -452,7 +467,9 @@ export function SketchProvider({ children }: Props) {
         numConcurrentApplications: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
-      }, // 'Methyl Bromide'
+        avgFinalContamination: null,
+        aboveDetectionLimit: '',
+      },
     ]);
   }, [allSampleOptions, defaultDeconSelections]);
 

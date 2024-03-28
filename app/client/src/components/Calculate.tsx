@@ -62,7 +62,7 @@ import {
 import { colors } from 'styles';
 import { DialogContent, DialogOverlay } from '@reach/dialog';
 import { generateUUID, getGraphicsArray } from 'utils/sketchUtils';
-import { ReactTable } from './ReactTable';
+import { ReactTableEditable } from './ReactTable';
 import { ScenarioEditsType } from 'types/Edits';
 // styles
 // import { reactSelectStyles } from 'styles';
@@ -1695,10 +1695,10 @@ function CalculateResultsPopup({
       summarySheet.getCell(5, 2).font = defaultFont;
       summarySheet.getCell(5, 2).value = planSettings.description;
 
-      summarySheet.mergeCells(7, 5, 7, 6);
-      summarySheet.getCell(7, 5).alignment = columnTitleAlignment;
-      summarySheet.getCell(7, 5).font = labelFont;
-      summarySheet.getCell(7, 5).value = 'Decontamination Waste Generation';
+      summarySheet.mergeCells(7, 3, 7, 4);
+      summarySheet.getCell(7, 3).alignment = columnTitleAlignment;
+      summarySheet.getCell(7, 3).font = labelFont;
+      summarySheet.getCell(7, 3).value = 'Decontamination Waste Generation';
 
       const cols = [
         { label: 'Contamination Scenario', fieldName: 'contaminationScenario' },
@@ -1726,6 +1726,20 @@ function CalculateResultsPopup({
           fieldName: 'decontaminationTimeDays',
           format: 'number',
         },
+        {
+          label: 'Average Initial Contamination (CFUs/m²)',
+          fieldName: 'averageInitialContamination',
+          format: 'number',
+        },
+        {
+          label: 'Average Final Contamination (CFUs/m²)',
+          fieldName: 'averageFinalContamination',
+          format: 'number',
+        },
+        {
+          label: 'Above/Below Detection Limit',
+          fieldName: 'aboveDetectionLimit',
+        },
       ];
 
       let curRow = 8;
@@ -1749,11 +1763,17 @@ function CalculateResultsPopup({
         rows.push(
           cols.map((col) => {
             const fieldValue = (item as any)[col.fieldName];
+            const value =
+              col.fieldName === 'aboveDetectionLimit'
+                ? fieldValue
+                  ? 'Above'
+                  : 'Below'
+                : fieldValue;
             return {
               value:
                 col.format && ['currency', 'number'].includes(col.format)
-                  ? (parseSmallFloat(fieldValue, 2) ?? '').toLocaleString()
-                  : fieldValue,
+                  ? (parseSmallFloat(value, 2) ?? '').toLocaleString()
+                  : value,
               numFmt:
                 col.format === 'currency' ? currencyNumberFormat : undefined,
             };
@@ -1827,6 +1847,20 @@ function CalculateResultsPopup({
           fieldName: 'decontaminationTimeDays',
           format: 'number',
         },
+        {
+          label: 'Average Initial Contamination (CFUs/m²)',
+          fieldName: 'averageInitialContamination',
+          format: 'number',
+        },
+        {
+          label: 'Average Final Contamination (CFUs/m²)',
+          fieldName: 'averageFinalContamination',
+          format: 'number',
+        },
+        {
+          label: 'Above/Below Detection Limit',
+          fieldName: 'aboveDetectionLimit',
+        },
       ];
 
       let curRow = 3;
@@ -1866,11 +1900,17 @@ function CalculateResultsPopup({
           rows.push(
             cols.map((col) => {
               const fieldValue = (item as any)[col.fieldName];
+              const value =
+                col.fieldName === 'aboveDetectionLimit'
+                  ? fieldValue
+                    ? 'Above'
+                    : 'Below'
+                  : fieldValue;
               return {
                 value:
                   col.format && ['currency', 'number'].includes(col.format)
-                    ? (parseSmallFloat(fieldValue, 2) ?? '').toLocaleString()
-                    : fieldValue,
+                    ? (parseSmallFloat(value, 2) ?? '').toLocaleString()
+                    : value,
                 numFmt:
                   col.format === 'currency' ? currencyNumberFormat : undefined,
               };
@@ -2102,17 +2142,24 @@ function CalculateResultsPopup({
   let totalLiquidWasteVolume = 0;
   let totalDeconCost = 0;
   let totalDeconTime = 0;
+  let totalInitialContamination = 0;
+  let totalFinalContamination = 0;
   const tableData = jsonDownload.map((d) => {
     totalSolidWasteVolume += d.solidWasteVolumeM3;
     totalLiquidWasteVolume += d.liquidWasteVolumeM3;
     totalDeconCost += d.decontaminationCost;
     totalDeconTime += d.decontaminationTimeDays;
+    totalInitialContamination += d.averageInitialContamination;
+    totalFinalContamination += d.averageFinalContamination;
     return {
       ...d,
       solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3),
       liquidWasteVolumeM3: formatNumber(d.liquidWasteVolumeM3),
       decontaminationCost: formatNumber(d.decontaminationCost),
       decontaminationTimeDays: formatNumber(d.decontaminationTimeDays),
+      averageInitialContamination: formatNumber(d.averageInitialContamination),
+      averageFinalContamination: formatNumber(d.averageFinalContamination),
+      aboveDetectionLimit: d.aboveDetectionLimit ? 'Above' : 'Below',
     };
   });
   tableData.push({
@@ -2122,6 +2169,9 @@ function CalculateResultsPopup({
     liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume),
     decontaminationCost: formatNumber(totalDeconCost),
     decontaminationTimeDays: formatNumber(totalDeconTime),
+    averageInitialContamination: formatNumber(totalInitialContamination),
+    averageFinalContamination: formatNumber(totalFinalContamination),
+    aboveDetectionLimit: '',
   });
 
   const scenarios = edits.edits.filter(
@@ -2166,7 +2216,7 @@ function CalculateResultsPopup({
         <br />
 
         <h2>Overall Summary</h2>
-        <ReactTable
+        <ReactTableEditable
           id={tableId}
           data={tableData}
           idColumn={'contaminationScenario'}
@@ -2205,6 +2255,21 @@ function CalculateResultsPopup({
                 accessor: 'decontaminationTimeDays',
                 width: 170,
               },
+              {
+                Header: 'Average Initial Contamination (CFUs/m²)',
+                accessor: 'averageInitialContamination',
+                width: 110,
+              },
+              {
+                Header: 'Average Final Contamination (CFUs/m²)',
+                accessor: 'averageFinalContamination',
+                width: 110,
+              },
+              {
+                Header: 'Above/Below Detection Limit',
+                accessor: 'aboveDetectionLimit',
+                width: 110,
+              },
             ];
           }}
         />
@@ -2214,18 +2279,29 @@ function CalculateResultsPopup({
           let totalLiquidWasteVolume = 0;
           let totalDeconCost = 0;
           let totalDeconTime = 0;
+          let totalInitialContamination = 0;
+          let totalFinalContamination = 0;
 
           const tableData = scenario.deconLayerResults.resultsTable.map((d) => {
             totalSolidWasteVolume += d.solidWasteVolumeM3;
             totalLiquidWasteVolume += d.liquidWasteVolumeM3;
             totalDeconCost += d.decontaminationCost;
             totalDeconTime += d.decontaminationTimeDays;
+            totalInitialContamination += d.averageInitialContamination;
+            totalFinalContamination += d.averageFinalContamination;
             return {
               ...d,
               solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3),
               liquidWasteVolumeM3: formatNumber(d.liquidWasteVolumeM3),
               decontaminationCost: formatNumber(d.decontaminationCost),
               decontaminationTimeDays: formatNumber(d.decontaminationTimeDays),
+              averageInitialContamination: formatNumber(
+                d.averageInitialContamination,
+              ),
+              averageFinalContamination: formatNumber(
+                d.averageFinalContamination,
+              ),
+              aboveDetectionLimit: d.aboveDetectionLimit ? 'Above' : 'Below',
             };
           });
           tableData.push({
@@ -2235,13 +2311,18 @@ function CalculateResultsPopup({
             liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume),
             decontaminationCost: formatNumber(totalDeconCost),
             decontaminationTimeDays: formatNumber(totalDeconTime),
+            averageInitialContamination: formatNumber(
+              totalInitialContamination,
+            ),
+            averageFinalContamination: formatNumber(totalFinalContamination),
+            aboveDetectionLimit: '',
           });
 
           return (
-            <Fragment>
+            <Fragment key={index}>
               <h2>{scenario.label} Summary</h2>
 
-              <ReactTable
+              <ReactTableEditable
                 id={tableId + index}
                 data={tableData}
                 idColumn={'contaminationScenario'}
@@ -2280,6 +2361,21 @@ function CalculateResultsPopup({
                         'Decontamination Time (days) [Application and Residence]',
                       accessor: 'decontaminationTimeDays',
                       width: 170,
+                    },
+                    {
+                      Header: 'Average Initial Contamination (CFUs/m²)',
+                      accessor: 'averageInitialContamination',
+                      width: 110,
+                    },
+                    {
+                      Header: 'Average Final Contamination (CFUs/m²)',
+                      accessor: 'averageFinalContamination',
+                      width: 110,
+                    },
+                    {
+                      Header: 'Above/Below Detection Limit',
+                      accessor: 'aboveDetectionLimit',
+                      width: 110,
                     },
                   ];
                 }}

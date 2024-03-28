@@ -3904,7 +3904,8 @@ function DeconSelectionTable({
   editable = false,
   performUpdate = false,
 }: DeconSelectionProps) {
-  const { setCalculateResults } = useContext(CalculateContext);
+  const { calculateResults, setCalculateResults } =
+    useContext(CalculateContext);
   const {
     allSampleOptions,
     edits,
@@ -3959,11 +3960,24 @@ function DeconSelectionTable({
     }
   }, [defaultDeconSelections, selectedScenario, setEdits, setSelectedScenario]);
 
-  // useEffect(() => {
-  //   if (selectedScenario && selectedScenario.deconTechSelections.length > 0) {
-  //     setDeconSelections([...selectedScenario.deconTechSelections]);
-  //   }
-  // }, [edits, selectedScenario]);
+  const [hasUpdatedSelections, setHasUpdatedSelections] = useState(false);
+  useEffect(() => {
+    if (calculateResults.status !== 'success') {
+      setHasUpdatedSelections(false);
+      return;
+    }
+    if (hasUpdatedSelections) return;
+
+    setHasUpdatedSelections(true);
+
+    const scenario = edits.edits.find(
+      (e) => e.type === 'scenario' && e.layerId === selectedScenario?.layerId,
+    ) as ScenarioEditsType;
+
+    if (scenario && scenario.deconTechSelections.length > 0) {
+      setDeconSelections([...scenario.deconTechSelections]);
+    }
+  }, [calculateResults, edits, hasUpdatedSelections, selectedScenario]);
 
   const updateEdits = useCallback(
     (newTable: any[] | null = null) => {
@@ -4001,7 +4015,7 @@ function DeconSelectionTable({
         return selectedScenario;
       });
 
-      setUpdateEditsRan(false);
+      setTimeout(() => setUpdateEditsRan(false), 1000);
     },
     [
       deconSelections,
@@ -4034,6 +4048,8 @@ function DeconSelectionTable({
           pctAoi: sel.pctAoi ? `${formatNumber(sel.pctAoi)}%` : '',
           surfaceArea: `${formatNumber(sel.surfaceArea)} m²`,
           avgCfu: formatNumber(sel.avgCfu),
+          avgFinalContamination: formatNumber(sel.avgFinalContamination, 2),
+          aboveDetectionLimit: sel.aboveDetectionLimit ? 'Above' : 'Below',
         };
       })}
       idColumn={'ID'}
@@ -4108,6 +4124,16 @@ function DeconSelectionTable({
             width: 0,
             editType: editable ? 'input' : undefined,
             show: false,
+          },
+          {
+            Header: 'Average Final Contamination (CFUs/m²)',
+            accessor: 'avgFinalContamination',
+            width: 97,
+          },
+          {
+            Header: 'Above/Below Detection Limit',
+            accessor: 'aboveDetectionLimit',
+            width: 97,
           },
           {
             Header: 'Is Hazardous',
