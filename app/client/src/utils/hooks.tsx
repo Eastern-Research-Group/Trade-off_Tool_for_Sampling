@@ -2116,6 +2116,7 @@ export function useCalculatePlan() {
         const {
           // LOD_NON: contaminationRemovalFactor,
           MCPS: setupCost,
+          TCPS: costM2,
           WVPS: solidWasteVolume,
           WWPS: solidWasteM,
           ALC: liquidWasteVolume,
@@ -2136,7 +2137,7 @@ export function useCalculatePlan() {
         const liquidWasteMass = areaDeconApplied * liquidWasteM;
 
         const deconCost =
-          setupCost * sel.numApplications + areaDeconApplied * setupCost;
+          setupCost * sel.numApplications + areaDeconApplied * costM2;
         const sumApplicationTime =
           (areaDeconApplied * applicationTimeHrs) /
           24 /
