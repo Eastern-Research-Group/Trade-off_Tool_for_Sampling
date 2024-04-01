@@ -756,6 +756,7 @@ function ResultCard({ result }: ResultCardProps) {
   const {
     defaultSymbols,
     setDefaultSymbols,
+    defaultDeconSelections,
     displayDimensions,
     edits,
     setEdits,
@@ -1517,7 +1518,7 @@ function ResultCard({ result }: ResultCardProps) {
             table,
             referenceLayersTable,
             customAttributes: newCustomAttributes,
-            deconTechSelections: [],
+            deconTechSelections: defaultDeconSelections,
             deconSummaryResults: {
               summary: {
                 totalAoiSqM: 0,

@@ -117,6 +117,7 @@ function EditScenario({
     signedIn, //
   } = useContext(AuthenticationContext);
   const {
+    defaultDeconSelections,
     edits,
     setEdits,
     map,
@@ -350,7 +351,7 @@ function EditScenario({
           referenceLayers: [],
         },
         customAttributes: [],
-        deconTechSelections: [],
+        deconTechSelections: defaultDeconSelections,
         deconSummaryResults: {
           summary: {
             totalAoiSqM: 0,
