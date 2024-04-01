@@ -1968,7 +1968,8 @@ function CalculateResultsPopup({
         { label: 'x', fieldName: 'x' },
         { label: 'y', fieldName: 'y' },
         { label: 'Contamination Type', fieldName: 'CONTAMTYPE' },
-        { label: 'Activity', fieldName: 'CONTAMVAL' },
+        { label: 'Activity (Initial)', fieldName: 'CONTAMVALINITIAL' },
+        { label: 'Activity (Final)', fieldName: 'CONTAMVAL' },
         { label: 'Unit of Measure', fieldName: 'CONTAMUNIT' },
         {
           label: 'Footprint Area (square meters)',
@@ -2155,10 +2156,10 @@ function CalculateResultsPopup({
       ...d,
       solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3),
       liquidWasteVolumeM3: formatNumber(d.liquidWasteVolumeM3),
-      decontaminationCost: formatNumber(d.decontaminationCost),
-      decontaminationTimeDays: formatNumber(d.decontaminationTimeDays),
+      decontaminationCost: formatNumber(d.decontaminationCost, 2),
+      decontaminationTimeDays: formatNumber(d.decontaminationTimeDays, 1),
       averageInitialContamination: formatNumber(d.averageInitialContamination),
-      averageFinalContamination: formatNumber(d.averageFinalContamination),
+      averageFinalContamination: formatNumber(d.averageFinalContamination, 2),
       aboveDetectionLimit: d.aboveDetectionLimit ? 'Above' : 'Below',
     };
   });
@@ -2167,10 +2168,10 @@ function CalculateResultsPopup({
     decontaminationTechnology: '',
     solidWasteVolumeM3: formatNumber(totalSolidWasteVolume),
     liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume),
-    decontaminationCost: formatNumber(totalDeconCost),
-    decontaminationTimeDays: formatNumber(totalDeconTime),
+    decontaminationCost: formatNumber(totalDeconCost, 2),
+    decontaminationTimeDays: formatNumber(totalDeconTime, 1),
     averageInitialContamination: formatNumber(totalInitialContamination),
-    averageFinalContamination: formatNumber(totalFinalContamination),
+    averageFinalContamination: formatNumber(totalFinalContamination, 2),
     aboveDetectionLimit: '',
   });
 
@@ -2293,13 +2294,17 @@ function CalculateResultsPopup({
               ...d,
               solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3),
               liquidWasteVolumeM3: formatNumber(d.liquidWasteVolumeM3),
-              decontaminationCost: formatNumber(d.decontaminationCost),
-              decontaminationTimeDays: formatNumber(d.decontaminationTimeDays),
+              decontaminationCost: formatNumber(d.decontaminationCost, 2),
+              decontaminationTimeDays: formatNumber(
+                d.decontaminationTimeDays,
+                1,
+              ),
               averageInitialContamination: formatNumber(
                 d.averageInitialContamination,
               ),
               averageFinalContamination: formatNumber(
                 d.averageFinalContamination,
+                2,
               ),
               aboveDetectionLimit: d.aboveDetectionLimit ? 'Above' : 'Below',
             };
@@ -2309,12 +2314,12 @@ function CalculateResultsPopup({
             decontaminationTechnology: '',
             solidWasteVolumeM3: formatNumber(totalSolidWasteVolume),
             liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume),
-            decontaminationCost: formatNumber(totalDeconCost),
-            decontaminationTimeDays: formatNumber(totalDeconTime),
+            decontaminationCost: formatNumber(totalDeconCost, 2),
+            decontaminationTimeDays: formatNumber(totalDeconTime, 1),
             averageInitialContamination: formatNumber(
               totalInitialContamination,
             ),
-            averageFinalContamination: formatNumber(totalFinalContamination),
+            averageFinalContamination: formatNumber(totalFinalContamination, 2),
             aboveDetectionLimit: '',
           });
 

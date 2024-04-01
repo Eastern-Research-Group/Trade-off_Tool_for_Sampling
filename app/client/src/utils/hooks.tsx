@@ -101,6 +101,7 @@ import {
 } from 'config/sampleAttributes';
 import { appendEnvironmentObjectParam } from './arcGisRestUtils';
 import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
+import { parseSmallFloat } from './utils';
 
 // type AoiPercentages = {
 //   numAois: number;
@@ -134,6 +135,18 @@ type PlanGraphics = {
     };
   };
 };
+
+const baseBuildingSymbolProps = {
+  text: '\ue687',
+  color: 'blue',
+  yoffset: -13,
+  font: {
+    family: 'CalciteWebCoreIcons',
+    size: 24,
+  },
+};
+
+const detectionLimit = 100;
 
 const bldgTypeEnum = {
   C: 'Concrete',
@@ -1565,6 +1578,8 @@ export function useCalculatePlan() {
                   st_damcat: handleEnum(st_damcat, stDamcatEnum),
                   CONTAMTYPE: '',
                   CONTAMUNIT: '',
+                  CONTAMVALPLUME: 0,
+                  CONTAMVALINITIAL: 0,
                   CONTAMVAL: 0,
                   footprintSqM,
                   floorsSqM,
@@ -1586,15 +1601,7 @@ export function useCalculatePlan() {
                     wkid: 102100,
                   },
                 }),
-                symbol: new TextSymbol({
-                  text: '\ue687',
-                  color: 'blue',
-                  yoffset: -13,
-                  font: {
-                    family: 'CalciteWebCoreIcons',
-                    size: 24,
-                  },
-                }),
+                symbol: new TextSymbol(baseBuildingSymbolProps),
                 popupTemplate: {
                   title: '',
                   content: buildingMapPopup,
@@ -1788,6 +1795,11 @@ export function useCalculatePlan() {
     //   return;
     // }
 
+    let editsCopy: EditsType = edits;
+    const scenarios = editsCopy.edits.filter(
+      (i) => i.type === 'scenario',
+    ) as ScenarioEditsType[];
+
     const graphics: __esri.Graphic[] = [];
     Object.values(nsiData.planGraphics).forEach((planGraphics) => {
       graphics.push(...planGraphics.graphics);
@@ -1823,19 +1835,49 @@ export function useCalculatePlan() {
               return;
             }
 
-            // const contamReduction = graphic.attributes.LOD_NON;
-            // console.log('contamReduction: ', contamReduction);
-            // const reductionFactor = parseSmallFloat(1 - contamReduction);
-            // console.log('parseSmallFloat 1 - contamReduction: ', reductionFactor);
-            const newCfu = contamGraphic.attributes.CONTAMVAL; // * reductionFactor;
+            const plumeCfu = contamGraphic.attributes.CONTAMVAL;
+
+            // lookup decon selection
+            let originalCfu = 0;
+            let newCfu = 0;
+            const scenario = scenarios.find((s) => s.layerId === planId);
+            if (scenario) {
+              // find decon tech selections
+              const buildingTech = scenario.deconTechSelections.filter((t) =>
+                t.media.includes('Building '),
+              );
+              buildingTech.forEach((tech) => {
+                const mediaCfu = plumeCfu * (partitionFactors[tech.media] ?? 0);
+                originalCfu += mediaCfu;
+
+                const deconTech = sampleAttributes[tech.deconTech?.value];
+                if (!deconTech) {
+                  newCfu += mediaCfu;
+                  return;
+                }
+
+                const { LOD_NON: contaminationRemovalFactor } =
+                  sampleAttributes[tech.deconTech.value];
+
+                const reductionFactor = parseSmallFloat(
+                  1 - contaminationRemovalFactor,
+                );
+                const newMediaCfu = mediaCfu * reductionFactor;
+                newCfu += newMediaCfu;
+              });
+            }
+            // console.log('originalCfu: ', originalCfu);
+            // console.log('newCfu: ', newCfu);
+            graphic.attributes.CONTAMVALPLUME = plumeCfu;
+            graphic.attributes.CONTAMVALINITIAL = originalCfu;
             graphic.attributes.CONTAMVAL = newCfu;
             graphic.attributes.CONTAMUNIT = contamGraphic.attributes.CONTAMUNIT;
             graphic.attributes.CONTAMTYPE = contamGraphic.attributes.CONTAMTYPE;
 
             if (planBuildingCfu.hasOwnProperty(planId)) {
-              planBuildingCfu[planId] += newCfu;
+              planBuildingCfu[planId] += plumeCfu;
             } else {
-              planBuildingCfu[planId] = newCfu;
+              planBuildingCfu[planId] = plumeCfu;
             }
 
             // totalBuildingCfu += newCfu;
@@ -1890,10 +1932,7 @@ export function useCalculatePlan() {
     // console.log('contaminationPercentages: ', contaminationPercentages);
 
     // perform calculations off percentAOI stuff
-    let editsCopy: EditsType = edits;
-    const scenarios = editsCopy.edits.filter(
-      (i) => i.type === 'scenario',
-    ) as ScenarioEditsType[];
+
     scenarios.forEach((scenario) => {
       const planGraphics = nsiData.planGraphics[scenario.layerId];
       if (!planGraphics) return;
@@ -2011,7 +2050,20 @@ export function useCalculatePlan() {
           planData?.graphics
         ) {
           aoiAssessedLayer?.sketchLayer.graphics.removeAll();
-          aoiAssessedLayer?.sketchLayer.graphics.addMany(planData.graphics);
+          aoiAssessedLayer?.sketchLayer.graphics.addMany(
+            planData.graphics.map((g) => {
+              if (!g.attributes.CONTAMTYPE) return g;
+
+              const newG = g.clone();
+              newG.symbol = new TextSymbol({
+                ...baseBuildingSymbolProps,
+                color:
+                  g.attributes.CONTAMVAL < detectionLimit ? 'green' : 'red',
+              });
+
+              return newG;
+            }),
+          );
         }
         if (
           imageAnalysisLayer?.sketchLayer?.type === 'graphics' &&
@@ -2100,7 +2152,6 @@ export function useCalculatePlan() {
     let totalApplicationTime = 0;
     let totalResidenceTime = 0;
     let totalDeconTime = 0;
-    const detectionLimit = 100;
     scenarios.forEach((scenario) => {
       scenario.deconLayerResults.resultsTable = [];
       scenario.deconLayerResults.cost = 0;

@@ -566,7 +566,8 @@ export function buildingMapPopup(feature: any) {
         { label: 'x', fieldName: 'x' },
         { label: 'y', fieldName: 'y' },
         { label: 'Contamination Type', fieldName: 'CONTAMTYPE' },
-        { label: 'Activity', fieldName: 'CONTAMVAL' },
+        { label: 'Activity (Initial)', fieldName: 'CONTAMVALINITIAL' },
+        { label: 'Activity (Final)', fieldName: 'CONTAMVAL' },
         { label: 'Unit of Measure', fieldName: 'CONTAMUNIT' },
         {
           label: 'Footprint Area (square meters)',
