@@ -136,7 +136,7 @@ type PlanGraphics = {
   };
 };
 
-const baseBuildingSymbolProps = {
+export const baseBuildingSymbolProps = {
   text: '\ue687',
   color: 'blue',
   yoffset: -13,

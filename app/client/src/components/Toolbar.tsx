@@ -24,7 +24,7 @@ import { SketchContext } from 'contexts/Sketch';
 // utils
 import { getEnvironmentStringParam } from 'utils/arcGisRestUtils';
 import { fetchCheck } from 'utils/fetchUtils';
-import { imageAnalysisSymbols } from 'utils/hooks';
+import { baseBuildingSymbolProps, imageAnalysisSymbols } from 'utils/hooks';
 import {
   findLayerInEdits,
   getElevationLayer,
@@ -40,6 +40,7 @@ import {
   // SampleSelectType,
 } from 'config/sampleAttributes';
 import { LayerType } from 'types/Layer';
+import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 
 const toolBarHeight = '40px';
 
@@ -89,6 +90,7 @@ function buildLegendListItem(event: any, isDashboard: boolean) {
       value: 'Area of Interest',
       title: 'Area of Interest',
       symbol: defaultSymbols.symbols['Area of Interest'],
+      type: 'polygon',
       style: null,
     });
   }
@@ -97,6 +99,7 @@ function buildLegendListItem(event: any, isDashboard: boolean) {
       value: 'Contamination Map',
       title: 'Contamination Map',
       symbol: defaultSymbols.symbols['Contamination Map'],
+      type: 'polygon',
       style: null,
     });
   }
@@ -105,6 +108,7 @@ function buildLegendListItem(event: any, isDashboard: boolean) {
       value: 'Area of Interest',
       title: 'Area of Interest',
       symbol: defaultSymbols.symbols['Area of Interest'],
+      type: 'polygon',
       style: null,
     });
     // subtitle = 'Decon Technology';
@@ -121,6 +125,7 @@ function buildLegendListItem(event: any, isDashboard: boolean) {
     //         value: option.value,
     //         title: option.label,
     //         symbol: defaultSymbols.symbols[option.value],
+    //         type: 'polygon',
     //         style,
     //       });
     //     } else {
@@ -128,6 +133,7 @@ function buildLegendListItem(event: any, isDashboard: boolean) {
     //         value: 'Samples',
     //         title: option.label,
     //         symbol: defaultSymbols.symbols['Samples'],
+    //         type: 'polygon',
     //         style,
     //       });
     //     }
@@ -135,6 +141,33 @@ function buildLegendListItem(event: any, isDashboard: boolean) {
     // );
   }
   if (layer?.layerType === 'AOI Assessed') {
+    legendItems.push({
+      value: 'good',
+      title: 'Final Contamination < 100',
+      symbol: new TextSymbol({
+        ...baseBuildingSymbolProps,
+        color: 'green',
+      }),
+      type: 'text',
+      style: null,
+    });
+    legendItems.push({
+      value: 'bad',
+      title: 'Final Contamination >= 100',
+      symbol: new TextSymbol({
+        ...baseBuildingSymbolProps,
+        color: 'red',
+      }),
+      type: 'text',
+      style: null,
+    });
+    legendItems.push({
+      value: 'none',
+      title: 'Not Contaminated',
+      symbol: new TextSymbol(baseBuildingSymbolProps),
+      type: 'text',
+      style: null,
+    });
   }
   if (layer?.layerType === 'Image Analysis') {
     Object.keys(imageAnalysisSymbols).forEach((key) => {
@@ -160,6 +193,7 @@ function buildLegendListItem(event: any, isDashboard: boolean) {
             width: esriSymbol.outline.width,
           },
         },
+        type: 'polygon',
         style: null,
       });
     });
@@ -188,11 +222,28 @@ function buildLegendListItem(event: any, isDashboard: boolean) {
                           opacity: 1;
                         `}
                       >
-                        <ShapeStyle
-                          color={row.symbol.color}
-                          outline={row.symbol.outline}
-                          style={row.style}
-                        />
+                        {row.type === 'polygon' && (
+                          <ShapeStyle
+                            color={row.symbol.color}
+                            outline={row.symbol.outline}
+                            style={row.style}
+                          />
+                        )}
+                        {row.type === 'text' && (
+                          <span
+                            className="esri-icon-organization"
+                            css={css`
+                              font-size: 22px;
+                              font-weight: bold;
+                              color: rgba(
+                                ${row.symbol.color.r},
+                                ${row.symbol.color.g},
+                                ${row.symbol.color.b},
+                                ${row.symbol.color.a}
+                              );
+                            `}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -315,12 +366,21 @@ const basemapNames = [
   'USA Topo Maps',
 ];
 
-type LegendRowType = {
-  title: string;
-  value: string;
-  symbol: PolygonSymbol;
-  style: string | null;
-};
+type LegendRowType =
+  | {
+      title: string;
+      value: string;
+      type: 'polygon';
+      symbol: PolygonSymbol;
+      style: string | null;
+    }
+  | {
+      title: string;
+      value: string;
+      symbol: TextSymbol;
+      type: 'text';
+      style: string | null;
+    };
 
 // --- styles (Toolbar) ---
 const toolBarTitle = css`
