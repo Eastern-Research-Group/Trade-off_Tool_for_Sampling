@@ -2146,12 +2146,15 @@ function CalculateResultsPopup({
   let totalInitialContamination = 0;
   let totalFinalContamination = 0;
   const tableData = jsonDownload.map((d) => {
-    totalSolidWasteVolume += d.solidWasteVolumeM3;
-    totalLiquidWasteVolume += d.liquidWasteVolumeM3;
-    totalDeconCost += d.decontaminationCost;
-    totalDeconTime += d.decontaminationTimeDays;
-    totalInitialContamination += d.averageInitialContamination;
-    totalFinalContamination += d.averageFinalContamination;
+    totalSolidWasteVolume += parseSmallFloat(d.solidWasteVolumeM3, 0);
+    totalLiquidWasteVolume += parseSmallFloat(d.liquidWasteVolumeM3, 0);
+    totalDeconCost += parseSmallFloat(d.decontaminationCost, 2);
+    totalDeconTime += parseSmallFloat(d.decontaminationTimeDays, 1);
+    totalInitialContamination += parseSmallFloat(
+      d.averageInitialContamination,
+      0,
+    );
+    totalFinalContamination += parseSmallFloat(d.averageFinalContamination, 2);
     return {
       ...d,
       solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3),
@@ -2166,12 +2169,12 @@ function CalculateResultsPopup({
   tableData.push({
     contaminationScenario: 'TOTALS',
     decontaminationTechnology: '',
-    solidWasteVolumeM3: formatNumber(totalSolidWasteVolume),
-    liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume),
-    decontaminationCost: formatNumber(totalDeconCost, 2),
-    decontaminationTimeDays: formatNumber(totalDeconTime, 1),
-    averageInitialContamination: formatNumber(totalInitialContamination),
-    averageFinalContamination: formatNumber(totalFinalContamination, 2),
+    solidWasteVolumeM3: formatNumber(totalSolidWasteVolume, -1),
+    liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume, -1),
+    decontaminationCost: formatNumber(totalDeconCost, -1),
+    decontaminationTimeDays: formatNumber(totalDeconTime, -1),
+    averageInitialContamination: formatNumber(totalInitialContamination, -1),
+    averageFinalContamination: formatNumber(totalFinalContamination, -1),
     aboveDetectionLimit: '',
   });
 
@@ -2284,12 +2287,18 @@ function CalculateResultsPopup({
           let totalFinalContamination = 0;
 
           const tableData = scenario.deconLayerResults.resultsTable.map((d) => {
-            totalSolidWasteVolume += d.solidWasteVolumeM3;
-            totalLiquidWasteVolume += d.liquidWasteVolumeM3;
-            totalDeconCost += d.decontaminationCost;
-            totalDeconTime += d.decontaminationTimeDays;
-            totalInitialContamination += d.averageInitialContamination;
-            totalFinalContamination += d.averageFinalContamination;
+            totalSolidWasteVolume += parseSmallFloat(d.solidWasteVolumeM3, 0);
+            totalLiquidWasteVolume += parseSmallFloat(d.liquidWasteVolumeM3, 0);
+            totalDeconCost += parseSmallFloat(d.decontaminationCost, 2);
+            totalDeconTime += parseSmallFloat(d.decontaminationTimeDays, 1);
+            totalInitialContamination += parseSmallFloat(
+              d.averageInitialContamination,
+              0,
+            );
+            totalFinalContamination += parseSmallFloat(
+              d.averageFinalContamination,
+              2,
+            );
             return {
               ...d,
               solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3),
@@ -2312,14 +2321,18 @@ function CalculateResultsPopup({
           tableData.push({
             contaminationScenario: 'TOTALS',
             decontaminationTechnology: '',
-            solidWasteVolumeM3: formatNumber(totalSolidWasteVolume),
-            liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume),
-            decontaminationCost: formatNumber(totalDeconCost, 2),
-            decontaminationTimeDays: formatNumber(totalDeconTime, 1),
+            solidWasteVolumeM3: formatNumber(totalSolidWasteVolume, -1),
+            liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume, -1),
+            decontaminationCost: formatNumber(totalDeconCost, -1),
+            decontaminationTimeDays: formatNumber(totalDeconTime, -1),
             averageInitialContamination: formatNumber(
               totalInitialContamination,
+              -1,
             ),
-            averageFinalContamination: formatNumber(totalFinalContamination, 2),
+            averageFinalContamination: formatNumber(
+              totalFinalContamination,
+              -1,
+            ),
             aboveDetectionLimit: '',
           });
 
