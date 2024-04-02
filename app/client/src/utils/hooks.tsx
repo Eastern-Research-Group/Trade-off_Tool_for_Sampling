@@ -1958,9 +1958,11 @@ export function useCalculatePlan() {
           ? scenario.deconTechSelections
           : defaultDeconSelections;
       const newDeconTechSelections: any = [];
+      let hasDeconTech = false;
       curDeconTechSelections.forEach((sel) => {
         // find decon settings
         const media = sel.media;
+        if (sel.deconTech) hasDeconTech = true;
 
         let surfaceArea = 0;
         let avgCfu = 0;
@@ -2052,7 +2054,7 @@ export function useCalculatePlan() {
           aoiAssessedLayer?.sketchLayer.graphics.removeAll();
           aoiAssessedLayer?.sketchLayer.graphics.addMany(
             planData.graphics.map((g) => {
-              if (!g.attributes.CONTAMTYPE) return g;
+              if (!g.attributes.CONTAMTYPE || !hasDeconTech) return g;
 
               const newG = g.clone();
               newG.symbol = new TextSymbol({
