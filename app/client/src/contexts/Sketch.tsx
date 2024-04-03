@@ -379,7 +379,7 @@ export function SketchProvider({ children }: Props) {
     setDefaultDeconSelections([
       {
         id: 1,
-        media: 'Soil',
+        media: 'Soil/Vegetation',
         deconTech: null,
         pctAoi: 0,
         surfaceArea: 0,

@@ -171,10 +171,12 @@ function buildLegendListItem(event: any, isDashboard: boolean) {
   }
   if (layer?.layerType === 'Image Analysis') {
     Object.keys(imageAnalysisSymbols).forEach((key) => {
+      if (key === 'Vegetation') return;
       const esriSymbol = (imageAnalysisSymbols as any)[key];
+      const label = key === 'Soil' ? 'Soil/Vegetation' : key;
       legendItems.push({
-        value: key,
-        title: key,
+        value: label,
+        title: label,
         symbol: {
           type: esriSymbol.type,
           color: [

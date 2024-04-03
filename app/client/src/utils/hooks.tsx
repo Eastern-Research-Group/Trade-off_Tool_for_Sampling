@@ -188,7 +188,7 @@ const stDamcatEnum = {
 const mediaToBeepEnum = {
   'Streets - Asphalt': 'asphalt',
   'Streets/Sidewalks - Concrete': 'concrete',
-  Soil: 'soil',
+  'Soil/Vegetation': 'soil',
 };
 
 const partitionFactors = {
@@ -223,22 +223,30 @@ export const imageAnalysisSymbols = {
       style: 'solid',
     },
   }),
-  Soil: new SimpleFillSymbol({
-    color: [181, 53, 53, 0.5],
-    outline: {
-      color: [181, 53, 53, 1],
-      width: 1,
-      style: 'solid',
-    },
-  }),
-  // Vegetation: new SimpleFillSymbol({
-  //   color: [191, 217, 153, 0.5],
+  // Soil: new SimpleFillSymbol({
+  //   color: [181, 53, 53, 0.5],
   //   outline: {
-  //     color: [191, 217, 153, 1],
+  //     color: [181, 53, 53, 1],
   //     width: 1,
   //     style: 'solid',
   //   },
   // }),
+  Soil: new SimpleFillSymbol({
+    color: [191, 217, 153, 0.5],
+    outline: {
+      color: [191, 217, 153, 1],
+      width: 1,
+      style: 'solid',
+    },
+  }),
+  Vegetation: new SimpleFillSymbol({
+    color: [191, 217, 153, 0.5],
+    outline: {
+      color: [191, 217, 153, 1],
+      width: 1,
+      style: 'solid',
+    },
+  }),
   // Water: new SimpleFillSymbol({
   //   color: [191, 217, 242, 0.5],
   //   outline: {
