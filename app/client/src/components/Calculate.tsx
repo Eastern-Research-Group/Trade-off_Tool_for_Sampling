@@ -190,6 +190,8 @@ function Calculate() {
     // getGpMaxRecordCount,
     // jsonDownload,
     planSettings,
+    resultsOpen,
+    setResultsOpen,
   } = useContext(SketchContext);
   const {
     calculateResults,
@@ -1058,8 +1060,6 @@ function Calculate() {
       setUpdateContextValues(true);
     };
   }, [setUpdateContextValues]);
-
-  const [resultsOpen, setResultsOpen] = useState(false);
 
   return (
     <div css={panelContainer}>

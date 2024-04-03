@@ -4037,6 +4037,7 @@ function DeconSelectionTable({
 
   if (!selectedScenario) return <p>Please select a plan.</p>;
 
+  const devMode = window.location.search.includes('devMode=true');
   return (
     <ReactTableEditable
       id={tableId}
@@ -4097,6 +4098,7 @@ function DeconSelectionTable({
             Header: 'Average Initial Contamination (CFUs/m²)',
             accessor: 'avgCfu',
             width: 97,
+            show: devMode,
           },
           {
             Header: 'Biological Decon Technology',
@@ -4129,11 +4131,13 @@ function DeconSelectionTable({
             Header: 'Average Final Contamination (CFUs/m²)',
             accessor: 'avgFinalContamination',
             width: 97,
+            show: devMode,
           },
           {
             Header: 'Above/Below Detection Limit',
             accessor: 'aboveDetectionLimit',
             width: 97,
+            show: devMode,
           },
           {
             Header: 'Is Hazardous',

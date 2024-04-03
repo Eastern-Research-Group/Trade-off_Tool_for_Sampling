@@ -145,6 +145,8 @@ type SketchType = {
   setTerrain3dVisible: Dispatch<SetStateAction<boolean>>;
   viewUnderground3d: boolean;
   setViewUnderground3d: Dispatch<SetStateAction<boolean>>;
+  resultsOpen: boolean;
+  setResultsOpen: Dispatch<SetStateAction<boolean>>;
 };
 
 export const SketchContext = createContext<SketchType>({
@@ -224,6 +226,8 @@ export const SketchContext = createContext<SketchType>({
   setTerrain3dVisible: () => {},
   viewUnderground3d: false,
   setViewUnderground3d: () => {},
+  resultsOpen: false,
+  setResultsOpen: () => {},
 });
 
 type Props = { children: ReactNode };
@@ -324,6 +328,7 @@ export function SketchProvider({ children }: Props) {
   const [terrain3dUseElevation, setTerrain3dUseElevation] = useState(true);
   const [terrain3dVisible, setTerrain3dVisible] = useState(true);
   const [viewUnderground3d, setViewUnderground3d] = useState(false);
+  const [resultsOpen, setResultsOpen] = useState(false);
 
   // Update totsLayers variable on the window object. This is a workaround
   // to an issue where the layers state variable is not available within esri
@@ -606,6 +611,8 @@ export function SketchProvider({ children }: Props) {
         setTerrain3dVisible,
         viewUnderground3d,
         setViewUnderground3d,
+        resultsOpen,
+        setResultsOpen,
       }}
     >
       {children}

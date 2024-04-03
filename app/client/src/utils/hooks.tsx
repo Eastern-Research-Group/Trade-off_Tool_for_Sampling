@@ -1368,6 +1368,7 @@ export function useCalculatePlan() {
     defaultDeconSelections,
     edits,
     layers,
+    resultsOpen,
     sampleAttributes,
     // selectedScenario,
     setEdits,
@@ -1926,7 +1927,7 @@ export function useCalculatePlan() {
         });
       });
 
-      contaminationMap.sketchLayer.listMode = 'show';
+      // contaminationMap.sketchLayer.listMode = 'show';
     }
     // console.log('contaminedAoiAreas: ', contaminedAoiAreas);
     // console.log('contaminationPercentages: ', contaminationPercentages);
@@ -1958,11 +1959,11 @@ export function useCalculatePlan() {
           ? scenario.deconTechSelections
           : defaultDeconSelections;
       const newDeconTechSelections: any = [];
-      let hasDeconTech = false;
+      // let hasDeconTech = false;
       curDeconTechSelections.forEach((sel) => {
         // find decon settings
         const media = sel.media;
-        if (sel.deconTech) hasDeconTech = true;
+        // if (sel.deconTech) hasDeconTech = true;
 
         let surfaceArea = 0;
         let avgCfu = 0;
@@ -2053,18 +2054,19 @@ export function useCalculatePlan() {
         ) {
           aoiAssessedLayer?.sketchLayer.graphics.removeAll();
           aoiAssessedLayer?.sketchLayer.graphics.addMany(
-            planData.graphics.map((g) => {
-              if (!g.attributes.CONTAMTYPE || !hasDeconTech) return g;
+            planData.graphics,
+            // .map((g) => {
+            //   if (!g.attributes.CONTAMTYPE || !hasDeconTech) return g;
 
-              const newG = g.clone();
-              newG.symbol = new TextSymbol({
-                ...baseBuildingSymbolProps,
-                color:
-                  g.attributes.CONTAMVAL < detectionLimit ? 'green' : 'red',
-              });
+            //   const newG = g.clone();
+            //   newG.symbol = new TextSymbol({
+            //     ...baseBuildingSymbolProps,
+            //     color:
+            //       g.attributes.CONTAMVAL < detectionLimit ? 'green' : 'red',
+            //   });
 
-              return newG;
-            }),
+            //   return newG;
+            // }),
           );
         }
         if (
@@ -2377,6 +2379,63 @@ export function useCalculatePlan() {
     setEdits,
     setJsonDownload,
   ]);
+
+  useEffect(() => {
+    if (!resultsOpen) return;
+
+    const scenarios = edits.edits.filter(
+      (i) => i.type === 'scenario',
+    ) as ScenarioEditsType[];
+    scenarios.forEach((scenario) => {
+      const curDeconTechSelections =
+        scenario.deconTechSelections.length > 0
+          ? scenario.deconTechSelections
+          : defaultDeconSelections;
+      let hasDeconTech = false;
+      curDeconTechSelections.forEach((sel) => {
+        if (sel.deconTech) hasDeconTech = true;
+      });
+
+      // tie graphics and imageryGraphics to a scenario
+      const planData = nsiData.planGraphics[scenario.layerId];
+
+      const aoiAssessed = scenario?.layers.find(
+        (l) => l.layerType === 'AOI Assessed',
+      );
+
+      if (aoiAssessed) {
+        const aoiAssessedLayer = layers.find(
+          (l) => l.layerId === aoiAssessed.layerId,
+        );
+
+        if (
+          aoiAssessedLayer?.sketchLayer?.type === 'graphics' &&
+          planData?.graphics
+        ) {
+          aoiAssessedLayer?.sketchLayer.graphics.removeAll();
+          aoiAssessedLayer?.sketchLayer.graphics.addMany(
+            planData.graphics.map((g) => {
+              if (!g.attributes.CONTAMTYPE || !hasDeconTech) return g;
+
+              const newG = g.clone();
+              newG.symbol = new TextSymbol({
+                ...baseBuildingSymbolProps,
+                color:
+                  g.attributes.CONTAMVAL < detectionLimit ? 'green' : 'red',
+              });
+
+              return newG;
+            }),
+          );
+        }
+      }
+    });
+  }, [defaultDeconSelections, edits, layers, nsiData, resultsOpen]);
+
+  useEffect(() => {
+    if (!resultsOpen || !contaminationMap) return;
+    contaminationMap.sketchLayer.listMode = 'show';
+  }, [contaminationMap, resultsOpen]);
 
   useEffect(() => {
     console.log('calculateResults: ', calculateResults);
