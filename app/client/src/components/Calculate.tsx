@@ -13,7 +13,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 // import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 // import Graphic from '@arcgis/core/Graphic';
-// import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
+import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
 // import PopupTemplate from '@arcgis/core/PopupTemplate';
 // components
 // import { AccordionList, AccordionItem } from 'components/Accordion';
@@ -45,14 +45,14 @@ import {
   // webServiceErrorMessage,
 } from 'config/errorMessages';
 // utils
-// import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
+import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
 import { CalculateResultsType } from 'types/CalculateResults';
-// import { geoprocessorFetch } from 'utils/fetchUtils';
+import { geoprocessorFetch } from 'utils/fetchUtils';
 // import { useDynamicPopup } from 'utils/hooks';
-// import {
-//   removeZValues,
-//   // updateLayerEdits
-// } from 'utils/sketchUtils';
+import {
+  removeZValues,
+  // updateLayerEdits
+} from 'utils/sketchUtils';
 import {
   formatNumber,
   // chunkArray,
@@ -2427,6 +2427,87 @@ function CalculateResultsPopup({
             Download Summary Data
           </button>
           <DownloadIWasteData />
+          {contaminationMap && (
+            <button
+              css={saveAttributesButtonStyles}
+              onClick={async () => {
+                const contaminationLayer =
+                  contaminationMap.sketchLayer as __esri.GraphicsLayer;
+
+                const graphics = contaminationLayer.graphics
+                  .map((g) => {
+                    removeZValues(g);
+                    return g;
+                  })
+                  .toArray();
+
+                const contamMapSet = new FeatureSet({
+                  displayFieldName: '',
+                  geometryType: 'polygon',
+                  features: graphics,
+                  spatialReference: {
+                    wkid: 3857,
+                  },
+                  fields: [
+                    {
+                      name: 'OBJECTID',
+                      type: 'oid',
+                      alias: 'OBJECTID',
+                    },
+                    {
+                      name: 'GLOBALID',
+                      type: 'guid',
+                      alias: 'GlobalID',
+                    },
+                    {
+                      name: 'PERMANENT_IDENTIFIER',
+                      type: 'guid',
+                      alias: 'Permanent Identifier',
+                    },
+                    {
+                      name: 'CONTAMTYPE',
+                      type: 'string',
+                      alias: 'Contamination Type',
+                    },
+                    {
+                      name: 'CONTAMVAL',
+                      type: 'double',
+                      alias: 'Contamination Value',
+                    },
+                    {
+                      name: 'CONTAMUNIT',
+                      type: 'string',
+                      alias: 'Contamination Unit',
+                    },
+                    {
+                      name: 'Notes',
+                      type: 'string',
+                      alias: 'Notes',
+                    },
+                  ],
+                });
+
+                // call the GP Server
+                const params = {
+                  f: 'json',
+                  Feature_Set: contamMapSet,
+                };
+                appendEnvironmentObjectParam(params);
+
+                const response = await geoprocessorFetch({
+                  url: `https://ags.erg.com/arcgis/rest/services/ORD/ExportShape/GPServer/ExportShape`,
+                  inputParameters: params,
+                });
+
+                saveAs(
+                  response.results[0].value.url,
+                  `tods_${planSettings.name}_updated_contamination.zip`,
+                );
+              }}
+            >
+              Download Contamination Map
+            </button>
+          )}
           <button
             css={saveAttributesButtonStyles}
             onClick={() => {
