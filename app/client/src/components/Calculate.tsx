@@ -48,7 +48,7 @@ import {
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
 import { CalculateResultsType } from 'types/CalculateResults';
 import { geoprocessorFetch } from 'utils/fetchUtils';
-// import { useDynamicPopup } from 'utils/hooks';
+import { detectionLimit } from 'utils/hooks';
 import {
   removeZValues,
   // updateLayerEdits
@@ -1434,7 +1434,8 @@ function CalculateResultsPopup({
   isOpen,
   onClose,
 }: CalculateResultsPopupProps) {
-  const { edits, jsonDownload, planSettings } = useContext(SketchContext);
+  const { edits, jsonDownload, planSettings, efficacyResults } =
+    useContext(SketchContext);
   const [tableId] = useState(
     `tots-decon-results-selectionstable-${generateUUID()}`,
   );
@@ -2193,28 +2194,53 @@ function CalculateResultsPopup({
 
         {calculateResults.status === 'success' && calculateResults.data && (
           <div css={resourceTallyContainerStyles}>
-            <div css={mainTallyStyles}>
-              <strong>Total Cost:</strong> $
-              {Math.round(calculateResults.data['Total Cost']).toLocaleString()}
+            <div>
+              <div>
+                <strong>Total Cost:</strong> $
+                {Math.round(
+                  calculateResults.data['Total Cost'],
+                ).toLocaleString()}
+              </div>
+              <div>
+                <strong>Max Time day(s):</strong>{' '}
+                {calculateResults.data['Total Time'].toLocaleString()}
+              </div>
+              <div>
+                <strong>
+                  Total Waste Volume (m<sup>3</sup>):
+                </strong>{' '}
+                {Math.round(
+                  calculateResults.data['Total Waste Volume'],
+                ).toLocaleString()}
+              </div>
+              <div>
+                <strong>Total Waste Mass (kg):</strong>{' '}
+                {Math.round(
+                  calculateResults.data['Total Waste Mass'],
+                ).toLocaleString()}
+              </div>
             </div>
-            <div css={mainTallyStyles}>
-              <strong>Max Time day(s):</strong>{' '}
-              {calculateResults.data['Total Time'].toLocaleString()}
-            </div>
-            <div css={mainTallyStyles}>
-              <strong>
-                Total Waste Volume (m<sup>3</sup>):
-              </strong>{' '}
-              {Math.round(
-                calculateResults.data['Total Waste Volume'],
-              ).toLocaleString()}
-            </div>
-            <div css={mainTallyStyles}>
-              <strong>Total Waste Mass (kg):</strong>{' '}
-              {Math.round(
-                calculateResults.data['Total Waste Mass'],
-              ).toLocaleString()}
-            </div>
+            {efficacyResults && (
+              <div>
+                <div>
+                  <strong>Average Initial Contamination:</strong>{' '}
+                  {efficacyResults.averageInitialCfu.toLocaleString()} (CFU/m²)
+                </div>
+                <div>
+                  <strong>Average Final Contamination:</strong>{' '}
+                  {efficacyResults.averageFinalCfu.toLocaleString()} (CFU/m²)
+                </div>
+                <div>
+                  <strong>Detection Limit:</strong> {detectionLimit} (CFU/m²)
+                </div>
+                <div>
+                  <strong>Above/Below Detection Limit:</strong>{' '}
+                  {efficacyResults.averageFinalCfu >= detectionLimit
+                    ? 'Above'
+                    : 'Below'}
+                </div>
+              </div>
+            )}
           </div>
         )}
         <br />
@@ -2551,5 +2577,7 @@ function DownloadIWasteData({ isSubmitStyle = false }: DownloadIWasteProps) {
 
 export default Calculate;
 
-const resourceTallyContainerStyles = css``;
-const mainTallyStyles = css``;
+const resourceTallyContainerStyles = css`
+  display: flex;
+  justify-content: space-around;
+`;
