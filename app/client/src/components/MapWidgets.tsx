@@ -358,7 +358,7 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
 
     const samples: any = {};
     selectedSampleIds.forEach((sample) => {
-      const layerId = sample.graphic.layer.id;
+      const layerId = sample.graphic?.layer?.id;
       if (!samples.hasOwnProperty(layerId)) {
         samples[layerId] = [sample.PERMANENT_IDENTIFIER];
       } else {

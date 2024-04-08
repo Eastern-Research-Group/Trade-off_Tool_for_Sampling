@@ -2183,6 +2183,10 @@ function CalculateResultsPopup({
     (e) => e.type === 'scenario',
   ) as ScenarioEditsType[];
 
+  const contamMapUpdated = map?.layers.find(
+    (l) => l.id === 'contaminationMapUpdated',
+  );
+
   return (
     <DialogOverlay
       css={overlayStyles}
@@ -2453,12 +2457,13 @@ function CalculateResultsPopup({
             Download Summary Data
           </button>
           <DownloadIWasteData />
-          {contaminationMap && (
+          {contamMapUpdated && (
             <button
               css={saveAttributesButtonStyles}
               onClick={async () => {
                 const contaminationLayer =
-                  contaminationMap.sketchLayer as __esri.GraphicsLayer;
+                  contamMapUpdated as __esri.GraphicsLayer;
+                // contaminationMap.sketchLayer as __esri.GraphicsLayer;
 
                 const graphics = contaminationLayer.graphics
                   .map((g) => {
@@ -2491,6 +2496,11 @@ function CalculateResultsPopup({
                       alias: 'Permanent Identifier',
                     },
                     {
+                      name: 'AREA',
+                      type: 'double',
+                      alias: 'AREA',
+                    },
+                    {
                       name: 'CONTAMTYPE',
                       type: 'string',
                       alias: 'Contamination Type',
@@ -2499,6 +2509,26 @@ function CalculateResultsPopup({
                       name: 'CONTAMVAL',
                       type: 'double',
                       alias: 'Contamination Value',
+                    },
+                    {
+                      name: 'EXTWALLS',
+                      type: 'double',
+                      alias: 'Contamination Value Exterior Walls',
+                    },
+                    {
+                      name: 'INTWALLS',
+                      type: 'double',
+                      alias: 'Contamination Value Interior Walls',
+                    },
+                    {
+                      name: 'FLOORS',
+                      type: 'double',
+                      alias: 'Contamination Value Floors',
+                    },
+                    {
+                      name: 'ROOFS',
+                      type: 'double',
+                      alias: 'Contamination Value Roofs',
                     },
                     {
                       name: 'CONTAMUNIT',
