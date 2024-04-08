@@ -1626,6 +1626,7 @@ function CalculateResultsPopup({
     const defaultFont = { name: 'Calibri', size: 12 };
     const sheetTitleFont = { name: 'Calibri', bold: true, size: 18 };
     const columnTitleAlignment: any = { horizontal: 'center' };
+    const rightAlignment: any = { horizontal: 'right' };
     // const columnTitleFont = {
     //   name: 'Calibri',
     //   bold: true,
@@ -1696,10 +1697,66 @@ function CalculateResultsPopup({
       summarySheet.getCell(5, 2).font = defaultFont;
       summarySheet.getCell(5, 2).value = planSettings.description;
 
+      summarySheet.mergeCells(7, 1, 7, 2);
+      summarySheet.getCell(7, 1).alignment = columnTitleAlignment;
+      summarySheet.getCell(7, 1).font = underlinedLabelFont;
+      summarySheet.getCell(7, 1).value = 'Cost / Time / Waste';
+      summarySheet.getCell(8, 1).font = labelFont;
+      summarySheet.getCell(8, 1).value = 'Total Cost';
+      summarySheet.getCell(8, 2).font = defaultFont;
+      summarySheet.getCell(8, 2).alignment = rightAlignment;
+      summarySheet.getCell(8, 2).numFmt = currencyNumberFormat;
+      summarySheet.getCell(8, 2).value = calculateResults.data['Total Cost'];
+      summarySheet.getCell(9, 1).font = labelFont;
+      summarySheet.getCell(9, 1).value = 'Max Time day(s)';
+      summarySheet.getCell(9, 2).font = defaultFont;
+      summarySheet.getCell(9, 2).alignment = rightAlignment;
+      summarySheet.getCell(9, 2).value =
+        calculateResults.data['Total Time'].toLocaleString();
+      summarySheet.getCell(10, 1).font = labelFont;
+      summarySheet.getCell(10, 1).value = 'Total Waste Volume (m³)';
+      summarySheet.getCell(10, 2).font = defaultFont;
+      summarySheet.getCell(10, 2).alignment = rightAlignment;
+      summarySheet.getCell(10, 2).value = Math.round(
+        calculateResults.data['Total Waste Volume'],
+      ).toLocaleString();
+      summarySheet.getCell(11, 1).font = labelFont;
+      summarySheet.getCell(11, 1).value = 'Total Waste Mass (kg)';
+      summarySheet.getCell(11, 2).font = defaultFont;
+      summarySheet.getCell(11, 2).alignment = rightAlignment;
+      summarySheet.getCell(11, 2).value = Math.round(
+        calculateResults.data['Total Waste Mass'],
+      ).toLocaleString();
+
       summarySheet.mergeCells(7, 3, 7, 4);
       summarySheet.getCell(7, 3).alignment = columnTitleAlignment;
-      summarySheet.getCell(7, 3).font = labelFont;
-      summarySheet.getCell(7, 3).value = 'Decontamination Waste Generation';
+      summarySheet.getCell(7, 3).font = underlinedLabelFont;
+      summarySheet.getCell(7, 3).value = 'Efficacy';
+
+      summarySheet.getCell(8, 3).font = labelFont;
+      summarySheet.getCell(8, 3).value = 'Average Initial Contamination';
+      summarySheet.getCell(8, 4).font = defaultFont;
+      summarySheet.getCell(8, 4).value =
+        `${efficacyResults.averageInitialCfu.toLocaleString()} (CFU/m²)`;
+      summarySheet.getCell(9, 3).font = labelFont;
+      summarySheet.getCell(9, 3).value = 'Average Final Contamination';
+      summarySheet.getCell(9, 4).font = defaultFont;
+      summarySheet.getCell(9, 4).value =
+        `${efficacyResults.averageFinalCfu.toLocaleString()} (CFU/m²)`;
+      summarySheet.getCell(10, 3).font = labelFont;
+      summarySheet.getCell(10, 3).value = 'Detection Limit';
+      summarySheet.getCell(10, 4).font = defaultFont;
+      summarySheet.getCell(10, 4).value = `${detectionLimit} (CFU/m²)`;
+      summarySheet.getCell(11, 3).font = labelFont;
+      summarySheet.getCell(11, 3).value = 'Above/Below Detection Limit';
+      summarySheet.getCell(11, 4).font = defaultFont;
+      summarySheet.getCell(11, 4).value =
+        efficacyResults.averageFinalCfu >= detectionLimit ? 'Above' : 'Below';
+
+      summarySheet.mergeCells(14, 3, 14, 4);
+      summarySheet.getCell(14, 3).alignment = columnTitleAlignment;
+      summarySheet.getCell(14, 3).font = labelFont;
+      summarySheet.getCell(14, 3).value = 'Decontamination Waste Generation';
 
       const cols = [
         { label: 'Contamination Scenario', fieldName: 'contaminationScenario' },
@@ -1743,7 +1800,7 @@ function CalculateResultsPopup({
         },
       ];
 
-      let curRow = 8;
+      let curRow = 15;
       curRow = fillOutCells({
         sheet: summarySheet,
         startRow: curRow,
@@ -2134,6 +2191,7 @@ function CalculateResultsPopup({
     calculateResults,
     downloadStatus,
     edits,
+    efficacyResults,
     jsonDownload,
     layers,
     map,
@@ -2461,6 +2519,7 @@ function CalculateResultsPopup({
             <button
               css={saveAttributesButtonStyles}
               onClick={async () => {
+                setDownloadStatus('fetching');
                 const contaminationLayer =
                   contamMapUpdated as __esri.GraphicsLayer;
                 // contaminationMap.sketchLayer as __esri.GraphicsLayer;
@@ -2559,6 +2618,8 @@ function CalculateResultsPopup({
                   response.results[0].value.url,
                   `tods_${planSettings.name}_updated_contamination.zip`,
                 );
+
+                setDownloadStatus('success');
               }}
             >
               Download Contamination Map

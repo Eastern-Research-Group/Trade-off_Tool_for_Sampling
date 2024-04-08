@@ -40,6 +40,7 @@ import WMSLayer from '@arcgis/core/layers/WMSLayer';
 import {
   //MapPopup,
   buildingMapPopup,
+  contaminationMapPopup,
   imageryAnalysisMapPopup,
 } from 'components/MapPopup';
 // contexts
@@ -1758,7 +1759,11 @@ export function useCalculatePlan() {
       status: 'none',
       planGraphics: {},
     });
-  }, [aoiData, setCalculateResults, setEfficacyResults]);
+    const contamMapUpdated = mapView?.map.layers.find(
+      (l) => l.id === 'contaminationMapUpdated',
+    ) as __esri.GraphicsLayer;
+    if (contamMapUpdated) contamMapUpdated.removeAll();
+  }, [aoiData, mapView, setCalculateResults, setEfficacyResults]);
 
   const [nsiData, setNsiData] = useState<NsiData>({
     status: 'none',
@@ -2026,6 +2031,11 @@ export function useCalculatePlan() {
       ['none', 'failure', 'fetching'].includes(nsiData.status)
     )
       return;
+
+    const contamMapUpdated = mapView?.map.layers.find(
+      (l) => l.id === 'contaminationMapUpdated',
+    ) as __esri.GraphicsLayer;
+    if (contamMapUpdated) contamMapUpdated.removeAll();
 
     console.log('nsiData: ', nsiData);
     // if (!hasGraphics(nsiData.planGraphics)) {
@@ -2913,6 +2923,11 @@ export function useCalculatePlan() {
                     FLOORS: null,
                   },
                   geometry: geom,
+                  symbol: contamGraphic.symbol,
+                  popupTemplate: {
+                    title: '',
+                    content: contaminationMapPopup,
+                  },
                 }),
               );
             });
@@ -2920,6 +2935,12 @@ export function useCalculatePlan() {
 
           if (innerGeometry.length > 0) console.log('adding inner...');
           innerGeometry.forEach((geom) => {
+            let newCfu = CONTAMVAL;
+            if (CONTAMVALEXTWALLS > newCfu) newCfu = CONTAMVALEXTWALLS;
+            if (CONTAMVALINTWALLS > newCfu) newCfu = CONTAMVALINTWALLS;
+            if (CONTAMVALROOFS > newCfu) newCfu = CONTAMVALROOFS;
+            if (CONTAMVALFLOORS > newCfu) newCfu = CONTAMVALFLOORS;
+
             newContamGraphics.push(
               new Graphic({
                 attributes: {
@@ -2931,6 +2952,26 @@ export function useCalculatePlan() {
                   FLOORS: CONTAMVALFLOORS,
                 },
                 geometry: geom,
+                symbol:
+                  newCfu < detectionLimit
+                    ? ({
+                        type: 'simple-fill',
+                        color: [0, 255, 0],
+                        outline: {
+                          color: [0, 0, 0],
+                        },
+                      } as any)
+                    : ({
+                        type: 'simple-fill',
+                        color: [255, 255, 255],
+                        outline: {
+                          color: [255, 0, 0],
+                        },
+                      } as any),
+                popupTemplate: {
+                  title: '',
+                  content: contaminationMapPopup,
+                },
               }),
             );
           });
