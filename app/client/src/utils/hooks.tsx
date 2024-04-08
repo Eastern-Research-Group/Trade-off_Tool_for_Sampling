@@ -2000,6 +2000,11 @@ export function useCalculatePlan() {
           //   soil: 0,
           // },
         });
+        setCalculateResults({
+          status: 'failure',
+          data: null,
+          panelOpen: false,
+        });
       }
     }
 
@@ -2013,6 +2018,7 @@ export function useCalculatePlan() {
     nsiData,
     // selectedScenario,
     services,
+    setCalculateResults,
   ]);
 
   type ContaminatedAoiAreas = { [planId: string]: { [key: number]: number } };
@@ -2573,6 +2579,7 @@ export function useCalculatePlan() {
 
   useEffect(() => {
     if (!resultsOpen) return;
+    if (calculateResults.status === 'failure') return;
 
     const planId = 'contaminationMap';
     const planGraphics = nsiData.planGraphics[planId];
@@ -3162,6 +3169,7 @@ export function useCalculatePlan() {
     aoiData,
     aoiContamIntersect,
     calculateArea,
+    calculateResults,
     contaminationMap,
     defaultDeconSelections,
     edits,

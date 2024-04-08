@@ -37,6 +37,7 @@ import {
   excelFailureMessage,
   // contaminationHitsSuccessMessage,
   // featureNotAvailableMessage,
+  generalError,
   noContaminationGraphicsMessage,
   noContaminationMapMessage,
   noSampleLayerMessage,
@@ -2254,6 +2255,7 @@ function CalculateResultsPopup({
       <DialogContent css={dialogStyles} aria-label="Edit Attribute">
         <h1>Decon Resource Demand Summary</h1>
 
+        {calculateResults.status === 'failure' && generalError}
         {calculateResults.status === 'success' && calculateResults.data && (
           <div css={resourceTallyContainerStyles}>
             <div>
