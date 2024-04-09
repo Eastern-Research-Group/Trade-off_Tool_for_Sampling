@@ -643,41 +643,45 @@ function Calculate() {
               }
             }
 
+            let editsCopy = { ...edits };
+
             // make the contamination map visible in the legend
-            contaminationMap.listMode = 'show';
-            contaminationMap.sketchLayer.listMode = 'show';
-            setContaminationMap((layer) => {
-              return {
-                ...layer,
-                listMode: 'show',
-              } as LayerType;
-            });
+            if (window.location.search.includes('devMode=true')) {
+              contaminationMap.listMode = 'show';
+              contaminationMap.sketchLayer.listMode = 'show';
+              setContaminationMap((layer) => {
+                return {
+                  ...layer,
+                  listMode: 'show',
+                } as LayerType;
+              });
 
-            // find the layer being edited
-            const index = layers.findIndex(
-              (layer) => layer.layerId === contaminationMap.layerId,
-            );
+              // find the layer being edited
+              const index = layers.findIndex(
+                (layer) => layer.layerId === contaminationMap.layerId,
+              );
 
-            // update the layers context
-            if (index > -1) {
-              setLayers((layers) => {
-                return [
-                  ...layers.slice(0, index),
-                  {
-                    ...contaminationMap,
-                    listMode: 'show',
-                  },
-                  ...layers.slice(index + 1),
-                ];
+              // update the layers context
+              if (index > -1) {
+                setLayers((layers) => {
+                  return [
+                    ...layers.slice(0, index),
+                    {
+                      ...contaminationMap,
+                      listMode: 'show',
+                    },
+                    ...layers.slice(index + 1),
+                  ];
+                });
+              }
+
+              // make a copy of the edits context variable
+              updateLayerEdits({
+                edits,
+                layer: contaminationMap,
+                type: 'properties',
               });
             }
-
-            // make a copy of the edits context variable
-            let editsCopy = updateLayerEdits({
-              edits,
-              layer: contaminationMap,
-              type: 'properties',
-            });
 
             // save the data to state, use an empty array if there is no data
             if (resFeatures.length > 0) {
