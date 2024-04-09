@@ -2100,7 +2100,7 @@ export function useCalculatePlan() {
             const scenario = scenarios.find((s) => s.layerId === planId);
             if (scenario) {
               // find decon tech selections
-              const buildingTech = scenario.deconTechSelections.filter((t) =>
+              const buildingTech = scenario.deconTechSelections?.filter((t) =>
                 t.media.includes('Building '),
               );
               buildingTech.forEach((tech) => {
@@ -2331,7 +2331,7 @@ export function useCalculatePlan() {
     // }
     let atLeastOneDeconTechSelection = false;
     scenarios.forEach((scenario) => {
-      scenario.deconTechSelections.forEach((tech) => {
+      scenario.deconTechSelections?.forEach((tech) => {
         if (tech.deconTech) atLeastOneDeconTechSelection = true;
       });
     });
@@ -2360,7 +2360,7 @@ export function useCalculatePlan() {
       scenario.deconLayerResults.wasteMass = 0;
       scenario.deconLayerResults.wasteVolume = 0;
       const curDeconTechSelections =
-        scenario.deconTechSelections.length > 0
+        scenario.deconTechSelections?.length > 0
           ? scenario.deconTechSelections
           : defaultDeconSelections;
       curDeconTechSelections.forEach((sel) => {
@@ -2711,7 +2711,7 @@ export function useCalculatePlan() {
         : null;
 
       const curDeconTechSelections =
-        scenario.deconTechSelections.length > 0
+        scenario.deconTechSelections?.length > 0
           ? scenario.deconTechSelections
           : defaultDeconSelections;
       let hasDeconTech = false;
