@@ -1448,6 +1448,8 @@ function CalculateResultsPopup({
   const { aoiSketchLayer, displayDimensions, layers, map, mapView, sceneView } =
     useContext(SketchContext);
 
+  const devMode = window.location.search.includes('devMode=true');
+
   const [
     downloadStatus,
     setDownloadStatus, //
@@ -1729,30 +1731,32 @@ function CalculateResultsPopup({
         calculateResults.data['Total Waste Mass'],
       ).toLocaleString();
 
-      summarySheet.mergeCells(7, 3, 7, 4);
-      summarySheet.getCell(7, 3).alignment = columnTitleAlignment;
-      summarySheet.getCell(7, 3).font = underlinedLabelFont;
-      summarySheet.getCell(7, 3).value = 'Efficacy';
+      if (devMode) {
+        summarySheet.mergeCells(7, 3, 7, 4);
+        summarySheet.getCell(7, 3).alignment = columnTitleAlignment;
+        summarySheet.getCell(7, 3).font = underlinedLabelFont;
+        summarySheet.getCell(7, 3).value = 'Efficacy';
 
-      summarySheet.getCell(8, 3).font = labelFont;
-      summarySheet.getCell(8, 3).value = 'Average Initial Contamination';
-      summarySheet.getCell(8, 4).font = defaultFont;
-      summarySheet.getCell(8, 4).value =
-        `${efficacyResults.averageInitialCfu.toLocaleString()} (CFU/m²)`;
-      summarySheet.getCell(9, 3).font = labelFont;
-      summarySheet.getCell(9, 3).value = 'Average Final Contamination';
-      summarySheet.getCell(9, 4).font = defaultFont;
-      summarySheet.getCell(9, 4).value =
-        `${efficacyResults.averageFinalCfu.toLocaleString()} (CFU/m²)`;
-      summarySheet.getCell(10, 3).font = labelFont;
-      summarySheet.getCell(10, 3).value = 'Detection Limit';
-      summarySheet.getCell(10, 4).font = defaultFont;
-      summarySheet.getCell(10, 4).value = `${detectionLimit} (CFU/m²)`;
-      summarySheet.getCell(11, 3).font = labelFont;
-      summarySheet.getCell(11, 3).value = 'Above/Below Detection Limit';
-      summarySheet.getCell(11, 4).font = defaultFont;
-      summarySheet.getCell(11, 4).value =
-        efficacyResults.averageFinalCfu >= detectionLimit ? 'Above' : 'Below';
+        summarySheet.getCell(8, 3).font = labelFont;
+        summarySheet.getCell(8, 3).value = 'Average Initial Contamination';
+        summarySheet.getCell(8, 4).font = defaultFont;
+        summarySheet.getCell(8, 4).value =
+          `${efficacyResults.averageInitialCfu.toLocaleString()} (CFU/m²)`;
+        summarySheet.getCell(9, 3).font = labelFont;
+        summarySheet.getCell(9, 3).value = 'Average Final Contamination';
+        summarySheet.getCell(9, 4).font = defaultFont;
+        summarySheet.getCell(9, 4).value =
+          `${efficacyResults.averageFinalCfu.toLocaleString()} (CFU/m²)`;
+        summarySheet.getCell(10, 3).font = labelFont;
+        summarySheet.getCell(10, 3).value = 'Detection Limit';
+        summarySheet.getCell(10, 4).font = defaultFont;
+        summarySheet.getCell(10, 4).value = `${detectionLimit} (CFU/m²)`;
+        summarySheet.getCell(11, 3).font = labelFont;
+        summarySheet.getCell(11, 3).value = 'Above/Below Detection Limit';
+        summarySheet.getCell(11, 4).font = defaultFont;
+        summarySheet.getCell(11, 4).value =
+          efficacyResults.averageFinalCfu >= detectionLimit ? 'Above' : 'Below';
+      }
 
       summarySheet.mergeCells(14, 3, 14, 4);
       summarySheet.getCell(14, 3).alignment = columnTitleAlignment;
@@ -1785,21 +1789,24 @@ function CalculateResultsPopup({
           fieldName: 'decontaminationTimeDays',
           format: 'number',
         },
-        {
+      ];
+
+      if (devMode) {
+        cols.push({
           label: 'Average Initial Contamination (CFUs/m²)',
           fieldName: 'averageInitialContamination',
           format: 'number',
-        },
-        {
+        });
+        cols.push({
           label: 'Average Final Contamination (CFUs/m²)',
           fieldName: 'averageFinalContamination',
           format: 'number',
-        },
-        {
+        });
+        cols.push({
           label: 'Above/Below Detection Limit',
           fieldName: 'aboveDetectionLimit',
-        },
-      ];
+        });
+      }
 
       let curRow = 15;
       curRow = fillOutCells({
@@ -1906,21 +1913,24 @@ function CalculateResultsPopup({
           fieldName: 'decontaminationTimeDays',
           format: 'number',
         },
-        {
+      ];
+
+      if (devMode) {
+        cols.push({
           label: 'Average Initial Contamination (CFUs/m²)',
           fieldName: 'averageInitialContamination',
           format: 'number',
-        },
-        {
+        });
+        cols.push({
           label: 'Average Final Contamination (CFUs/m²)',
           fieldName: 'averageFinalContamination',
           format: 'number',
-        },
-        {
+        });
+        cols.push({
           label: 'Above/Below Detection Limit',
           fieldName: 'aboveDetectionLimit',
-        },
-      ];
+        });
+      }
 
       let curRow = 3;
       const scenarios = edits.edits.filter(
@@ -2026,10 +2036,6 @@ function CalculateResultsPopup({
         { label: 'Value of Vehicles', fieldName: 'val_vehic' },
         { label: 'x', fieldName: 'x' },
         { label: 'y', fieldName: 'y' },
-        { label: 'Contamination Type', fieldName: 'CONTAMTYPE' },
-        { label: 'Activity (Initial)', fieldName: 'CONTAMVALINITIAL' },
-        { label: 'Activity (Final)', fieldName: 'CONTAMVAL' },
-        { label: 'Unit of Measure', fieldName: 'CONTAMUNIT' },
         {
           label: 'Footprint Area (square meters)',
           fieldName: 'footprintSqM',
@@ -2091,6 +2097,16 @@ function CalculateResultsPopup({
           format: 'number',
         },
       ];
+
+      if (devMode) {
+        cols.push({ label: 'Contamination Type', fieldName: 'CONTAMTYPE' });
+        cols.push({
+          label: 'Activity (Initial)',
+          fieldName: 'CONTAMVALINITIAL',
+        });
+        cols.push({ label: 'Activity (Final)', fieldName: 'CONTAMVAL' });
+        cols.push({ label: 'Unit of Measure', fieldName: 'CONTAMUNIT' });
+      }
 
       let curRow = 3;
       curRow = fillOutCells({
@@ -2190,6 +2206,7 @@ function CalculateResultsPopup({
   }, [
     base64Screenshot,
     calculateResults,
+    devMode,
     downloadStatus,
     edits,
     efficacyResults,
@@ -2284,7 +2301,7 @@ function CalculateResultsPopup({
                 ).toLocaleString()}
               </div>
             </div>
-            {efficacyResults && (
+            {devMode && efficacyResults && (
               <div>
                 <div>
                   <strong>Average Initial Contamination:</strong>{' '}
@@ -2353,16 +2370,19 @@ function CalculateResultsPopup({
                 Header: 'Average Initial Contamination (CFUs/m²)',
                 accessor: 'averageInitialContamination',
                 width: 110,
+                show: devMode,
               },
               {
                 Header: 'Average Final Contamination (CFUs/m²)',
                 accessor: 'averageFinalContamination',
                 width: 110,
+                show: devMode,
               },
               {
                 Header: 'Above/Below Detection Limit',
                 accessor: 'aboveDetectionLimit',
                 width: 110,
+                show: devMode,
               },
             ];
           }}
@@ -2474,16 +2494,19 @@ function CalculateResultsPopup({
                       Header: 'Average Initial Contamination (CFUs/m²)',
                       accessor: 'averageInitialContamination',
                       width: 110,
+                      show: devMode,
                     },
                     {
                       Header: 'Average Final Contamination (CFUs/m²)',
                       accessor: 'averageFinalContamination',
                       width: 110,
+                      show: devMode,
                     },
                     {
                       Header: 'Above/Below Detection Limit',
                       accessor: 'aboveDetectionLimit',
                       width: 110,
+                      show: devMode,
                     },
                   ];
                 }}
@@ -2654,8 +2677,17 @@ function DownloadIWasteData({ isSubmitStyle = false }: DownloadIWasteProps) {
         if (!planSettings.name) return;
         const fileName = `tods_${planSettings.name}.json`;
 
+        const newJsonDownload = jsonDownload.map((j) => {
+          const newJ = { ...j } as any;
+          delete newJ.aboveDetectionLimit;
+          delete newJ.averageInitialContamination;
+          delete newJ.averageFinalContamination;
+
+          return newJ;
+        });
+
         // Create a blob of the data
-        const fileToSave = new Blob([JSON.stringify(jsonDownload)], {
+        const fileToSave = new Blob([JSON.stringify(newJsonDownload)], {
           type: 'application/json',
         });
 

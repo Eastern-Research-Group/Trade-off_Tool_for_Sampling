@@ -2959,8 +2959,9 @@ export function useCalculatePlan() {
                   FLOORS: CONTAMVALFLOORS,
                 },
                 geometry: geom,
-                symbol:
-                  newCfu < detectionLimit
+                symbol: !window.location.search.includes('devMode=true')
+                  ? contamGraphic.symbol
+                  : newCfu < detectionLimit
                     ? ({
                         type: 'simple-fill',
                         color: [0, 255, 0],
@@ -3004,11 +3005,14 @@ export function useCalculatePlan() {
               if (!g.attributes.CONTAMTYPE || !hasDeconTech) return g;
 
               const newG = g.clone();
-              newG.symbol = new TextSymbol({
+              let props = {
                 ...baseBuildingSymbolProps,
-                color:
-                  g.attributes.CONTAMVAL < detectionLimit ? 'green' : 'red',
-              });
+              };
+              if (window.location.search.includes('devMode=true')) {
+                props.color =
+                  g.attributes.CONTAMVAL < detectionLimit ? 'green' : 'red';
+              }
+              newG.symbol = new TextSymbol(props);
 
               return newG;
             }),
@@ -3025,7 +3029,8 @@ export function useCalculatePlan() {
       console.log('newContamGraphics: ', newContamGraphics);
       contamMapUpdated.removeAll();
       contamMapUpdated.addMany(newContamGraphics);
-      contamMapUpdated.listMode = 'show';
+      if (window.location.search.includes('devMode=true'))
+        contamMapUpdated.listMode = 'show';
     }
 
     console.log('cfuReductionBuildings: ', cfuReductionBuildings);
@@ -3183,7 +3188,8 @@ export function useCalculatePlan() {
 
   useEffect(() => {
     if (!resultsOpen || !contaminationMap) return;
-    contaminationMap.sketchLayer.listMode = 'show';
+    if (window.location.search.includes('devMode=true'))
+      contaminationMap.sketchLayer.listMode = 'show';
   }, [contaminationMap, resultsOpen]);
 
   useEffect(() => {

@@ -1263,21 +1263,6 @@ export function getSampleTableColumns({
       width: baseColumnWidth,
     },
     {
-      Header: 'Contamination Type',
-      accessor: 'CONTAMTYPE',
-      width: largeColumnWidth,
-    },
-    {
-      Header: 'Activity',
-      accessor: 'CONTAMVAL',
-      width: baseColumnWidth,
-    },
-    {
-      Header: 'Unit of Measure',
-      accessor: 'CONTAMUNIT',
-      width: baseColumnWidth,
-    },
-    {
       Header: 'Footprint Area (square meters)',
       accessor: 'footprintSqM',
       width: baseColumnWidth,
@@ -1338,6 +1323,24 @@ export function getSampleTableColumns({
       width: baseColumnWidth,
     },
   ];
+
+  if (window.location.search.includes('devMode=true')) {
+    columns.push({
+      Header: 'Contamination Type',
+      accessor: 'CONTAMTYPE',
+      width: largeColumnWidth,
+    });
+    columns.push({
+      Header: 'Activity',
+      accessor: 'CONTAMVAL',
+      width: baseColumnWidth,
+    });
+    columns.push({
+      Header: 'Unit of Measure',
+      accessor: 'CONTAMUNIT',
+      width: baseColumnWidth,
+    });
+  }
 
   if (useEqualWidth) {
     // set the column widths

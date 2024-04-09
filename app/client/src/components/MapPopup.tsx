@@ -540,115 +540,118 @@ export function contaminationMapPopup(feature: any) {
 export function buildingMapPopup(feature: any) {
   feature.graphic.attributes.layerName =
     feature.graphic.layer.parent?.title ?? feature.graphic.layer.title;
-  const content = (
-    <MapPopupSimple
-      feature={feature}
-      fieldInfos={[
-        { label: 'Layer', fieldName: 'layerName' },
-        { label: 'Building ID', fieldName: 'bid' },
-        { label: 'Building Type', fieldName: 'bldgtype' },
-        { label: 'Census Block FIPS', fieldName: 'cbfips' },
-        { label: 'ID', fieldName: 'fd_id' },
-        { label: 'Flood Zone (2021)', fieldName: 'firmzone' },
-        { label: 'Foundation Height (feet)', fieldName: 'found_ht' },
-        { label: 'Foundation Type', fieldName: 'found_type' },
-        { label: 'Footprint ID', fieldName: 'ftprntid' },
-        { label: 'Footprint Source', fieldName: 'ftprntsrc' },
-        {
-          label: 'Ground Elevation (feet)',
-          fieldName: 'ground_elv',
-          format: 'number',
-        },
-        {
-          label: 'Ground Elevation (meters)',
-          fieldName: 'ground_elv_m',
-          format: 'number',
-        },
-        { label: 'Median Year Built', fieldName: 'med_yr_blt' },
-        { label: 'Number of Stories', fieldName: 'num_story' },
-        { label: 'Percent Over 65 Disabled', fieldName: 'o65disable' },
-        { label: 'Occupancy Type', fieldName: 'occtype' },
-        { label: 'Population Night Over 65', fieldName: 'pop2amo65' },
-        { label: 'Population Night Under 65', fieldName: 'pop2amu65' },
-        { label: 'Population Day Over 65', fieldName: 'pop2pmo65' },
-        { label: 'Population Day Under 65', fieldName: 'pop2pmu65' },
-        { label: 'Source', fieldName: 'source' },
-        // { label: 'Square Feet', fieldName: 'sqft' },
-        { label: 'Structure Damage Category', fieldName: 'st_damcat' },
-        { label: 'Students', fieldName: 'students' },
-        { label: 'Percent Under 65 Disabled', fieldName: 'u65disable' },
-        { label: 'Value of Contents', fieldName: 'val_cont' },
-        { label: 'Value of Structure', fieldName: 'val_struct' },
-        { label: 'Value of Vehicles', fieldName: 'val_vehic' },
-        { label: 'x', fieldName: 'x' },
-        { label: 'y', fieldName: 'y' },
-        { label: 'Contamination Type', fieldName: 'CONTAMTYPE' },
-        { label: 'Activity (Initial)', fieldName: 'CONTAMVALINITIAL' },
-        { label: 'Activity (Final)', fieldName: 'CONTAMVAL' },
-        { label: 'Unit of Measure', fieldName: 'CONTAMUNIT' },
-        {
-          label: 'Footprint Area (square meters)',
-          fieldName: 'footprintSqM',
-          format: 'number',
-        },
-        {
-          label: 'Floors Area (square meters)',
-          fieldName: 'floorsSqM',
-          format: 'number',
-        },
-        {
-          label: 'Total Area (square meters)',
-          fieldName: 'totalSqM',
-          format: 'number',
-        },
-        {
-          label: 'Ext Walls Area (square meters)',
-          fieldName: 'extWallsSqM',
-          format: 'number',
-        },
-        {
-          label: 'Int Walls Area (square meters)',
-          fieldName: 'intWallsSqM',
-          format: 'number',
-        },
-        {
-          label: 'Roof Area (square meters)',
-          fieldName: 'roofSqM',
-          format: 'number',
-        },
-        {
-          label: 'Footprint Area (square feet)',
-          fieldName: 'footprintSqFt',
-          format: 'number',
-        },
-        {
-          label: 'Floors Area (square feet)',
-          fieldName: 'floorsSqFt',
-          format: 'number',
-        },
-        {
-          label: 'Total Area (square feet)',
-          fieldName: 'totalSqFt',
-          format: 'number',
-        },
-        {
-          label: 'Ext Walls Area (square feet)',
-          fieldName: 'extWallsSqFt',
-          format: 'number',
-        },
-        {
-          label: 'Int Walls Area (square feet)',
-          fieldName: 'intWallsSqFt',
-          format: 'number',
-        },
-        {
-          label: 'Roof Area (square feet)',
-          fieldName: 'roofSqFt',
-          format: 'number',
-        },
-      ]}
-    />
-  );
+  const fieldInfos: any[] = [
+    { label: 'Layer', fieldName: 'layerName' },
+    { label: 'Building ID', fieldName: 'bid' },
+    { label: 'Building Type', fieldName: 'bldgtype' },
+    { label: 'Census Block FIPS', fieldName: 'cbfips' },
+    { label: 'ID', fieldName: 'fd_id' },
+    { label: 'Flood Zone (2021)', fieldName: 'firmzone' },
+    { label: 'Foundation Height (feet)', fieldName: 'found_ht' },
+    { label: 'Foundation Type', fieldName: 'found_type' },
+    { label: 'Footprint ID', fieldName: 'ftprntid' },
+    { label: 'Footprint Source', fieldName: 'ftprntsrc' },
+    {
+      label: 'Ground Elevation (feet)',
+      fieldName: 'ground_elv',
+      format: 'number',
+    },
+    {
+      label: 'Ground Elevation (meters)',
+      fieldName: 'ground_elv_m',
+      format: 'number',
+    },
+    { label: 'Median Year Built', fieldName: 'med_yr_blt' },
+    { label: 'Number of Stories', fieldName: 'num_story' },
+    { label: 'Percent Over 65 Disabled', fieldName: 'o65disable' },
+    { label: 'Occupancy Type', fieldName: 'occtype' },
+    { label: 'Population Night Over 65', fieldName: 'pop2amo65' },
+    { label: 'Population Night Under 65', fieldName: 'pop2amu65' },
+    { label: 'Population Day Over 65', fieldName: 'pop2pmo65' },
+    { label: 'Population Day Under 65', fieldName: 'pop2pmu65' },
+    { label: 'Source', fieldName: 'source' },
+    // { label: 'Square Feet', fieldName: 'sqft' },
+    { label: 'Structure Damage Category', fieldName: 'st_damcat' },
+    { label: 'Students', fieldName: 'students' },
+    { label: 'Percent Under 65 Disabled', fieldName: 'u65disable' },
+    { label: 'Value of Contents', fieldName: 'val_cont' },
+    { label: 'Value of Structure', fieldName: 'val_struct' },
+    { label: 'Value of Vehicles', fieldName: 'val_vehic' },
+    { label: 'x', fieldName: 'x' },
+    { label: 'y', fieldName: 'y' },
+    {
+      label: 'Footprint Area (square meters)',
+      fieldName: 'footprintSqM',
+      format: 'number',
+    },
+    {
+      label: 'Floors Area (square meters)',
+      fieldName: 'floorsSqM',
+      format: 'number',
+    },
+    {
+      label: 'Total Area (square meters)',
+      fieldName: 'totalSqM',
+      format: 'number',
+    },
+    {
+      label: 'Ext Walls Area (square meters)',
+      fieldName: 'extWallsSqM',
+      format: 'number',
+    },
+    {
+      label: 'Int Walls Area (square meters)',
+      fieldName: 'intWallsSqM',
+      format: 'number',
+    },
+    {
+      label: 'Roof Area (square meters)',
+      fieldName: 'roofSqM',
+      format: 'number',
+    },
+    {
+      label: 'Footprint Area (square feet)',
+      fieldName: 'footprintSqFt',
+      format: 'number',
+    },
+    {
+      label: 'Floors Area (square feet)',
+      fieldName: 'floorsSqFt',
+      format: 'number',
+    },
+    {
+      label: 'Total Area (square feet)',
+      fieldName: 'totalSqFt',
+      format: 'number',
+    },
+    {
+      label: 'Ext Walls Area (square feet)',
+      fieldName: 'extWallsSqFt',
+      format: 'number',
+    },
+    {
+      label: 'Int Walls Area (square feet)',
+      fieldName: 'intWallsSqFt',
+      format: 'number',
+    },
+    {
+      label: 'Roof Area (square feet)',
+      fieldName: 'roofSqFt',
+      format: 'number',
+    },
+  ];
+
+  if (window.location.search.includes('devMode=true')) {
+    fieldInfos.push({ label: 'Contamination Type', fieldName: 'CONTAMTYPE' });
+    fieldInfos.push({
+      label: 'Activity (Initial)',
+      fieldName: 'CONTAMVALINITIAL',
+    });
+    fieldInfos.push({ label: 'Activity (Final)', fieldName: 'CONTAMVAL' });
+    fieldInfos.push({ label: 'Unit of Measure', fieldName: 'CONTAMUNIT' });
+  }
+
+  const content = <MapPopupSimple feature={feature} fieldInfos={fieldInfos} />;
 
   // wrap the content for esri
   const contentContainer = document.createElement('div');
