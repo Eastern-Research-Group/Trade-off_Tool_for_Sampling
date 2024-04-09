@@ -382,7 +382,7 @@ function EditScenario({
         },
         calculateSettings: { current: settingDefaults },
         importedAoiLayer: null,
-        aoiLayerMode: '',
+        aoiLayerMode: 'draw',
       };
 
       // make a copy of the edits context variable

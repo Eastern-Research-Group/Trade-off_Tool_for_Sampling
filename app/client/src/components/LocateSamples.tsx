@@ -1560,7 +1560,7 @@ function LocateSamples() {
   // const [editLayerVisible, setEditLayerVisible] = useState(false);
   const [generateRandomMode, setGenerateRandomMode] = useState<
     'draw' | 'file' | ''
-  >('');
+  >('draw');
   const [selectedAoiFile, setSelectedAoiFile] = useState<LayerType | null>(
     null,
   );
@@ -1606,11 +1606,11 @@ function LocateSamples() {
   useEffect(() => {
     if (!selectedScenario) {
       setSelectedAoiFile(null);
-      setGenerateRandomMode('');
+      setGenerateRandomMode('draw');
       return;
     }
 
-    setGenerateRandomMode(selectedScenario.aoiLayerMode);
+    // setGenerateRandomMode(selectedScenario.aoiLayerMode);
 
     if (!selectedScenario.importedAoiLayer) return;
 
@@ -2721,7 +2721,7 @@ function LocateSamples() {
                               the designated AOI.
                             </p>
 
-                            <div>
+                            <div style={{ display: 'none' }}>
                               <input
                                 id="draw-aoi"
                                 type="radio"
@@ -2791,7 +2791,7 @@ function LocateSamples() {
                               </button>
                             )}
 
-                            <div>
+                            <div style={{ display: 'none' }}>
                               <input
                                 id="use-aoi-file"
                                 type="radio"

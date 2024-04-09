@@ -1552,7 +1552,7 @@ function ResultCard({ result }: ResultCardProps) {
               published: calcSettings || undefined,
             },
             importedAoiLayer: null,
-            aoiLayerMode: '',
+            aoiLayerMode: 'draw',
           };
 
           // make a copy of the edits context variable
