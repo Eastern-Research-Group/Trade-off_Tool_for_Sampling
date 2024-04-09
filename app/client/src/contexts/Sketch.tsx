@@ -147,6 +147,8 @@ type SketchType = {
   setViewUnderground3d: Dispatch<SetStateAction<boolean>>;
   resultsOpen: boolean;
   setResultsOpen: Dispatch<SetStateAction<boolean>>;
+  efficacyResults: any;
+  setEfficacyResults: Dispatch<SetStateAction<any>>;
 };
 
 export const SketchContext = createContext<SketchType>({
@@ -228,6 +230,8 @@ export const SketchContext = createContext<SketchType>({
   setViewUnderground3d: () => {},
   resultsOpen: false,
   setResultsOpen: () => {},
+  efficacyResults: null,
+  setEfficacyResults: () => {},
 });
 
 type Props = { children: ReactNode };
@@ -329,6 +333,7 @@ export function SketchProvider({ children }: Props) {
   const [terrain3dVisible, setTerrain3dVisible] = useState(true);
   const [viewUnderground3d, setViewUnderground3d] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(false);
+  const [efficacyResults, setEfficacyResults] = useState(null);
 
   // Update totsLayers variable on the window object. This is a workaround
   // to an issue where the layers state variable is not available within esri
@@ -384,6 +389,7 @@ export function SketchProvider({ children }: Props) {
         pctAoi: 0,
         surfaceArea: 0,
         avgCfu: 0,
+        totalCfu: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -398,6 +404,7 @@ export function SketchProvider({ children }: Props) {
         pctAoi: 0,
         surfaceArea: 0,
         avgCfu: 0,
+        totalCfu: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -412,6 +419,7 @@ export function SketchProvider({ children }: Props) {
         pctAoi: 0,
         surfaceArea: 0,
         avgCfu: 0,
+        totalCfu: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -426,6 +434,7 @@ export function SketchProvider({ children }: Props) {
         pctAoi: 0,
         surfaceArea: 0,
         avgCfu: 0,
+        totalCfu: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -440,6 +449,7 @@ export function SketchProvider({ children }: Props) {
         pctAoi: 0,
         surfaceArea: 0,
         avgCfu: 0,
+        totalCfu: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -454,6 +464,7 @@ export function SketchProvider({ children }: Props) {
         pctAoi: 0,
         surfaceArea: 0,
         avgCfu: 0,
+        totalCfu: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -468,6 +479,7 @@ export function SketchProvider({ children }: Props) {
         pctAoi: 0,
         surfaceArea: 0,
         avgCfu: 0,
+        totalCfu: 0,
         numApplications: 1,
         numConcurrentApplications: 1,
         pctDeconed: 100,
@@ -613,6 +625,8 @@ export function SketchProvider({ children }: Props) {
         setViewUnderground3d,
         resultsOpen,
         setResultsOpen,
+        efficacyResults,
+        setEfficacyResults,
       }}
     >
       {children}

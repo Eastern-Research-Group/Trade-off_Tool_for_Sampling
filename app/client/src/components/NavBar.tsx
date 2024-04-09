@@ -449,6 +449,11 @@ function NavBar({ height }: Props) {
           </div>
 
           {calculateResults.status === 'fetching' && <LoadingSpinner />}
+          {calculateResults.status === 'failure' && (
+            <div css={resourceTallyStyles}>
+              An error occurred. Please try again.
+            </div>
+          )}
           {calculateResults.status === 'success' && calculateResults.data && (
             <div css={resourceTallyStyles}>
               <h3 css={tallyTitle}>Resource Tally</h3>
