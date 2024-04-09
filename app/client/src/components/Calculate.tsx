@@ -13,7 +13,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 // import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 // import Graphic from '@arcgis/core/Graphic';
-import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
+// import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
 // import PopupTemplate from '@arcgis/core/PopupTemplate';
 // components
 // import { AccordionList, AccordionItem } from 'components/Accordion';
@@ -37,7 +37,6 @@ import {
   excelFailureMessage,
   // contaminationHitsSuccessMessage,
   // featureNotAvailableMessage,
-  generalError,
   noContaminationGraphicsMessage,
   noContaminationMapMessage,
   noSampleLayerMessage,
@@ -46,14 +45,14 @@ import {
   // webServiceErrorMessage,
 } from 'config/errorMessages';
 // utils
-import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
+// import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
 import { CalculateResultsType } from 'types/CalculateResults';
-import { geoprocessorFetch } from 'utils/fetchUtils';
-import { detectionLimit } from 'utils/hooks';
-import {
-  removeZValues,
-  // updateLayerEdits
-} from 'utils/sketchUtils';
+// import { geoprocessorFetch } from 'utils/fetchUtils';
+// import { useDynamicPopup } from 'utils/hooks';
+// import {
+//   removeZValues,
+//   // updateLayerEdits
+// } from 'utils/sketchUtils';
 import {
   formatNumber,
   // chunkArray,
@@ -1435,8 +1434,7 @@ function CalculateResultsPopup({
   isOpen,
   onClose,
 }: CalculateResultsPopupProps) {
-  const { edits, jsonDownload, planSettings, efficacyResults } =
-    useContext(SketchContext);
+  const { edits, jsonDownload, planSettings } = useContext(SketchContext);
   const [tableId] = useState(
     `tots-decon-results-selectionstable-${generateUUID()}`,
   );
@@ -1627,7 +1625,6 @@ function CalculateResultsPopup({
     const defaultFont = { name: 'Calibri', size: 12 };
     const sheetTitleFont = { name: 'Calibri', bold: true, size: 18 };
     const columnTitleAlignment: any = { horizontal: 'center' };
-    const rightAlignment: any = { horizontal: 'right' };
     // const columnTitleFont = {
     //   name: 'Calibri',
     //   bold: true,
@@ -1698,66 +1695,10 @@ function CalculateResultsPopup({
       summarySheet.getCell(5, 2).font = defaultFont;
       summarySheet.getCell(5, 2).value = planSettings.description;
 
-      summarySheet.mergeCells(7, 1, 7, 2);
-      summarySheet.getCell(7, 1).alignment = columnTitleAlignment;
-      summarySheet.getCell(7, 1).font = underlinedLabelFont;
-      summarySheet.getCell(7, 1).value = 'Cost / Time / Waste';
-      summarySheet.getCell(8, 1).font = labelFont;
-      summarySheet.getCell(8, 1).value = 'Total Cost';
-      summarySheet.getCell(8, 2).font = defaultFont;
-      summarySheet.getCell(8, 2).alignment = rightAlignment;
-      summarySheet.getCell(8, 2).numFmt = currencyNumberFormat;
-      summarySheet.getCell(8, 2).value = calculateResults.data['Total Cost'];
-      summarySheet.getCell(9, 1).font = labelFont;
-      summarySheet.getCell(9, 1).value = 'Max Time day(s)';
-      summarySheet.getCell(9, 2).font = defaultFont;
-      summarySheet.getCell(9, 2).alignment = rightAlignment;
-      summarySheet.getCell(9, 2).value =
-        calculateResults.data['Total Time'].toLocaleString();
-      summarySheet.getCell(10, 1).font = labelFont;
-      summarySheet.getCell(10, 1).value = 'Total Waste Volume (m³)';
-      summarySheet.getCell(10, 2).font = defaultFont;
-      summarySheet.getCell(10, 2).alignment = rightAlignment;
-      summarySheet.getCell(10, 2).value = Math.round(
-        calculateResults.data['Total Waste Volume'],
-      ).toLocaleString();
-      summarySheet.getCell(11, 1).font = labelFont;
-      summarySheet.getCell(11, 1).value = 'Total Waste Mass (kg)';
-      summarySheet.getCell(11, 2).font = defaultFont;
-      summarySheet.getCell(11, 2).alignment = rightAlignment;
-      summarySheet.getCell(11, 2).value = Math.round(
-        calculateResults.data['Total Waste Mass'],
-      ).toLocaleString();
-
       summarySheet.mergeCells(7, 3, 7, 4);
       summarySheet.getCell(7, 3).alignment = columnTitleAlignment;
-      summarySheet.getCell(7, 3).font = underlinedLabelFont;
-      summarySheet.getCell(7, 3).value = 'Efficacy';
-
-      summarySheet.getCell(8, 3).font = labelFont;
-      summarySheet.getCell(8, 3).value = 'Average Initial Contamination';
-      summarySheet.getCell(8, 4).font = defaultFont;
-      summarySheet.getCell(8, 4).value =
-        `${efficacyResults.averageInitialCfu.toLocaleString()} (CFU/m²)`;
-      summarySheet.getCell(9, 3).font = labelFont;
-      summarySheet.getCell(9, 3).value = 'Average Final Contamination';
-      summarySheet.getCell(9, 4).font = defaultFont;
-      summarySheet.getCell(9, 4).value =
-        `${efficacyResults.averageFinalCfu.toLocaleString()} (CFU/m²)`;
-      summarySheet.getCell(10, 3).font = labelFont;
-      summarySheet.getCell(10, 3).value = 'Detection Limit';
-      summarySheet.getCell(10, 4).font = defaultFont;
-      summarySheet.getCell(10, 4).value = `${detectionLimit} (CFU/m²)`;
-      summarySheet.getCell(11, 3).font = labelFont;
-      summarySheet.getCell(11, 3).value = 'Above/Below Detection Limit';
-      summarySheet.getCell(11, 4).font = defaultFont;
-      summarySheet.getCell(11, 4).value =
-        efficacyResults.averageFinalCfu >= detectionLimit ? 'Above' : 'Below';
-
-      summarySheet.mergeCells(14, 3, 14, 4);
-      summarySheet.getCell(14, 3).alignment = columnTitleAlignment;
-      summarySheet.getCell(14, 3).font = labelFont;
-      summarySheet.getCell(14, 3).value = 'Decontamination Waste Generation';
+      summarySheet.getCell(7, 3).font = labelFont;
+      summarySheet.getCell(7, 3).value = 'Decontamination Waste Generation';
 
       const cols = [
         { label: 'Contamination Scenario', fieldName: 'contaminationScenario' },
@@ -1801,7 +1742,7 @@ function CalculateResultsPopup({
         },
       ];
 
-      let curRow = 15;
+      let curRow = 8;
       curRow = fillOutCells({
         sheet: summarySheet,
         startRow: curRow,
@@ -2192,7 +2133,6 @@ function CalculateResultsPopup({
     calculateResults,
     downloadStatus,
     edits,
-    efficacyResults,
     jsonDownload,
     layers,
     map,
@@ -2242,10 +2182,6 @@ function CalculateResultsPopup({
     (e) => e.type === 'scenario',
   ) as ScenarioEditsType[];
 
-  const contamMapUpdated = map?.layers.find(
-    (l) => l.id === 'contaminationMapUpdated',
-  );
-
   return (
     <DialogOverlay
       css={overlayStyles}
@@ -2255,56 +2191,30 @@ function CalculateResultsPopup({
       <DialogContent css={dialogStyles} aria-label="Edit Attribute">
         <h1>Decon Resource Demand Summary</h1>
 
-        {calculateResults.status === 'failure' && generalError}
         {calculateResults.status === 'success' && calculateResults.data && (
           <div css={resourceTallyContainerStyles}>
-            <div>
-              <div>
-                <strong>Total Cost:</strong> $
-                {Math.round(
-                  calculateResults.data['Total Cost'],
-                ).toLocaleString()}
-              </div>
-              <div>
-                <strong>Max Time day(s):</strong>{' '}
-                {calculateResults.data['Total Time'].toLocaleString()}
-              </div>
-              <div>
-                <strong>
-                  Total Waste Volume (m<sup>3</sup>):
-                </strong>{' '}
-                {Math.round(
-                  calculateResults.data['Total Waste Volume'],
-                ).toLocaleString()}
-              </div>
-              <div>
-                <strong>Total Waste Mass (kg):</strong>{' '}
-                {Math.round(
-                  calculateResults.data['Total Waste Mass'],
-                ).toLocaleString()}
-              </div>
+            <div css={mainTallyStyles}>
+              <strong>Total Cost:</strong> $
+              {Math.round(calculateResults.data['Total Cost']).toLocaleString()}
             </div>
-            {efficacyResults && (
-              <div>
-                <div>
-                  <strong>Average Initial Contamination:</strong>{' '}
-                  {efficacyResults.averageInitialCfu.toLocaleString()} (CFU/m²)
-                </div>
-                <div>
-                  <strong>Average Final Contamination:</strong>{' '}
-                  {efficacyResults.averageFinalCfu.toLocaleString()} (CFU/m²)
-                </div>
-                <div>
-                  <strong>Detection Limit:</strong> {detectionLimit} (CFU/m²)
-                </div>
-                <div>
-                  <strong>Above/Below Detection Limit:</strong>{' '}
-                  {efficacyResults.averageFinalCfu >= detectionLimit
-                    ? 'Above'
-                    : 'Below'}
-                </div>
-              </div>
-            )}
+            <div css={mainTallyStyles}>
+              <strong>Max Time day(s):</strong>{' '}
+              {calculateResults.data['Total Time'].toLocaleString()}
+            </div>
+            <div css={mainTallyStyles}>
+              <strong>
+                Total Waste Volume (m<sup>3</sup>):
+              </strong>{' '}
+              {Math.round(
+                calculateResults.data['Total Waste Volume'],
+              ).toLocaleString()}
+            </div>
+            <div css={mainTallyStyles}>
+              <strong>Total Waste Mass (kg):</strong>{' '}
+              {Math.round(
+                calculateResults.data['Total Waste Mass'],
+              ).toLocaleString()}
+            </div>
           </div>
         )}
         <br />
@@ -2517,116 +2427,6 @@ function CalculateResultsPopup({
             Download Summary Data
           </button>
           <DownloadIWasteData />
-          {contamMapUpdated && (
-            <button
-              css={saveAttributesButtonStyles}
-              onClick={async () => {
-                setDownloadStatus('fetching');
-                const contaminationLayer =
-                  contamMapUpdated as __esri.GraphicsLayer;
-                // contaminationMap.sketchLayer as __esri.GraphicsLayer;
-
-                const graphics = contaminationLayer.graphics
-                  .map((g) => {
-                    removeZValues(g);
-                    return g;
-                  })
-                  .toArray();
-
-                const contamMapSet = new FeatureSet({
-                  displayFieldName: '',
-                  geometryType: 'polygon',
-                  features: graphics,
-                  spatialReference: {
-                    wkid: 3857,
-                  },
-                  fields: [
-                    {
-                      name: 'OBJECTID',
-                      type: 'oid',
-                      alias: 'OBJECTID',
-                    },
-                    {
-                      name: 'GLOBALID',
-                      type: 'guid',
-                      alias: 'GlobalID',
-                    },
-                    {
-                      name: 'PERMANENT_IDENTIFIER',
-                      type: 'guid',
-                      alias: 'Permanent Identifier',
-                    },
-                    {
-                      name: 'AREA',
-                      type: 'double',
-                      alias: 'AREA',
-                    },
-                    {
-                      name: 'CONTAMTYPE',
-                      type: 'string',
-                      alias: 'Contamination Type',
-                    },
-                    {
-                      name: 'CONTAMVAL',
-                      type: 'double',
-                      alias: 'Contamination Value',
-                    },
-                    {
-                      name: 'EXTWALLS',
-                      type: 'double',
-                      alias: 'Contamination Value Exterior Walls',
-                    },
-                    {
-                      name: 'INTWALLS',
-                      type: 'double',
-                      alias: 'Contamination Value Interior Walls',
-                    },
-                    {
-                      name: 'FLOORS',
-                      type: 'double',
-                      alias: 'Contamination Value Floors',
-                    },
-                    {
-                      name: 'ROOFS',
-                      type: 'double',
-                      alias: 'Contamination Value Roofs',
-                    },
-                    {
-                      name: 'CONTAMUNIT',
-                      type: 'string',
-                      alias: 'Contamination Unit',
-                    },
-                    {
-                      name: 'Notes',
-                      type: 'string',
-                      alias: 'Notes',
-                    },
-                  ],
-                });
-
-                // call the GP Server
-                const params = {
-                  f: 'json',
-                  Feature_Set: contamMapSet,
-                };
-                appendEnvironmentObjectParam(params);
-
-                const response = await geoprocessorFetch({
-                  url: `https://ags.erg.com/arcgis/rest/services/ORD/ExportShape/GPServer/ExportShape`,
-                  inputParameters: params,
-                });
-
-                saveAs(
-                  response.results[0].value.url,
-                  `tods_${planSettings.name}_updated_contamination.zip`,
-                );
-
-                setDownloadStatus('success');
-              }}
-            >
-              Download Contamination Map
-            </button>
-          )}
           <button
             css={saveAttributesButtonStyles}
             onClick={() => {
@@ -2670,7 +2470,5 @@ function DownloadIWasteData({ isSubmitStyle = false }: DownloadIWasteProps) {
 
 export default Calculate;
 
-const resourceTallyContainerStyles = css`
-  display: flex;
-  justify-content: space-around;
-`;
+const resourceTallyContainerStyles = css``;
+const mainTallyStyles = css``;

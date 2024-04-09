@@ -504,26 +504,9 @@ export function contaminationMapPopup(feature: any) {
         { label: 'Contamination Type', fieldName: 'CONTAMTYPE' },
         { label: 'Contamination Unit', fieldName: 'CONTAMUNIT' },
         { label: 'Contamination Value', fieldName: 'CONTAMVAL' },
-        // { label: 'Contamination Reduced', fieldName: 'CONTAMREDUCED' },
-        // { label: 'Contaminated', fieldName: 'CONTAMINATED' },
-        // { label: 'Has Decontamination been Applied', fieldName: 'CONTAMHIT' },
-        {
-          fieldName: 'EXTWALLS',
-          label: 'Contamination Value Exterior Walls',
-        },
-        {
-          fieldName: 'INTWALLS',
-          label: 'Contamination Value Interior Walls',
-        },
-        {
-          fieldName: 'FLOORS',
-          label: 'Contamination Value Floors',
-        },
-        {
-          fieldName: 'ROOFS',
-          label: 'Contamination Value Roofs',
-        },
-        { label: 'Area', fieldName: 'AREA' },
+        { label: 'Contamination Reduced', fieldName: 'CONTAMREDUCED' },
+        { label: 'Contaminated', fieldName: 'CONTAMINATED' },
+        { label: 'Has Decontamination been Applied', fieldName: 'CONTAMHIT' },
         { label: 'FID', fieldName: 'FID' },
         { label: 'ID', fieldName: 'Id' },
       ]}

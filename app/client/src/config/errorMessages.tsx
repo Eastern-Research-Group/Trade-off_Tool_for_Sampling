@@ -291,14 +291,6 @@ export const userDefinedValidationMessage = (
   <MessageBox severity="error" title="Validation Failure" message={message} />
 );
 
-export const generalError = (
-  <MessageBox
-    severity="error"
-    title="An error occurred"
-    message="An error occurred. This was likely a web service error. Please try again."
-  />
-);
-
 // calculate results panel
 export const screenshotFailureMessage = (
   <MessageBox

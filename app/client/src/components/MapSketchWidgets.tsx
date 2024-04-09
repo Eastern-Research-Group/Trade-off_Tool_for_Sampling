@@ -1052,7 +1052,7 @@ function MapSketchWidgets({ mapView, sceneView }: Props) {
     const layer = layers.find(
       (layer) =>
         layer.layerId ===
-        samplesToDelete[0].layer?.id
+        samplesToDelete[0].layer.id
           .replace('-points', '')
           .replace('-hybrid', ''),
     );

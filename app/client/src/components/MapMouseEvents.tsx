@@ -128,7 +128,7 @@ function MapMouseEvents({ mapView, sceneView }: Props) {
             curIds.toString() !== newIds.toString()
           ) {
             // find these graphics in the sketchLayer and open them
-            const sketchPopupItems = sketchVMG?.layer?.graphics?.filter((g) =>
+            const sketchPopupItems = sketchVMG?.layer.graphics.filter((g) =>
               newIds.includes(g.attributes.PERMANENT_IDENTIFIER),
             );
             if (sketchPopupItems && sketchPopupItems.length > 0)
