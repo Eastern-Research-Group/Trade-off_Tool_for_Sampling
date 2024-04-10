@@ -85,6 +85,22 @@ export function escapeRegex(str: string) {
 }
 
 /**
+ * Gets the environment from the URL.
+ *
+ * @returns dev, stage, production or prototyp
+ */
+export function getEnvironment() {
+  const hostname = window.location.hostname;
+  if (hostname === 'tots.epa.gov' || hostname === 'tots-prod.app.cloud.gov')
+    return 'production';
+  else if (hostname === 'tots-stage.app.cloud.gov') return 'stage';
+  else if (hostname === 'tots-dev.app.cloud.gov') return 'develop';
+  else if (hostname === 'localhost') return 'local';
+  else if (hostname === 'tots-decon-proto.app.cloud.gov') return 'prototype';
+  return 'unknown';
+}
+
+/**
  * Gets the number from the last parentheses. If the value
  * is not a number NaN is returned.
  *

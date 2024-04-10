@@ -24,6 +24,7 @@ import { SketchProvider } from 'contexts/Sketch';
 // utilities
 import { getEnvironmentString } from 'utils/arcGisRestUtils';
 import { logCallToGoogleAnalytics } from 'utils/fetchUtils';
+import { getEnvironment } from 'utils/utils';
 // styles
 import '@arcgis/core/assets/esri/themes/light/main.css';
 import '@reach/dialog/styles.css';
@@ -84,8 +85,38 @@ const globalStyles = css`
   }
 `;
 
+/** Custom hook to display the Expert Query disclaimer banner for development/staging */
+function useDisclaimerBanner() {
+  useEffect(() => {
+    const environment = getEnvironment();
+    console.log('environment: ', environment);
+    if (environment === 'production') return;
+
+    const siteAlert = document.querySelector('.usa-site-alert');
+    if (!siteAlert) return;
+
+    const banner = document.createElement('aside');
+    banner.setAttribute('id', 'eq-disclaimer-banner');
+    banner.setAttribute(
+      'class',
+      'padding-1 text-center text-white bg-secondary-dark',
+    );
+    banner.innerHTML = `<strong>EPA development environment:</strong> The
+      content on this page is not production data and this site is being used
+      for <strong>development</strong> and/or <strong>testing</strong> purposes
+      only.`;
+
+    siteAlert.insertAdjacentElement('beforebegin', banner);
+
+    return function cleanup() {
+      banner.remove();
+    };
+  }, []);
+}
+
 function AppRoutes() {
   const services = useServicesContext();
+  useDisclaimerBanner();
 
   // setup esri interceptors for logging to google analytics
   const [interceptorsInitialized, setInterceptorsInitialized] = useState(false);
