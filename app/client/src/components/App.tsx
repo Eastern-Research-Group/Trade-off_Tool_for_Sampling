@@ -34,6 +34,7 @@ import { getEnvironmentString } from 'utils/arcGisRestUtils';
 import { logCallToGoogleAnalytics } from 'utils/fetchUtils';
 import { useSessionStorage } from 'utils/hooks';
 import { getSampleTableColumns } from 'utils/sketchUtils';
+import { getEnvironment } from 'utils/utils';
 // config
 import { navPanelWidth } from 'config/appConfig';
 // styles
@@ -257,6 +258,34 @@ const zoomButtonStyles = css`
   font-size: 16px;
 `;
 
+/** Custom hook to display the Expert Query disclaimer banner for development/staging */
+function useDisclaimerBanner() {
+  useEffect(() => {
+    const environment = getEnvironment();
+    if (environment === 'production') return;
+
+    const siteAlert = document.querySelector('.usa-site-alert');
+    if (!siteAlert) return;
+
+    const banner = document.createElement('aside');
+    banner.setAttribute('id', 'eq-disclaimer-banner');
+    banner.setAttribute(
+      'class',
+      'padding-1 text-center text-white bg-secondary-dark',
+    );
+    banner.innerHTML = `<strong>EPA development environment:</strong> The
+      content on this page is not production data and this site is being used
+      for <strong>development</strong> and/or <strong>testing</strong> purposes
+      only.`;
+
+    siteAlert.insertAdjacentElement('beforebegin', banner);
+
+    return function cleanup() {
+      banner.remove();
+    };
+  }, []);
+}
+
 function App() {
   const { calculateResults } = useContext(CalculateContext);
   const {
@@ -281,6 +310,7 @@ function App() {
 
   const services = useServicesContext();
   useSessionStorage();
+  useDisclaimerBanner();
 
   const { height, width } = useWindowSize();
 

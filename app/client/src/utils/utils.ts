@@ -85,6 +85,22 @@ export function escapeRegex(str: string) {
 }
 
 /**
+ * Gets the environment from the URL.
+ *
+ * @returns dev, stage, production or prototyp
+ */
+export function getEnvironment() {
+  const hostname = window.location.hostname;
+  if (hostname === 'tots.epa.gov' || hostname === 'tots-prod.app.cloud.gov')
+    return 'production';
+  else if (hostname === 'tots-stage.app.cloud.gov') return 'stage';
+  else if (hostname === 'tots-dev.app.cloud.gov') return 'develop';
+  else if (hostname === 'localhost') return 'local';
+  else if (hostname === 'tots-decon-proto.app.cloud.gov') return 'prototype';
+  return 'unknown';
+}
+
+/**
  * Determines if the desired name has already been used as a layer name.
  * If it has it appends in index to the end (i.e. '<desiredName> (2)').
  */
