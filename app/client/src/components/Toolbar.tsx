@@ -141,29 +141,29 @@ function buildLegendListItem(event: any, isDashboard: boolean) {
     // );
   }
   if (layer?.layerType === 'AOI Assessed') {
-    legendItems.push({
-      value: 'good',
-      title: 'Final Contamination < 100',
-      symbol: new TextSymbol({
-        ...baseBuildingSymbolProps,
-        color: 'green',
-      }),
-      type: 'text',
-      style: null,
-    });
-    legendItems.push({
-      value: 'bad',
-      title: 'Final Contamination >= 100',
-      symbol: new TextSymbol({
-        ...baseBuildingSymbolProps,
-        color: 'red',
-      }),
-      type: 'text',
-      style: null,
-    });
+    // legendItems.push({
+    //   value: 'good',
+    //   title: 'Final Contamination < 100',
+    //   symbol: new TextSymbol({
+    //     ...baseBuildingSymbolProps,
+    //     color: 'green',
+    //   }),
+    //   type: 'text',
+    //   style: null,
+    // });
+    // legendItems.push({
+    //   value: 'bad',
+    //   title: 'Final Contamination >= 100',
+    //   symbol: new TextSymbol({
+    //     ...baseBuildingSymbolProps,
+    //     color: 'red',
+    //   }),
+    //   type: 'text',
+    //   style: null,
+    // });
     legendItems.push({
       value: 'none',
-      title: 'Not Contaminated',
+      title: 'Building',
       symbol: new TextSymbol(baseBuildingSymbolProps),
       type: 'text',
       style: null,

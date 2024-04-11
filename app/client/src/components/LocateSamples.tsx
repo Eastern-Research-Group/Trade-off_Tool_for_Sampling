@@ -2710,14 +2710,12 @@ function LocateSamples() {
                           <Fragment>
                             <p>
                               Select "Draw Area of Interest" to draw a boundary
-                              on your map or select "Use Imported Area of
-                              Interest" to use an Area of Interest file to
-                              designate a decontamination zone or decision unit.
-                              The tool will retrieve and analyze building data
-                              and ground surface characteristics to inform
-                              decontamination strategy decisions. Click Submit
-                              to automatically generate a summary of
-                              contamination scenarios that are present within
+                              on your map to designate a decontamination zone or
+                              decision unit. The tool will retrieve and analyze
+                              building data and ground surface characteristics
+                              to inform decontamination strategy decisions.
+                              Click Submit to automatically generate a summary
+                              of contamination scenarios that are present within
                               the designated AOI.
                             </p>
 
