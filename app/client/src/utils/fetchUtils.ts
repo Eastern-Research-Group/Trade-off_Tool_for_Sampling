@@ -199,7 +199,7 @@ export function geoprocessorFetch({
 
     geoprocessor
       .execute(url, inputParameters, { outSpatialReference } as any, {
-        timeout: 120000,
+        timeout: 240000,
         cacheBust: true,
       })
       .then((res) => {
