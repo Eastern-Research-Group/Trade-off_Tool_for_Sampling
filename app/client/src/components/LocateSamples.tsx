@@ -4254,7 +4254,7 @@ function DeconSelectionPopup({
               <strong>Total Building Footprint:</strong>{' '}
               {selectedScenario?.aoiSummary.buildingFootprint.toLocaleString() ??
                 0}{' '}
-              ft²
+              m²
             </div>
             <div>
               <strong>Detection Limit:</strong> 100 (CFU/m²)

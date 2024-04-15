@@ -351,7 +351,7 @@ function processScenario(
     let pctAoi = 0;
     if (media.includes('Building ')) {
       avgCfu =
-        (planBuildingCfu[scenarioId] ?? 0) * (partitionFactors[media] ?? 0);
+        (planBuildingCfu[scenarioId] ?? 0) * (partitionFactors[media] ?? 1);
 
       if (media === 'Building Exterior Walls')
         surfaceArea = totalBuildingExtWallsSqM;
@@ -450,13 +450,13 @@ async function fetchBuildingData(
       // feet
       const footprintSqFt = sqft;
       const floorsSqFt = num_story * footprintSqFt;
-      const extWallsSqFt = Math.sqrt(floorsSqFt) * 10 * 4 * num_story;
+      const extWallsSqFt = Math.sqrt(sqft) * 10 * 4 * num_story;
       const intWallsSqFt = extWallsSqFt * 3;
 
       // meters
       const footprintSqM = sqft / 10.7639104167;
       const floorsSqM = num_story * footprintSqM;
-      const extWallsSqM = Math.sqrt(floorsSqM) * 10 * 4 * num_story;
+      const extWallsSqM = Math.sqrt(footprintSqM) * 10 * 4 * num_story;
       const intWallsSqM = extWallsSqM * 3;
 
       const planId = responseIndexes[index];
