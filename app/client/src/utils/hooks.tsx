@@ -145,6 +145,7 @@ type PlanGraphics = {
   };
 };
 
+let view: __esri.MapView | __esri.SceneView | null = null;
 export const baseBuildingSymbolProps = {
   text: '\ue687',
   color: 'blue',
@@ -1731,11 +1732,8 @@ export function useCalculatePlan() {
     console.log('aoiData: ', aoiData);
   }, [aoiData]);
 
-  const [view, setView] = useState<__esri.MapView | __esri.SceneView | null>(
-    null,
-  );
   useEffect(() => {
-    setView(displayDimensions === '2d' ? mapView : sceneView);
+    view = displayDimensions === '2d' ? mapView : sceneView;
   }, [displayDimensions, mapView, sceneView]);
 
   // Reset the calculateResults context variable, whenever anything
@@ -1773,7 +1771,7 @@ export function useCalculatePlan() {
       (l) => l.id === 'contaminationMapUpdated',
     ) as __esri.GraphicsLayer;
     if (contamMapUpdated) contamMapUpdated.removeAll();
-  }, [aoiData, view, setCalculateResults, setEfficacyResults]);
+  }, [aoiData, setCalculateResults, setEfficacyResults]);
 
   const [nsiData, setNsiData] = useState<NsiData>({
     status: 'none',
@@ -2307,7 +2305,6 @@ export function useCalculatePlan() {
     // setCalculateResults,
     setEdits,
     setJsonDownload,
-    view,
   ]);
 
   // perform final calcs
@@ -3193,7 +3190,6 @@ export function useCalculatePlan() {
     resultsOpen,
     sampleAttributes,
     setEfficacyResults,
-    view,
   ]);
 
   useEffect(() => {
