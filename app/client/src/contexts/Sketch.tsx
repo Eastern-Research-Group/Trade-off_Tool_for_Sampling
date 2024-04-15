@@ -330,7 +330,7 @@ export function SketchProvider({ children }: Props) {
   >('polygons');
   const [displayDimensions, setDisplayDimensions] = useState<'2d' | '3d'>('2d');
   const [terrain3dUseElevation, setTerrain3dUseElevation] = useState(true);
-  const [terrain3dVisible, setTerrain3dVisible] = useState(true);
+  const [terrain3dVisible, setTerrain3dVisible] = useState(false);
   const [viewUnderground3d, setViewUnderground3d] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(false);
   const [efficacyResults, setEfficacyResults] = useState(null);

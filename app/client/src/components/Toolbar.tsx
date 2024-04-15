@@ -561,8 +561,8 @@ function Toolbar({ isDashboard = false, map, mapView, sceneView }: Props) {
     userDefinedAttributes,
     displayDimensions,
     setDisplayDimensions,
-    terrain3dUseElevation,
-    setTerrain3dUseElevation,
+    // terrain3dUseElevation,
+    // setTerrain3dUseElevation,
     terrain3dVisible,
     setTerrain3dVisible,
     viewUnderground3d,
@@ -1155,7 +1155,7 @@ function Toolbar({ isDashboard = false, map, mapView, sceneView }: Props) {
                   />
                 </label>
 
-                {!isDashboard && (
+                {/* {!isDashboard && (
                   <label css={switchLabelContainer}>
                     <span css={switchLabel}>3D Use Terrain Elevation</span>
                     <Switch
@@ -1166,7 +1166,7 @@ function Toolbar({ isDashboard = false, map, mapView, sceneView }: Props) {
                       onHandleColor="#129c12"
                     />
                   </label>
-                )}
+                )} */}
 
                 <label css={switchLabelContainer}>
                   <span css={switchLabel}>3D View Underground</span>

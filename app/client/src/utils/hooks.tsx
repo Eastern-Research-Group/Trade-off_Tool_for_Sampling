@@ -768,7 +768,7 @@ export function useStartOver() {
     setDisplayDimensions('2d');
     setDisplayGeometryType('polygons');
     setTerrain3dUseElevation(true);
-    setTerrain3dVisible(true);
+    setTerrain3dVisible(false);
     setViewUnderground3d(false);
 
     // set the calculate settings back to defaults
@@ -1709,11 +1709,13 @@ export function useCalculatePlan() {
   const {
     aoiData,
     defaultDeconSelections,
+    displayDimensions,
     edits,
     layers,
     mapView,
     resultsOpen,
     sampleAttributes,
+    sceneView,
     // selectedScenario,
     setEdits,
     setEfficacyResults,
@@ -1728,6 +1730,13 @@ export function useCalculatePlan() {
   useEffect(() => {
     console.log('aoiData: ', aoiData);
   }, [aoiData]);
+
+  const [view, setView] = useState<__esri.MapView | __esri.SceneView | null>(
+    null,
+  );
+  useEffect(() => {
+    setView(displayDimensions === '2d' ? mapView : sceneView);
+  }, [displayDimensions, mapView, sceneView]);
 
   // Reset the calculateResults context variable, whenever anything
   // changes that will cause a re-calculation.
@@ -1759,11 +1768,12 @@ export function useCalculatePlan() {
       status: 'none',
       planGraphics: {},
     });
-    const contamMapUpdated = mapView?.map.layers.find(
+
+    const contamMapUpdated = view?.map.layers.find(
       (l) => l.id === 'contaminationMapUpdated',
     ) as __esri.GraphicsLayer;
     if (contamMapUpdated) contamMapUpdated.removeAll();
-  }, [aoiData, mapView, setCalculateResults, setEfficacyResults]);
+  }, [aoiData, view, setCalculateResults, setEfficacyResults]);
 
   const [nsiData, setNsiData] = useState<NsiData>({
     status: 'none',
@@ -2038,7 +2048,7 @@ export function useCalculatePlan() {
     )
       return;
 
-    const contamMapUpdated = mapView?.map.layers.find(
+    const contamMapUpdated = view?.map.layers.find(
       (l) => l.id === 'contaminationMapUpdated',
     ) as __esri.GraphicsLayer;
     if (contamMapUpdated) contamMapUpdated.removeAll();
@@ -2291,13 +2301,13 @@ export function useCalculatePlan() {
     defaultDeconSelections,
     edits,
     layers,
-    mapView,
     nsiData,
     sampleAttributes,
     // selectedScenario,
     // setCalculateResults,
     setEdits,
     setJsonDownload,
+    view,
   ]);
 
   // perform final calcs
@@ -3021,7 +3031,7 @@ export function useCalculatePlan() {
       }
     });
 
-    const contamMapUpdated = mapView?.map.layers.find(
+    const contamMapUpdated = view?.map.layers.find(
       (l) => l.id === 'contaminationMapUpdated',
     ) as __esri.GraphicsLayer;
     console.log('contamMapUpdated: ', contamMapUpdated);
@@ -3179,11 +3189,11 @@ export function useCalculatePlan() {
     defaultDeconSelections,
     edits,
     layers,
-    mapView,
     nsiData,
     resultsOpen,
     sampleAttributes,
     setEfficacyResults,
+    view,
   ]);
 
   useEffect(() => {
@@ -5072,7 +5082,7 @@ function useDisplayModeStorage() {
       setDisplayDimensions('2d');
       setDisplayGeometryType('polygons');
       setTerrain3dUseElevation(true);
-      setTerrain3dVisible(true);
+      setTerrain3dVisible(false);
       setViewUnderground3d(false);
       return;
     }
