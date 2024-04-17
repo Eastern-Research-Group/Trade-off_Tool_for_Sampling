@@ -8,7 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { css } from '@emotion/react';
-import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
+import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import PopupTemplate from '@arcgis/core/PopupTemplate';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
@@ -35,12 +35,9 @@ import {
   webServiceErrorMessage,
 } from 'config/errorMessages';
 // utils
-import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
 import { CalculateResultsType } from 'types/CalculateResults';
-import { geoprocessorFetch } from 'utils/fetchUtils';
 import { useDynamicPopup } from 'utils/hooks';
 import { removeZValues, updateLayerEdits } from 'utils/sketchUtils';
-import { chunkArray, createErrorObject } from 'utils/utils';
 // styles
 import { reactSelectStyles } from 'styles';
 
@@ -341,7 +338,7 @@ function Calculate() {
 
   // Call the GP Server to run calculations against the contamination
   // map.
-  function runContaminationCalculation() {
+  async function runContaminationCalculation() {
     if (!map || !sketchLayer?.sketchLayer) return;
 
     // set no scenario status
@@ -366,8 +363,7 @@ function Calculate() {
       return;
     }
 
-    let contamMapSet: __esri.FeatureSet | null = null;
-    let graphics: __esri.GraphicProperties[] = [];
+    let graphics: __esri.Graphic[] = [];
     if (contaminationMap?.sketchLayer?.type === 'graphics') {
       const fullGraphics = contaminationMap.sketchLayer.graphics.clone();
       fullGraphics.forEach((graphic) => removeZValues(graphic));
@@ -382,54 +378,6 @@ function Calculate() {
       });
       return;
     }
-
-    // create a feature set for communicating with the GPServer
-    // this one is for the contamination map input
-    contamMapSet = new FeatureSet({
-      displayFieldName: '',
-      geometryType: 'polygon',
-      features: graphics,
-      spatialReference: {
-        wkid: 3857,
-      },
-      fields: [
-        {
-          name: 'OBJECTID',
-          type: 'oid',
-          alias: 'OBJECTID',
-        },
-        {
-          name: 'GLOBALID',
-          type: 'guid',
-          alias: 'GlobalID',
-        },
-        {
-          name: 'PERMANENT_IDENTIFIER',
-          type: 'guid',
-          alias: 'Permanent Identifier',
-        },
-        {
-          name: 'CONTAMTYPE',
-          type: 'string',
-          alias: 'Contamination Type',
-        },
-        {
-          name: 'CONTAMVAL',
-          type: 'double',
-          alias: 'Contamination Value',
-        },
-        {
-          name: 'CONTAMUNIT',
-          type: 'string',
-          alias: 'Contamination Unit',
-        },
-        {
-          name: 'Notes',
-          type: 'string',
-          alias: 'Notes',
-        },
-      ],
-    });
 
     const { groupLayer, graphics: sketchedGraphicsTmp } = getGraphics(
       map,
@@ -451,6 +399,8 @@ function Calculate() {
       else return str;
     }
 
+    const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
     const sketchedGraphics = [...sketchedGraphicsTmp];
     sketchedGraphics.forEach((g) => {
       g.attributes.GLOBALID = addBraces(g.attributes.GLOBALID);
@@ -465,305 +415,144 @@ function Calculate() {
       data: null,
     });
 
-    const chunkedFeatures: __esri.Graphic[][] = chunkArray(
-      sketchedGraphics,
-      services.data.gpServerInputMaxRecordCount,
-    );
+    await delay(100);
 
-    // fire off the contamination results requests
-    const requests: Promise<any>[] = [];
-    chunkedFeatures.forEach((features) => {
-      // create a feature set for communicating with the GPServer
-      // this one is for the samples input
-      const featureSet = new FeatureSet({
-        displayFieldName: '',
-        geometryType: 'polygon',
-        features,
-        spatialReference: {
-          wkid: 3857,
-        },
-        fields: [
-          {
-            name: 'OBJECTID',
-            type: 'oid',
-            alias: 'OBJECTID',
+    const resFeatures: any[] = [];
+    // loop through contamination map
+    graphics.forEach((contamGraphic) => {
+      sketchedGraphics.forEach((sampleGraphic) => {
+        if (
+          !contamGraphic.geometry ||
+          !sampleGraphic.geometry ||
+          !geometryEngine.intersects(
+            sampleGraphic.geometry,
+            contamGraphic.geometry,
+          )
+        ) {
+          return;
+        }
+
+        resFeatures.push({
+          attributes: {
+            CONTAMTYPE: contamGraphic.attributes.CONTAMTYPE,
+            CONTAMUNIT: contamGraphic.attributes.CONTAMUNIT,
+            CONTAMVAL: contamGraphic.attributes.CONTAMVAL,
+            PERMANENT_IDENTIFIER: sampleGraphic.attributes.PERMANENT_IDENTIFIER,
           },
-          {
-            name: 'GLOBALID',
-            type: 'guid',
-            alias: 'GlobalID',
-          },
-          {
-            name: 'PERMANENT_IDENTIFIER',
-            type: 'guid',
-            alias: 'Permanent Identifier',
-          },
-          {
-            name: 'TYPEUUID',
-            type: 'string',
-            alias: 'Sampling Method Type ID',
-          },
-          {
-            name: 'TYPE',
-            type: 'string',
-            alias: 'Sampling Method Type',
-          },
-          {
-            name: 'TTPK',
-            type: 'double',
-            alias: 'Time to Prepare Kits',
-          },
-          {
-            name: 'TTC',
-            type: 'double',
-            alias: 'Time to Collect',
-          },
-          {
-            name: 'TTA',
-            type: 'double',
-            alias: 'Time to Analyze',
-          },
-          {
-            name: 'TTPS',
-            type: 'double',
-            alias: 'Total Time per Sample',
-          },
-          {
-            name: 'LOD_P',
-            type: 'double',
-            alias: 'Limit of Detection Porous',
-          },
-          {
-            name: 'LOD_NON',
-            type: 'double',
-            alias: 'Limit of Detection Nonporous',
-          },
-          {
-            name: 'MCPS',
-            type: 'double',
-            alias: 'Sampling Material Cost per Sample',
-          },
-          {
-            name: 'TCPS',
-            type: 'double',
-            alias: 'Total Cost Per Sample',
-          },
-          {
-            name: 'WVPS',
-            type: 'double',
-            alias: 'Waste Volume per Sample',
-          },
-          {
-            name: 'WWPS',
-            type: 'double',
-            alias: 'Waste Weight per Sample',
-          },
-          {
-            name: 'SA',
-            type: 'double',
-            alias: 'Sampling Surface Area',
-          },
-          {
-            name: 'Notes',
-            type: 'string',
-            alias: 'Notes',
-          },
-          {
-            name: 'ALC',
-            type: 'double',
-            alias: 'Analysis Labor Cost',
-          },
-          {
-            name: 'AMC',
-            type: 'double',
-            alias: 'Analysis Material Cost',
-          },
-          {
-            name: 'CONTAMTYPE',
-            type: 'string',
-            alias: 'Contamination Type',
-          },
-          {
-            name: 'CONTAMVAL',
-            type: 'double',
-            alias: 'Contamination Value',
-          },
-          {
-            name: 'CONTAMUNIT',
-            type: 'string',
-            alias: 'Contamination Unit',
-          },
-        ],
+        });
       });
-
-      // call the GP Server
-      const params = {
-        f: 'json',
-        Input_Sampling_Unit: featureSet,
-        Contamination_Map: contamMapSet,
-      };
-      appendEnvironmentObjectParam(params);
-
-      const request = geoprocessorFetch({
-        url: `${services.data.totsGPServer}/Contamination Results`,
-        inputParameters: params,
-      });
-      requests.push(request);
     });
 
-    Promise.all(requests)
-      .then((responses: any) => {
-        // perform calculations to update talley in nav bar
-        setUpdateContextValues(true);
+    // perform calculations to update talley in nav bar
+    setUpdateContextValues(true);
 
-        const resFeatures: any[] = [];
-        for (let i = 0; i < responses.length; i++) {
-          const res = responses[i];
+    let editsCopy = { ...edits };
 
-          // catch an error in the response of the successful fetch
-          if (res.error) {
-            console.error(res.error);
-            setContaminationResults({
-              status: 'failure',
-              error: {
-                error: createErrorObject(res),
-                message: res.error.message,
-              },
-              data: null,
-            });
-            return;
-          }
+    // make the contamination map visible in the legend
+    if (window.location.search.includes('devMode=true')) {
+      contaminationMap.listMode = 'show';
+      contaminationMap.sketchLayer.listMode = 'show';
+      setContaminationMap((layer) => {
+        return {
+          ...layer,
+          listMode: 'show',
+        } as LayerType;
+      });
 
-          if (res?.results?.[0]?.value?.features) {
-            resFeatures.push(...res.results[0].value.features);
-          }
-        }
+      // find the layer being edited
+      const index = layers.findIndex(
+        (layer) => layer.layerId === contaminationMap.layerId,
+      );
 
-        let editsCopy = { ...edits };
-
-        // make the contamination map visible in the legend
-        if (window.location.search.includes('devMode=true')) {
-          contaminationMap.listMode = 'show';
-          contaminationMap.sketchLayer.listMode = 'show';
-          setContaminationMap((layer) => {
-            return {
-              ...layer,
+      // update the layers context
+      if (index > -1) {
+        setLayers((layers) => {
+          return [
+            ...layers.slice(0, index),
+            {
+              ...contaminationMap,
               listMode: 'show',
-            } as LayerType;
-          });
+            },
+            ...layers.slice(index + 1),
+          ];
+        });
+      }
 
-          // find the layer being edited
-          const index = layers.findIndex(
-            (layer) => layer.layerId === contaminationMap.layerId,
+      // make a copy of the edits context variable
+      updateLayerEdits({
+        edits,
+        layer: contaminationMap,
+        type: 'properties',
+      });
+    }
+
+    // save the data to state, use an empty array if there is no data
+    if (resFeatures.length > 0) {
+      const popupTemplate = new PopupTemplate(
+        getPopupTemplate(sketchLayer.layerType, true),
+      );
+
+      // loop through the layers and update the contam values
+      groupLayer.layers.forEach((graphicsLayer) => {
+        if (graphicsLayer.type !== 'graphics') return;
+
+        const tempLayer = graphicsLayer as __esri.GraphicsLayer;
+        // update the contam value attribute of the graphics
+        tempLayer.graphics.forEach((graphic) => {
+          const resFeature = resFeatures.find(
+            (feature: any) =>
+              graphic.attributes.PERMANENT_IDENTIFIER.toLowerCase()
+                .replace('{', '')
+                .replace('}', '') ===
+              feature.attributes.PERMANENT_IDENTIFIER.toLowerCase()
+                .replace('{', '')
+                .replace('}', ''),
           );
 
-          // update the layers context
-          if (index > -1) {
-            setLayers((layers) => {
-              return [
-                ...layers.slice(0, index),
-                {
-                  ...contaminationMap,
-                  listMode: 'show',
-                },
-                ...layers.slice(index + 1),
-              ];
-            });
+          // if the graphic was not found in the response, set contam value to null,
+          // otherwise use the contam value value found in the response.
+          let contamValue = null;
+          let contamType = graphic.attributes.CONTAMTYPE;
+          let contamUnit = graphic.attributes.CONTAMUNIT;
+          if (resFeature) {
+            contamValue = resFeature.attributes.CONTAMVAL;
+            contamType = resFeature.attributes.CONTAMTYPE;
+            contamUnit = resFeature.attributes.CONTAMUNIT;
           }
-
-          // make a copy of the edits context variable
-          updateLayerEdits({
-            edits,
-            layer: contaminationMap,
-            type: 'properties',
-          });
-        }
-
-        // save the data to state, use an empty array if there is no data
-        if (resFeatures.length > 0) {
-          const popupTemplate = new PopupTemplate(
-            getPopupTemplate(sketchLayer.layerType, true),
-          );
-
-          // loop through the layers and update the contam values
-          groupLayer.layers.forEach((graphicsLayer) => {
-            if (graphicsLayer.type !== 'graphics') return;
-
-            const tempLayer = graphicsLayer as __esri.GraphicsLayer;
-            // update the contam value attribute of the graphics
-            tempLayer.graphics.forEach((graphic) => {
-              const resFeature = resFeatures.find(
-                (feature: any) =>
-                  graphic.attributes.PERMANENT_IDENTIFIER.toLowerCase()
-                    .replace('{', '')
-                    .replace('}', '') ===
-                  feature.attributes.PERMANENT_IDENTIFIER.toLowerCase()
-                    .replace('{', '')
-                    .replace('}', ''),
-              );
-
-              // if the graphic was not found in the response, set contam value to null,
-              // otherwise use the contam value value found in the response.
-              let contamValue = null;
-              let contamType = graphic.attributes.CONTAMTYPE;
-              let contamUnit = graphic.attributes.CONTAMUNIT;
-              if (resFeature) {
-                contamValue = resFeature.attributes.CONTAMVAL;
-                contamType = resFeature.attributes.CONTAMTYPE;
-                contamUnit = resFeature.attributes.CONTAMUNIT;
-              }
-              graphic.attributes.CONTAMVAL = contamValue;
-              graphic.attributes.CONTAMTYPE = contamType;
-              graphic.attributes.CONTAMUNIT = contamUnit;
-              graphic.popupTemplate = popupTemplate;
-            });
-
-            // find the layer
-            const layer = layers.find(
-              (layer) => layer.layerId === graphicsLayer.id,
-            );
-            if (!layer) return;
-
-            // update the graphics of the sketch layer
-            editsCopy = updateLayerEdits({
-              edits: editsCopy,
-              layer: layer,
-              type: 'update',
-              changes: tempLayer.graphics,
-              hasContaminationRan: true,
-            });
-          });
-
-          setContaminationResults({
-            status: 'success',
-            data: resFeatures,
-          });
-        } else {
-          setContaminationResults({
-            status: 'success',
-            data: [],
-          });
-        }
-
-        setEdits(editsCopy);
-      })
-      .catch((err) => {
-        console.error(err);
-
-        // perform calculations to update talley in nav bar
-        setUpdateContextValues(true);
-
-        setContaminationResults({
-          status: 'failure',
-          error: {
-            error: createErrorObject(err),
-            message: err.message,
-          },
-          data: null,
+          graphic.attributes.CONTAMVAL = contamValue;
+          graphic.attributes.CONTAMTYPE = contamType;
+          graphic.attributes.CONTAMUNIT = contamUnit;
+          graphic.popupTemplate = popupTemplate;
         });
 
-        window.logErrorToGa(err);
+        // find the layer
+        const layer = layers.find(
+          (layer) => layer.layerId === graphicsLayer.id,
+        );
+        if (!layer) return;
+
+        // update the graphics of the sketch layer
+        editsCopy = updateLayerEdits({
+          edits: editsCopy,
+          layer: layer,
+          type: 'update',
+          changes: tempLayer.graphics,
+          hasContaminationRan: true,
+        });
       });
+
+      setContaminationResults({
+        status: 'success',
+        data: resFeatures,
+      });
+    } else {
+      setContaminationResults({
+        status: 'success',
+        data: [],
+      });
+    }
+
+    setEdits(editsCopy);
   }
 
   // Run calculations when the user exits this tab, by updating
