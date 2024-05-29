@@ -569,12 +569,14 @@
         });
       }
 
-      //Only setup the logging for public sites, ie don't log from localhost
+      // Configure analytics destinations.
       if (
         window.location.hostname === 'tots.epa.gov' ||
         window.location.hostname === 'tots-prod.app.cloud.gov'
       ) {
-        //EPA (Production) - Do nothing so EPA injected GA4 is used
+        //EPA (Production)
+        trackingId = 'G-2SEC4V3SK9';
+        configureGoogleAnalytics(trackingId);
       } else if (window.location.hostname === 'tots-stage.app.cloud.gov') {
         // Stage
         trackingId = 'G-LN1VKQS4H5';
