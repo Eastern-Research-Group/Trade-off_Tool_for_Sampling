@@ -425,8 +425,7 @@
           })();
 
           // fetch the supported browser list lookup file
-          const proxyUrl = `${origin}/proxy`;
-          const url = `${proxyUrl}?url=${origin}/data/config/supported-browsers.json`;
+          const url = `${origin}/api/supportedBrowsers`;
           fetch(url)
             .then((response) => {
               if (response.status === 200) {
