@@ -539,7 +539,7 @@
         gtag('config', id, options);
       }
 
-      // get origin for mapping proxy calls
+      // get origin for mapping calls
       const origin =
         loc.hostname === 'localhost'
           ? `${loc.protocol}//${loc.hostname}:9091`
@@ -549,8 +549,8 @@
       // the services lookup file are logged.
       window.googleAnalyticsMapping = [
         {
-          wildcardUrl: `${origin}/proxy?url=${origin}/data/config/services.json`,
-          name: 's3 lookup - config services',
+          wildcardUrl: `${origin}/api/lookupFiles`,
+          name: 's3 lookup - Config Files',
         },
       ];
 
