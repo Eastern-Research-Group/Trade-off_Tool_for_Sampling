@@ -382,23 +382,6 @@ export const scenarioNameTakenMessage = (scenarioName: string) => (
   />
 );
 
-export const featureServiceTakenMessage = (serviceName: string) => (
-  <MessageBox
-    severity="warning"
-    title="Feature Service Name Not Available"
-    message={`The "${serviceName}" name is already in use. Please rename the feature service and try again.`}
-  />
-);
-
-// feature not availble messages
-export const featureNotAvailableMessage = (featureName: string) => (
-  <MessageBox
-    severity="error"
-    title="Feature Not Available"
-    message={`The "${featureName}" is unavailable, please try again later.`}
-  />
-);
-
 // tots not availble messages
 export const totsNotAvailableMessage = (
   <MessageBox
