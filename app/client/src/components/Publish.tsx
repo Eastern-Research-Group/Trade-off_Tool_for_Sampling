@@ -22,7 +22,7 @@ import MessageBox from 'components/MessageBox';
 import ShowLessMore from 'components/ShowLessMore';
 // contexts
 import { AuthenticationContext } from 'contexts/Authentication';
-import { useLayerProps } from 'contexts/LookupFiles';
+import { useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import {
   defaultPlanAttributes,
@@ -171,7 +171,7 @@ function Publish() {
     setUserDefinedAttributes,
   } = useContext(SketchContext);
 
-  const layerProps = useLayerProps();
+  const layerProps = useLookupFiles().data.layerProps;
 
   // Checks browser storage to determine if the user clicked publish and logged in.
   const [publishButtonClicked, setPublishButtonClicked] = useState(false);
@@ -1826,7 +1826,6 @@ function Publish() {
   useEffect(() => {
     if (!oAuthInfo || !portal || !signedIn) return;
     if (!publishButtonClicked || !hasNameBeenChecked) return;
-    if (layerProps.status !== 'success') return;
     if (
       includeFullPlan &&
       (!layers || layers.length === 0 || !selectedScenario)
@@ -2125,7 +2124,6 @@ function Publish() {
         webServiceErrorMessage(publishPartialResponse.error)}
       {publishSamplesResponse.status === 'fetch-failure' &&
         webServiceErrorMessage()}
-      {layerProps.status === 'failure' && webServiceErrorMessage()}
       {publishResponse.status === 'success' &&
         publishResponse.summary.failed && (
           <MessageBox

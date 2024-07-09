@@ -26,7 +26,7 @@ import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel';
 import MapPopup from 'components/MapPopup';
 // contexts
 import { AuthenticationContext } from 'contexts/Authentication';
-import { useLayerProps } from 'contexts/LookupFiles';
+import { useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // types
@@ -204,7 +204,7 @@ function MapWidgets({ mapView, sceneView }: Props) {
   } = useContext(SketchContext);
   const { startSketch } = use3dSketch();
   const getPopupTemplate = useDynamicPopup();
-  const layerProps = useLayerProps();
+  const layerProps = useLookupFiles().data.layerProps;
 
   // Workaround for esri not recognizing React context.
   // Syncs a global variable with React context.
@@ -384,7 +384,6 @@ function MapWidgets({ mapView, sceneView }: Props) {
   // Opens a popup for when multiple samples are selected at once
   useEffect(() => {
     if (!mapView || !sceneView || !sketchLayer || !sketchWidget) return;
-    if (layerProps.status !== 'success') return;
 
     const sketchWidgetLocal = sketchWidget[displayDimensions];
 

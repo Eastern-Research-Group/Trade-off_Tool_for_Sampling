@@ -102,7 +102,7 @@ module.exports = function (app) {
         return {
           layerProps: data[0],
           services: data[1],
-          messages: data[2],
+          notifications: data[2],
           sampleTypes: data[3],
         };
       },

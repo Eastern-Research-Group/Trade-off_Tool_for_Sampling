@@ -20,7 +20,7 @@ import Select from 'components/Select';
 import { AuthenticationContext } from 'contexts/Authentication';
 import { settingDefaults } from 'contexts/Calculate';
 import { DialogContext } from 'contexts/Dialog';
-import { useLayerProps, useSampleTypesContext } from 'contexts/LookupFiles';
+import { LookupFilesContext, useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext } from 'contexts/Publish';
 import { SketchContext } from 'contexts/Sketch';
@@ -743,9 +743,9 @@ type ResultCardProps = {
 function ResultCard({ result }: ResultCardProps) {
   const { portal } = useContext(AuthenticationContext);
   const { setOptions } = useContext(DialogContext);
+  const { sampleTypes } = useContext(LookupFilesContext);
   const { trainingMode } = useContext(NavigationContext);
   const { setSampleTypeSelections } = useContext(PublishContext);
-  const sampleTypeContext = useSampleTypesContext();
   const {
     defaultSymbols,
     setDefaultSymbols,
@@ -771,7 +771,7 @@ function ResultCard({ result }: ResultCardProps) {
     setUserDefinedAttributes,
   } = useContext(SketchContext);
   const getPopupTemplate = useDynamicPopup();
-  const layerProps = useLayerProps();
+  const layerProps = useLookupFiles().data.layerProps;
 
   // Used to determine if the layer for this card has been added or not
   const [added, setAdded] = useState(false);
@@ -805,11 +805,6 @@ function ResultCard({ result }: ResultCardProps) {
    */
   async function addTotsLayer() {
     if (!map || !portal) return;
-    if (layerProps.status !== 'success') return;
-    if (sampleTypeContext.status === 'failure') {
-      setStatus('error');
-      return;
-    }
 
     setStatus('loading');
 
@@ -857,7 +852,7 @@ function ResultCard({ result }: ResultCardProps) {
             const predefinedAttributes: any =
               sampleAttributes[graphic.attributes.TYPEUUID];
             Object.keys(predefinedAttributes).forEach((key) => {
-              if (!sampleTypeContext.data.attributesToCheck.includes(key)) {
+              if (!sampleTypes?.attributesToCheck.includes(key)) {
                 return;
               }
 
@@ -997,11 +992,7 @@ function ResultCard({ result }: ResultCardProps) {
         });
 
         if (!typeUuid) {
-          if (
-            sampleTypeContext.data.sampleAttributes.hasOwnProperty(
-              attributes.TYPE,
-            )
-          ) {
+          if (sampleTypes?.sampleAttributes.hasOwnProperty(attributes.TYPE)) {
             typeUuid = attributes.TYPE;
           } else {
             typeUuid = generateUUID();
@@ -1352,7 +1343,7 @@ function ResultCard({ result }: ResultCardProps) {
             title: scenarioName,
           });
 
-          const defaultFields = layerProps.data.defaultFields;
+          const defaultFields = layerProps.defaultFields;
           layerDetails.fields.forEach((field: any, index: number) => {
             if (['Shape__Area', 'Shape__Length'].includes(field.name)) return;
 
@@ -1554,7 +1545,7 @@ function ResultCard({ result }: ResultCardProps) {
       // issue, display a popup asking the user if they would like the samples to be updated.
       if (zoomToGraphics.length > 0) {
         const output = await sampleValidation(
-          sampleTypeContext,
+          sampleTypes,
           sceneViewForArea,
           zoomToGraphics,
           true,
@@ -1567,7 +1558,7 @@ function ResultCard({ result }: ResultCardProps) {
             ariaLabel: 'Sample Issues',
             description: sampleIssuesPopupMessage(
               output,
-              sampleTypeContext.data.areaTolerance,
+              sampleTypes?.areaTolerance ?? 1,
             ),
             onContinue: () =>
               finalizeLayerAdd({
@@ -1625,10 +1616,6 @@ function ResultCard({ result }: ResultCardProps) {
    */
   function addTotsSampleType() {
     if (!portal) return;
-    if (sampleTypeContext.status === 'failure') {
-      setStatus('error');
-      return;
-    }
 
     setStatus('loading');
 
@@ -1705,7 +1692,7 @@ function ResultCard({ result }: ResultCardProps) {
 
                   if (!typeUuid) {
                     if (
-                      sampleTypeContext.data.sampleAttributes.hasOwnProperty(
+                      sampleTypes?.sampleAttributes.hasOwnProperty(
                         attributes.TYPE,
                       )
                     ) {

@@ -18,7 +18,6 @@ import ShowLessMore from 'components/ShowLessMore';
 import NavigationButton from 'components/NavigationButton';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
-import { useServicesContext } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // types
@@ -27,7 +26,6 @@ import { ErrorType } from 'types/Misc';
 // config
 import {
   contaminationHitsSuccessMessage,
-  featureNotAvailableMessage,
   noContaminationGraphicsMessage,
   noContaminationMapMessage,
   noSampleLayerMessage,
@@ -176,7 +174,6 @@ function Calculate() {
   } = useContext(CalculateContext);
 
   const getPopupTemplate = useDynamicPopup();
-  const services = useServicesContext();
 
   // sync the inputs with settings pulled from AGO
   const [pageInitialized, setPageInitialized] = useState(false);
@@ -741,72 +738,62 @@ function Calculate() {
             <AccordionList>
               <AccordionItem title={'Include Contamination Map (Optional)'}>
                 <div css={sectionContainer}>
-                  {services.status === 'fetching' && <LoadingSpinner />}
-                  {services.status === 'failure' &&
-                    featureNotAvailableMessage('Include Contamination Map')}
-                  {services.status === 'success' && (
-                    <Fragment>
-                      <label htmlFor="contamination-map-select-input">
-                        Contamination map
-                      </label>
-                      <div css={inlineMenuStyles}>
-                        <Select
-                          id="contamination-map-select"
-                          inputId="contamination-map-select-input"
-                          css={fullWidthSelectStyles}
-                          styles={reactSelectStyles as any}
-                          value={contaminationMap}
-                          onChange={(ev) =>
-                            setContaminationMap(ev as LayerType)
-                          }
-                          options={layers.filter(
-                            (layer: any) =>
-                              layer.layerType === 'Contamination Map',
-                          )}
-                        />
-                        <button
-                          css={addButtonStyles}
-                          onClick={(ev) => {
-                            setGoTo('addData');
-                            setGoToOptions({
-                              from: 'file',
-                              layerType: 'Contamination Map',
-                            });
-                          }}
-                        >
-                          Add
-                        </button>
-                      </div>
-
-                      {contaminationResults.status === 'fetching' && (
-                        <LoadingSpinner />
+                  <label htmlFor="contamination-map-select-input">
+                    Contamination map
+                  </label>
+                  <div css={inlineMenuStyles}>
+                    <Select
+                      id="contamination-map-select"
+                      inputId="contamination-map-select-input"
+                      css={fullWidthSelectStyles}
+                      styles={reactSelectStyles as any}
+                      value={contaminationMap}
+                      onChange={(ev) => setContaminationMap(ev as LayerType)}
+                      options={layers.filter(
+                        (layer: any) => layer.layerType === 'Contamination Map',
                       )}
-                      {contaminationResults.status === 'failure' &&
-                        webServiceErrorMessage(contaminationResults.error)}
-                      {contaminationResults.status === 'no-map' &&
-                        noContaminationMapMessage}
-                      {contaminationResults.status === 'no-layer' &&
-                        noSampleLayerMessage}
-                      {contaminationResults.status === 'no-graphics' &&
-                        noSamplesMessage}
-                      {contaminationResults.status ===
-                        'no-contamination-graphics' &&
-                        noContaminationGraphicsMessage}
-                      {contaminationResults.status === 'success' &&
-                        contaminationResults?.data &&
-                        contaminationResults.data.length > -1 &&
-                        contaminationHitsSuccessMessage(
-                          contaminationResults.data.length,
-                        )}
+                    />
+                    <button
+                      css={addButtonStyles}
+                      onClick={(ev) => {
+                        setGoTo('addData');
+                        setGoToOptions({
+                          from: 'file',
+                          layerType: 'Contamination Map',
+                        });
+                      }}
+                    >
+                      Add
+                    </button>
+                  </div>
 
-                      <button
-                        css={submitButtonStyles}
-                        onClick={runContaminationCalculation}
-                      >
-                        View Contamination Hits
-                      </button>
-                    </Fragment>
+                  {contaminationResults.status === 'fetching' && (
+                    <LoadingSpinner />
                   )}
+                  {contaminationResults.status === 'failure' &&
+                    webServiceErrorMessage(contaminationResults.error)}
+                  {contaminationResults.status === 'no-map' &&
+                    noContaminationMapMessage}
+                  {contaminationResults.status === 'no-layer' &&
+                    noSampleLayerMessage}
+                  {contaminationResults.status === 'no-graphics' &&
+                    noSamplesMessage}
+                  {contaminationResults.status ===
+                    'no-contamination-graphics' &&
+                    noContaminationGraphicsMessage}
+                  {contaminationResults.status === 'success' &&
+                    contaminationResults?.data &&
+                    contaminationResults.data.length > -1 &&
+                    contaminationHitsSuccessMessage(
+                      contaminationResults.data.length,
+                    )}
+
+                  <button
+                    css={submitButtonStyles}
+                    onClick={runContaminationCalculation}
+                  >
+                    View Contamination Hits
+                  </button>
                 </div>
               </AccordionItem>
             </AccordionList>

@@ -2,6 +2,7 @@
 
 import React, {
   Fragment,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -15,6 +16,7 @@ import * as urlUtils from '@arcgis/core/core/urlUtils';
 import AlertDialog from 'components/AlertDialog';
 import AlertMessage from 'components/AlertMessage';
 import ErrorBoundary from 'components/ErrorBoundary';
+import LoadingSpinner from 'components/LoadingSpinner';
 import NavBar from 'components/NavBar';
 import Toolbar from 'components/Toolbar';
 import SplashScreen from 'components/SplashScreen';
@@ -25,7 +27,11 @@ import { ReactTable } from 'components/ReactTable';
 import { AuthenticationProvider } from 'contexts/Authentication';
 import { CalculateProvider, CalculateContext } from 'contexts/Calculate';
 import { DialogProvider, DialogContext } from 'contexts/Dialog';
-import { LookupFilesProvider, useServicesContext } from 'contexts/LookupFiles';
+import {
+  LookupFilesContext,
+  LookupFilesProvider,
+  useLookupFiles,
+} from 'contexts/LookupFiles';
 import { NavigationProvider, NavigationContext } from 'contexts/Navigation';
 import { PublishProvider } from 'contexts/Publish';
 import { SketchProvider, SketchContext } from 'contexts/Sketch';
@@ -37,6 +43,7 @@ import { getSampleTableColumns } from 'utils/sketchUtils';
 import { getEnvironment } from 'utils/utils';
 // config
 import { navPanelWidth } from 'config/appConfig';
+import { totsNotAvailableMessage } from 'config/errorMessages';
 // styles
 import '@reach/dialog/styles.css';
 import '@arcgis/core/assets/esri/themes/light/main.css';
@@ -308,18 +315,23 @@ function App() {
     selectedScenario,
   } = useContext(SketchContext);
 
-  const services = useServicesContext();
+  const lookupFiles = useLookupFiles();
   useSessionStorage();
   useDisclaimerBanner();
 
   const { height, width } = useWindowSize();
 
+  const [mapDiv, setMapDiv] = useState<HTMLDivElement | null>(null);
+  const mapRef = useCallback((node: HTMLDivElement) => {
+    if (node === null) return;
+    setMapDiv(node);
+  }, []);
+
   // calculate height of div holding actions info
   const [contentHeight, setContentHeight] = useState(0);
   const [toolbarHeight, setToolbarHeight] = useState(0);
-  const mapRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!mapRef?.current) return;
+    if (!mapDiv) return;
 
     // adjust the table height if necessary
     const maxTableHeight =
@@ -330,7 +342,7 @@ function App() {
   }, [
     width,
     height,
-    mapRef,
+    mapDiv,
     contentHeight,
     tablePanelHeight,
     setTablePanelHeight,
@@ -366,16 +378,21 @@ function App() {
     setSizeCheckInitialized(true);
   }, [width, height, sizeCheckInitialized, setOptions]);
 
-  const totsRef = useRef<HTMLDivElement>(null);
+  const [totsDiv, setTotsDiv] = useState<HTMLDivElement | null>(null);
+  const totsRef = useCallback((node: HTMLDivElement) => {
+    if (node === null) return;
+    setTotsDiv(node);
+  }, []);
+
   const [offset, setOffset] = useState(0);
   useEffect(() => {
-    if (!totsRef?.current) return;
+    if (!totsDiv) return;
 
-    const offsetTop = totsRef.current.offsetTop;
-    const clientHeight = totsRef.current.clientHeight;
+    const offsetTop = totsDiv.offsetTop;
+    const clientHeight = totsDiv.clientHeight;
     if (contentHeight !== clientHeight) setContentHeight(clientHeight);
     if (offset !== offsetTop) setOffset(offsetTop);
-  }, [contentHeight, height, offset, totsRef, width]);
+  }, [contentHeight, height, offset, totsDiv, width]);
 
   // count the number of samples
   const sampleData: any[] = [];
@@ -437,10 +454,10 @@ function App() {
     let callId = 0;
     let callDurations: any = {};
 
-    if (services.status === 'success') {
+    if (lookupFiles.status === 'success') {
       // Have ESRI use the proxy for communicating with the TOTS GP Server
       urlUtils.addProxyRule({
-        proxyUrl: services.data.proxyUrl,
+        proxyUrl: lookupFiles.data.services.proxyUrl,
         urlPrefix: 'https://ags.erg.com',
       });
     }
@@ -501,8 +518,11 @@ function App() {
     });
 
     setInterceptorsInitialized(true);
-  }, [interceptorsInitialized, services]);
+  }, [interceptorsInitialized, lookupFiles]);
 
+  if (lookupFiles.status === 'idle') return null;
+  if (lookupFiles.status === 'pending') return <LoadingSpinner />;
+  if (lookupFiles.status === 'failure') return totsNotAvailableMessage;
   return (
     <Fragment>
       <Global styles={globalStyles} />
@@ -529,7 +549,7 @@ function App() {
                   ref={mapRef}
                 >
                   <div id="tots-map-div" css={mapHeightStyles}>
-                    {toolbarHeight && (
+                    {toolbarHeight ? (
                       <Map
                         height={
                           contentHeight -
@@ -537,6 +557,8 @@ function App() {
                           toolbarHeight
                         }
                       />
+                    ) : (
+                      ''
                     )}
                   </div>
                 </div>
@@ -798,6 +820,15 @@ function App() {
   );
 }
 
+function AppLookupFiles() {
+  const { lookupFiles } = useContext(LookupFilesContext);
+
+  if (lookupFiles.status === 'idle') return null;
+  if (lookupFiles.status === 'pending') return <LoadingSpinner />;
+  if (lookupFiles.status === 'failure') return totsNotAvailableMessage;
+  return <App />;
+}
+
 export default function AppContainer() {
   return (
     <LookupFilesProvider>
@@ -807,7 +838,7 @@ export default function AppContainer() {
             <NavigationProvider>
               <PublishProvider>
                 <SketchProvider>
-                  <App />
+                  <AppLookupFiles />
                 </SketchProvider>
               </PublishProvider>
             </NavigationProvider>
