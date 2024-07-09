@@ -146,7 +146,7 @@ function GettingStarted({ isOpen, children }: Props) {
         <p>
           View the{' '}
           <a
-            href={`${baseUrl}/proxy?url=${baseUrl}/data/documents/TOTS-Users-Guide.pdf`}
+            href={`${baseUrl}/api/userGuide`}
             target="_blank"
             rel="noopener noreferrer"
             css={linkStyles}
