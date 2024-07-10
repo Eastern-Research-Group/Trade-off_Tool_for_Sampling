@@ -15,18 +15,16 @@ describe("Alert message tests", () => {
     const location = window.location;
     const origin = `${location.protocol}//${location.hostname}:9091`;
 
-    cy.intercept(
-      `${origin}/proxy?url=${origin}/data/notifications/messages.json`,
-      {
-        statusCode: 200,
-        body: {
+    cy.intercept(`${origin}/api/lookupFiles`, (req) => {
+      req.continue((res) => {
+        res.body.notifications = {
           color: "#721c24",
           backgroundColor: "#f8d7da",
           message:
             '<p>There will be <a href="https://www.epa.gov" target="_blank">scheduled maintenance</a> on the <strong>geopub.epa.gov</strong> services on Thursday, July 16th starting at 8am and ending at 11am.</p>',
-        },
-      }
-    ).as("notifications-messages");
+        };
+      });
+    }).as("notifications-messages");
 
     cy.visit("/");
 

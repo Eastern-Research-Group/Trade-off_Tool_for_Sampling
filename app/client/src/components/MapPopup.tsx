@@ -14,7 +14,7 @@ import MessageBox from 'components/MessageBox';
 // types
 import { EditsType } from 'types/Edits';
 import { FieldInfos, LayerType } from 'types/Layer';
-import { LookupFile } from 'types/Misc';
+import { LayerProps } from 'types/Misc';
 // utils
 import {
   getSketchableLayers,
@@ -79,7 +79,7 @@ type Props = {
   setEdits: Dispatch<SetStateAction<EditsType>>;
   layers: LayerType[];
   fieldInfos: FieldInfos;
-  layerProps: LookupFile;
+  layerProps: LayerProps;
   onClick: (
     edits: EditsType,
     setEdits: Dispatch<SetStateAction<EditsType>>,
@@ -251,11 +251,10 @@ function MapPopup({
 
   // get the notes character limit from the defaultFields
   let notesCharacterLimit = 2000;
-  if (layerProps.status === 'success') {
-    layerProps.data.defaultFields.forEach((field: any) => {
-      if (field.name === 'Notes') notesCharacterLimit = field.length;
-    });
-  }
+  layerProps.defaultFields.forEach((field) => {
+    if (field.name !== 'Notes' || !field.length) return;
+    notesCharacterLimit = field.length;
+  });
 
   let allNotesEmpty = true;
   let allNotesSame = true;

@@ -25,60 +25,6 @@ export function fetchCheck(url: string) {
 }
 
 /**
- * Performs a fetch through the TOTS proxy.
- *
- * @param url The webservice url to fetch data from
- * @returns A promise that resolves to the fetch response.
- */
-export function proxyFetch(url: string) {
-  const { REACT_APP_PROXY_URL } = process.env;
-  // if environment variable is not set, default to use the current site origin
-  const proxyUrl = REACT_APP_PROXY_URL || `${window.location.origin}/proxy`;
-
-  return fetchCheck(`${proxyUrl}?url=${url}`);
-}
-
-/**
- * Performs a fetch to get a lookup file from S3.
- *
- * @param path The path to the lookup file to return
- * @returns A promise that resolves to the fetch response.
- */
-export function lookupFetch(path: string) {
-  const { REACT_APP_SERVER_URL } = process.env;
-  const baseUrl = REACT_APP_SERVER_URL || window.location.origin;
-  const url = `${baseUrl}/data/${path}`;
-
-  return new Promise<Object>((resolve, reject) => {
-    // Function that fetches the lookup file.
-    // This will retry the fetch 3 times if the fetch fails with a
-    // 1 second delay between each retry.
-    const fetchLookup = (retryCount: number = 0) => {
-      proxyFetch(url)
-        .then((data: any) => {
-          resolve(data);
-        })
-        .catch((err) => {
-          console.error(err);
-
-          // resolve the request when the max retry count of 3 is hit
-          if (retryCount === 3) {
-            reject(err);
-          } else {
-            // recursive retry (1 second between retries)
-            console.log(
-              `Failed to fetch ${path}. Retrying (${retryCount + 1} of 3)...`,
-            );
-            setTimeout(() => fetchLookup(retryCount + 1), 1000);
-          }
-        });
-    };
-
-    fetchLookup();
-  });
-}
-
-/**
  * Performs a post request and validates the http status.
  *
  * @param apiUrl The webservice url to post against

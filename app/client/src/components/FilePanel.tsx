@@ -25,11 +25,7 @@ import MessageBox from 'components/MessageBox';
 // contexts
 import { AuthenticationContext } from 'contexts/Authentication';
 import { DialogContext } from 'contexts/Dialog';
-import {
-  useLayerProps,
-  useSampleTypesContext,
-  useServicesContext,
-} from 'contexts/LookupFiles';
+import { LookupFilesContext, useLookupFiles } from 'contexts/LookupFiles';
 import { SketchContext } from 'contexts/Sketch';
 import { NavigationContext } from 'contexts/Navigation';
 // utils
@@ -54,7 +50,6 @@ import { ErrorType } from 'types/Misc';
 // config
 import { PolygonSymbol, SampleSelectType } from 'config/sampleAttributes';
 import {
-  featureNotAvailableMessage,
   fileReadErrorMessage,
   invalidFileTypeMessage,
   missingAttributesMessage,
@@ -225,6 +220,7 @@ type UploadStatusType =
 function FilePanel() {
   const { portal, userInfo } = useContext(AuthenticationContext);
   const { setOptions } = useContext(DialogContext);
+  const { sampleTypes } = useContext(LookupFilesContext);
   const { goToOptions, setGoToOptions, trainingMode } =
     useContext(NavigationContext);
   const {
@@ -250,9 +246,9 @@ function FilePanel() {
   } = useContext(SketchContext);
 
   const getPopupTemplate = useDynamicPopup();
-  const layerProps = useLayerProps();
-  const sampleTypeContext = useSampleTypesContext();
-  const services = useServicesContext();
+  const lookupFiles = useLookupFiles().data;
+  const layerProps = lookupFiles.layerProps;
+  const services = lookupFiles.services;
 
   const [generalizeFeatures, setGeneralizeFeatures] = useState(false);
   const [analyzeResponse, setAnalyzeResponse] = useState<any>(null);
@@ -455,8 +451,7 @@ function FilePanel() {
       !file?.file?.esriFileType ||
       !sharingUrl ||
       file.file.name === file.lastFileName ||
-      !getGpMaxRecordCount ||
-      services.status !== 'success'
+      !getGpMaxRecordCount
     ) {
       return;
     }
@@ -618,7 +613,7 @@ function FilePanel() {
           spatialReference: {
             wkid: 3857,
           },
-          fields: layerProps.data.defaultFields,
+          fields: layerProps.defaultFields,
           features: [
             {
               attributes: {
@@ -663,7 +658,7 @@ function FilePanel() {
               appendEnvironmentObjectParam(params);
 
               const request = geoprocessorFetch({
-                url: `${services.data.totsGPServer}/VSP%20Import`,
+                url: `${services.totsGPServer}/VSP%20Import`,
                 inputParameters: params,
               });
               requests.push(request);
@@ -805,8 +800,10 @@ function FilePanel() {
     const isFullGraphic = layerType.value === 'VSP' ? true : false;
 
     async function validateSamples() {
+      if (!sampleTypes) return;
+
       const output = await sampleValidation(
-        sampleTypeContext,
+        sampleTypes,
         sceneViewForArea,
         features,
         isFullGraphic,
@@ -819,7 +816,7 @@ function FilePanel() {
           ariaLabel: 'Sample Issues',
           description: sampleIssuesPopupMessage(
             output,
-            sampleTypeContext.data.areaTolerance,
+            sampleTypes.areaTolerance,
           ),
           onContinue: () => setFileValidated(true),
           onCancel: () => setUploadStatus('user-canceled'),
@@ -839,7 +836,7 @@ function FilePanel() {
     fileValidated,
     map,
     mapView,
-    sampleTypeContext,
+    sampleTypes,
     setOptions,
     sceneViewForArea,
   ]);
@@ -1413,59 +1410,36 @@ function FilePanel() {
         </Fragment>
       ) : (
         <Fragment>
-          {layerType.value === 'VSP' &&
-            services.status === 'success' &&
-            sampleTypeContext.status === 'success' && (
-              <Fragment>
-                <label htmlFor="sample-type-select-input">Sample Type</label>
-                <Select
-                  id="sample-type-select"
-                  inputId="sample-type-select-input"
-                  css={selectStyles}
-                  value={sampleType}
-                  onChange={(ev) => {
-                    setSampleType(ev as SampleSelectType);
-                    setUploadStatus('');
-                  }}
-                  options={allSampleOptions}
-                />
-                {sampleType && (
-                  <p css={sectionParagraph}>
-                    Add an externally-generated Visual Sample Plan (VSP) layer
-                    to analyze and/or use in conjunction with targeted sampling.
-                    Once added, you can select this layer in the next step,{' '}
-                    <strong>Create Plan</strong>, and use it to create the
-                    Sampling Plan.
-                  </p>
-                )}
-              </Fragment>
-            )}
-          {(layerType.value === 'Samples' || layerType.value === 'VSP') &&
-            (services.status === 'fetching' ||
-              sampleTypeContext.status === 'fetching' ||
-              layerProps.status === 'fetching') && <LoadingSpinner />}
-          {layerType.value === 'Samples' &&
-            (services.status === 'failure' ||
-              sampleTypeContext.status === 'failure' ||
-              layerProps.status === 'failure') &&
-            featureNotAvailableMessage('Samples Import')}
-          {layerType.value === 'VSP' &&
-            (services.status === 'failure' ||
-              sampleTypeContext.status === 'failure' ||
-              layerProps.status === 'failure') &&
-            featureNotAvailableMessage('VSP Import')}
+          {layerType.value === 'VSP' && (
+            <Fragment>
+              <label htmlFor="sample-type-select-input">Sample Type</label>
+              <Select
+                id="sample-type-select"
+                inputId="sample-type-select-input"
+                css={selectStyles}
+                value={sampleType}
+                onChange={(ev) => {
+                  setSampleType(ev as SampleSelectType);
+                  setUploadStatus('');
+                }}
+                options={allSampleOptions}
+              />
+              {sampleType && (
+                <p css={sectionParagraph}>
+                  Add an externally-generated Visual Sample Plan (VSP) layer to
+                  analyze and/or use in conjunction with targeted sampling. Once
+                  added, you can select this layer in the next step,{' '}
+                  <strong>Create Plan</strong>, and use it to create the
+                  Sampling Plan.
+                </p>
+              )}
+            </Fragment>
+          )}
           {(layerType.value === 'Area of Interest' ||
             layerType.value === 'Reference Layer' ||
             layerType.value === 'Contamination Map' ||
-            (layerType.value === 'Samples' &&
-              services.status === 'success' &&
-              sampleTypeContext.status === 'success' &&
-              layerProps.status === 'success') ||
-            (layerType.value === 'VSP' &&
-              sampleType &&
-              services.status === 'success' &&
-              sampleTypeContext.status === 'success' &&
-              layerProps.status === 'success')) && (
+            layerType.value === 'Samples' ||
+            (layerType.value === 'VSP' && sampleType)) && (
             <Fragment>
               {uploadStatus === 'fetching' && <LoadingSpinner />}
               {uploadStatus !== 'fetching' && (

@@ -11,19 +11,17 @@ import ColorPicker from 'components/ColorPicker';
 import CustomSampleType from 'components/CustomSampleType';
 import { EditScenario, EditLayer } from 'components/EditLayerMetaData';
 import GenerateSamples from 'components/GenerateSamples';
-import LoadingSpinner from 'components/LoadingSpinner';
 import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 import Select from 'components/Select';
 // contexts
-import { useSampleTypesContext } from 'contexts/LookupFiles';
+import { LookupFilesContext } from 'contexts/LookupFiles';
 import { SketchContext } from 'contexts/Sketch';
 // types
 import { LayerType } from 'types/Layer';
 import { EditsType, ScenarioEditsType } from 'types/Edits';
 // config
 import { PolygonSymbol } from 'config/sampleAttributes';
-import { featureNotAvailableMessage } from 'config/errorMessages';
 // utils
 import { use3dSketch, useDynamicPopup, useStartOver } from 'utils/hooks';
 import {
@@ -243,6 +241,7 @@ const verticalCenterTextStyles = css`
 
 // --- components (LocateSamples) ---
 function LocateSamples() {
+  const { sampleTypes } = useContext(LookupFilesContext);
   const {
     defaultSymbols,
     setDefaultSymbolSingle,
@@ -271,7 +270,6 @@ function LocateSamples() {
   const startOver = useStartOver();
   const { endSketch, startSketch } = use3dSketch();
   const getPopupTemplate = useDynamicPopup();
-  const sampleTypeContext = useSampleTypesContext();
 
   // Sets the sketchLayer to the first layer in the layer selection drop down,
   // if available. If the drop down is empty, an empty sketchLayer will be
@@ -311,6 +309,12 @@ function LocateSamples() {
   useEffect(() => {
     if (!map || !layersInitialized || aoiSketchLayer) return;
 
+    const maskLayer = layers.find((l) => l.name === 'Sketched Sampling Mask');
+    if (maskLayer) {
+      setAoiSketchLayer(maskLayer);
+      return;
+    }
+
     const newAoiSketchLayer = getDefaultSamplingMaskLayer();
 
     // add the layer to the map
@@ -320,7 +324,14 @@ function LocateSamples() {
 
     // set the active sketch layer
     setAoiSketchLayer(newAoiSketchLayer);
-  }, [map, aoiSketchLayer, setAoiSketchLayer, layersInitialized, setLayers]);
+  }, [
+    map,
+    aoiSketchLayer,
+    layers,
+    setAoiSketchLayer,
+    layersInitialized,
+    setLayers,
+  ]);
 
   // Handle a user clicking one of the sketch buttons
   function sketchButtonClick(label: string) {
@@ -1347,54 +1358,41 @@ function LocateSamples() {
                   <div>
                     <h3>Established Sample Types</h3>
                     <div css={sketchButtonContainerStyles}>
-                      {sampleTypeContext.status === 'fetching' && (
-                        <LoadingSpinner />
-                      )}
-                      {sampleTypeContext.status === 'failure' &&
-                        featureNotAvailableMessage('Established Sample Types')}
-                      {sampleTypeContext.status === 'success' && (
-                        <Fragment>
-                          {sampleTypeContext.data.sampleSelectOptions.map(
-                            (option: any, index: number) => {
-                              const sampleTypeUuid = option.value;
-                              const sampleType = option.label;
+                      {sampleTypes?.sampleSelectOptions.map(
+                        (option: any, index: number) => {
+                          const sampleTypeUuid = option.value;
+                          const sampleType = option.label;
 
-                              if (
-                                !sampleAttributes.hasOwnProperty(sampleTypeUuid)
-                              ) {
-                                return null;
+                          if (
+                            !sampleAttributes.hasOwnProperty(sampleTypeUuid)
+                          ) {
+                            return null;
+                          }
+
+                          const shapeType =
+                            sampleAttributes[sampleTypeUuid].ShapeType;
+                          const edited =
+                            userDefinedAttributes.sampleTypes.hasOwnProperty(
+                              sampleTypeUuid,
+                            );
+                          return (
+                            <SketchButton
+                              key={index}
+                              layers={layers}
+                              value={sampleTypeUuid}
+                              selectedScenario={selectedScenario}
+                              label={
+                                edited ? `${sampleType} (edited)` : sampleType
                               }
-
-                              const shapeType =
-                                sampleAttributes[sampleTypeUuid].ShapeType;
-                              const edited =
-                                userDefinedAttributes.sampleTypes.hasOwnProperty(
-                                  sampleTypeUuid,
-                                );
-                              return (
-                                <SketchButton
-                                  key={index}
-                                  layers={layers}
-                                  value={sampleTypeUuid}
-                                  selectedScenario={selectedScenario}
-                                  label={
-                                    edited
-                                      ? `${sampleType} (edited)`
-                                      : sampleType
-                                  }
-                                  iconClass={
-                                    shapeType === 'point'
-                                      ? 'fas fa-pen-fancy'
-                                      : 'fas fa-draw-polygon'
-                                  }
-                                  onClick={() =>
-                                    sketchButtonClick(sampleTypeUuid)
-                                  }
-                                />
-                              );
-                            },
-                          )}
-                        </Fragment>
+                              iconClass={
+                                shapeType === 'point'
+                                  ? 'fas fa-pen-fancy'
+                                  : 'fas fa-draw-polygon'
+                              }
+                              onClick={() => sketchButtonClick(sampleTypeUuid)}
+                            />
+                          );
+                        },
                       )}
                     </div>
                   </div>

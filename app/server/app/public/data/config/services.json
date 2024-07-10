@@ -26,8 +26,13 @@
     },
     {
       "urlLookup": "origin",
-      "wildcardUrl": "{urlLookup}/proxy?url={urlLookup}/data/sampleTypes/sampleTypes.json",
-      "name": "s3 lookup - sample types"
+      "wildcardUrl": "{urlLookup}/api/lookupFiles",
+      "name": "s3 lookup - Config Files"
+    },
+    {
+      "urlLookup": "origin",
+      "wildcardUrl": "{urlLookup}/api/userGuide",
+      "name": "s3 lookup - User Guide"
     },
     {
       "urlLookup": "ArcGIS",

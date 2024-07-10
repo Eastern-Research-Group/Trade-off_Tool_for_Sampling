@@ -40,7 +40,7 @@ import MapPopup from 'components/MapPopup';
 import { AuthenticationContext } from 'contexts/Authentication';
 import { CalculateContext } from 'contexts/Calculate';
 import { DialogContext, AlertDialogOptions } from 'contexts/Dialog';
-import { useLayerProps, useSampleTypesContext } from 'contexts/LookupFiles';
+import { LookupFilesContext, useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext } from 'contexts/Publish';
 import { SketchContext, SketchViewModelType } from 'contexts/Sketch';
@@ -723,7 +723,7 @@ export function useCalculatePlan() {
 // This is primarily needed for sample popups.
 export function useDynamicPopup() {
   const { edits, setEdits, layers } = useContext(SketchContext);
-  const layerProps = useLayerProps();
+  const layerProps = useLookupFiles().data.layerProps;
 
   const getSampleTemplate = (feature: any, fieldInfos: FieldInfos) => {
     const content = (
@@ -2420,8 +2420,8 @@ function useUserDefinedSampleOptionsStorage() {
 // Uses browser storage for holding the url layers that have been added.
 function useUserDefinedSampleAttributesStorage() {
   const key = 'tots_user_defined_sample_attributes';
-  const sampleTypeContext = useSampleTypesContext();
   const { setOptions } = useContext(DialogContext);
+  const { sampleTypes } = useContext(LookupFilesContext);
   const {
     setSampleAttributes,
     userDefinedAttributes,
@@ -2450,18 +2450,15 @@ function useUserDefinedSampleAttributesStorage() {
   }, [
     localUserDefinedSamplesInitialized,
     setUserDefinedAttributes,
-    sampleTypeContext,
+    sampleTypes,
     setSampleAttributes,
   ]);
 
   // add the user defined attributes to the global attributes
   useEffect(() => {
-    // add the user defined attributes to the global attributes
     let newSampleAttributes: any = {};
 
-    if (sampleTypeContext.status === 'success') {
-      newSampleAttributes = { ...sampleTypeContext.data.sampleAttributes };
-    }
+    if (sampleTypes) newSampleAttributes = { ...sampleTypes.sampleAttributes };
 
     Object.keys(userDefinedAttributes.sampleTypes).forEach((key) => {
       newSampleAttributes[key] =
@@ -2477,7 +2474,7 @@ function useUserDefinedSampleAttributesStorage() {
   }, [
     localUserDefinedSamplesInitialized,
     userDefinedAttributes,
-    sampleTypeContext,
+    sampleTypes,
     setSampleAttributes,
   ]);
 

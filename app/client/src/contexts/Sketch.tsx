@@ -5,14 +5,12 @@ import React, {
   Dispatch,
   ReactNode,
   SetStateAction,
+  useContext,
   useEffect,
   useState,
 } from 'react';
 // contexts
-import {
-  useSampleTypesContext,
-  useServicesContext,
-} from 'contexts/LookupFiles';
+import { LookupFilesContext, useLookupFiles } from 'contexts/LookupFiles';
 // utils
 import { getEnvironmentStringParam } from 'utils/arcGisRestUtils';
 import { fetchCheck } from 'utils/fetchUtils';
@@ -178,8 +176,9 @@ export const SketchContext = createContext<SketchType>({
 type Props = { children: ReactNode };
 
 export function SketchProvider({ children }: Props) {
-  const sampleTypeContext = useSampleTypesContext();
-  const services = useServicesContext();
+  const { sampleTypes } = useContext(LookupFilesContext);
+  const lookupFiles = useLookupFiles();
+  const services = lookupFiles.data.services;
 
   const defaultSymbol: PolygonSymbol = {
     type: 'simple-fill',
@@ -270,13 +269,13 @@ export function SketchProvider({ children }: Props) {
 
   // Keep the allSampleOptions array up to date
   useEffect(() => {
-    if (sampleTypeContext.status !== 'success') return;
+    if (!sampleTypes) return;
 
     let allSampleOptions: SampleSelectType[] = [];
 
     // Add in the standard sample types. Append "(edited)" to the
     // label if the user made changes to one of the standard types.
-    sampleTypeContext.data.sampleSelectOptions.forEach((option: any) => {
+    sampleTypes.sampleSelectOptions.forEach((option: any) => {
       allSampleOptions.push({
         value: option.value,
         label: userDefinedAttributes.sampleTypes.hasOwnProperty(option.value)
@@ -295,16 +294,13 @@ export function SketchProvider({ children }: Props) {
     (window as any).totsAllSampleOptions = allSampleOptions;
 
     setAllSampleOptions(allSampleOptions);
-  }, [userDefinedOptions, userDefinedAttributes, sampleTypeContext]);
+  }, [userDefinedOptions, userDefinedAttributes, sampleTypes]);
 
   // define the context funtion for getting the max record count
   // of the gp server
   const [gpMaxRecordCount, setGpMaxRecordCount] = useState<number | null>(null);
   function getGpMaxRecordCount(): Promise<number> {
     return new Promise<number>((resolve, reject) => {
-      if (services.status !== 'success')
-        reject('Services config file has not been loaded');
-
       // return the max record count, if we already have it
       if (gpMaxRecordCount) {
         resolve(gpMaxRecordCount);
@@ -312,10 +308,8 @@ export function SketchProvider({ children }: Props) {
       }
 
       let url = '';
-      if (services.data.useProxyForGPServer) url = services.data.proxyUrl;
-      url += `${
-        services.data.totsGPServer
-      }?f=json${getEnvironmentStringParam()}`;
+      if (services.useProxyForGPServer) url = services.proxyUrl;
+      url += `${services.totsGPServer}?f=json${getEnvironmentStringParam()}`;
 
       // get the max record count from the gp server
       fetchCheck(url)

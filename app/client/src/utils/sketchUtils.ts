@@ -12,6 +12,8 @@ import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 import SpatialReference from '@arcgis/core/geometry/SpatialReference';
 import * as webMercatorUtils from '@arcgis/core/geometry/support/webMercatorUtils';
 import { Dispatch, SetStateAction } from 'react';
+// contexts
+import { SampleTypes } from 'contexts/LookupFiles';
 // types
 import {
   EditsType,
@@ -1378,14 +1380,14 @@ export function removeZValues(graphic: __esri.Graphic) {
  * Validates that the area of samples is within tolerance and that sample
  * attributes match up with the predefined attributes.
  *
- * @param sampleTypeContext
+ * @param sampleTypes
  * @param graphics Array of graphics to validate
  * @param isFullGraphic If false, use default attributes when building sample
  * @param hasAllAttributes If true, validates all attributes against defaults
  * @returns Object detailing any issues found
  */
 export async function sampleValidation(
-  sampleTypeContext: any,
+  sampleTypes: SampleTypes | null,
   sceneView: __esri.SceneView | null,
   graphics: __esri.Graphic[],
   isFullGraphic: boolean = false,
@@ -1413,7 +1415,7 @@ export async function sampleValidation(
     // check that area is within allowable tolerance
     const difference = area - graphic.attributes.SA;
     sampleWithIssues.difference = difference;
-    if (Math.abs(difference) > sampleTypeContext.data.areaTolerance) {
+    if (Math.abs(difference) > (sampleTypes?.areaTolerance ?? 1)) {
       areaOutOfTolerance = true;
       sampleWithIssues.areaOutOfTolerance = true;
     }
@@ -1441,18 +1443,15 @@ export async function sampleValidation(
 
     // Check if the sample is a predefined type or not
     if (
-      sampleTypeContext.status === 'success' &&
-      sampleTypeContext.data.sampleAttributes.hasOwnProperty(
-        graphic.attributes.TYPEUUID,
-      )
+      sampleTypes?.sampleAttributes.hasOwnProperty(graphic.attributes.TYPEUUID)
     ) {
       await performAreaToleranceCheck(graphic);
 
       // check sample attributes against predefined attributes
       const predefinedAttributes: any =
-        sampleTypeContext.data.sampleAttributes[graphic.attributes.TYPEUUID];
+        sampleTypes.sampleAttributes[graphic.attributes.TYPEUUID];
       for (const key in predefinedAttributes) {
-        if (!sampleTypeContext.data.attributesToCheck.includes(key)) continue;
+        if (!sampleTypes.attributesToCheck.includes(key)) continue;
         if (!hasAllAttributes && !graphic.attributes.hasOwnProperty(key))
           continue;
         if (

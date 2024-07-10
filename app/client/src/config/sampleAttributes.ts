@@ -22,7 +22,7 @@ export type AttributeItems = {
   OBJECTID: string | null;
   PERMANENT_IDENTIFIER: string | null;
   GLOBALID: string | null;
-  TYPEUUID: string | null;
+  TYPEUUID: string;
   TYPE: string;
   ShapeType: string;
   POINT_STYLE: string;

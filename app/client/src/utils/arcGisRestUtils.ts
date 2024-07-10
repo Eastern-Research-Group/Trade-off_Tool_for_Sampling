@@ -9,7 +9,7 @@ import {
   TableType,
 } from 'types/Edits';
 import { LayerType } from 'types/Layer';
-import { LookupFile } from 'types/Misc';
+import { LayerProps } from 'types/Misc';
 import { AttributesType, ReferenceLayerSelections } from 'types/Publish';
 // utils
 import { fetchPost, fetchCheck } from 'utils/fetchUtils';
@@ -439,7 +439,7 @@ function getFeatureLayer(serviceUrl: string, token: string, id: number) {
  * @param layerProps Default/shared properties used for creating feature services, layers, web maps, and web scenes.
  * @returns The extent of graphics, the renderers for points and polygons
  */
-function buildRendererParams(layer: LayerType, layerProps: any | null) {
+function buildRendererParams(layer: LayerType, layerProps: LayerProps | null) {
   // get the current extent, so we can go back
   let graphicsExtent: __esri.Extent | null = null;
 
@@ -485,7 +485,7 @@ function buildRendererParams(layer: LayerType, layerProps: any | null) {
           // delete any custom attributes
           Object.keys(sampleTypes[attributes.TYPEUUID].attributes).forEach(
             (key) => {
-              const foundField = layerProps.data.defaultFields.find(
+              const foundField = layerProps.defaultFields.find(
                 (field: any) => field.name === key,
               );
 
@@ -566,7 +566,7 @@ function createFeatureLayers(
   layers: LayerType[],
   serviceMetaData: ServiceMetaDataType,
   attributesToInclude: AttributesType[] | null,
-  layerProps: LookupFile,
+  layerProps: LayerProps,
   referenceMaterials: {
     createWebMap: boolean;
     createWebScene: boolean;
@@ -612,9 +612,9 @@ function createFeatureLayers(
         });
       }
 
-      let fields = layerProps.data.defaultFields;
+      let fields = layerProps.defaultFields;
       if (attributesToInclude) {
-        fields = layerProps.data.defaultFields.filter(
+        fields = layerProps.defaultFields.filter(
           (x: any) =>
             attributesToInclude.findIndex((y) => y.name === x.name) > -1 ||
             x.name === 'GLOBALID' ||
@@ -639,7 +639,7 @@ function createFeatureLayers(
       if (!polyLayerFromService) {
         layerIds.push(layer.sketchLayer.id);
         layersParams.push({
-          ...layerProps.data.defaultLayerProps,
+          ...layerProps.defaultLayerProps,
           fields,
           name: serviceMetaData.label,
           description: serviceMetaData.description,
@@ -679,7 +679,7 @@ function createFeatureLayers(
       if (!pointLayerFromService) {
         layerIds.push(layer.pointsLayer?.id || '');
         layersParams.push({
-          ...layerProps.data.defaultLayerProps,
+          ...layerProps.defaultLayerProps,
           fields,
           geometryType: 'esriGeometryPoint',
           name: serviceMetaData.label + '-points',
@@ -734,8 +734,8 @@ function createFeatureLayers(
       ) > -1;
     if (!hasSampleTable) {
       tablesOut.push({
-        ...layerProps.data.defaultTableProps,
-        fields: layerProps.data.defaultFields,
+        ...layerProps.defaultTableProps,
+        fields: layerProps.defaultFields,
         type: 'Table',
         name: sampleTypeTableName,
         description: `Custom sample type definitions for "${serviceMetaData.label}".`,
@@ -750,8 +750,8 @@ function createFeatureLayers(
       ) > -1;
     if (!hasRefLayerTable) {
       tablesOut.push({
-        ...layerProps.data.defaultTableProps,
-        fields: layerProps.data.defaultReferenceTableFields,
+        ...layerProps.defaultTableProps,
+        fields: layerProps.defaultReferenceTableFields,
         type: 'Table',
         name: refLayerTableName,
         description: `Links to reference layers for "${serviceMetaData.label}".`,
@@ -766,8 +766,8 @@ function createFeatureLayers(
       ) > -1;
     if (!hasCalculateResultsTable) {
       tablesOut.push({
-        ...layerProps.data.defaultTableProps,
-        fields: layerProps.data.defaultCalculateResultsTableFields,
+        ...layerProps.defaultTableProps,
+        fields: layerProps.defaultCalculateResultsTableFields,
         type: 'Table',
         name: calculateResultsTableName,
         description: `Calculate settings for "${serviceMetaData.label}".`,
@@ -827,16 +827,16 @@ function createFeatureTables(
   portal: __esri.Portal,
   serviceUrl: string,
   serviceMetaData: ServiceMetaDataType,
-  layerProps: LookupFile,
+  layerProps: LayerProps,
 ) {
   return new Promise((resolve, reject) => {
     const tableParams: any[] = [];
 
     tableParams.push({
-      ...layerProps.data.defaultTableProps,
+      ...layerProps.defaultTableProps,
       fields: [
-        ...layerProps.data.defaultFields,
-        ...layerProps.data.additionalTableFields,
+        ...layerProps.defaultFields,
+        ...layerProps.additionalTableFields,
       ],
       type: 'Table',
       name: serviceMetaData.label,
@@ -1537,7 +1537,7 @@ async function applyEdits({
   portal: __esri.Portal;
   service: any;
   serviceUrl: string;
-  layerProps: any | null;
+  layerProps: LayerProps | null;
   layers: LayerType[];
   layersResponse: any;
   edits: LayerEditsType[];
@@ -1774,7 +1774,7 @@ function buildTableEdits({
   layers: LayerType[];
   table: TableType | null;
   id: number;
-  layerProps: any | null;
+  layerProps: LayerProps | null;
 }) {
   const adds: any[] = [];
   const updates: any[] = [];
@@ -2121,7 +2121,7 @@ function addWebMap({
   layers: LayerType[];
   layersResponse: any;
   attributesToInclude: AttributesType[] | null;
-  layerProps: LookupFile;
+  layerProps: LayerProps;
   referenceMaterials: ReferenceLayerSelections[];
   map: __esri.Map;
   existingWebMap: any | null;
@@ -2136,10 +2136,8 @@ function addWebMap({
 
     const fieldInfos: any[] = [];
     attributesToInclude?.forEach((attribute) => {
-      if (layerProps.data.webMapFieldProps.hasOwnProperty(attribute.name)) {
-        fieldInfos.push(
-          (layerProps.data.webMapFieldProps as any)[attribute.name],
-        );
+      if (layerProps.webMapFieldProps.hasOwnProperty(attribute.name)) {
+        fieldInfos.push((layerProps.webMapFieldProps as any)[attribute.name]);
       } else {
         let format: any = undefined;
         if (
@@ -2294,7 +2292,7 @@ function addWebScene({
   layers: LayerType[];
   layersResponse: any;
   attributesToInclude: AttributesType[] | null;
-  layerProps: LookupFile;
+  layerProps: LayerProps;
   referenceMaterials: ReferenceLayerSelections[];
   map: __esri.Map;
   existingWebScene: any | null;
@@ -2309,10 +2307,8 @@ function addWebScene({
 
     const fieldInfos: any[] = [];
     attributesToInclude?.forEach((attribute) => {
-      if (layerProps.data.webMapFieldProps.hasOwnProperty(attribute.name)) {
-        fieldInfos.push(
-          (layerProps.data.webMapFieldProps as any)[attribute.name],
-        );
+      if (layerProps.webMapFieldProps.hasOwnProperty(attribute.name)) {
+        fieldInfos.push((layerProps.webMapFieldProps as any)[attribute.name]);
       } else {
         let format: any = undefined;
         if (
@@ -2559,7 +2555,7 @@ function publish({
   layers: LayerType[];
   edits: LayerEditsType[];
   serviceMetaData: ServiceMetaDataType;
-  layerProps: LookupFile;
+  layerProps: LayerProps;
   attributesToInclude?: AttributesType[] | null;
   table?: any;
   referenceLayersTable: ReferenceLayersTableType;
@@ -2774,7 +2770,7 @@ function publishTable({
   portal: __esri.Portal;
   changes: any;
   serviceMetaData: ServiceMetaDataType;
-  layerProps: any;
+  layerProps: LayerProps;
 }) {
   return new Promise((resolve, reject) => {
     if (
