@@ -102,18 +102,29 @@ describe("Create Plan Drop Down Contents", function () {
       .should("exist")
       .click({ force: true });
     cy.findByText("Draw Sampling Mask");
-    cy.get("#draw-aoi").click({ force: true });
+    cy.findByRole("radio", { name: "Draw Sampling Mask" }).click({
+      force: true,
+    });
     cy.findByRole("button", { name: "Draw Sampling Mask" }).should("exist");
     cy.findByText("Use Imported Area of Interest");
-    cy.get("#use-aoi-file").click({ force: true });
+    cy.findByRole("radio", { name: "Use Imported Area of Interest" }).click({
+      force: true,
+    });
     cy.findByText("Area of Interest Mask").should("exist");
     cy.findByRole("button", { name: "Add" }).should("exist");
-    cy.get("#sample-type-select-input").type("wet vac{enter}");
-    cy.get("#number-of-samples-input").type("55");
+    cy.findByRole("combobox", { name: "Sample Type" }).type("wet vac{enter}");
+    cy.findByRole("spinbutton", { name: "Number of Samples" })
+      .clear()
+      .type("55");
     cy.findByText("Use AOI Elevation").should("exist");
     cy.findByText("Snap to Ground").should("exist");
 
-    cy.get("#draw-aoi").click({ force: true });
+    cy.findByRole("radio", { name: "Draw Sampling Mask" }).click({
+      force: true,
+    });
+    cy.findByRole("button", { name: "Draw Sampling Mask" }).click({
+      force: true,
+    });
     cy.findByRole("button", { name: "Submit" }).should("exist").click();
     cy.intercept(
       "https://geopub.epa.gov/arcgis/rest/services/ORD/TOTS/GPServer/Generate%20Random/execute"

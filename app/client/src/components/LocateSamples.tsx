@@ -309,6 +309,12 @@ function LocateSamples() {
   useEffect(() => {
     if (!map || !layersInitialized || aoiSketchLayer) return;
 
+    const maskLayer = layers.find((l) => l.name === 'Sketched Sampling Mask');
+    if (maskLayer) {
+      setAoiSketchLayer(maskLayer);
+      return;
+    }
+
     const newAoiSketchLayer = getDefaultSamplingMaskLayer();
 
     // add the layer to the map
@@ -318,7 +324,14 @@ function LocateSamples() {
 
     // set the active sketch layer
     setAoiSketchLayer(newAoiSketchLayer);
-  }, [map, aoiSketchLayer, setAoiSketchLayer, layersInitialized, setLayers]);
+  }, [
+    map,
+    aoiSketchLayer,
+    layers,
+    setAoiSketchLayer,
+    layersInitialized,
+    setLayers,
+  ]);
 
   // Handle a user clicking one of the sketch buttons
   function sketchButtonClick(label: string) {
