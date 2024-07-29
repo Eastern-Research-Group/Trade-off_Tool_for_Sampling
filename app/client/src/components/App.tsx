@@ -180,7 +180,12 @@ const zoomButtonStyles = css`
   font-size: 16px;
 `;
 
-function App() {
+// --- components (NavBar) ---
+type Props = {
+  type: 'decon' | 'sampling';
+};
+
+function App({ type }: Props) {
   const { calculateResults } = useContext(CalculateContext);
   const {
     currentPanel,
@@ -333,16 +338,16 @@ function App() {
 
   return (
     <div className="tots" ref={totsRef}>
-      <SplashScreen />
+      {type === 'sampling' && <SplashScreen />}
       <div css={appStyles(offset)}>
         <div css={containerStyles}>
           <div ref={toolbarRef}>
             {window.location.search.includes('devMode=true') && (
               <TestingToolbar />
             )}
-            <Toolbar />
+            <Toolbar type={type} />
           </div>
-          <NavBar height={contentHeight - toolbarHeight} />
+          <NavBar height={contentHeight - toolbarHeight} type={type} />
           <div
             css={mapPanelStyles(
               toolbarHeight + (tablePanelExpanded ? tablePanelHeight : 0),
@@ -484,14 +489,17 @@ function App() {
                 >
                   <div css={tablePanelHeaderStyles}>
                     <span css={sampleTableHeaderStyles}>
-                      Samples (Count: {sampleData.length})
+                      {type === 'decon' ? 'Buildings' : 'Samples'} (Count:{' '}
+                      {sampleData.length})
                     </span>
                   </div>
                   <div>
                     <ReactTable
                       id="tots-samples-table"
                       data={sampleData}
-                      idColumn={'PERMANENT_IDENTIFIER'}
+                      idColumn={
+                        type === 'decon' ? 'bid' : 'PERMANENT_IDENTIFIER'
+                      }
                       striped={true}
                       height={tablePanelHeight - resizerHeight - 30}
                       initialSelectedRowIds={initialSelectedRowIds}
@@ -518,6 +526,7 @@ function App() {
                                 PERMANENT_IDENTIFIER,
                                 DECISIONUNITUUID,
                                 selection_method: 'row-click',
+                                graphic: sample.graphic,
                               };
                             });
                           }
@@ -528,24 +537,46 @@ function App() {
                               PERMANENT_IDENTIFIER,
                               DECISIONUNITUUID,
                               selection_method: 'row-click',
+                              graphic: row.original.graphic,
                             },
                           ];
                         });
                       }}
-                      sortBy={[
-                        {
-                          id: 'DECISIONUNIT',
-                          desc: false,
-                        },
-                        {
-                          id: 'TYPE',
-                          desc: false,
-                        },
-                        {
-                          id: 'PERMANENT_IDENTIFIER',
-                          desc: false,
-                        },
-                      ]}
+                      sortBy={
+                        type === 'decon'
+                          ? [
+                              {
+                                id: 'layerName',
+                                desc: false,
+                              },
+                              {
+                                id: 'cbfips',
+                                desc: false,
+                              },
+                              {
+                                id: 'bldgtype',
+                                desc: false,
+                              },
+                              {
+                                id: 'bid',
+                                desc: false,
+                              },
+                            ]
+                          : [
+                              {
+                                id: 'DECISIONUNIT',
+                                desc: false,
+                              },
+                              {
+                                id: 'TYPE',
+                                desc: false,
+                              },
+                              {
+                                id: 'PERMANENT_IDENTIFIER',
+                                desc: false,
+                              },
+                            ]
+                      }
                       getColumns={(tableWidth: any) => {
                         return [
                           {
@@ -568,13 +599,17 @@ function App() {
                                         DECISIONUNITUUID:
                                           row.original.DECISIONUNITUUID,
                                         selection_method: 'row-click',
+                                        graphic: row.original.grpahic,
                                       },
                                     ]);
 
                                     // zoom to the graphic
                                     if (displayDimensions === '2d' && mapView) {
                                       mapView.goTo(row.original.graphic);
-                                      mapView.zoom = mapView.zoom - 1;
+                                      mapView.zoom =
+                                        type === 'decon'
+                                          ? 16
+                                          : mapView.zoom - 1;
                                     } else if (
                                       displayDimensions === '3d' &&
                                       sceneView
@@ -593,7 +628,8 @@ function App() {
                           },
                           ...getSampleTableColumns({
                             tableWidth,
-                            includeContaminationFields: trainingMode,
+                            includeContaminationFields:
+                              type === 'decon' ? false : trainingMode,
                           }),
                         ];
                       }}

@@ -72,6 +72,7 @@ function MapMouseEvents({ mapView, sceneView }: Props) {
                 PERMANENT_IDENTIFIER,
                 DECISIONUNITUUID,
                 selection_method: 'sample-click',
+                graphic,
               },
             ];
           });

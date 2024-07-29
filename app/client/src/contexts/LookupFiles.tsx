@@ -63,13 +63,16 @@ function useLookupFiles() {
       .then((res) => {
         const data = res as Content;
         const sampleSelectOptions: SampleSelectType[] = [];
-        const sampleAttributes = data.sampleTypes.sampleAttributes;
+        const sampleAttributes =
+          window.location.pathname === '/decon'
+            ? data.technologyTypes.deconAttributes
+            : data.technologyTypes.sampleAttributes;
         Object.keys(sampleAttributes).forEach((key: any) => {
           const value = sampleAttributes[key].TYPEUUID;
           const label = sampleAttributes[key].TYPE;
           sampleSelectOptions.push({ value, label, isPredefined: true });
         });
-        const newValue = { ...(data.sampleTypes as SampleTypes) };
+        const newValue = { ...(data.technologyTypes as SampleTypes) };
         newValue['sampleSelectOptions'] = sampleSelectOptions;
         setSampleTypes(newValue);
 
@@ -98,7 +101,6 @@ type Content = {
     color: string;
     message: string;
   };
-  sampleTypes: SampleTypesS3;
   services: {
     gpServerInputMaxRecordCount: number;
     proxyUrl: string;
@@ -110,6 +112,7 @@ type Content = {
       wildcardUrl: string;
     };
   };
+  technologyTypes: SampleTypesS3;
 };
 
 type LookupFiles =
@@ -121,6 +124,7 @@ type LookupFiles =
 type SampleTypesS3 = {
   areaTolerance: number;
   attributesToCheck: string[];
+  deconAttributes: { [key: string]: AttributeItems };
   sampleAttributes: { [key: string]: AttributeItems };
 };
 

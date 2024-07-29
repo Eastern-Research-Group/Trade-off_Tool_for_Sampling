@@ -26,6 +26,11 @@ import {
   PolygonSymbol,
 } from 'config/sampleAttributes';
 
+export const hazardousOptions: { label: string; value: string }[] = [
+  { label: 'Hazardous', value: 'hazardous' },
+  { label: 'Non-Hazardous', value: 'non-hazardous' },
+];
+
 type HomeWidgetType = {
   '2d': __esri.Home;
   '3d': __esri.Home;
@@ -34,6 +39,32 @@ type HomeWidgetType = {
 export type SketchViewModelType = {
   '2d': __esri.SketchViewModel;
   '3d': __esri.SketchViewModel;
+};
+
+export type AoiGraphics = {
+  [planId: string]: __esri.Graphic[];
+};
+
+export type AoiDataType = {
+  count: number;
+  graphics: AoiGraphics | null;
+};
+
+export type JsonDownloadType = {
+  contaminationScenario: string;
+  decontaminationTechnology: string;
+  solidWasteVolumeM3: number;
+  liquidWasteVolumeM3: number;
+  decontaminationCost: number;
+  decontaminationTimeDays: number;
+  averageInitialContamination: number;
+  averageFinalContamination: number;
+  aboveDetectionLimit: boolean;
+};
+
+export type PlanSettings = {
+  name: string;
+  description: string;
 };
 
 type SketchType = {
@@ -47,6 +78,18 @@ type SketchType = {
   resetDefaultSymbols: Function;
   edits: EditsType;
   setEdits: Dispatch<SetStateAction<EditsType>>;
+
+  aoiData: AoiDataType;
+  setAoiData: Dispatch<SetStateAction<AoiDataType>>;
+  jsonDownload: JsonDownloadType[];
+  setJsonDownload: Dispatch<SetStateAction<JsonDownloadType[]>>;
+  defaultDeconSelections: any[];
+  setDefaultDeconSelections: Dispatch<SetStateAction<any[]>>;
+  deconSelections: any[];
+  setDeconSelections: Dispatch<SetStateAction<any[]>>;
+  planSettings: PlanSettings;
+  setPlanSettings: Dispatch<SetStateAction<PlanSettings>>;
+
   homeWidget: HomeWidgetType | null;
   setHomeWidget: Dispatch<SetStateAction<HomeWidgetType | null>>;
   symbolsInitialized: boolean;
@@ -102,6 +145,11 @@ type SketchType = {
   setTerrain3dVisible: Dispatch<SetStateAction<boolean>>;
   viewUnderground3d: boolean;
   setViewUnderground3d: Dispatch<SetStateAction<boolean>>;
+
+  resultsOpen: boolean;
+  setResultsOpen: Dispatch<SetStateAction<boolean>>;
+  efficacyResults: any;
+  setEfficacyResults: Dispatch<SetStateAction<any>>;
 };
 
 export const SketchContext = createContext<SketchType>({
@@ -118,6 +166,18 @@ export const SketchContext = createContext<SketchType>({
   resetDefaultSymbols: () => {},
   edits: { count: 0, edits: [] },
   setEdits: () => {},
+
+  aoiData: { count: 0, graphics: null },
+  setAoiData: () => {},
+  jsonDownload: [],
+  setJsonDownload: () => {},
+  defaultDeconSelections: [],
+  setDefaultDeconSelections: () => {},
+  deconSelections: [],
+  setDeconSelections: () => {},
+  planSettings: { name: '', description: '' },
+  setPlanSettings: () => {},
+
   homeWidget: null,
   setHomeWidget: () => {},
   symbolsInitialized: false,
@@ -171,6 +231,11 @@ export const SketchContext = createContext<SketchType>({
   setTerrain3dVisible: () => {},
   viewUnderground3d: false,
   setViewUnderground3d: () => {},
+
+  resultsOpen: false,
+  setResultsOpen: () => {},
+  efficacyResults: null,
+  setEfficacyResults: () => {},
 });
 
 type Props = { children: ReactNode };
@@ -193,6 +258,14 @@ export function SketchProvider({ children }: Props) {
     symbols: {
       'Area of Interest': defaultSymbol,
       'Contamination Map': defaultSymbol,
+      // 'Contamination Map': {
+      //   type: 'simple-fill',
+      //   color: [4, 53, 255, 0.2],
+      //   outline: {
+      //     color: [50, 50, 50],
+      //     width: 2,
+      //   },
+      // } as PolygonSymbol,
       Samples: defaultSymbol,
     },
     editCount: 0,
@@ -207,6 +280,21 @@ export function SketchProvider({ children }: Props) {
     initialDefaultSymbols,
   );
   const [edits, setEdits] = useState<EditsType>({ count: 0, edits: [] });
+
+  const [aoiData, setAoiData] = useState<AoiDataType>({
+    count: 0,
+    graphics: null,
+  });
+  const [jsonDownload, setJsonDownload] = useState<JsonDownloadType[]>([]);
+  const [defaultDeconSelections, setDefaultDeconSelections] = useState<any[]>(
+    [],
+  );
+  const [deconSelections, setDeconSelections] = useState<any[]>([]);
+  const [planSettings, setPlanSettings] = useState<PlanSettings>({
+    name: '',
+    description: '',
+  });
+
   const [layersInitialized, setLayersInitialized] = useState(false);
   const [layers, setLayers] = useState<LayerType[]>([]);
   const [portalLayers, setPortalLayers] = useState<PortalLayerType[]>([]);
@@ -252,6 +340,8 @@ export function SketchProvider({ children }: Props) {
   const [terrain3dUseElevation, setTerrain3dUseElevation] = useState(true);
   const [terrain3dVisible, setTerrain3dVisible] = useState(true);
   const [viewUnderground3d, setViewUnderground3d] = useState(false);
+  const [resultsOpen, setResultsOpen] = useState(false);
+  const [efficacyResults, setEfficacyResults] = useState(null);
 
   // Update totsLayers variable on the window object. This is a workaround
   // to an issue where the layers state variable is not available within esri
@@ -295,6 +385,118 @@ export function SketchProvider({ children }: Props) {
 
     setAllSampleOptions(allSampleOptions);
   }, [userDefinedOptions, userDefinedAttributes, sampleTypes]);
+
+  useEffect(() => {
+    if (allSampleOptions.length === 0 || defaultDeconSelections.length > 0)
+      return;
+    setDefaultDeconSelections([
+      {
+        id: 1,
+        media: 'Soil/Vegetation',
+        deconTech: null,
+        pctAoi: 0,
+        surfaceArea: 0,
+        avgCfu: 0,
+        totalCfu: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+        avgFinalContamination: null,
+        aboveDetectionLimit: '',
+      },
+      {
+        id: 2,
+        media: 'Streets - Asphalt',
+        deconTech: null,
+        pctAoi: 0,
+        surfaceArea: 0,
+        avgCfu: 0,
+        totalCfu: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+        avgFinalContamination: null,
+        aboveDetectionLimit: '',
+      },
+      {
+        id: 3,
+        media: 'Streets/Sidewalks - Concrete',
+        deconTech: null,
+        pctAoi: 0,
+        surfaceArea: 0,
+        avgCfu: 0,
+        totalCfu: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+        avgFinalContamination: null,
+        aboveDetectionLimit: '',
+      },
+      {
+        id: 4,
+        media: 'Building Exterior Walls',
+        deconTech: null,
+        pctAoi: 0,
+        surfaceArea: 0,
+        avgCfu: 0,
+        totalCfu: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+        avgFinalContamination: null,
+        aboveDetectionLimit: '',
+      },
+      {
+        id: 5,
+        media: 'Building Interior Floors',
+        deconTech: null,
+        pctAoi: 0,
+        surfaceArea: 0,
+        avgCfu: 0,
+        totalCfu: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+        avgFinalContamination: null,
+        aboveDetectionLimit: '',
+      },
+      {
+        id: 6,
+        media: 'Building Interior Walls',
+        deconTech: null,
+        pctAoi: 0,
+        surfaceArea: 0,
+        avgCfu: 0,
+        totalCfu: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+        avgFinalContamination: null,
+        aboveDetectionLimit: '',
+      },
+      {
+        id: 7,
+        media: 'Building Roofs',
+        deconTech: null,
+        pctAoi: 0,
+        surfaceArea: 0,
+        avgCfu: 0,
+        totalCfu: 0,
+        numApplications: 1,
+        numConcurrentApplications: 1,
+        pctDeconed: 100,
+        isHazardous: hazardousOptions[1],
+        avgFinalContamination: null,
+        aboveDetectionLimit: '',
+      },
+    ]);
+  }, [allSampleOptions, defaultDeconSelections]);
 
   // define the context funtion for getting the max record count
   // of the gp server
@@ -361,6 +563,18 @@ export function SketchProvider({ children }: Props) {
         resetDefaultSymbols,
         edits,
         setEdits,
+
+        aoiData,
+        setAoiData,
+        jsonDownload,
+        setJsonDownload,
+        defaultDeconSelections,
+        setDefaultDeconSelections,
+        deconSelections,
+        setDeconSelections,
+        planSettings,
+        setPlanSettings,
+
         homeWidget,
         setHomeWidget,
         symbolsInitialized,
@@ -414,6 +628,11 @@ export function SketchProvider({ children }: Props) {
         setTerrain3dVisible,
         viewUnderground3d,
         setViewUnderground3d,
+
+        resultsOpen,
+        setResultsOpen,
+        efficacyResults,
+        setEfficacyResults,
       }}
     >
       {children}

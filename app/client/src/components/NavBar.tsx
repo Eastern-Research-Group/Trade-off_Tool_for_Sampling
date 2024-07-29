@@ -7,6 +7,7 @@ import React, {
   useContext,
   useEffect,
   useRef,
+  useState,
 } from 'react';
 import { css } from '@emotion/react';
 // components
@@ -14,6 +15,7 @@ import AddData from 'components/AddData';
 import Calculate from 'components/Calculate';
 import CalculateResults from 'components/CalculateResults';
 import ConfigureOutput from 'components/ConfigureOutput';
+import CreateDeconPlan from 'components/CreateDeconPlan';
 import LoadingSpinner from 'components/LoadingSpinner';
 import LocateSamples from 'components/LocateSamples';
 import Publish from 'components/Publish';
@@ -24,7 +26,7 @@ import { CalculateContext } from 'contexts/Calculate';
 import { NavigationContext } from 'contexts/Navigation';
 // config
 import { navPanelWidth } from 'config/appConfig';
-import { panels, PanelType } from 'config/navigation';
+import { deconPanels, PanelType, samplingPanels } from 'config/navigation';
 // styles
 import '@reach/dialog/styles.css';
 import { colors } from 'styles';
@@ -87,6 +89,7 @@ const navTextStyles = css`
 // --- components (NavButton) ---
 type NavButtonProps = {
   panel: PanelType;
+  panelIndex: number;
   selectedPanel: PanelType | null;
   visitedStepIndex: number;
   onClick: (ev: ReactMouseEvent<HTMLElement>) => void;
@@ -94,6 +97,7 @@ type NavButtonProps = {
 
 function NavButton({
   panel,
+  panelIndex,
   selectedPanel,
   visitedStepIndex,
   onClick,
@@ -103,9 +107,6 @@ function NavButton({
   // check if this button is selected
   const selectedValue = selectedPanel && selectedPanel.value;
   const selected = value === selectedValue;
-
-  // get the index of the panel
-  const panelIndex = panels.findIndex((item) => item.value === panel.value);
 
   // get the color of the button
   let color = buttonColor;
@@ -314,9 +315,10 @@ const resultsCollapsePanelButton = css`
 // --- components (NavBar) ---
 type Props = {
   height: number;
+  type: 'decon' | 'sampling';
 };
 
-function NavBar({ height }: Props) {
+function NavBar({ height, type }: Props) {
   const { calculateResults } = useContext(CalculateContext);
   const {
     currentPanel,
@@ -332,6 +334,8 @@ function NavBar({ height }: Props) {
     resultsExpanded,
     setResultsExpanded,
   } = useContext(NavigationContext);
+
+  const [panels] = useState(type === 'decon' ? deconPanels : samplingPanels);
 
   const toggleExpand = useCallback(
     (panel: PanelType, panelIndex: number) => {
@@ -371,7 +375,7 @@ function NavBar({ height }: Props) {
     if (goToPanel) toggleExpand(goToPanel, goToPanelIndex);
 
     setGoTo('');
-  }, [goTo, setGoTo, toggleExpand]);
+  }, [goTo, panels, setGoTo, toggleExpand]);
 
   useEffect(() => {
     if (calculateResults.status !== 'none') {
@@ -431,6 +435,7 @@ function NavBar({ height }: Props) {
                 <NavButton
                   key={index}
                   panel={panel}
+                  panelIndex={index}
                   selectedPanel={currentPanel}
                   visitedStepIndex={latestStepIndex}
                   onClick={() => setGoTo(panel.value)}
@@ -498,13 +503,15 @@ function NavBar({ height }: Props) {
             </div>
           )}
 
-          <button
-            onClick={(ev) => setGettingStartedOpen(!gettingStartedOpen)}
-            css={navButtonStyles(false)}
-          >
-            <i className="fas fa-question" css={helpIconStyles} />
-            Help
-          </button>
+          {type === 'sampling' && (
+            <button
+              onClick={(ev) => setGettingStartedOpen(!gettingStartedOpen)}
+              css={navButtonStyles(false)}
+            >
+              <i className="fas fa-question" css={helpIconStyles} />
+              Help
+            </button>
+          )}
         </div>
       </div>
       {currentPanel && (
@@ -524,11 +531,14 @@ function NavBar({ height }: Props) {
               css={floatPanelScrollContainerStyles}
             >
               {currentPanel.value === 'search' && <Search />}
-              {currentPanel.value === 'addData' && <AddData />}
+              {currentPanel.value === 'addData' && <AddData type={type} />}
               {currentPanel.value === 'locateSamples' && <LocateSamples />}
-              {currentPanel.value === 'calculate' && <Calculate />}
-              {currentPanel.value === 'configureOutput' && <ConfigureOutput />}
-              {currentPanel.value === 'publish' && <Publish />}
+              {currentPanel.value === 'decon' && <CreateDeconPlan />}
+              {currentPanel.value === 'calculate' && <Calculate type={type} />}
+              {currentPanel.value === 'configureOutput' && (
+                <ConfigureOutput type={type} />
+              )}
+              {currentPanel.value === 'publish' && <Publish type={type} />}
             </div>
           </div>
         </div>

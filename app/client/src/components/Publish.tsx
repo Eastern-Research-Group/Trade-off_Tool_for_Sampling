@@ -131,7 +131,11 @@ const webMapContainerCheckboxStyles = css`
 `;
 
 // --- components (Publish) ---
-function Publish() {
+type Props = {
+  type: 'decon' | 'sampling';
+};
+
+function Publish({ type }: Props) {
   const { oAuthInfo, portal, setSignedIn, setPortal, signedIn } = useContext(
     AuthenticationContext,
   );
@@ -1938,6 +1942,21 @@ function Publish() {
       // verify service name availbility if changed
       (sampleTypesNameCheck.status === 'none' ||
         sampleTypesNameCheck.status === 'success'));
+
+  if (type === 'decon') {
+    return (
+      <div css={panelContainer}>
+        <h2>Publish Output</h2>
+        <div css={sectionContainer}>
+          <MessageBox
+            severity="warning"
+            title="Feature Not Yet Available"
+            message="This feature is not available yet."
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div css={panelContainer}>

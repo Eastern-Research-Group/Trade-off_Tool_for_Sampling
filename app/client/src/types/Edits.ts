@@ -1,3 +1,4 @@
+import { JsonDownloadType } from 'contexts/Sketch';
 import { AddedFrom, LayerTypeName, PublishStatus } from 'types/Layer';
 import { AttributesType } from 'types/Publish';
 
@@ -77,7 +78,23 @@ export type ScenarioEditsType = {
   table: TableType | null;
   referenceLayersTable: ReferenceLayersTableType;
   customAttributes: AttributesType[];
+  deconTechSelections?: any[];
+  deconSummaryResults?: any;
+  aoiSummary?: {
+    area: number;
+    buildingFootprint: number;
+  };
+  deconLayerResults?: {
+    cost: number;
+    time: number;
+    wasteVolume: number;
+    wasteMass: number;
+    resultsTable: JsonDownloadType[];
+  };
   calculateSettings: CalculateSettingsType;
+  importedAoiLayer?: LayerEditsType | null;
+  aoiLayerMode?: '' | 'draw' | 'file';
+  // contaminationResults: LayerEditsType; // TODO add this in if time permits
 };
 
 export type LayerEditsType = {

@@ -136,7 +136,11 @@ const fullWidthSelectStyles = css`
 `;
 
 // --- components (Calculate) ---
-function Calculate() {
+type Props = {
+  type: 'decon' | 'sampling';
+};
+
+function Calculate({ type }: Props) {
   const { setGoTo, setGoToOptions, trainingMode } =
     useContext(NavigationContext);
   const {
@@ -565,22 +569,32 @@ function Calculate() {
       <div>
         <div css={sectionContainer}>
           <h2>Calculate Resources</h2>
-          <p>
-            Default resource constraints are provided to estimate the cost and
-            time required to implement the designed plan. You can change the
-            default parameters to reflect scenario-specific constraints and to
-            support conducting "what-if" scenarios. Click{' '}
-            <strong>View Detailed Results</strong> to display a detailed summary
-            of the results.{' '}
-            {trainingMode && (
-              <Fragment>
-                If you have a contamination map layer, click{' '}
-                <strong>View Contamination Hits</strong> to see if any of your
-                samples would have resulted in contamination hits.{' '}
-              </Fragment>
-            )}
-            Click <strong>Next</strong> to configure your output.
-          </p>
+          {type === 'sampling' && (
+            <p>
+              Default resource constraints are provided to estimate the cost and
+              time required to implement the designed plan. You can change the
+              default parameters to reflect scenario-specific constraints and to
+              support conducting "what-if" scenarios. Click{' '}
+              <strong>View Detailed Results</strong> to display a detailed
+              summary of the results.{' '}
+              {trainingMode && (
+                <Fragment>
+                  If you have a contamination map layer, click{' '}
+                  <strong>View Contamination Hits</strong> to see if any of your
+                  samples would have resulted in contamination hits.{' '}
+                </Fragment>
+              )}
+              Click <strong>Next</strong> to configure your output.
+            </p>
+          )}
+          {type === 'decon' && (
+            <p>
+              Default resource constraints are provided to estimate the cost and
+              time required to implement the designed plan. Click{' '}
+              <strong>View Detailed Results</strong> to display a detailed
+              summary of the results.
+            </p>
+          )}
           <p css={layerInfo}>
             <strong>Plan Name: </strong>
             {selectedScenario?.scenarioName}
@@ -594,129 +608,135 @@ function Calculate() {
           </p>
         </div>
 
-        <div css={sectionContainer}>
-          <label htmlFor="number-teams-input">
-            Number of Available Teams for Sampling
-          </label>
-          <input
-            id="number-teams-input"
-            type="text"
-            pattern="[0-9]*"
-            css={inputStyles}
-            value={inputNumSamplingTeams}
-            onChange={(ev) => {
-              if (ev.target.validity.valid) {
-                setInputNumSamplingTeams(Number(ev.target.value));
-              }
-            }}
-          />
+        {type === 'sampling' && (
+          <div css={sectionContainer}>
+            <label htmlFor="number-teams-input">
+              Number of Available Teams for Sampling
+            </label>
+            <input
+              id="number-teams-input"
+              type="text"
+              pattern="[0-9]*"
+              css={inputStyles}
+              value={inputNumSamplingTeams}
+              onChange={(ev) => {
+                if (ev.target.validity.valid) {
+                  setInputNumSamplingTeams(Number(ev.target.value));
+                }
+              }}
+            />
 
-          <label htmlFor="personnel-per-team-input">
-            Personnel per Sampling Team
-          </label>
-          <input
-            id="personnel-per-team-input"
-            type="text"
-            pattern="[0-9]*"
-            css={inputStyles}
-            value={inputNumSamplingPersonnel}
-            onChange={(ev) => {
-              if (ev.target.validity.valid) {
-                setInputNumSamplingPersonnel(Number(ev.target.value));
-              }
-            }}
-          />
+            <label htmlFor="personnel-per-team-input">
+              Personnel per Sampling Team
+            </label>
+            <input
+              id="personnel-per-team-input"
+              type="text"
+              pattern="[0-9]*"
+              css={inputStyles}
+              value={inputNumSamplingPersonnel}
+              onChange={(ev) => {
+                if (ev.target.validity.valid) {
+                  setInputNumSamplingPersonnel(Number(ev.target.value));
+                }
+              }}
+            />
 
-          <label htmlFor="sampling-hours-input">
-            Sampling Team Hours per Shift
-          </label>
-          <input
-            id="sampling-hours-input"
-            type="text"
-            pattern="[0-9]*"
-            css={inputStyles}
-            value={inputNumSamplingHours}
-            onChange={(ev) => {
-              if (ev.target.validity.valid) {
-                setInputNumSamplingHours(Number(ev.target.value));
-              }
-            }}
-          />
+            <label htmlFor="sampling-hours-input">
+              Sampling Team Hours per Shift
+            </label>
+            <input
+              id="sampling-hours-input"
+              type="text"
+              pattern="[0-9]*"
+              css={inputStyles}
+              value={inputNumSamplingHours}
+              onChange={(ev) => {
+                if (ev.target.validity.valid) {
+                  setInputNumSamplingHours(Number(ev.target.value));
+                }
+              }}
+            />
 
-          <label htmlFor="shifts-per-input">Sampling Team Shifts per Day</label>
-          <input
-            id="shifts-per-input"
-            type="text"
-            pattern="[0-9]*"
-            css={inputStyles}
-            value={inputNumSamplingShifts}
-            onChange={(ev) => {
-              if (ev.target.validity.valid) {
-                setInputNumSamplingShifts(Number(ev.target.value));
-              }
-            }}
-          />
+            <label htmlFor="shifts-per-input">
+              Sampling Team Shifts per Day
+            </label>
+            <input
+              id="shifts-per-input"
+              type="text"
+              pattern="[0-9]*"
+              css={inputStyles}
+              value={inputNumSamplingShifts}
+              onChange={(ev) => {
+                if (ev.target.validity.valid) {
+                  setInputNumSamplingShifts(Number(ev.target.value));
+                }
+              }}
+            />
 
-          <label htmlFor="labor-cost-input">Sampling Team Labor Cost ($)</label>
-          <input
-            id="labor-cost-input"
-            type="text"
-            pattern="[0-9]*"
-            css={inputStyles}
-            value={inputSamplingLaborCost}
-            onChange={(ev) => {
-              if (ev.target.validity.valid) {
-                setInputSamplingLaborCost(Number(ev.target.value));
-              }
-            }}
-          />
+            <label htmlFor="labor-cost-input">
+              Sampling Team Labor Cost ($)
+            </label>
+            <input
+              id="labor-cost-input"
+              type="text"
+              pattern="[0-9]*"
+              css={inputStyles}
+              value={inputSamplingLaborCost}
+              onChange={(ev) => {
+                if (ev.target.validity.valid) {
+                  setInputSamplingLaborCost(Number(ev.target.value));
+                }
+              }}
+            />
 
-          <label htmlFor="number-of-labs-input">
-            Number of Available Labs for Analysis
-          </label>
-          <input
-            id="number-of-labs-input"
-            type="text"
-            pattern="[0-9]*"
-            css={inputStyles}
-            value={inputNumLabs}
-            onChange={(ev) => {
-              if (ev.target.validity.valid) {
-                setInputNumLabs(Number(ev.target.value));
-              }
-            }}
-          />
+            <label htmlFor="number-of-labs-input">
+              Number of Available Labs for Analysis
+            </label>
+            <input
+              id="number-of-labs-input"
+              type="text"
+              pattern="[0-9]*"
+              css={inputStyles}
+              value={inputNumLabs}
+              onChange={(ev) => {
+                if (ev.target.validity.valid) {
+                  setInputNumLabs(Number(ev.target.value));
+                }
+              }}
+            />
 
-          <label htmlFor="lab-hours-input">Analysis Lab Hours per Day</label>
-          <input
-            id="lab-hours-input"
-            type="text"
-            pattern="[0-9]*"
-            css={inputStyles}
-            value={inputNumLabHours}
-            onChange={(ev) => {
-              if (ev.target.validity.valid) {
-                setInputNumLabHours(Number(ev.target.value));
-              }
-            }}
-          />
+            <label htmlFor="lab-hours-input">Analysis Lab Hours per Day</label>
+            <input
+              id="lab-hours-input"
+              type="text"
+              pattern="[0-9]*"
+              css={inputStyles}
+              value={inputNumLabHours}
+              onChange={(ev) => {
+                if (ev.target.validity.valid) {
+                  setInputNumLabHours(Number(ev.target.value));
+                }
+              }}
+            />
 
-          <label htmlFor="surface-area-input">
-            Area of Interest Surface Area (ft<sup>2</sup>) (optional)
-          </label>
-          <input
-            id="surface-area-input"
-            type="text"
-            pattern="[0-9]*"
-            css={inputStyles}
-            value={inputSurfaceArea}
-            onChange={(ev) => {
-              if (ev.target.validity.valid) {
-                setInputSurfaceArea(Number(ev.target.value));
-              }
-            }}
-          />
-        </div>
+            <label htmlFor="surface-area-input">
+              Area of Interest Surface Area (ft<sup>2</sup>) (optional)
+            </label>
+            <input
+              id="surface-area-input"
+              type="text"
+              pattern="[0-9]*"
+              css={inputStyles}
+              value={inputSurfaceArea}
+              onChange={(ev) => {
+                if (ev.target.validity.valid) {
+                  setInputSurfaceArea(Number(ev.target.value));
+                }
+              }}
+            />
+          </div>
+        )}
 
         <div css={sectionContainer}>
           <div css={submitButtonContainerStyles}>
@@ -726,7 +746,7 @@ function Calculate() {
           </div>
         </div>
 
-        {trainingMode && (
+        {type === 'sampling' && trainingMode && (
           <Fragment>
             <div css={sectionContainer}>
               <p>

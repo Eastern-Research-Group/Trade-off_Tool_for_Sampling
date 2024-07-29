@@ -36,7 +36,11 @@ const panelContainer = css`
 `;
 
 // --- components (AddData) ---
-function AddData() {
+type Props = {
+  type: 'decon' | 'sampling';
+};
+
+function AddData({ type }: Props) {
   const { goToOptions } = useContext(NavigationContext);
 
   // filters
@@ -70,9 +74,9 @@ function AddData() {
           onChange={(ev) => setLocation(ev as LocationType)}
           options={addFromOptions}
         />
-        {location.value === 'search' && <SearchPanel />}
+        {location.value === 'search' && <SearchPanel type={type} />}
         {location.value === 'url' && <URLPanel />}
-        {location.value === 'file' && <FilePanel />}
+        {location.value === 'file' && <FilePanel type={type} />}
       </div>
       <NavigationButton goToPanel="locateSamples" />
     </div>

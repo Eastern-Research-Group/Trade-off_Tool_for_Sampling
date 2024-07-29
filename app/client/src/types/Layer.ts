@@ -6,11 +6,23 @@ export type LayerTypeName =
   | 'Reference Layer'
   | 'Area of Interest'
   | 'VSP'
+  | 'Sampling Mask'
+  | 'Decon Results'
+  | 'AOI Assessed'
+  | 'Image Analysis';
+
+export type LayerTypeLabel =
+  | 'Contamination Map'
+  | 'Decon Applications'
+  | 'Reference Layer'
+  | 'Area of Interest'
+  | 'VSP'
+  | 'Samples'
   | 'Sampling Mask';
 
 export type LayerSelectType = {
   value: LayerTypeName;
-  label: LayerTypeName;
+  label: LayerTypeLabel;
 };
 
 export type AddedFrom = 'file' | 'sketch' | 'tots';
@@ -72,4 +84,5 @@ export type UrlLayerType = {
 export type FieldInfos = {
   fieldName: string;
   label: string;
+  format?: 'number' | null;
 }[];

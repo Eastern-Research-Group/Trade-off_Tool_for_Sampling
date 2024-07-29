@@ -24,6 +24,7 @@ import ColorPicker from 'components/ColorPicker';
 import MessageBox from 'components/MessageBox';
 // contexts
 import { AuthenticationContext } from 'contexts/Authentication';
+import { CalculateContext } from 'contexts/Calculate';
 import { DialogContext } from 'contexts/Dialog';
 import { LookupFilesContext, useLookupFiles } from 'contexts/LookupFiles';
 import { SketchContext } from 'contexts/Sketch';
@@ -217,8 +218,13 @@ type UploadStatusType =
   | 'unknown-sample-type'
   | 'file-read-error';
 
-function FilePanel() {
+type Props = {
+  type: 'decon' | 'sampling';
+};
+
+function FilePanel({ type }: Props) {
   const { portal, userInfo } = useContext(AuthenticationContext);
+  const { setContaminationMap } = useContext(CalculateContext);
   const { setOptions } = useContext(DialogContext);
   const { sampleTypes } = useContext(LookupFilesContext);
   const { goToOptions, setGoToOptions, trainingMode } =
@@ -868,7 +874,10 @@ function FilePanel() {
 
     setFeaturesAdded(true);
 
-    const popupTemplate = getPopupTemplate(layerType.value, trainingMode);
+    const popupTemplate = getPopupTemplate(
+      layerType.value,
+      type === 'decon' ? true : trainingMode,
+    );
     const layerName = getLayerName(layers, file.file.name);
     setNewLayerName(layerName);
 
@@ -961,6 +970,12 @@ function FilePanel() {
           // add sample layer specific attributes
           const timestamp = getCurrentDateTime();
           let uuid = generateUUID();
+          if (layerType.value === 'Contamination Map' && type === 'decon') {
+            graphic.attributes['CONTAMREDUCED'] = false;
+            graphic.attributes['CONTAMINATED'] =
+              graphic.attributes['CONTAMVAL'] >= 100;
+            graphic.attributes['CONTAMHIT'] = false;
+          }
           if (layerType.value === 'Samples') {
             const { Notes, TYPE } = graphic.attributes;
             if (!sampleAttributes.hasOwnProperty(TYPE)) {
@@ -1127,6 +1142,10 @@ function FilePanel() {
         setSketchLayer(layerToAdd);
       }
 
+      if (layerType.value === 'Contamination Map' && type === 'decon') {
+        setContaminationMap(layerToAdd);
+      }
+
       // zoom to the layer unless it is a contamination map
       if (graphics.length > 0 && layerType.value !== 'Contamination Map') {
         if (selectedScenario && groupLayer && isSamplesOrVsp) {
@@ -1164,10 +1183,12 @@ function FilePanel() {
     mapView,
     sampleAttributes,
     selectedScenario,
+    setContaminationMap,
     setSelectedScenario,
     sceneView,
     setSketchLayer,
     trainingMode,
+    type,
   ]);
 
   // add features to the map as feature layers. This is only for reference layer
@@ -1371,11 +1392,13 @@ function FilePanel() {
           setError(null);
         }}
         options={
-          trainingMode
-            ? layerOptions
-            : layerOptions.filter(
-                (option) => option.value !== 'Contamination Map',
-              )
+          type === 'decon'
+            ? layerOptions.filter((option) => option.value !== 'Samples')
+            : trainingMode
+              ? layerOptions
+              : layerOptions.filter(
+                  (option) => option.value !== 'Contamination Map',
+                )
         }
       />
       {!layerType ? (
@@ -1412,7 +1435,9 @@ function FilePanel() {
         <Fragment>
           {layerType.value === 'VSP' && (
             <Fragment>
-              <label htmlFor="sample-type-select-input">Sample Type</label>
+              <label htmlFor="sample-type-select-input">
+                {type === 'decon' ? 'Decon Technology' : 'Sample Type'}
+              </label>
               <Select
                 id="sample-type-select"
                 inputId="sample-type-select-input"
@@ -1427,10 +1452,14 @@ function FilePanel() {
               {sampleType && (
                 <p css={sectionParagraph}>
                   Add an externally-generated Visual Sample Plan (VSP) layer to
-                  analyze and/or use in conjunction with targeted sampling. Once
-                  added, you can select this layer in the next step,{' '}
-                  <strong>Create Plan</strong>, and use it to create the
-                  Sampling Plan.
+                  analyze and/or use in conjunction with{' '}
+                  {type === 'decon'
+                    ? 'targeted decon applications'
+                    : 'targeted sampling'}
+                  . Once added, you can select this layer in the next step,{' '}
+                  <strong>Create {type === 'decon' ? 'Decon' : ''} Plan</strong>
+                  , and use it to create the{' '}
+                  {type === 'decon' ? 'Decon' : 'Sampling'} Plan.
                 </p>
               )}
             </Fragment>
@@ -1446,15 +1475,30 @@ function FilePanel() {
                 <Fragment>
                   {layerType.value === 'Contamination Map' && (
                     <Fragment>
-                      <p css={sectionParagraph}>
-                        Polygon layer containing the area of contamination as
-                        well as the concentration of the contamination. This
-                        layer can be compared against the sampling plan to see
-                        how well the sample locations are placed to predict the
-                        contamination. Once added, you can select this layer in
-                        the <strong>Calculate Resources</strong> step and then
-                        view the comparison against your sampling plan.
-                      </p>
+                      {type === 'sampling' && (
+                        <p css={sectionParagraph}>
+                          Polygon layer containing the area of contamination as
+                          well as the concentration of the contamination. This
+                          layer can be compared against the sampling plan to see
+                          how well the sample locations are placed to predict
+                          the contamination. Once added, you can select this
+                          layer in the <strong>Calculate Resources</strong> step
+                          and then view the comparison against your sampling
+                          plan.
+                        </p>
+                      )}
+                      {type === 'decon' && (
+                        <p css={sectionParagraph}>
+                          Polygon layer containing the area of contamination as
+                          well as the concentration of the contamination. This
+                          layer is used to assess the effectiveness of the
+                          decontamination technology applications that are
+                          included in a Decon Plan to remove or reduce the
+                          contamination. Once added, you can select this layer
+                          in the <strong>Calculate Resources</strong> step and
+                          then view the comparison against your decon plan.
+                        </p>
+                      )}
                       <div css={sectionParagraph}>
                         <MessageBox
                           severity="warning"
@@ -1480,14 +1524,25 @@ function FilePanel() {
                   )}
                   {layerType.value === 'Samples' && (
                     <Fragment>
-                      <p css={sectionParagraph}>
-                        Layer containing pre-existing samples to use as a
-                        starting point in the next step,{' '}
-                        <strong>Create Plan</strong>. The Sample layer must
-                        include the <strong>TYPE</strong> (Sponge, Micro Vac,
-                        Wet Vac, Robot, Aggressive Air, or Swab) attribute to be
-                        uploaded.
-                      </p>
+                      {type === 'sampling' && (
+                        <p css={sectionParagraph}>
+                          Layer containing pre-existing samples to use as a
+                          starting point in the next step,{' '}
+                          <strong>Create Plan</strong>. The Sample layer must
+                          include the <strong>TYPE</strong> (Sponge, Micro Vac,
+                          Wet Vac, Robot, Aggressive Air, or Swab) attribute to
+                          be uploaded.
+                        </p>
+                      )}
+                      {type === 'decon' && (
+                        <p css={sectionParagraph}>
+                          Layer containing pre-existing decon applications to
+                          use as a starting point in the next step,{' '}
+                          <strong>Create Plan</strong>. The Decon layer must
+                          include the <strong>TYPE</strong> (Chlorine Dioxide
+                          Gas, Methyl Bromide, etc.) attribute to be uploaded.
+                        </p>
+                      )}
                     </Fragment>
                   )}
                   {layerType.value === 'Reference Layer' && (
@@ -1509,7 +1564,8 @@ function FilePanel() {
                               format imagery using standard Esri desktop-based
                               tools (e.g., ArcGIS Pro) and then cache and share
                               the imagery as a tiled map service in ArcGIS
-                              Online for display within TOTS.
+                              Online for display within{' '}
+                              {type === 'decon' ? 'TODS' : 'TOTS'}.
                             </p>
                           }
                         />
@@ -1520,10 +1576,15 @@ function FilePanel() {
                     <Fragment>
                       <p css={sectionParagraph}>
                         A polygon file that bounds the extent of your project
-                        area. This layer is used to bound where samples are
-                        plotted when using the{' '}
-                        <strong>Add Multiple Random Samples</strong> feature in
-                        the next step, <strong>Create Plan</strong>.
+                        area.
+                        {type === 'sampling' && (
+                          <Fragment>
+                            This layer is used to bound where samples are
+                            plotted when using the{' '}
+                            <strong>Add Multiple Random Samples</strong> feature
+                            in the next step, <strong>Create Plan</strong>.
+                          </Fragment>
+                        )}
                       </p>
                     </Fragment>
                   )}

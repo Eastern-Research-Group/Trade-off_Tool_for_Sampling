@@ -7,6 +7,7 @@ import { DialogOverlay, DialogContent } from '@reach/dialog';
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import { EditCustomSampleTypesTable } from 'components/EditLayerMetaData';
 import InfoIcon from 'components/InfoIcon';
+import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 import { ReactTable, ReactTableEditable } from 'components/ReactTable';
 import Select from 'components/Select';
@@ -152,7 +153,11 @@ const nestedAccordionStyles = css`
 `;
 
 // --- components (ConfigureOutput) ---
-function ConfigureOutput() {
+type Props = {
+  type: 'decon' | 'sampling';
+};
+
+function ConfigureOutput({ type }: Props) {
   const { signedIn } = useContext(AuthenticationContext);
   const { trainingMode } = useContext(NavigationContext);
   const {
@@ -405,6 +410,23 @@ function ConfigureOutput() {
     webMapRefOptions,
     webSceneRefOptions,
   ]);
+
+  if (type === 'decon') {
+    return (
+      <div css={panelContainer}>
+        <div>
+          <div css={sectionContainer}>
+            <h2>Configure Output</h2>
+            <MessageBox
+              severity="warning"
+              title="Feature Not Yet Available"
+              message="This feature is not available yet."
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div css={panelContainer}>
@@ -877,7 +899,7 @@ const hiddenInput = css`
 `;
 
 // --- components (GettingStarted) ---
-type Props = {
+type EditAttributeProps = {
   isOpen: boolean;
   attributes: AttributesType[];
   onClose: Function;
@@ -891,7 +913,7 @@ function EditAttributePopup({
   onClose,
   onSave,
   selectedIndex,
-}: Props) {
+}: EditAttributeProps) {
   type DataType = {
     value: string;
     label: string;
