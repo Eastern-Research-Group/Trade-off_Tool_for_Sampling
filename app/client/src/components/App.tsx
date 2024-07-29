@@ -22,7 +22,7 @@ import { DialogContext } from 'contexts/Dialog';
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // utilities
-import { useSessionStorage } from 'utils/hooks';
+import { useSessionStorage } from 'utils/browserStorage';
 import { getSampleTableColumns } from 'utils/sketchUtils';
 // config
 import { navPanelWidth } from 'config/appConfig';
