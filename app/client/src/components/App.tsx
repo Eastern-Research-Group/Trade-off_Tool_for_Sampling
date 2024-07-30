@@ -207,7 +207,7 @@ function App({ type }: Props) {
     selectedScenario,
   } = useContext(SketchContext);
 
-  useSessionStorage();
+  useSessionStorage(type);
 
   const { height, width } = useWindowSize();
 

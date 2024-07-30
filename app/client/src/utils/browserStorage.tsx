@@ -44,17 +44,24 @@ import { createLayer } from 'utils/sketchUtils';
 // types
 import { GoToOptions } from 'types/Navigation';
 
+let appKey = 'tots';
+
+function getFullKey(key: string) {
+  return `${appKey}_${key}`;
+}
+
 // Saves data to session storage
 export async function writeToStorage(
   key: string,
   data: string | boolean | object,
   setOptions: Dispatch<SetStateAction<AlertDialogOptions | null>>,
 ) {
+  const fullKey = getFullKey(key);
   const itemSize = Math.round(JSON.stringify(data).length / 1024);
 
   try {
-    if (typeof data === 'string') sessionStorage.setItem(key, data);
-    else sessionStorage.setItem(key, JSON.stringify(data));
+    if (typeof data === 'string') sessionStorage.setItem(fullKey, data);
+    else sessionStorage.setItem(fullKey, JSON.stringify(data));
   } catch (e) {
     const storageSize = Math.round(
       JSON.stringify(sessionStorage).length / 1024,
@@ -70,13 +77,14 @@ export async function writeToStorage(
       description: message,
     });
 
-    window.logErrorToGa(`${key}:${message}`);
+    window.logErrorToGa(`${fullKey}:${message}`);
   }
 }
 
 // Reads data from session storage
 export function readFromStorage(key: string) {
-  return sessionStorage.getItem(key);
+  const fullKey = getFullKey(key);
+  return sessionStorage.getItem(fullKey);
 }
 
 // Finds the layer by the layer id
@@ -86,7 +94,18 @@ function getLayerById(layers: LayerType[], id: string) {
 }
 
 // Saves/Retrieves data to browser storage
-export function useSessionStorage() {
+export function useSessionStorage(type: 'decon' | 'sampling') {
+  appKey = type === 'decon' ? 'tods' : 'tots';
+
+  // remove stuff for other app if necessary
+  const removalKey = type === 'decon' ? 'tots' : 'tods';
+  Object.keys(sessionStorage)
+    .filter((key) => key.includes(`${removalKey}_`))
+    .forEach((key) => {
+      console.log('remove key ', key);
+      delete sessionStorage[key];
+    });
+
   useTrainingModeStorage();
   useGraphicColor();
   useEditsLayerStorage();
@@ -111,7 +130,7 @@ export function useSessionStorage() {
 
 // Uses browser storage for holding graphics color.
 function useGraphicColor() {
-  const key = 'tots_polygon_symbol';
+  const key = 'polygon_symbol';
 
   const { setOptions } = useContext(DialogContext);
   const { defaultSymbols, setDefaultSymbols, setSymbolsInitialized } =
@@ -148,7 +167,7 @@ function useGraphicColor() {
 
 // Uses browser storage for holding the training mode selection.
 function useTrainingModeStorage() {
-  const key = 'tots_training_mode';
+  const key = 'training_mode';
 
   const { setOptions } = useContext(DialogContext);
   const { trainingMode, setTrainingMode } = useContext(NavigationContext);
@@ -177,7 +196,7 @@ function useTrainingModeStorage() {
 
 // Uses browser storage for holding any editable layers.
 function useEditsLayerStorage() {
-  const key = 'tots_edits';
+  const key = 'edits';
   const { setOptions } = useContext(DialogContext);
   const {
     defaultSymbols,
@@ -285,7 +304,7 @@ function useEditsLayerStorage() {
 
 // Uses browser storage for holding the reference layers that have been added.
 function useReferenceLayerStorage() {
-  const key = 'tots_reference_layers';
+  const key = 'reference_layers';
   const { setOptions } = useContext(DialogContext);
   const { map, referenceLayers, setReferenceLayers } =
     useContext(SketchContext);
@@ -347,7 +366,7 @@ function useReferenceLayerStorage() {
 
 // Uses browser storage for holding the url layers that have been added.
 function useUrlLayerStorage() {
-  const key = 'tots_url_layers';
+  const key = 'url_layers';
   const { setOptions } = useContext(DialogContext);
   const { map, urlLayers, setUrlLayers } = useContext(SketchContext);
 
@@ -440,7 +459,7 @@ function useUrlLayerStorage() {
 
 // Uses browser storage for holding the portal layers that have been added.
 function usePortalLayerStorage() {
-  const key = 'tots_portal_layers';
+  const key = 'portal_layers';
   const { setOptions } = useContext(DialogContext);
   const { map, portalLayers, setPortalLayers } = useContext(SketchContext);
 
@@ -492,8 +511,8 @@ function usePortalLayerStorage() {
 
 // Uses browser storage for holding the map's view port extent.
 function useMapExtentStorage() {
-  const key2d = 'tots_map_2d_extent';
-  const key3d = 'tots_map_3d_extent';
+  const key2d = 'map_2d_extent';
+  const key3d = 'map_3d_extent';
 
   const { setOptions } = useContext(DialogContext);
   const { mapView, sceneView } = useContext(SketchContext);
@@ -558,7 +577,7 @@ function useMapExtentStorage() {
 
 // Uses browser storage for holding the map's view port extent.
 function useMapPositionStorage() {
-  const key = 'tots_map_scene_position';
+  const key = 'map_scene_position';
 
   const { setOptions } = useContext(DialogContext);
   const { mapView, sceneView } = useContext(SketchContext);
@@ -634,8 +653,8 @@ function useMapPositionStorage() {
 
 // Uses browser storage for holding the home widget's viewpoint.
 function useHomeWidgetStorage() {
-  const key2d = 'tots_home_2d_viewpoint';
-  const key3d = 'tots_home_3d_viewpoint';
+  const key2d = 'home_2d_viewpoint';
+  const key3d = 'home_3d_viewpoint';
 
   const { setOptions } = useContext(DialogContext);
   const { homeWidget } = useContext(SketchContext);
@@ -701,8 +720,8 @@ function useHomeWidgetStorage() {
 
 // Uses browser storage for holding the currently selected sample layer.
 function useSamplesLayerStorage() {
-  const key = 'tots_selected_sample_layer';
-  const key2 = 'tots_selected_scenario';
+  const key = 'selected_sample_layer';
+  const key2 = 'selected_scenario';
 
   const { setOptions } = useContext(DialogContext);
   const {
@@ -762,7 +781,7 @@ function useSamplesLayerStorage() {
 
 // Uses browser storage for holding the currently selected contamination map layer.
 function useContaminationMapStorage() {
-  const key = 'tots_selected_contamination_layer';
+  const key = 'selected_contamination_layer';
   const { setOptions } = useContext(DialogContext);
   const { layers } = useContext(SketchContext);
   const {
@@ -798,7 +817,7 @@ function useContaminationMapStorage() {
 
 // Uses browser storage for holding the currently selected sampling mask layer.
 function useGenerateRandomMaskStorage() {
-  const key = 'tots_generate_random_mask_layer';
+  const key = 'generate_random_mask_layer';
   const { setOptions } = useContext(DialogContext);
   const { layers } = useContext(SketchContext);
   const {
@@ -832,7 +851,7 @@ function useGenerateRandomMaskStorage() {
 
 // Uses browser storage for holding the current calculate settings.
 function useCalculateSettingsStorage() {
-  const key = 'tots_calculate_settings';
+  const key = 'calculate_settings';
   const { setOptions } = useContext(DialogContext);
   const {
     inputNumLabs,
@@ -924,7 +943,7 @@ function useCalculateSettingsStorage() {
 
 // Uses browser storage for holding the current tab and current tab's options.
 function useCurrentTabSettings() {
-  const key = 'tots_current_tab';
+  const key = 'current_tab';
 
   type PanelSettingsType = {
     goTo: PanelValueType | '';
@@ -983,7 +1002,7 @@ function useCurrentTabSettings() {
 
 // Uses browser storage for holding the currently selected basemap.
 function useBasemapStorage() {
-  const key = 'tots_selected_basemap_layer';
+  const key = 'selected_basemap_layer';
 
   const { setOptions } = useContext(DialogContext);
   const { basemapWidget } = useContext(SketchContext);
@@ -1063,7 +1082,7 @@ function useBasemapStorage() {
 
 // Uses browser storage for holding the url layers that have been added.
 function useUserDefinedSampleOptionsStorage() {
-  const key = 'tots_user_defined_sample_options';
+  const key = 'user_defined_sample_options';
   const { setOptions } = useContext(DialogContext);
   const { userDefinedOptions, setUserDefinedOptions } =
     useContext(SketchContext);
@@ -1096,7 +1115,7 @@ function useUserDefinedSampleOptionsStorage() {
 
 // Uses browser storage for holding the url layers that have been added.
 function useUserDefinedSampleAttributesStorage() {
-  const key = 'tots_user_defined_sample_attributes';
+  const key = 'user_defined_sample_attributes';
   const { setOptions } = useContext(DialogContext);
   const { sampleTypes } = useContext(LookupFilesContext);
   const {
@@ -1164,7 +1183,7 @@ function useUserDefinedSampleAttributesStorage() {
 
 // Uses browser storage for holding the size and expand status of the bottom table.
 function useTablePanelStorage() {
-  const key = 'tots_table_panel';
+  const key = 'table_panel';
 
   const { setOptions } = useContext(DialogContext);
   const {
@@ -1216,10 +1235,10 @@ type SampleMetaDataType = {
 
 // Uses browser storage for holding the currently selected sample layer.
 function usePublishStorage() {
-  const key = 'tots_sample_type_selections';
-  const key2 = 'tots_sample_table_metadata';
-  const key3 = 'tots_publish_samples_mode';
-  const key4 = 'tots_output_settings';
+  const key = 'sample_type_selections';
+  const key2 = 'sample_table_metadata';
+  const key3 = 'publish_samples_mode';
+  const key4 = 'output_settings';
 
   const { setOptions } = useContext(DialogContext);
   const {
@@ -1383,7 +1402,7 @@ function usePublishStorage() {
 
 // Uses browser storage for holding the display mode (points or polygons) selection.
 function useDisplayModeStorage() {
-  const key = 'tots_display_mode';
+  const key = 'display_mode';
 
   const { setOptions } = useContext(DialogContext);
   const {
