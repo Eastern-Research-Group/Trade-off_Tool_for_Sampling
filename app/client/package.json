@@ -37,6 +37,7 @@
     "@reach/window-size": "0.18.0",
     "exceljs": "4.4.0",
     "file-saver": "2.0.5",
+    "localforage": "1.10.0",
     "react": "18.2.0",
     "react-app-polyfill": "3.0.0",
     "react-color": "2.19.3",
