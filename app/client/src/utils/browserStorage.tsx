@@ -7,7 +7,6 @@ import {
   useEffect,
   useState,
 } from 'react';
-import localforage from 'localforage';
 import CSVLayer from '@arcgis/core/layers/CSVLayer';
 import Extent from '@arcgis/core/geometry/Extent';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
@@ -45,24 +44,20 @@ import { createLayer } from 'utils/sketchUtils';
 // types
 import { GoToOptions } from 'types/Navigation';
 
-let browserStorage: LocalForage | null = null;
-
 // Saves data to session storage
 export async function writeToStorage(
   key: string,
   data: string | boolean | object,
   setOptions: Dispatch<SetStateAction<AlertDialogOptions | null>>,
 ) {
-  if (!browserStorage) return;
-
   const itemSize = Math.round(JSON.stringify(data).length / 1024);
 
   try {
-    const dataStr = JSON.stringify(data);
-    browserStorage.setItem(key, dataStr);
+    if (typeof data === 'string') sessionStorage.setItem(key, data);
+    else sessionStorage.setItem(key, JSON.stringify(data));
   } catch (e) {
     const storageSize = Math.round(
-      JSON.stringify(browserStorage).length / 1024,
+      JSON.stringify(sessionStorage).length / 1024,
     );
     const message = `New storage size would be ${
       storageSize + itemSize
@@ -80,10 +75,8 @@ export async function writeToStorage(
 }
 
 // Reads data from session storage
-export async function readFromStorage(key: string): Promise<any> {
-  if (!browserStorage) return;
-  const dataStr = (await browserStorage.getItem(key)) as string;
-  return JSON.parse(dataStr);
+export function readFromStorage(key: string) {
+  return sessionStorage.getItem(key);
 }
 
 // Finds the layer by the layer id
@@ -94,10 +87,6 @@ function getLayerById(layers: LayerType[], id: string) {
 
 // Saves/Retrieves data to browser storage
 export function useSessionStorage() {
-  browserStorage = localforage.createInstance({
-    name: 'totsDb',
-  });
-
   useTrainingModeStorage();
   useGraphicColor();
   useEditsLayerStorage();
@@ -135,13 +124,18 @@ function useGraphicColor() {
 
     setLocalPolygonInitialized(true);
 
-    readFromStorage(key).then((polygon) => {
-      if (!polygon) return;
-
-      // validate the polygon
-      setDefaultSymbols(polygon);
+    const polygonStr = readFromStorage(key);
+    if (!polygonStr) {
+      // if no key in browser storage, leave as default and say initialized
       setSymbolsInitialized(true);
-    });
+      return;
+    }
+
+    const polygon = JSON.parse(polygonStr);
+
+    // validate the polygon
+    setDefaultSymbols(polygon);
+    setSymbolsInitialized(true);
   }, [localPolygonInitialized, setDefaultSymbols, setSymbolsInitialized]);
 
   useEffect(() => {
@@ -167,9 +161,11 @@ function useTrainingModeStorage() {
 
     setLocalTrainingModeInitialized(true);
 
-    readFromStorage(key).then((trainingMode) => {
-      setTrainingMode(trainingMode);
-    });
+    const trainingModeStr = readFromStorage(key);
+    if (!trainingModeStr) return;
+
+    const trainingMode = JSON.parse(trainingModeStr);
+    setTrainingMode(trainingMode);
   }, [localTrainingModeInitialized, setTrainingMode]);
 
   useEffect(() => {
@@ -197,81 +193,77 @@ function useEditsLayerStorage() {
   const getPopupTemplate = useDynamicPopup();
 
   // Retreives edit data from browser storage when the app loads
-  const [localEditsInitialized, setLocalEditsInitialized] = useState(false);
   useEffect(() => {
     if (
       !map ||
       !setEdits ||
       !setLayers ||
       !symbolsInitialized ||
-      layersInitialized ||
-      localEditsInitialized
+      layersInitialized
     )
       return;
 
-    setLocalEditsInitialized(true);
+    const editsStr = readFromStorage(key);
+    if (!editsStr) {
+      setLayersInitialized(true);
+      return;
+    }
 
-    readFromStorage(key).then((edits: EditsType) => {
-      if (!edits) {
-        setLayersInitialized(true);
-        return;
+    // change the edit type to add and set the edit context state
+    const edits: EditsType = JSON.parse(editsStr);
+    edits.edits.forEach((edit) => {
+      edit.editType = 'add';
+    });
+    setEdits(edits);
+
+    const newLayers: LayerType[] = [];
+    const graphicsLayers: (__esri.GraphicsLayer | __esri.GroupLayer)[] = [];
+    edits.edits.forEach((editsLayer) => {
+      // add layer edits directly
+      if (editsLayer.type === 'layer') {
+        graphicsLayers.push(
+          ...createLayer({
+            defaultSymbols,
+            editsLayer,
+            getPopupTemplate,
+            newLayers,
+          }),
+        );
       }
+      // scenarios need to be added to a group layer first
+      if (editsLayer.type === 'scenario') {
+        const groupLayer = new GroupLayer({
+          id: editsLayer.layerId,
+          title: editsLayer.scenarioName,
+          visible: editsLayer.visible,
+          listMode: editsLayer.listMode,
+        });
 
-      // change the edit type to add and set the edit context state
-      edits.edits.forEach((edit) => {
-        edit.editType = 'add';
-      });
-      setEdits(edits);
-
-      const newLayers: LayerType[] = [];
-      const graphicsLayers: (__esri.GraphicsLayer | __esri.GroupLayer)[] = [];
-      edits.edits.forEach((editsLayer) => {
-        // add layer edits directly
-        if (editsLayer.type === 'layer') {
-          graphicsLayers.push(
+        // create the layers and add them to the group layer
+        const scenarioLayers: __esri.GraphicsLayer[] = [];
+        editsLayer.layers.forEach((layer) => {
+          scenarioLayers.push(
             ...createLayer({
               defaultSymbols,
-              editsLayer,
+              editsLayer: layer,
               getPopupTemplate,
               newLayers,
+              parentLayer: groupLayer,
             }),
           );
-        }
-        // scenarios need to be added to a group layer first
-        if (editsLayer.type === 'scenario') {
-          const groupLayer = new GroupLayer({
-            id: editsLayer.layerId,
-            title: editsLayer.scenarioName,
-            visible: editsLayer.visible,
-            listMode: editsLayer.listMode,
-          });
+        });
+        groupLayer.addMany(scenarioLayers);
 
-          // create the layers and add them to the group layer
-          const scenarioLayers: __esri.GraphicsLayer[] = [];
-          editsLayer.layers.forEach((layer) => {
-            scenarioLayers.push(
-              ...createLayer({
-                defaultSymbols,
-                editsLayer: layer,
-                getPopupTemplate,
-                newLayers,
-                parentLayer: groupLayer,
-              }),
-            );
-          });
-          groupLayer.addMany(scenarioLayers);
-
-          graphicsLayers.push(groupLayer);
-        }
-      });
-
-      if (newLayers.length > 0) {
-        setLayers([...layers, ...newLayers]);
-        map.addMany(graphicsLayers);
+        graphicsLayers.push(groupLayer);
       }
-
-      setLayersInitialized(true);
     });
+
+    if (newLayers.length > 0) {
+      setLayers([...layers, ...newLayers]);
+      map.addMany(graphicsLayers);
+    }
+
+    setLayersInitialized(true);
   }, [
     defaultSymbols,
     setEdits,
@@ -279,7 +271,6 @@ function useEditsLayerStorage() {
     setLayers,
     layers,
     layersInitialized,
-    localEditsInitialized,
     setLayersInitialized,
     map,
     symbolsInitialized,
@@ -288,7 +279,7 @@ function useEditsLayerStorage() {
   // Saves the edits to browser storage everytime they change
   useEffect(() => {
     if (!layersInitialized) return;
-    writeToStorage(key, JSON.stringify(edits), setOptions);
+    writeToStorage(key, edits, setOptions);
   }, [edits, layersInitialized, setOptions]);
 }
 
@@ -306,44 +297,45 @@ function useReferenceLayerStorage() {
     if (!map || !setReferenceLayers || localReferenceLayerInitialized) return;
 
     setLocalReferenceLayerInitialized(true);
-    readFromStorage(key).then((referenceLayers) => {
-      if (!referenceLayers) return;
+    const referenceLayersStr = readFromStorage(key);
+    if (!referenceLayersStr) return;
 
-      // add the portal layers to the map
-      const layersToAdd: __esri.FeatureLayer[] = [];
-      referenceLayers.forEach((layer: any) => {
-        const fields: __esri.Field[] = [];
-        layer.fields.forEach((field: __esri.Field) => {
-          fields.push(Field.fromJSON(field));
-        });
+    const referenceLayers = JSON.parse(referenceLayersStr);
 
-        const source: any[] = [];
-        layer.source.forEach((feature: any) => {
-          source.push({
-            attributes: feature.attributes,
-            geometry: geometryJsonUtils.fromJSON(feature.geometry),
-            popupTemplate: feature.popupTemplate,
-            symbol: feature.symbol,
-          });
-        });
-
-        const layerProps = {
-          fields,
-          source,
-          id: layer.layerId,
-          objectIdField: layer.objectIdField,
-          outFields: layer.outFields,
-          title: layer.title,
-          renderer: rendererJsonUtils.fromJSON(layer.renderer),
-          popupTemplate: layer.popupTemplate,
-        };
-
-        layersToAdd.push(new FeatureLayer(layerProps));
+    // add the portal layers to the map
+    const layersToAdd: __esri.FeatureLayer[] = [];
+    referenceLayers.forEach((layer: any) => {
+      const fields: __esri.Field[] = [];
+      layer.fields.forEach((field: __esri.Field) => {
+        fields.push(Field.fromJSON(field));
       });
 
-      map.addMany(layersToAdd);
-      setReferenceLayers(referenceLayers);
+      const source: any[] = [];
+      layer.source.forEach((feature: any) => {
+        source.push({
+          attributes: feature.attributes,
+          geometry: geometryJsonUtils.fromJSON(feature.geometry),
+          popupTemplate: feature.popupTemplate,
+          symbol: feature.symbol,
+        });
+      });
+
+      const layerProps = {
+        fields,
+        source,
+        id: layer.layerId,
+        objectIdField: layer.objectIdField,
+        outFields: layer.outFields,
+        title: layer.title,
+        renderer: rendererJsonUtils.fromJSON(layer.renderer),
+        popupTemplate: layer.popupTemplate,
+      };
+
+      layersToAdd.push(new FeatureLayer(layerProps));
     });
+
+    map.addMany(layersToAdd);
+    setReferenceLayers(referenceLayers);
   }, [localReferenceLayerInitialized, map, setReferenceLayers]);
 
   // Saves the reference layers to browser storage everytime they change
@@ -366,29 +358,29 @@ function useUrlLayerStorage() {
     if (!map || !setUrlLayers || localUrlLayerInitialized) return;
 
     setLocalUrlLayerInitialized(true);
-    readFromStorage(key).then((urlLayers: UrlLayerType[]) => {
-      if (!urlLayers) return;
+    const urlLayersStr = readFromStorage(key);
+    if (!urlLayersStr) return;
 
-      const newUrlLayers: UrlLayerType[] = [];
+    const urlLayers: UrlLayerType[] = JSON.parse(urlLayersStr);
+    const newUrlLayers: UrlLayerType[] = [];
 
-      // add the portal layers to the map
-      urlLayers.forEach((urlLayer) => {
-        const type = urlLayer.type;
+    // add the portal layers to the map
+    urlLayers.forEach((urlLayer) => {
+      const type = urlLayer.type;
 
-        if (
-          type === 'ArcGIS' ||
-          type === 'WMS' ||
-          // type === 'WFS' ||
-          type === 'KML' ||
-          type === 'GeoRSS' ||
-          type === 'CSV'
-        ) {
-          newUrlLayers.push(urlLayer);
-        }
-      });
-
-      setUrlLayers(newUrlLayers);
+      if (
+        type === 'ArcGIS' ||
+        type === 'WMS' ||
+        // type === 'WFS' ||
+        type === 'KML' ||
+        type === 'GeoRSS' ||
+        type === 'CSV'
+      ) {
+        newUrlLayers.push(urlLayer);
+      }
     });
+
+    setUrlLayers(newUrlLayers);
   }, [localUrlLayerInitialized, map, setUrlLayers]);
 
   // Saves the url layers to browser storage everytime they change
@@ -459,9 +451,11 @@ function usePortalLayerStorage() {
     if (!map || !setPortalLayers || localPortalLayerInitialized) return;
 
     setLocalPortalLayerInitialized(true);
-    readFromStorage(key).then((portalLayers: PortalLayerType[]) => {
-      if (portalLayers) setPortalLayers(portalLayers);
-    });
+    const portalLayersStr = readFromStorage(key);
+    if (!portalLayersStr) return;
+
+    const portalLayers: PortalLayerType[] = JSON.parse(portalLayersStr);
+    setPortalLayers(portalLayers);
   }, [localPortalLayerInitialized, map, portalLayers, setPortalLayers]);
 
   // Saves the portal layers to browser storage everytime they change
@@ -512,13 +506,19 @@ function useMapExtentStorage() {
 
     setLocalMapPositionInitialized(true);
 
-    readFromStorage(key2d).then((extent) => {
-      if (extent) mapView.extent = Extent.fromJSON(extent);
-    });
+    const position2dStr = readFromStorage(key2d);
+    if (position2dStr) {
+      const extent = JSON.parse(position2dStr) as any;
+      mapView.extent = Extent.fromJSON(extent);
+    }
 
-    readFromStorage(key3d).then((extent) => {
-      if (extent) sceneView.extent = Extent.fromJSON(extent);
-    });
+    const position3dStr = readFromStorage(key3d);
+    if (position3dStr) {
+      const extent = JSON.parse(position3dStr) as any;
+      sceneView.extent = Extent.fromJSON(extent);
+    }
+
+    setLocalMapPositionInitialized(true);
   }, [mapView, sceneView, localMapPositionInitialized]);
 
   // Saves the map position and zoom level to browser storage whenever it changes
@@ -571,17 +571,19 @@ function useMapPositionStorage() {
 
     setLocalMapPositionInitialized(true);
 
-    readFromStorage(key).then((camera) => {
-      if (!camera) return;
+    const positionStr = readFromStorage(key);
+    if (!positionStr) return;
 
-      if (!sceneView.camera) sceneView.camera = {} as any;
-      sceneView.camera.fov = camera.fov;
-      sceneView.camera.heading = camera.heading;
-      sceneView.camera.position = geometryJsonUtils.fromJSON(
-        camera.position,
-      ) as __esri.Point;
-      sceneView.camera.tilt = camera.tilt;
-    });
+    const camera = JSON.parse(positionStr) as any;
+    if (!sceneView.camera) sceneView.camera = {} as any;
+    sceneView.camera.fov = camera.fov;
+    sceneView.camera.heading = camera.heading;
+    sceneView.camera.position = geometryJsonUtils.fromJSON(
+      camera.position,
+    ) as __esri.Point;
+    sceneView.camera.tilt = camera.tilt;
+
+    setLocalMapPositionInitialized(true);
   }, [sceneView, localMapPositionInitialized]);
 
   // Saves the map position and zoom level to browser storage whenever it changes
@@ -646,12 +648,17 @@ function useHomeWidgetStorage() {
 
     setLocalHomeWidgetInitialized(true);
 
-    readFromStorage(key2d).then((viewpoint) => {
-      if (viewpoint) homeWidget['2d'].viewpoint = Viewpoint.fromJSON(viewpoint);
-    });
-    readFromStorage(key3d).then((viewpoint) => {
-      if (viewpoint) homeWidget['3d'].viewpoint = Viewpoint.fromJSON(viewpoint);
-    });
+    const viewpoint2dStr = readFromStorage(key2d);
+    const viewpoint3dStr = readFromStorage(key3d);
+
+    if (viewpoint2dStr) {
+      const viewpoint2d = JSON.parse(viewpoint2dStr) as any;
+      homeWidget['2d'].viewpoint = Viewpoint.fromJSON(viewpoint2d);
+    }
+    if (viewpoint3dStr) {
+      const viewpoint3d = JSON.parse(viewpoint3dStr) as any;
+      homeWidget['3d'].viewpoint = Viewpoint.fromJSON(viewpoint3d);
+    }
   }, [homeWidget, localHomeWidgetInitialized]);
 
   // Saves the home widget viewpoint to browser storage whenever it changes
@@ -717,17 +724,17 @@ function useSamplesLayerStorage() {
     setLocalSampleLayerInitialized(true);
 
     // set the selected scenario first
-    readFromStorage(key2).then((scenarioId) => {
-      const scenario = edits.edits.find(
-        (item) => item.type === 'scenario' && item.layerId === scenarioId,
-      );
-      if (scenario) setSelectedScenario(scenario as ScenarioEditsType);
-    });
+    const scenarioId = readFromStorage(key2);
+    const scenario = edits.edits.find(
+      (item) => item.type === 'scenario' && item.layerId === scenarioId,
+    );
+    if (scenario) setSelectedScenario(scenario as ScenarioEditsType);
 
     // then set the layer
-    readFromStorage(key).then((layerId) => {
-      if (layerId) setSketchLayer(getLayerById(layers, layerId));
-    });
+    const layerId = readFromStorage(key);
+    if (!layerId) return;
+
+    setSketchLayer(getLayerById(layers, layerId));
   }, [
     edits,
     layers,
@@ -774,9 +781,10 @@ function useContaminationMapStorage() {
 
     setLocalContaminationLayerInitialized(true);
 
-    readFromStorage(key).then((layerId) => {
-      if (layerId) setContaminationMap(getLayerById(layers, layerId));
-    });
+    const layerId = readFromStorage(key);
+    if (!layerId) return;
+
+    setContaminationMap(getLayerById(layers, layerId));
   }, [layers, setContaminationMap, localContaminationLayerInitialized]);
 
   // Saves the selected contamination map to browser storage whenever it changes
@@ -807,9 +815,10 @@ function useGenerateRandomMaskStorage() {
 
     setLocalAoiLayerInitialized(true);
 
-    readFromStorage(key).then((layerId) => {
-      if (layerId) setAoiSketchLayer(getLayerById(layers, layerId));
-    });
+    const layerId = readFromStorage(key);
+    if (!layerId) return;
+
+    setAoiSketchLayer(getLayerById(layers, layerId));
   }, [layers, setAoiSketchLayer, localAoiLayerInitialized]);
 
   // Saves the selected sampling mask to browser storage whenever it changes
@@ -859,20 +868,21 @@ function useCalculateSettingsStorage() {
   const [settingsInitialized, setSettingsInitialized] = useState(false);
   useEffect(() => {
     if (settingsInitialized) return;
+    const settingsStr = readFromStorage(key);
+
     setSettingsInitialized(true);
 
-    readFromStorage(key).then((settings: CalculateSettingsType) => {
-      if (!settings) return;
+    if (!settingsStr) return;
+    const settings: CalculateSettingsType = JSON.parse(settingsStr);
 
-      setInputNumLabs(settings.numLabs);
-      setInputNumLabHours(settings.numLabHours);
-      setInputNumSamplingHours(settings.numSamplingHours);
-      setInputNumSamplingPersonnel(settings.numSamplingPersonnel);
-      setInputNumSamplingShifts(settings.numSamplingShifts);
-      setInputNumSamplingTeams(settings.numSamplingTeams);
-      setInputSamplingLaborCost(settings.samplingLaborCost);
-      setInputSurfaceArea(settings.surfaceArea);
-    });
+    setInputNumLabs(settings.numLabs);
+    setInputNumLabHours(settings.numLabHours);
+    setInputNumSamplingHours(settings.numSamplingHours);
+    setInputNumSamplingPersonnel(settings.numSamplingPersonnel);
+    setInputNumSamplingShifts(settings.numSamplingShifts);
+    setInputNumSamplingTeams(settings.numSamplingTeams);
+    setInputSamplingLaborCost(settings.samplingLaborCost);
+    setInputSurfaceArea(settings.surfaceArea);
   }, [
     setInputNumLabs,
     setInputNumLabHours,
@@ -939,31 +949,35 @@ function useCurrentTabSettings() {
 
     setLocalTabDataInitialized(true);
 
-    readFromStorage(key).then((data: PanelSettingsType) => {
-      if (!data) return;
+    const dataStr = readFromStorage(key);
+    if (!dataStr) return;
 
-      setGoTo(data.goTo);
-      setGoToOptions(data.goToOptions);
-    });
+    const data: PanelSettingsType = JSON.parse(dataStr);
+
+    setGoTo(data.goTo);
+    setGoToOptions(data.goToOptions);
   }, [setGoTo, setGoToOptions, localTabDataInitialized]);
 
   // Saves the current tab and optiosn to browser storage whenever it changes
   useEffect(() => {
     if (!localTabDataInitialized) return;
 
+    let data: PanelSettingsType = { goTo: '', goToOptions: null };
+
     // get the current value from storage, if it exists
-    readFromStorage(key).then((data) => {
-      if (!data) data = { goTo: '', goToOptions: null };
+    const dataStr = readFromStorage(key);
+    if (dataStr) {
+      data = JSON.parse(dataStr);
+    }
 
-      // Update the data values only if they have values.
-      // This is because other components clear these once they have been applied
-      // but the browser storage needs to hold onto it.
-      if (goTo) data['goTo'] = goTo;
-      if (goToOptions) data['goToOptions'] = goToOptions;
+    // Update the data values only if they have values.
+    // This is because other components clear these once they have been applied
+    // but the browser storage needs to hold onto it.
+    if (goTo) data['goTo'] = goTo;
+    if (goToOptions) data['goToOptions'] = goToOptions;
 
-      // save to storage
-      writeToStorage(key, data, setOptions);
-    });
+    // save to storage
+    writeToStorage(key, data, setOptions);
   }, [goTo, goToOptions, localTabDataInitialized, setOptions]);
 }
 
@@ -986,33 +1000,34 @@ function useBasemapStorage() {
   useEffect(() => {
     if (!basemapWidget || watchHandler || localBasemapInitialized) return;
 
-    setLocalBasemapInitialized(true);
+    const portalId = readFromStorage(key);
+    if (!portalId) {
+      // early return since this field isn't in storage
+      setLocalBasemapInitialized(true);
+      return;
+    }
 
-    readFromStorage(key).then((portalId) => {
-      if (!portalId) return;
+    // create the watch handler for finding the selected basemap
+    const newWatchHandle = basemapWidget.watch(
+      'source.basemaps.length',
+      (newValue) => {
+        // wait for the basemaps to be populated
+        if (newValue === 0) return;
 
-      // create the watch handler for finding the selected basemap
-      const newWatchHandle = basemapWidget.watch(
-        'source.basemaps.length',
-        (newValue) => {
-          // wait for the basemaps to be populated
-          if (newValue === 0) return;
+        setLocalBasemapInitialized(true);
 
-          setLocalBasemapInitialized(true);
+        // Search for the basemap with the matching portal id
+        let selectedBasemap: __esri.Basemap | null = null;
+        basemapWidget.source.basemaps.forEach((basemap) => {
+          if (basemap.portalItem.id === portalId) selectedBasemap = basemap;
+        });
 
-          // Search for the basemap with the matching portal id
-          let selectedBasemap: __esri.Basemap | null = null;
-          basemapWidget.source.basemaps.forEach((basemap) => {
-            if (basemap.portalItem.id === portalId) selectedBasemap = basemap;
-          });
+        // Set the activeBasemap to the basemap that was found
+        if (selectedBasemap) basemapWidget.activeBasemap = selectedBasemap;
+      },
+    );
 
-          // Set the activeBasemap to the basemap that was found
-          if (selectedBasemap) basemapWidget.activeBasemap = selectedBasemap;
-        },
-      );
-
-      setWatchHandler(newWatchHandle);
-    });
+    setWatchHandler(newWatchHandle);
   }, [basemapWidget, watchHandler, localBasemapInitialized]);
 
   // destroys the watch handler after initialization completes
@@ -1062,9 +1077,14 @@ function useUserDefinedSampleOptionsStorage() {
     if (!setUserDefinedOptions || localUserDefinedSamplesInitialized) return;
 
     setLocalUserDefinedSamplesInitialized(true);
-    readFromStorage(key).then((userDefinedSamples: SampleSelectType[]) => {
-      if (userDefinedSamples) setUserDefinedOptions(userDefinedSamples);
-    });
+    const userDefinedSamplesStr = readFromStorage(key);
+    if (!userDefinedSamplesStr) return;
+
+    const userDefinedSamples: SampleSelectType[] = JSON.parse(
+      userDefinedSamplesStr,
+    );
+
+    setUserDefinedOptions(userDefinedSamples);
   }, [localUserDefinedSamplesInitialized, setUserDefinedOptions]);
 
   // Saves the url layers to browser storage everytime they change
@@ -1094,12 +1114,16 @@ function useUserDefinedSampleAttributesStorage() {
     if (!setUserDefinedAttributes || localUserDefinedSamplesInitialized) return;
 
     setLocalUserDefinedSamplesInitialized(true);
-    readFromStorage(key).then(
-      (userDefinedAttributesObj: UserDefinedAttributes) => {
-        if (userDefinedAttributesObj)
-          setUserDefinedAttributes(userDefinedAttributesObj);
-      },
+    const userDefinedAttributesStr = readFromStorage(key);
+    if (!userDefinedAttributesStr) return;
+
+    // parse the storage value
+    const userDefinedAttributesObj: UserDefinedAttributes = JSON.parse(
+      userDefinedAttributesStr,
     );
+
+    // set the state
+    setUserDefinedAttributes(userDefinedAttributesObj);
   }, [
     localUserDefinedSamplesInitialized,
     setUserDefinedAttributes,
@@ -1157,18 +1181,19 @@ function useTablePanelStorage() {
 
     setTablePanelInitialized(true);
 
-    readFromStorage(key).then((tablePanel) => {
-      if (!tablePanel) {
-        // if no key in browser storage, leave as default and say initialized
-        setTablePanelExpanded(false);
-        setTablePanelHeight(200);
-        return;
-      }
+    const tablePanelStr = readFromStorage(key);
+    if (!tablePanelStr) {
+      // if no key in browser storage, leave as default and say initialized
+      setTablePanelExpanded(false);
+      setTablePanelHeight(200);
+      return;
+    }
 
-      // save table panel info
-      setTablePanelExpanded(tablePanel.expanded);
-      setTablePanelHeight(tablePanel.height);
-    });
+    const tablePanel = JSON.parse(tablePanelStr);
+
+    // save table panel info
+    setTablePanelExpanded(tablePanel.expanded);
+    setTablePanelHeight(tablePanel.height);
   }, [tablePanelInitialized, setTablePanelExpanded, setTablePanelHeight]);
 
   useEffect(() => {
@@ -1243,31 +1268,32 @@ function usePublishStorage() {
     setLocalSampleTypeInitialized(true);
 
     // set the selected scenario first
-    readFromStorage(key).then((sampleSelections) => {
-      if (sampleSelections)
-        setSampleTypeSelections(sampleSelections as SampleTypeOptions);
-    });
+    const sampleSelectionsStr = readFromStorage(key);
+    if (sampleSelectionsStr) {
+      const sampleSelections = JSON.parse(sampleSelectionsStr);
+      setSampleTypeSelections(sampleSelections as SampleTypeOptions);
+    }
 
     // set the selected scenario first
-    readFromStorage(key2).then((sampleMetaData: SampleMetaDataType) => {
-      if (!sampleMetaData) return;
-
+    const sampleMetaDataStr = readFromStorage(key2);
+    if (sampleMetaDataStr) {
+      const sampleMetaData: SampleMetaDataType = JSON.parse(sampleMetaDataStr);
       setPublishSampleTableMetaData(sampleMetaData.publishSampleTableMetaData);
       setSampleTableDescription(sampleMetaData.sampleTableDescription);
       setSampleTableName(sampleMetaData.sampleTableName);
       setSelectedService(sampleMetaData.selectedService);
-    });
+    }
 
     // set the selected scenario first
-    readFromStorage(key3).then((publishSamplesMode) => {
-      if (publishSamplesMode !== null)
-        setPublishSamplesMode(publishSamplesMode as any);
-    });
+    const publishSamplesMode = readFromStorage(key3);
+    if (publishSamplesMode !== null) {
+      setPublishSamplesMode(publishSamplesMode as any);
+    }
 
     // set the publish output settings
-    readFromStorage(key4).then((outputSettings: OutputSettingsType) => {
-      if (!outputSettings) return;
-
+    const outputSettingsStr = readFromStorage(key4);
+    if (outputSettingsStr !== null) {
+      const outputSettings: OutputSettingsType = JSON.parse(outputSettingsStr);
       setIncludePartialPlan(outputSettings.includePartialPlan);
       setIncludePartialPlanWebMap(outputSettings.includePartialPlanWebMap);
       setIncludePartialPlanWebScene(outputSettings.includePartialPlanWebScene);
@@ -1278,7 +1304,7 @@ function usePublishStorage() {
       setWebSceneReferenceLayerSelections(
         outputSettings.webSceneReferenceLayerSelections,
       );
-    });
+    }
   }, [
     localSampleTypeInitialized,
     setIncludeCustomSampleTypes,
@@ -1381,22 +1407,23 @@ function useDisplayModeStorage() {
 
     setLocalDisplayModeInitialized(true);
 
-    readFromStorage(key).then((displayMode) => {
-      if (!displayMode) {
-        setDisplayDimensions('2d');
-        setDisplayGeometryType('points');
-        setTerrain3dUseElevation(true);
-        setTerrain3dVisible(true);
-        setViewUnderground3d(false);
-        return;
-      }
+    const displayModeStr = readFromStorage(key);
+    if (!displayModeStr) {
+      setDisplayDimensions('2d');
+      setDisplayGeometryType('points');
+      setTerrain3dUseElevation(true);
+      setTerrain3dVisible(true);
+      setViewUnderground3d(false);
+      return;
+    }
 
-      setDisplayDimensions(displayMode.dimensions);
-      setDisplayGeometryType(displayMode.geometryType);
-      setTerrain3dUseElevation(displayMode.terrain3dUseElevation);
-      setTerrain3dVisible(displayMode.terrain3dVisible);
-      setViewUnderground3d(displayMode.viewUnderground3d);
-    });
+    const displayMode = JSON.parse(displayModeStr);
+
+    setDisplayDimensions(displayMode.dimensions);
+    setDisplayGeometryType(displayMode.geometryType);
+    setTerrain3dUseElevation(displayMode.terrain3dUseElevation);
+    setTerrain3dVisible(displayMode.terrain3dVisible);
+    setViewUnderground3d(displayMode.viewUnderground3d);
   }, [
     localDisplayModeInitialized,
     setDisplayDimensions,
