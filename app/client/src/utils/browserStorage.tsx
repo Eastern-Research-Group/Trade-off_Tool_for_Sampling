@@ -101,10 +101,7 @@ export function useSessionStorage(type: 'decon' | 'sampling') {
   const removalKey = type === 'decon' ? 'tots' : 'tods';
   Object.keys(sessionStorage)
     .filter((key) => key.includes(`${removalKey}_`))
-    .forEach((key) => {
-      console.log('remove key ', key);
-      delete sessionStorage[key];
-    });
+    .forEach((key) => delete sessionStorage[key]);
 
   useTrainingModeStorage();
   useGraphicColor();
