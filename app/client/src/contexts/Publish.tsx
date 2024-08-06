@@ -147,6 +147,97 @@ export const defaultPlanAttributes: AttributesType[] = [
   },
 ];
 
+export const defaultDeconPlanAttributes: AttributesType[] = [
+  {
+    id: 1,
+    name: 'PERMANENT_IDENTIFIER',
+    label: 'PERMANENT_IDENTIFIER',
+    dataType: 'uuid',
+    length: null,
+    domain: null,
+  },
+  {
+    id: 2,
+    name: 'ID',
+    label: 'ID',
+    dataType: 'string',
+    length: null,
+    domain: null,
+  },
+  {
+    id: 3,
+    name: 'DECISIONUNITUUID',
+    label: 'Layer UUID (DECISIONUNITUUID)',
+    dataType: 'string',
+    length: null,
+    domain: null,
+  },
+  {
+    id: 4,
+    name: 'DECISIONUNIT',
+    label: 'Layer (DECISIONUNIT)',
+    dataType: 'string',
+    length: null,
+    domain: null,
+  },
+  {
+    id: 5,
+    name: 'TYPE',
+    label: 'Decon Technology',
+    dataType: 'string',
+    length: null,
+    domain: null,
+  },
+  {
+    id: 6,
+    name: 'TYPEUUID',
+    label: 'Decon Technology UUID',
+    dataType: 'string',
+    length: null,
+    domain: null,
+  },
+  {
+    id: 7,
+    name: 'Notes',
+    label: 'Notes',
+    dataType: 'string',
+    length: null,
+    domain: null,
+  },
+  {
+    id: 8,
+    name: 'AC',
+    label: 'Equivalent TODS Decon Applications',
+    dataType: 'integer',
+    length: null,
+    domain: null,
+  },
+  {
+    id: 9,
+    name: 'CREATEDDATE',
+    label: 'Created Date',
+    dataType: 'date',
+    length: null,
+    domain: null,
+  },
+  {
+    id: 10,
+    name: 'UPDATEDDATE',
+    label: 'Updated Date',
+    dataType: 'date',
+    length: null,
+    domain: null,
+  },
+  {
+    id: 11,
+    name: 'USERNAME',
+    label: 'Username',
+    dataType: 'string',
+    length: 255,
+    domain: null,
+  },
+];
+
 export const trainingModePlanAttributes: AttributesType[] = [
   {
     id: 12,

@@ -31,6 +31,8 @@ import {
 } from 'utils/sketchUtils';
 // types
 import { ScenarioEditsType, LayerEditsType } from 'types/Edits';
+import { LayerType } from 'types/Layer';
+import { AppType } from 'types/Navigation';
 // styles
 import { colors } from 'styles';
 import {
@@ -38,7 +40,6 @@ import {
   PolygonSymbol,
   SampleSelectType,
 } from 'config/sampleAttributes';
-import { LayerType } from 'types/Layer';
 
 const toolBarHeight = '40px';
 
@@ -429,10 +430,10 @@ const navIconStyles = css`
 
 // --- components (Toolbar) ---
 type Props = {
-  type: 'decon' | 'sampling';
+  appType: AppType;
 };
 
-function Toolbar({ type }: Props) {
+function Toolbar({ appType }: Props) {
   const { setContaminationMap } = useContext(CalculateContext);
   const { trainingMode, setTrainingMode } = useContext(NavigationContext);
   const {
@@ -925,7 +926,7 @@ function Toolbar({ type }: Props) {
     <div css={toolBarStyles} data-testid="tots-toolbar">
       <h1 css={toolBarTitle}>
         Trade-off Tool for{' '}
-        {type === 'decon'
+        {appType === 'decon'
           ? 'Decontamination Strategies (TODS)'
           : 'Sampling (TOTS)'}{' '}
         {trainingMode && ' - TRAINING MODE'}
@@ -951,7 +952,7 @@ function Toolbar({ type }: Props) {
                 <InfoIcon
                   cssStyles={infoIconStyles}
                   id="3d-view-switch"
-                  tooltip={`Switches between “2D” and “3D” viewing modes. <br/>If you plan to use the “3D” feature, it is best to plot<br/>your ${type === 'decon' ? 'decon applications' : 'samples'} in “3D” mode. ${type === 'decon' ? 'Decon applications' : 'Samples'} plotted in “2D”<br/>mode can be obscured by 3D geometry, such as 3D <br/>reference layers, when viewing in “3D” mode.`}
+                  tooltip={`Switches between “2D” and “3D” viewing modes. <br/>If you plan to use the “3D” feature, it is best to plot<br/>your ${appType === 'decon' ? 'decon applications' : 'samples'} in “3D” mode. ${appType === 'decon' ? 'Decon applications' : 'Samples'} plotted in “2D”<br/>mode can be obscured by 3D geometry, such as 3D <br/>reference layers, when viewing in “3D” mode.`}
                   place="bottom"
                 />
               </legend>
@@ -986,7 +987,7 @@ function Toolbar({ type }: Props) {
                 <InfoIcon
                   cssStyles={infoIconStyles}
                   id="poly-points-switch"
-                  tooltip={`The "Polygons" view displays ${type === 'decon' ? 'decon applications' : 'samples'} on the map as their<br/>exact size which do not scale as you zoom out on the map.<br/>The "Points" view displays the ${type === 'decon' ? 'decon applications' : 'samples'} as icons that scale<br/>as you zoom in/out and may be useful for viewing many<br/>${type === 'decon' ? 'decon applications' : 'samples'} over a large geographic area. ${type === 'sampling' ? 'The "Hybrid" view<br/>displays point based samples as points and polygon based<br/>samples as polygons. The "Hybrid" view may be useful for<br/>viewing in "3D".' : ''}`}
+                  tooltip={`The "Polygons" view displays ${appType === 'decon' ? 'decon applications' : 'samples'} on the map as their<br/>exact size which do not scale as you zoom out on the map.<br/>The "Points" view displays the ${appType === 'decon' ? 'decon applications' : 'samples'} as icons that scale<br/>as you zoom in/out and may be useful for viewing many<br/>${appType === 'decon' ? 'decon applications' : 'samples'} over a large geographic area. ${appType === 'sampling' ? 'The "Hybrid" view<br/>displays point based samples as points and polygon based<br/>samples as polygons. The "Hybrid" view may be useful for<br/>viewing in "3D".' : ''}`}
                   place="bottom"
                 />
               </legend>
@@ -1012,7 +1013,7 @@ function Toolbar({ type }: Props) {
               <label htmlFor="shape-polygons">Polygons</label>
               <br />
 
-              {type === 'sampling' && (
+              {appType === 'sampling' && (
                 <label>
                   <input
                     type="radio"
@@ -1039,7 +1040,7 @@ function Toolbar({ type }: Props) {
                   />
                 </label>
 
-                {type === 'sampling' && (
+                {appType === 'sampling' && (
                   <label css={switchLabelContainer}>
                     <span css={switchLabel}>3D Use Terrain Elevation</span>
                     <Switch
@@ -1065,7 +1066,7 @@ function Toolbar({ type }: Props) {
               </Fragment>
             )}
 
-            {type === 'sampling' && (
+            {appType === 'sampling' && (
               <label css={switchLabelContainer}>
                 <span css={switchLabel}>Training Mode</span>
                 <Switch

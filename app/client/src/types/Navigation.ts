@@ -1,6 +1,8 @@
 // types
 import { LayerTypeName } from 'types/Layer';
 
+export type AppType = 'decon' | 'sampling';
+
 type Options = {
   from?: 'file';
   layerType?: LayerTypeName;

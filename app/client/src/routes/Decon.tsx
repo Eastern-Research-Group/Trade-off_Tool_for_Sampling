@@ -11,5 +11,5 @@ export default function Tods() {
     setTerrain3dVisible(false);
   }, [setDisplayGeometryType, setTerrain3dVisible]);
 
-  return <App type="decon" />;
+  return <App appType="decon" />;
 }

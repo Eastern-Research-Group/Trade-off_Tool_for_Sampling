@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useState,
 } from 'react';
+import { createRoot } from 'react-dom/client';
 import { css } from '@emotion/react';
 import Select from 'components/Select';
 //components
@@ -15,12 +16,14 @@ import MessageBox from 'components/MessageBox';
 import { EditsType } from 'types/Edits';
 import { FieldInfos, LayerType } from 'types/Layer';
 import { LayerProps } from 'types/Misc';
+import { AppType } from 'types/Navigation';
 // utils
 import {
   getSketchableLayers,
   getZValue,
   setGeometryZValues,
 } from 'utils/sketchUtils';
+import { parseSmallFloat } from 'utils/utils';
 // styles
 import { colors, linkButtonStyles } from 'styles';
 
@@ -74,13 +77,16 @@ const saveButtonStyles = (status: SaveStatusType) => css`
 
 // --- components (FeatureTool) ---
 type Props = {
+  appType: AppType;
   features: any[];
   edits: EditsType;
   setEdits: Dispatch<SetStateAction<EditsType>>;
   layers: LayerType[];
   fieldInfos: FieldInfos;
   layerProps: LayerProps;
+  includeControls?: boolean;
   onClick: (
+    appType: AppType,
     edits: EditsType,
     setEdits: Dispatch<SetStateAction<EditsType>>,
     layers: LayerType[],
@@ -91,12 +97,14 @@ type Props = {
 };
 
 function MapPopup({
+  appType,
   features,
   edits,
   setEdits,
   layers,
   fieldInfos,
   layerProps,
+  includeControls = true,
   onClick,
 }: Props) {
   // initializes the note and graphicNote whenever the graphic selection changes
@@ -272,7 +280,7 @@ function MapPopup({
           <table className="esri-widget__table">
             <tbody>
               {fieldInfos.map((fieldInfo, index) => {
-                if (!showMore && index > 4) return null;
+                if (includeControls && !showMore && index > 4) return null;
 
                 return (
                   <tr key={index}>
@@ -287,16 +295,21 @@ function MapPopup({
               })}
             </tbody>
           </table>
-          <button css={linkButtonStyles} onClick={() => setShowMore(!showMore)}>
-            <i
-              css={iconStyles}
-              className={`fas fa-arrow-${showMore ? 'up' : 'down'}`}
-            />
-            Show {showMore ? 'Less' : 'More'}
-          </button>
+          {includeControls && (
+            <button
+              css={linkButtonStyles}
+              onClick={() => setShowMore(!showMore)}
+            >
+              <i
+                css={iconStyles}
+                className={`fas fa-arrow-${showMore ? 'up' : 'down'}`}
+              />
+              Show {showMore ? 'Less' : 'More'}
+            </button>
+          )}
         </div>
       )}
-      {activeLayer?.title !== 'Sketched Sampling Mask' && (
+      {includeControls && activeLayer?.title !== 'Sketched Sampling Mask' && (
         <Fragment>
           <div css={inputContainerStyles}>
             <label htmlFor="layer-change-select-input">Layer:</label>
@@ -335,7 +348,7 @@ function MapPopup({
               maxLength={notesCharacterLimit}
               placeholder={
                 !allNotesEmpty && !allNotesSame && fieldInfos.length === 0
-                  ? 'Samples have different notes...'
+                  ? `${appType === 'decon' ? 'Decon applications' : 'Samples'} have different notes...`
                   : ''
               }
               onChange={(ev) => {
@@ -355,7 +368,7 @@ function MapPopup({
                 <MessageBox
                   severity="warning"
                   title="Notes will be overwritten"
-                  message="Some selected samples already have notes. Saving will overwrite those existing notes."
+                  message={`Some selected ${appType === 'decon' ? 'decon applications' : 'samples'} already have notes. Saving will overwrite those existing notes.`}
                 />
               </div>
             )}
@@ -394,6 +407,7 @@ function MapPopup({
                       .replace('-hybrid', '')
                   ) {
                     onClick(
+                      appType,
                       edits,
                       setEdits,
                       layers,
@@ -403,6 +417,7 @@ function MapPopup({
                     );
                   } else if (graphicElevation !== elevation) {
                     onClick(
+                      appType,
                       edits,
                       setEdits,
                       layers,
@@ -411,7 +426,7 @@ function MapPopup({
                       selectedLayer,
                     );
                   } else {
-                    onClick(edits, setEdits, layers, features, 'Save');
+                    onClick(appType, edits, setEdits, layers, features, 'Save');
                   }
 
                   setSaveStatus('success');
@@ -433,6 +448,244 @@ function MapPopup({
       )}
     </div>
   );
+}
+
+type MapPopupSimpleProps = {
+  feature: any;
+  fieldInfos: FieldInfos;
+};
+
+function MapPopupSimple({ feature, fieldInfos }: MapPopupSimpleProps) {
+  const [showMore, setShowMore] = useState(false);
+
+  return (
+    <div css={containerStyles}>
+      {fieldInfos.length > 0 && (
+        <div css={inputContainerStyles}>
+          <table className="esri-widget__table">
+            <tbody>
+              {fieldInfos.map((fieldInfo, index) => {
+                if (!showMore && index > 4) return null;
+
+                const fieldValue =
+                  feature.graphic.attributes[fieldInfo.fieldName];
+                const value =
+                  fieldInfo.format === 'number'
+                    ? (parseSmallFloat(fieldValue, 2) ?? '').toLocaleString()
+                    : fieldValue;
+                return (
+                  <tr key={index}>
+                    <th className="esri-feature__field-header">
+                      {fieldInfo.label}
+                    </th>
+                    <td className="esri-feature__field-data">
+                      {typeof value !== 'boolean'
+                        ? value
+                        : value
+                          ? 'Yes'
+                          : 'No'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <button css={linkButtonStyles} onClick={() => setShowMore(!showMore)}>
+            <i
+              css={iconStyles}
+              className={`fas fa-arrow-${showMore ? 'up' : 'down'}`}
+            />
+            Show {showMore ? 'Less' : 'More'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function contaminationMapPopup(feature: any) {
+  const content = (
+    <MapPopupSimple
+      feature={feature}
+      fieldInfos={[
+        { label: 'Contamination Type', fieldName: 'CONTAMTYPE' },
+        { label: 'Contamination Unit', fieldName: 'CONTAMUNIT' },
+        { label: 'Contamination Value', fieldName: 'CONTAMVAL' },
+        // { label: 'Contamination Reduced', fieldName: 'CONTAMREDUCED' },
+        // { label: 'Contaminated', fieldName: 'CONTAMINATED' },
+        // { label: 'Has Decontamination been Applied', fieldName: 'CONTAMHIT' },
+        {
+          fieldName: 'EXTWALLS',
+          label: 'Contamination Value Exterior Walls',
+        },
+        {
+          fieldName: 'INTWALLS',
+          label: 'Contamination Value Interior Walls',
+        },
+        {
+          fieldName: 'FLOORS',
+          label: 'Contamination Value Floors',
+        },
+        {
+          fieldName: 'ROOFS',
+          label: 'Contamination Value Roofs',
+        },
+        { label: 'Area', fieldName: 'AREA' },
+        { label: 'FID', fieldName: 'FID' },
+        { label: 'ID', fieldName: 'Id' },
+      ]}
+    />
+  );
+
+  // wrap the content for esri
+  const contentContainer = document.createElement('div');
+  createRoot(contentContainer).render(content);
+
+  return contentContainer;
+}
+
+export function buildingMapPopup(feature: any) {
+  feature.graphic.attributes.layerName =
+    feature.graphic.layer.parent?.title ?? feature.graphic.layer.title;
+  const fieldInfos: any[] = [
+    { label: 'Layer', fieldName: 'layerName' },
+    { label: 'Building ID', fieldName: 'bid' },
+    { label: 'Building Type', fieldName: 'bldgtype' },
+    { label: 'Census Block FIPS', fieldName: 'cbfips' },
+    { label: 'ID', fieldName: 'fd_id' },
+    { label: 'Flood Zone (2021)', fieldName: 'firmzone' },
+    { label: 'Foundation Height (feet)', fieldName: 'found_ht' },
+    { label: 'Foundation Type', fieldName: 'found_type' },
+    { label: 'Footprint ID', fieldName: 'ftprntid' },
+    { label: 'Footprint Source', fieldName: 'ftprntsrc' },
+    {
+      label: 'Ground Elevation (feet)',
+      fieldName: 'ground_elv',
+      format: 'number',
+    },
+    {
+      label: 'Ground Elevation (meters)',
+      fieldName: 'ground_elv_m',
+      format: 'number',
+    },
+    { label: 'Median Year Built', fieldName: 'med_yr_blt' },
+    { label: 'Number of Stories', fieldName: 'num_story' },
+    { label: 'Percent Over 65 Disabled', fieldName: 'o65disable' },
+    { label: 'Occupancy Type', fieldName: 'occtype' },
+    { label: 'Population Night Over 65', fieldName: 'pop2amo65' },
+    { label: 'Population Night Under 65', fieldName: 'pop2amu65' },
+    { label: 'Population Day Over 65', fieldName: 'pop2pmo65' },
+    { label: 'Population Day Under 65', fieldName: 'pop2pmu65' },
+    { label: 'Source', fieldName: 'source' },
+    // { label: 'Square Feet', fieldName: 'sqft' },
+    { label: 'Structure Damage Category', fieldName: 'st_damcat' },
+    { label: 'Students', fieldName: 'students' },
+    { label: 'Percent Under 65 Disabled', fieldName: 'u65disable' },
+    { label: 'Value of Contents', fieldName: 'val_cont' },
+    { label: 'Value of Structure', fieldName: 'val_struct' },
+    { label: 'Value of Vehicles', fieldName: 'val_vehic' },
+    { label: 'x', fieldName: 'x' },
+    { label: 'y', fieldName: 'y' },
+    {
+      label: 'Footprint Area (square meters)',
+      fieldName: 'footprintSqM',
+      format: 'number',
+    },
+    {
+      label: 'Floors Area (square meters)',
+      fieldName: 'floorsSqM',
+      format: 'number',
+    },
+    {
+      label: 'Total Area (square meters)',
+      fieldName: 'totalSqM',
+      format: 'number',
+    },
+    {
+      label: 'Ext Walls Area (square meters)',
+      fieldName: 'extWallsSqM',
+      format: 'number',
+    },
+    {
+      label: 'Int Walls Area (square meters)',
+      fieldName: 'intWallsSqM',
+      format: 'number',
+    },
+    {
+      label: 'Roof Area (square meters)',
+      fieldName: 'roofSqM',
+      format: 'number',
+    },
+    {
+      label: 'Footprint Area (square feet)',
+      fieldName: 'footprintSqFt',
+      format: 'number',
+    },
+    {
+      label: 'Floors Area (square feet)',
+      fieldName: 'floorsSqFt',
+      format: 'number',
+    },
+    {
+      label: 'Total Area (square feet)',
+      fieldName: 'totalSqFt',
+      format: 'number',
+    },
+    {
+      label: 'Ext Walls Area (square feet)',
+      fieldName: 'extWallsSqFt',
+      format: 'number',
+    },
+    {
+      label: 'Int Walls Area (square feet)',
+      fieldName: 'intWallsSqFt',
+      format: 'number',
+    },
+    {
+      label: 'Roof Area (square feet)',
+      fieldName: 'roofSqFt',
+      format: 'number',
+    },
+  ];
+
+  if (window.location.search.includes('devMode=true')) {
+    fieldInfos.push({ label: 'Contamination Type', fieldName: 'CONTAMTYPE' });
+    fieldInfos.push({
+      label: 'Activity (Initial)',
+      fieldName: 'CONTAMVALINITIAL',
+    });
+    fieldInfos.push({ label: 'Activity (Final)', fieldName: 'CONTAMVAL' });
+    fieldInfos.push({ label: 'Unit of Measure', fieldName: 'CONTAMUNIT' });
+  }
+
+  const content = <MapPopupSimple feature={feature} fieldInfos={fieldInfos} />;
+
+  // wrap the content for esri
+  const contentContainer = document.createElement('div');
+  createRoot(contentContainer).render(content);
+
+  return contentContainer;
+}
+
+export function imageryAnalysisMapPopup(feature: any) {
+  feature.graphic.attributes.layerName =
+    feature.graphic.layer.parent?.title ?? feature.graphic.layer.title;
+  const content = (
+    <MapPopupSimple
+      feature={feature}
+      fieldInfos={[
+        { label: 'Layer', fieldName: 'layerName' },
+        { label: 'Category', fieldName: 'category' },
+        { label: 'Grid Code', fieldName: 'gridcode' },
+      ]}
+    />
+  );
+
+  // wrap the content for esri
+  const contentContainer = document.createElement('div');
+  createRoot(contentContainer).render(content);
+
+  return contentContainer;
 }
 
 export default MapPopup;

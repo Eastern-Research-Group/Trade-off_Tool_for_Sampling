@@ -131,6 +131,8 @@ type SketchType = {
   setUserDefinedAttributes: Dispatch<SetStateAction<UserDefinedAttributes>>;
   sampleAttributes: any[];
   setSampleAttributes: Dispatch<SetStateAction<any[]>>;
+  sampleAttributesDecon: any[];
+  setSampleAttributesDecon: Dispatch<SetStateAction<any[]>>;
   allSampleOptions: SampleSelectType[];
   setAllSampleOptions: Dispatch<SetStateAction<SampleSelectType[]>>;
   displayGeometryType: 'hybrid' | 'points' | 'polygons';
@@ -219,6 +221,8 @@ export const SketchContext = createContext<SketchType>({
   setUserDefinedAttributes: () => {},
   sampleAttributes: [],
   setSampleAttributes: () => {},
+  sampleAttributesDecon: [],
+  setSampleAttributesDecon: () => {},
   allSampleOptions: [],
   setAllSampleOptions: () => {},
   displayGeometryType: 'points',
@@ -254,18 +258,21 @@ export function SketchProvider({ children }: Props) {
     },
   };
 
+  const isDecon = window.location.pathname === '/decon';
+
   const initialDefaultSymbols = {
     symbols: {
       'Area of Interest': defaultSymbol,
-      'Contamination Map': defaultSymbol,
-      // 'Contamination Map': {
-      //   type: 'simple-fill',
-      //   color: [4, 53, 255, 0.2],
-      //   outline: {
-      //     color: [50, 50, 50],
-      //     width: 2,
-      //   },
-      // } as PolygonSymbol,
+      'Contamination Map': isDecon
+        ? ({
+            type: 'simple-fill',
+            color: [4, 53, 255, 0.2],
+            outline: {
+              color: [50, 50, 50],
+              width: 2,
+            },
+          } as PolygonSymbol)
+        : defaultSymbol,
       Samples: defaultSymbol,
     },
     editCount: 0,
@@ -330,6 +337,7 @@ export function SketchProvider({ children }: Props) {
   const [userDefinedAttributes, setUserDefinedAttributes] =
     useState<UserDefinedAttributes>({ editCount: 0, sampleTypes: {} });
   const [sampleAttributes, setSampleAttributes] = useState<any[]>([]);
+  const [sampleAttributesDecon, setSampleAttributesDecon] = useState<any[]>([]);
   const [allSampleOptions, setAllSampleOptions] = useState<SampleSelectType[]>(
     [],
   );
@@ -616,6 +624,8 @@ export function SketchProvider({ children }: Props) {
         setUserDefinedAttributes,
         sampleAttributes,
         setSampleAttributes,
+        sampleAttributesDecon,
+        setSampleAttributesDecon,
         allSampleOptions,
         setAllSampleOptions,
         displayGeometryType,

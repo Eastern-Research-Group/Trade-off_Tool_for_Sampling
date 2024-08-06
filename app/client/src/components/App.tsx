@@ -26,6 +26,8 @@ import { useSessionStorage } from 'utils/browserStorage';
 import { getSampleTableColumns } from 'utils/sketchUtils';
 // config
 import { navPanelWidth } from 'config/appConfig';
+// types
+import { AppType } from 'types/Navigation';
 
 const resizerHeight = 10;
 const esrifooterheight = 16;
@@ -182,10 +184,10 @@ const zoomButtonStyles = css`
 
 // --- components (NavBar) ---
 type Props = {
-  type: 'decon' | 'sampling';
+  appType: AppType;
 };
 
-function App({ type }: Props) {
+function App({ appType }: Props) {
   const { calculateResults } = useContext(CalculateContext);
   const {
     currentPanel,
@@ -207,7 +209,7 @@ function App({ type }: Props) {
     selectedScenario,
   } = useContext(SketchContext);
 
-  useSessionStorage(type);
+  useSessionStorage(appType);
 
   const { height, width } = useWindowSize();
 
@@ -338,16 +340,16 @@ function App({ type }: Props) {
 
   return (
     <div className="tots" ref={totsRef}>
-      {type === 'sampling' && <SplashScreen />}
+      {appType === 'sampling' && <SplashScreen />}
       <div css={appStyles(offset)}>
         <div css={containerStyles}>
           <div ref={toolbarRef}>
             {window.location.search.includes('devMode=true') && (
               <TestingToolbar />
             )}
-            <Toolbar type={type} />
+            <Toolbar appType={appType} />
           </div>
-          <NavBar height={contentHeight - toolbarHeight} type={type} />
+          <NavBar height={contentHeight - toolbarHeight} appType={appType} />
           <div
             css={mapPanelStyles(
               toolbarHeight + (tablePanelExpanded ? tablePanelHeight : 0),
@@ -357,6 +359,7 @@ function App({ type }: Props) {
             <div id="tots-map-div" css={mapHeightStyles}>
               {toolbarHeight ? (
                 <Map
+                  appType={appType}
                   height={
                     contentHeight -
                     (tablePanelExpanded ? tablePanelHeight : 0) -
@@ -489,7 +492,7 @@ function App({ type }: Props) {
                 >
                   <div css={tablePanelHeaderStyles}>
                     <span css={sampleTableHeaderStyles}>
-                      {type === 'decon' ? 'Buildings' : 'Samples'} (Count:{' '}
+                      {appType === 'decon' ? 'Buildings' : 'Samples'} (Count:{' '}
                       {sampleData.length})
                     </span>
                   </div>
@@ -498,7 +501,7 @@ function App({ type }: Props) {
                       id="tots-samples-table"
                       data={sampleData}
                       idColumn={
-                        type === 'decon' ? 'bid' : 'PERMANENT_IDENTIFIER'
+                        appType === 'decon' ? 'bid' : 'PERMANENT_IDENTIFIER'
                       }
                       striped={true}
                       height={tablePanelHeight - resizerHeight - 30}
@@ -543,7 +546,7 @@ function App({ type }: Props) {
                         });
                       }}
                       sortBy={
-                        type === 'decon'
+                        appType === 'decon'
                           ? [
                               {
                                 id: 'layerName',
@@ -607,7 +610,7 @@ function App({ type }: Props) {
                                     if (displayDimensions === '2d' && mapView) {
                                       mapView.goTo(row.original.graphic);
                                       mapView.zoom =
-                                        type === 'decon'
+                                        appType === 'decon'
                                           ? 16
                                           : mapView.zoom - 1;
                                     } else if (
@@ -629,7 +632,7 @@ function App({ type }: Props) {
                           ...getSampleTableColumns({
                             tableWidth,
                             includeContaminationFields:
-                              type === 'decon' ? false : trainingMode,
+                              appType === 'decon' ? false : trainingMode,
                           }),
                         ];
                       }}

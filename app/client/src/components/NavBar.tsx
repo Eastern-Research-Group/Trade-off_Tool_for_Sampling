@@ -24,13 +24,16 @@ import GettingStarted from 'components/GettingStarted';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 import { NavigationContext } from 'contexts/Navigation';
+// utils
+import { useCalculateDeconPlan, useCalculatePlan } from 'utils/hooks';
 // config
 import { navPanelWidth } from 'config/appConfig';
 import { deconPanels, PanelType, samplingPanels } from 'config/navigation';
+// types
+import { AppType } from 'types/Navigation';
 // styles
 import '@reach/dialog/styles.css';
 import { colors } from 'styles';
-import { useCalculatePlan } from 'utils/hooks';
 
 const panelWidth = '325px';
 const resultsPanelWidth = '500px';
@@ -314,11 +317,11 @@ const resultsCollapsePanelButton = css`
 
 // --- components (NavBar) ---
 type Props = {
+  appType: AppType;
   height: number;
-  type: 'decon' | 'sampling';
 };
 
-function NavBar({ height, type }: Props) {
+function NavBar({ appType, height }: Props) {
   const { calculateResults } = useContext(CalculateContext);
   const {
     currentPanel,
@@ -335,7 +338,7 @@ function NavBar({ height, type }: Props) {
     setResultsExpanded,
   } = useContext(NavigationContext);
 
-  const [panels] = useState(type === 'decon' ? deconPanels : samplingPanels);
+  const [panels] = useState(appType === 'decon' ? deconPanels : samplingPanels);
 
   const toggleExpand = useCallback(
     (panel: PanelType, panelIndex: number) => {
@@ -404,7 +407,9 @@ function NavBar({ height, type }: Props) {
   }
 
   // run calculations to update the running tally
-  useCalculatePlan();
+  const useCalcPlan =
+    appType === 'decon' ? useCalculateDeconPlan : useCalculatePlan;
+  useCalcPlan();
 
   const pannelRef = useRef<HTMLDivElement>(null);
 
@@ -503,7 +508,7 @@ function NavBar({ height, type }: Props) {
             </div>
           )}
 
-          {type === 'sampling' && (
+          {appType === 'sampling' && (
             <button
               onClick={(ev) => setGettingStartedOpen(!gettingStartedOpen)}
               css={navButtonStyles(false)}
@@ -530,15 +535,21 @@ function NavBar({ height, type }: Props) {
               id="tots-panel-scroll-container"
               css={floatPanelScrollContainerStyles}
             >
-              {currentPanel.value === 'search' && <Search />}
-              {currentPanel.value === 'addData' && <AddData type={type} />}
+              {currentPanel.value === 'search' && <Search appType={appType} />}
+              {currentPanel.value === 'addData' && (
+                <AddData appType={appType} />
+              )}
               {currentPanel.value === 'locateSamples' && <LocateSamples />}
               {currentPanel.value === 'decon' && <CreateDeconPlan />}
-              {currentPanel.value === 'calculate' && <Calculate type={type} />}
-              {currentPanel.value === 'configureOutput' && (
-                <ConfigureOutput type={type} />
+              {currentPanel.value === 'calculate' && (
+                <Calculate appType={appType} />
               )}
-              {currentPanel.value === 'publish' && <Publish type={type} />}
+              {currentPanel.value === 'configureOutput' && (
+                <ConfigureOutput appType={appType} />
+              )}
+              {currentPanel.value === 'publish' && (
+                <Publish appType={appType} />
+              )}
             </div>
           </div>
         </div>

@@ -31,6 +31,7 @@ import { SketchContext } from 'contexts/Sketch';
 // types
 import { EditsType, ScenarioEditsType, ServiceMetaDataType } from 'types/Edits';
 import { LayerType, PortalLayerType, UrlLayerType } from 'types/Layer';
+import { AppType, GoToOptions } from 'types/Navigation';
 import { SampleTypeOptions } from 'types/Publish';
 // config
 import { PanelValueType } from 'config/navigation';
@@ -41,8 +42,6 @@ import {
 // utils
 import { useDynamicPopup } from 'utils/hooks';
 import { createLayer } from 'utils/sketchUtils';
-// types
-import { GoToOptions } from 'types/Navigation';
 
 let appKey = 'tots';
 
@@ -94,18 +93,21 @@ function getLayerById(layers: LayerType[], id: string) {
 }
 
 // Saves/Retrieves data to browser storage
-export function useSessionStorage(type: 'decon' | 'sampling') {
-  appKey = type === 'decon' ? 'tods' : 'tots';
+export function useSessionStorage(appType: AppType) {
+  appKey = appType === 'decon' ? 'tods' : 'tots';
 
   // remove stuff for other app if necessary
-  const removalKey = type === 'decon' ? 'tots' : 'tods';
+  const removalKey = appType === 'decon' ? 'tots' : 'tods';
   Object.keys(sessionStorage)
     .filter((key) => key.includes(`${removalKey}_`))
     .forEach((key) => delete sessionStorage[key]);
 
-  useTrainingModeStorage();
+  const useAppSpecific =
+    appType === 'decon' ? useSessionStorageDecon : useSessionStorageSampling;
+
+  useAppSpecific();
   useGraphicColor();
-  useEditsLayerStorage();
+  useEditsLayerStorage(appType);
   useReferenceLayerStorage();
   useUrlLayerStorage();
   usePortalLayerStorage();
@@ -123,6 +125,14 @@ export function useSessionStorage(type: 'decon' | 'sampling') {
   useTablePanelStorage();
   usePublishStorage();
   useDisplayModeStorage();
+}
+
+function useSessionStorageDecon() {
+  usePlanSettingsStorage();
+}
+
+function useSessionStorageSampling() {
+  useTrainingModeStorage();
 }
 
 // Uses browser storage for holding graphics color.
@@ -192,7 +202,7 @@ function useTrainingModeStorage() {
 }
 
 // Uses browser storage for holding any editable layers.
-function useEditsLayerStorage() {
+function useEditsLayerStorage(appType: AppType) {
   const key = 'edits';
   const { setOptions } = useContext(DialogContext);
   const {
@@ -206,7 +216,7 @@ function useEditsLayerStorage() {
     map,
     symbolsInitialized,
   } = useContext(SketchContext);
-  const getPopupTemplate = useDynamicPopup();
+  const getPopupTemplate = useDynamicPopup(appType);
 
   // Retreives edit data from browser storage when the app loads
   useEffect(() => {
@@ -1117,6 +1127,7 @@ function useUserDefinedSampleAttributesStorage() {
   const { sampleTypes } = useContext(LookupFilesContext);
   const {
     setSampleAttributes,
+    setSampleAttributesDecon,
     userDefinedAttributes,
     setUserDefinedAttributes,
   } = useContext(SketchContext);
@@ -1145,6 +1156,7 @@ function useUserDefinedSampleAttributesStorage() {
     setUserDefinedAttributes,
     sampleTypes,
     setSampleAttributes,
+    setSampleAttributesDecon,
   ]);
 
   // add the user defined attributes to the global attributes
@@ -1169,6 +1181,30 @@ function useUserDefinedSampleAttributesStorage() {
     userDefinedAttributes,
     sampleTypes,
     setSampleAttributes,
+  ]);
+
+  // add the user defined attributes to the global attributes
+  useEffect(() => {
+    let newDeconAttributes: any = {};
+
+    if (sampleTypes) newDeconAttributes = { ...sampleTypes.deconAttributes };
+
+    Object.keys(userDefinedAttributes.sampleTypes).forEach((key) => {
+      newDeconAttributes[key] =
+        userDefinedAttributes.sampleTypes[key].attributes;
+    });
+
+    // Update totsSampleAttributes variable on the window object. This is a workaround
+    // to an issue where the deconAttributes state variable is not available within esri
+    // event handlers.
+    (window as any).totsSampleAttributes = newDeconAttributes;
+
+    setSampleAttributesDecon(newDeconAttributes);
+  }, [
+    localUserDefinedSamplesInitialized,
+    userDefinedAttributes,
+    sampleTypes,
+    setSampleAttributesDecon,
   ]);
 
   // Saves the url layers to browser storage everytime they change
@@ -1469,4 +1505,33 @@ function useDisplayModeStorage() {
     terrain3dVisible,
     viewUnderground3d,
   ]);
+}
+
+// Uses browser storage for holding the training mode selection.
+function usePlanSettingsStorage() {
+  const key = 'plan_settings';
+
+  const { setOptions } = useContext(DialogContext);
+  const { planSettings, setPlanSettings } = useContext(SketchContext);
+
+  // Retreives training mode data from browser storage when the app loads
+  const [localPlanSettingsInitialized, setLocalPlanSettingsInitialized] =
+    useState(false);
+  useEffect(() => {
+    if (localPlanSettingsInitialized) return;
+
+    setLocalPlanSettingsInitialized(true);
+
+    const planSettingsStr = readFromStorage(key);
+    if (!planSettingsStr) return;
+
+    const planSettings = JSON.parse(planSettingsStr);
+    setPlanSettings(planSettings);
+  }, [localPlanSettingsInitialized, setPlanSettings]);
+
+  useEffect(() => {
+    if (!localPlanSettingsInitialized) return;
+
+    writeToStorage(key, planSettings, setOptions);
+  }, [planSettings, localPlanSettingsInitialized, setOptions]);
 }

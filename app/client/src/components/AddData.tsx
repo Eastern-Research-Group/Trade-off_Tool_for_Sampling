@@ -10,6 +10,8 @@ import Select from 'components/Select';
 import NavigationButton from 'components/NavigationButton';
 // contexts
 import { NavigationContext } from 'contexts/Navigation';
+// types
+import { AppType } from 'types/Navigation';
 
 type LocationType =
   | { value: 'search'; label: 'Search for Layers' }
@@ -37,10 +39,10 @@ const panelContainer = css`
 
 // --- components (AddData) ---
 type Props = {
-  type: 'decon' | 'sampling';
+  appType: AppType;
 };
 
-function AddData({ type }: Props) {
+function AddData({ appType }: Props) {
   const { goToOptions } = useContext(NavigationContext);
 
   // filters
@@ -74,9 +76,9 @@ function AddData({ type }: Props) {
           onChange={(ev) => setLocation(ev as LocationType)}
           options={addFromOptions}
         />
-        {location.value === 'search' && <SearchPanel type={type} />}
+        {location.value === 'search' && <SearchPanel appType={appType} />}
         {location.value === 'url' && <URLPanel />}
-        {location.value === 'file' && <FilePanel type={type} />}
+        {location.value === 'file' && <FilePanel appType={appType} />}
       </div>
       <NavigationButton goToPanel="locateSamples" />
     </div>

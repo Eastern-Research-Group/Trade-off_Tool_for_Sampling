@@ -48,6 +48,7 @@ import { chunkArray, createErrorObject, getLayerName } from 'utils/utils';
 import { ScenarioEditsType } from 'types/Edits';
 import { LayerType, LayerSelectType, LayerTypeName } from 'types/Layer';
 import { ErrorType } from 'types/Misc';
+import { AppType } from 'types/Navigation';
 // config
 import { PolygonSymbol, SampleSelectType } from 'config/sampleAttributes';
 import {
@@ -219,10 +220,10 @@ type UploadStatusType =
   | 'file-read-error';
 
 type Props = {
-  type: 'decon' | 'sampling';
+  appType: AppType;
 };
 
-function FilePanel({ type }: Props) {
+function FilePanel({ appType }: Props) {
   const { portal, userInfo } = useContext(AuthenticationContext);
   const { setContaminationMap } = useContext(CalculateContext);
   const { setOptions } = useContext(DialogContext);
@@ -251,7 +252,7 @@ function FilePanel({ type }: Props) {
     setSketchLayer,
   } = useContext(SketchContext);
 
-  const getPopupTemplate = useDynamicPopup();
+  const getPopupTemplate = useDynamicPopup(appType);
   const lookupFiles = useLookupFiles().data;
   const layerProps = lookupFiles.layerProps;
   const services = lookupFiles.services;
@@ -876,7 +877,7 @@ function FilePanel({ type }: Props) {
 
     const popupTemplate = getPopupTemplate(
       layerType.value,
-      type === 'decon' ? true : trainingMode,
+      appType === 'decon' ? true : trainingMode,
     );
     const layerName = getLayerName(layers, file.file.name);
     setNewLayerName(layerName);
@@ -970,7 +971,7 @@ function FilePanel({ type }: Props) {
           // add sample layer specific attributes
           const timestamp = getCurrentDateTime();
           let uuid = generateUUID();
-          if (layerType.value === 'Contamination Map' && type === 'decon') {
+          if (layerType.value === 'Contamination Map' && appType === 'decon') {
             graphic.attributes['CONTAMREDUCED'] = false;
             graphic.attributes['CONTAMINATED'] =
               graphic.attributes['CONTAMVAL'] >= 100;
@@ -1102,6 +1103,7 @@ function FilePanel({ type }: Props) {
 
       // make a copy of the edits context variable
       const editsCopy = updateLayerEdits({
+        appType,
         edits,
         scenario: isSamplesOrVsp ? selectedScenario : null,
         layer: layerToAdd,
@@ -1142,7 +1144,7 @@ function FilePanel({ type }: Props) {
         setSketchLayer(layerToAdd);
       }
 
-      if (layerType.value === 'Contamination Map' && type === 'decon') {
+      if (layerType.value === 'Contamination Map' && appType === 'decon') {
         setContaminationMap(layerToAdd);
       }
 
@@ -1167,6 +1169,7 @@ function FilePanel({ type }: Props) {
 
     processItem();
   }, [
+    appType,
     defaultSymbols,
     displayDimensions,
     edits,
@@ -1188,7 +1191,6 @@ function FilePanel({ type }: Props) {
     sceneView,
     setSketchLayer,
     trainingMode,
-    type,
   ]);
 
   // add features to the map as feature layers. This is only for reference layer
@@ -1392,7 +1394,7 @@ function FilePanel({ type }: Props) {
           setError(null);
         }}
         options={
-          type === 'decon'
+          appType === 'decon'
             ? layerOptions.filter((option) => option.value !== 'Samples')
             : trainingMode
               ? layerOptions
@@ -1436,7 +1438,7 @@ function FilePanel({ type }: Props) {
           {layerType.value === 'VSP' && (
             <Fragment>
               <label htmlFor="sample-type-select-input">
-                {type === 'decon' ? 'Decon Technology' : 'Sample Type'}
+                {appType === 'decon' ? 'Decon Technology' : 'Sample Type'}
               </label>
               <Select
                 id="sample-type-select"
@@ -1453,13 +1455,15 @@ function FilePanel({ type }: Props) {
                 <p css={sectionParagraph}>
                   Add an externally-generated Visual Sample Plan (VSP) layer to
                   analyze and/or use in conjunction with{' '}
-                  {type === 'decon'
+                  {appType === 'decon'
                     ? 'targeted decon applications'
                     : 'targeted sampling'}
                   . Once added, you can select this layer in the next step,{' '}
-                  <strong>Create {type === 'decon' ? 'Decon' : ''} Plan</strong>
+                  <strong>
+                    Create {appType === 'decon' ? 'Decon' : ''} Plan
+                  </strong>
                   , and use it to create the{' '}
-                  {type === 'decon' ? 'Decon' : 'Sampling'} Plan.
+                  {appType === 'decon' ? 'Decon' : 'Sampling'} Plan.
                 </p>
               )}
             </Fragment>
@@ -1475,7 +1479,7 @@ function FilePanel({ type }: Props) {
                 <Fragment>
                   {layerType.value === 'Contamination Map' && (
                     <Fragment>
-                      {type === 'sampling' && (
+                      {appType === 'sampling' && (
                         <p css={sectionParagraph}>
                           Polygon layer containing the area of contamination as
                           well as the concentration of the contamination. This
@@ -1487,7 +1491,7 @@ function FilePanel({ type }: Props) {
                           plan.
                         </p>
                       )}
-                      {type === 'decon' && (
+                      {appType === 'decon' && (
                         <p css={sectionParagraph}>
                           Polygon layer containing the area of contamination as
                           well as the concentration of the contamination. This
@@ -1524,7 +1528,7 @@ function FilePanel({ type }: Props) {
                   )}
                   {layerType.value === 'Samples' && (
                     <Fragment>
-                      {type === 'sampling' && (
+                      {appType === 'sampling' && (
                         <p css={sectionParagraph}>
                           Layer containing pre-existing samples to use as a
                           starting point in the next step,{' '}
@@ -1534,7 +1538,7 @@ function FilePanel({ type }: Props) {
                           be uploaded.
                         </p>
                       )}
-                      {type === 'decon' && (
+                      {appType === 'decon' && (
                         <p css={sectionParagraph}>
                           Layer containing pre-existing decon applications to
                           use as a starting point in the next step,{' '}
@@ -1565,7 +1569,7 @@ function FilePanel({ type }: Props) {
                               tools (e.g., ArcGIS Pro) and then cache and share
                               the imagery as a tiled map service in ArcGIS
                               Online for display within{' '}
-                              {type === 'decon' ? 'TODS' : 'TOTS'}.
+                              {appType === 'decon' ? 'TODS' : 'TOTS'}.
                             </p>
                           }
                         />
@@ -1577,7 +1581,7 @@ function FilePanel({ type }: Props) {
                       <p css={sectionParagraph}>
                         A polygon file that bounds the extent of your project
                         area.
-                        {type === 'sampling' && (
+                        {appType === 'sampling' && (
                           <Fragment>
                             This layer is used to bound where samples are
                             plotted when using the{' '}

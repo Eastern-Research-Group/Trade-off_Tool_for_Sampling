@@ -2,6 +2,7 @@
 
 import React, { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
+import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import Portal from '@arcgis/core/portal/Portal';
 // components
@@ -18,12 +19,15 @@ import { isServiceNameAvailable } from 'utils/arcGisRestUtils';
 import {
   createLayerEditTemplate,
   createSampleLayer,
+  generateUUID,
   updateLayerEdits,
 } from 'utils/sketchUtils';
 import { createErrorObject } from 'utils/utils';
 // types
-import { ErrorType } from 'types/Misc';
+import { LayerEditsType, ScenarioEditsType } from 'types/Edits';
 import { LayerType } from 'types/Layer';
+import { ErrorType } from 'types/Misc';
+import { AppType } from 'types/Navigation';
 // config
 import {
   scenarioNameTakenMessage,
@@ -31,7 +35,6 @@ import {
 } from 'config/errorMessages';
 // styles
 import { colors, linkButtonStyles } from 'styles';
-import { LayerEditsType, ScenarioEditsType } from 'types/Edits';
 
 export type SaveStatusType =
   | 'none'
@@ -96,6 +99,7 @@ const saveButtonStyles = (status: string) => {
 
 // --- components (EditScenario) ---
 type Props = {
+  appType: AppType;
   initialScenario?: ScenarioEditsType | null;
   buttonText?: string;
   initialStatus?: SaveStatusType;
@@ -104,6 +108,7 @@ type Props = {
 };
 
 function EditScenario({
+  appType,
   initialScenario = null,
   buttonText = 'Save',
   initialStatus = 'none',
@@ -115,6 +120,7 @@ function EditScenario({
     signedIn, //
   } = useContext(AuthenticationContext);
   const {
+    defaultDeconSelections,
     edits,
     setEdits,
     map,
@@ -142,7 +148,12 @@ function EditScenario({
   );
 
   // Updates the scenario metadata.
-  function updateScenario() {
+  function updateScenario(appType: AppType) {
+    if (appType === 'decon') updateScenarioDecon();
+    if (appType === 'sampling') updateScenarioSampling();
+  }
+
+  function updateScenarioSampling() {
     if (!map) return;
 
     // find the layer being edited
@@ -343,13 +354,294 @@ function EditScenario({
     if (onSave) onSave(saveStatus);
   }
 
+  function updateScenarioDecon() {
+    if (!map) return;
+
+    // find the layer being edited
+    let index = -1;
+    if (initialScenario) {
+      index = edits.edits.findIndex(
+        (item) =>
+          item.type === 'scenario' && item.layerId === initialScenario.layerId,
+      );
+    }
+
+    // update an existing scenario, otherwise add the new scenario
+    if (index > -1 && initialScenario) {
+      // update the group layer name
+      for (let i = 0; i < map.layers.length; i++) {
+        const layer = map.layers.getItemAt(i);
+        if (layer.type === 'group' && layer.id === initialScenario.layerId) {
+          layer.title = scenarioName;
+          break;
+        }
+      }
+
+      // update the selected scenario
+      setSelectedScenario((selectedScenario) => {
+        if (!selectedScenario) return null;
+
+        return {
+          ...selectedScenario,
+          label: scenarioName,
+          name: scenarioName,
+          scenarioName: scenarioName,
+          scenarioDescription: scenarioDescription,
+        };
+      });
+
+      // make a copy of the edits context variable
+      setEdits((edits) => {
+        const editedScenario = edits.edits[index] as ScenarioEditsType;
+        editedScenario.label = scenarioName;
+        editedScenario.name = scenarioName;
+        editedScenario.scenarioName = scenarioName;
+        editedScenario.scenarioDescription = scenarioDescription;
+
+        return {
+          count: edits.count + 1,
+          edits: [
+            ...edits.edits.slice(0, index),
+            editedScenario,
+            ...edits.edits.slice(index + 1),
+          ],
+        };
+      });
+    } else {
+      // create a new group layer for the scenario
+      const groupLayer = new GroupLayer({
+        title: scenarioName,
+      });
+
+      const layerUuidImageAnalysis = generateUUID();
+      const graphicsLayerImageAnalysis = new GraphicsLayer({
+        id: layerUuidImageAnalysis,
+        title: 'Imagery Analysis Results',
+        listMode: 'show',
+      });
+
+      const layerUuid = generateUUID();
+      const graphicsLayer = new GraphicsLayer({
+        id: layerUuid,
+        title: 'AOI Assessment',
+        listMode: 'show',
+      });
+
+      const newLayers: LayerEditsType[] = [];
+      let tempSketchLayer: LayerType | null = null;
+      let tempAssessedAoiLayer: LayerType | null = null;
+      let tempImageAnalysisLayer: LayerType | null = null;
+      if (addDefaultSampleLayer) {
+        edits.edits.forEach((edit) => {
+          if (
+            edit.type === 'layer' &&
+            (edit.layerType === 'Samples' || edit.layerType === 'VSP')
+          ) {
+            newLayers.push(edit);
+          }
+        });
+
+        tempAssessedAoiLayer = {
+          id: -1,
+          pointsId: -1,
+          uuid: layerUuid,
+          layerId: layerUuid,
+          portalId: '',
+          value: 'aoiAssessed',
+          name: 'AOI Assessment',
+          label: 'AOI Assessment',
+          layerType: 'AOI Assessed',
+          editType: 'add',
+          visible: true,
+          listMode: 'show',
+          sort: 0,
+          geometryType: 'esriGeometryPolygon',
+          addedFrom: 'sketch',
+          status: 'added',
+          sketchLayer: graphicsLayer,
+          pointsLayer: null,
+          hybridLayer: null,
+          parentLayer: groupLayer,
+        } as LayerType;
+
+        tempImageAnalysisLayer = {
+          id: -1,
+          pointsId: -1,
+          uuid: layerUuidImageAnalysis,
+          layerId: layerUuidImageAnalysis,
+          portalId: '',
+          value: 'aoiAssessed',
+          name: 'Imagery Analysis Results',
+          label: 'Imagery Analysis Results',
+          layerType: 'Image Analysis',
+          editType: 'add',
+          visible: true,
+          listMode: 'show',
+          sort: 0,
+          geometryType: 'esriGeometryPolygon',
+          addedFrom: 'sketch',
+          status: 'added',
+          sketchLayer: graphicsLayerImageAnalysis,
+          pointsLayer: null,
+          hybridLayer: null,
+          parentLayer: groupLayer,
+        } as LayerType;
+
+        if (newLayers.length === 0) {
+          // no sketchable layers were available, create one
+          tempSketchLayer = createSampleLayer(undefined, groupLayer);
+          newLayers.push(
+            createLayerEditTemplate(tempImageAnalysisLayer, 'add'),
+          );
+          newLayers.push(createLayerEditTemplate(tempAssessedAoiLayer, 'add'));
+          newLayers.push(createLayerEditTemplate(tempSketchLayer, 'add'));
+        } else {
+          newLayers.push(
+            createLayerEditTemplate(tempImageAnalysisLayer, 'add'),
+          );
+          newLayers.push(createLayerEditTemplate(tempAssessedAoiLayer, 'add'));
+          // update the parentLayer of layers being added to the group layer
+          setLayers((layers) => {
+            newLayers.forEach((newLayer) => {
+              const layer = layers.find((l) => l.layerId === newLayer.layerId);
+              if (!layer) return;
+
+              layer.parentLayer = groupLayer;
+              groupLayer.add(layer.sketchLayer);
+              map.layers.remove(layer.sketchLayer);
+              if (layer.pointsLayer) {
+                groupLayer.add(layer.pointsLayer);
+                map.layers.remove(layer.pointsLayer);
+              }
+              if (layer.hybridLayer) {
+                groupLayer.add(layer.hybridLayer);
+                map.layers.remove(layer.hybridLayer);
+              }
+            });
+
+            return layers;
+          });
+        }
+      }
+
+      // create the scenario to be added to edits
+      const newScenario: ScenarioEditsType = {
+        type: 'scenario',
+        id: -1,
+        pointsId: -1,
+        layerId: groupLayer.id,
+        portalId: '',
+        name: scenarioName,
+        label: scenarioName,
+        value: groupLayer.id,
+        layerType: 'Samples',
+        addedFrom: 'sketch',
+        hasContaminationRan: false,
+        status: 'added',
+        editType: 'add',
+        visible: true,
+        listMode: 'show',
+        scenarioName: scenarioName,
+        scenarioDescription: scenarioDescription,
+        layers: newLayers,
+        table: null,
+        referenceLayersTable: {
+          id: -1,
+          referenceLayers: [],
+        },
+        customAttributes: [],
+        deconTechSelections: defaultDeconSelections,
+        deconSummaryResults: {
+          summary: {
+            totalAoiSqM: 0,
+            totalBuildingFootprintSqM: 0,
+            totalBuildingFloorsSqM: 0,
+            totalBuildingSqM: 0,
+            totalBuildingExtWallsSqM: 0,
+            totalBuildingIntWallsSqM: 0,
+            totalBuildingRoofSqM: 0,
+          },
+          aoiPercentages: {
+            asphalt: 0,
+            concrete: 0,
+            soil: 0,
+          },
+          calculateResults: null,
+        },
+        aoiSummary: {
+          area: 0,
+          buildingFootprint: 0,
+        },
+        deconLayerResults: {
+          cost: 0,
+          time: 0,
+          wasteVolume: 0,
+          wasteMass: 0,
+          resultsTable: [],
+        },
+        calculateSettings: { current: settingDefaults },
+        importedAoiLayer: null,
+        aoiLayerMode: 'draw',
+      };
+
+      // make a copy of the edits context variable
+      setEdits((edits) => {
+        const newEdits = edits.edits.filter((edit) => {
+          const idx = newLayers.findIndex((l) => l.layerId === edit.layerId);
+
+          return idx === -1;
+        });
+
+        return {
+          count: edits.count + 1,
+          edits: [...newEdits, newScenario],
+        };
+      });
+
+      // select the new scenario
+      setSelectedScenario(newScenario);
+
+      if (addDefaultSampleLayer && tempSketchLayer) {
+        groupLayer.add(tempSketchLayer.sketchLayer);
+        if (tempSketchLayer.pointsLayer) {
+          groupLayer.add(tempSketchLayer.pointsLayer);
+        }
+        if (tempSketchLayer.hybridLayer) {
+          groupLayer.add(tempSketchLayer.hybridLayer);
+        }
+
+        const tLayers = [...layers];
+        if (tempSketchLayer) tLayers.push(tempSketchLayer);
+        if (tempImageAnalysisLayer) tLayers.push(tempImageAnalysisLayer);
+        if (tempAssessedAoiLayer) tLayers.push(tempAssessedAoiLayer);
+
+        // update layers (set parent layer)
+        (window as any).totsLayers = tLayers;
+        setLayers(tLayers);
+
+        // update sketchLayer (clear parent layer)
+        setSketchLayer(tempSketchLayer);
+      }
+
+      groupLayer.layers.add(graphicsLayerImageAnalysis);
+      groupLayer.layers.add(graphicsLayer);
+
+      // add the scenario group layer to the map
+      map.add(groupLayer);
+    }
+
+    const saveStatus: SaveResultsType = { status: 'success' };
+    setSaveStatus(saveStatus);
+    if (onSave) onSave(saveStatus);
+  }
+
   // Handles saving of the layer's scenario name and description fields.
   // Also checks the uniqueness of the scenario name, if the user is signed in.
   function handleSave() {
     // if the user hasn't signed in go ahead and save the
     // scenario name and description
     if (!portal || !signedIn) {
-      updateScenario();
+      updateScenario(appType);
       return;
     }
 
@@ -379,7 +671,7 @@ function EditScenario({
           return;
         }
 
-        updateScenario();
+        updateScenario(appType);
       })
       .catch((err: any) => {
         console.error('isServiceNameAvailable error', err);
@@ -398,7 +690,9 @@ function EditScenario({
         ev.preventDefault();
       }}
     >
-      <label htmlFor="scenario-name-input">Plan Name</label>
+      <label htmlFor="scenario-name-input">
+        {appType === 'decon' ? 'Decon Layer' : 'Plan'} Name
+      </label>
       <input
         id="scenario-name-input"
         disabled={
@@ -413,21 +707,27 @@ function EditScenario({
           setSaveStatus({ status: 'changes' });
         }}
       />
-      <label htmlFor="scenario-description-input">Plan Description</label>
-      <input
-        id="scenario-description-input"
-        disabled={
-          initialScenario && initialScenario.status !== 'added' ? true : false
-        }
-        css={inputStyles}
-        maxLength={2048}
-        placeholder="Enter Plan Description (2048 characters)"
-        value={scenarioDescription}
-        onChange={(ev) => {
-          setScenarioDescription(ev.target.value);
-          setSaveStatus({ status: 'changes' });
-        }}
-      />
+      {appType === 'sampling' && (
+        <Fragment>
+          <label htmlFor="scenario-description-input">Plan Description</label>
+          <input
+            id="scenario-description-input"
+            disabled={
+              initialScenario && initialScenario.status !== 'added'
+                ? true
+                : false
+            }
+            css={inputStyles}
+            maxLength={2048}
+            placeholder="Enter Plan Description (2048 characters)"
+            value={scenarioDescription}
+            onChange={(ev) => {
+              setScenarioDescription(ev.target.value);
+              setSaveStatus({ status: 'changes' });
+            }}
+          />
+        </Fragment>
+      )}
 
       {saveStatus.status === 'fetching' && <LoadingSpinner />}
       {saveStatus.status === 'failure' &&
@@ -476,6 +776,7 @@ const modLinkButtonStyles = css`
 
 // --- components (EditLayer) ---
 type EditLayerProps = {
+  appType: AppType;
   initialLayer?: LayerType | null;
   buttonText?: string;
   initialStatus?: SaveStatusType;
@@ -483,6 +784,7 @@ type EditLayerProps = {
 };
 
 function EditLayer({
+  appType,
   initialLayer = null,
   buttonText = 'Save',
   initialStatus = 'none',
@@ -576,6 +878,7 @@ function EditLayer({
         graphic.attributes.DECISIONUNIT = layerName;
       });
       const editsCopy = updateLayerEdits({
+        appType,
         edits,
         scenario: selectedScenario,
         layer: { ...initialLayer, name: layerName, label: layerName },
@@ -594,6 +897,7 @@ function EditLayer({
 
       // add the new layer to edits
       const editsCopy = updateLayerEdits({
+        appType,
         edits,
         scenario: selectedScenario,
         layer: tempLayer,
@@ -653,7 +957,9 @@ function EditLayer({
       }}
     >
       <p>
-        Enter the name for a new empty sample layer and click save or use the{' '}
+        Enter the name for a new empty{' '}
+        {appType === 'decon' ? 'decon' : 'sample'} layer and click save or use
+        the{' '}
         <button
           css={modLinkButtonStyles}
           onClick={(ev) => {
@@ -666,14 +972,16 @@ function EditLayer({
         >
           Add Data tools
         </button>{' '}
-        to import an existing sample layer.
+        to import an existing {appType === 'decon' ? 'decon' : 'sample'} layer.
       </p>
-      <label htmlFor="layer-name-input">Layer Name</label>
+      <label htmlFor="layer-name-input">
+        {appType === 'decon' ? 'Decon' : ''} Layer Name
+      </label>
       <input
         id="layer-name-input"
         css={inputStyles}
         maxLength={250}
-        placeholder="Enter Layer Name"
+        placeholder={`Enter ${appType === 'decon' ? 'decon' : 'sample'} Layer Name`}
         value={layerName}
         onChange={(ev) => {
           setLayerName(ev.target.value);
@@ -702,6 +1010,7 @@ function EditLayer({
 
 // --- components (EditCustomSampleTypesTable) ---
 type EditCustomSampleTypesTableProps = {
+  appType: AppType;
   initialStatus?: SaveStatusType;
   onSave?: (saveResults?: SaveResultsType) => void;
 };
@@ -712,6 +1021,7 @@ const fullWidthSelectStyles = css`
 `;
 
 function EditCustomSampleTypesTable({
+  appType,
   initialStatus = 'none',
   onSave,
 }: EditCustomSampleTypesTableProps) {
@@ -749,7 +1059,11 @@ function EditCustomSampleTypesTable({
     const tmpPortal = portal ? portal : new Portal();
     tmpPortal
       .queryItems({
-        categories: ['contains-epa-tots-user-defined-sample-types'],
+        categories: [
+          appType === 'decon'
+            ? 'contains-epa-tods-user-defined-decon-tech'
+            : 'contains-epa-tots-user-defined-sample-types',
+        ],
         sortField: 'title',
         sortOrder: 'asc',
       })
@@ -768,7 +1082,7 @@ function EditCustomSampleTypesTable({
         console.error(err);
         setFeatureServices({ status: 'failure', data: [] });
       });
-  }, [portal, queryInitialized]);
+  }, [appType, portal, queryInitialized]);
 
   const handleSave = () => {
     setPublishSampleTableMetaData({
@@ -787,24 +1101,26 @@ function EditCustomSampleTypesTable({
       {publishSamplesMode === 'new' && (
         <Fragment>
           <label htmlFor="sample-table-name-input">
-            Custom Sample Type Table Name
+            Custom {appType === 'decon' ? 'Decon Technology' : 'Sample Type'}{' '}
+            Table Name
           </label>
           <input
             id="sample-table-name-input"
             css={inputStyles}
             maxLength={250}
-            placeholder="Enter Custom Sample Type Table Name"
+            placeholder={`Enter Custom ${appType === 'decon' ? 'Decon Technology' : 'Sample Type'} Table Name`}
             value={sampleTableName}
             onChange={(ev) => setSampleTableName(ev.target.value)}
           />
           <label htmlFor="scenario-description-input">
-            Custom Sample Type Table Description
+            Custom {appType === 'decon' ? 'Decon Technology' : 'Sample Type'}{' '}
+            Table Description
           </label>
           <input
             id="scenario-description-input"
             css={inputStyles}
             maxLength={2048}
-            placeholder="Enter Custom Sample Type Table Description (2048 characters)"
+            placeholder={`Enter Custom ${appType === 'decon' ? 'Decon Technology' : 'Sample Type'} Table Description (2048 characters)`}
             value={sampleTableDescription}
             onChange={(ev) => setSampleTableDescription(ev.target.value)}
           />

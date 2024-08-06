@@ -7,6 +7,8 @@ import EsriSearch from '@arcgis/core/widgets/Search';
 import NavigationButton from 'components/NavigationButton';
 // contexts
 import { SketchContext } from 'contexts/Sketch';
+// types
+import { AppType } from 'types/Navigation';
 
 // --- styles (Search) ---
 const panelContainer = css`
@@ -65,7 +67,11 @@ const searchBoxStyles = css`
 `;
 
 // --- components (Search) ---
-function Search() {
+type Props = {
+  appType: AppType;
+};
+
+function Search({ appType }: Props) {
   const { displayDimensions, mapView, sceneView } = useContext(SketchContext);
 
   const [searchWidget, setSearchWidget] = useState<EsriSearch | null>(null);
@@ -119,9 +125,9 @@ function Search() {
       <div>
         <h2>Locate</h2>
         <p>
-          Start here to zoom to a location on the map to create a sampling
+          Start here to zoom to a location on the map to create a {appType}{' '}
           design for an outdoor area. Otherwise, proceed to the{' '}
-          <strong>Add Data</strong> step if you have existing sampling designs
+          <strong>Add Data</strong> step if you have existing {appType} designs
           that you would like to add to the tool or have indoor environment
           representations to add to support designing a plan for an indoor
           environment.

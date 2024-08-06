@@ -148,7 +148,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     sketchLayer,
     sketchVM,
   } = useContext(SketchContext);
-  const getPopupTemplate = useDynamicPopup();
+  const getPopupTemplate = useDynamicPopup('sampling');
   const lookupFiles = useLookupFiles();
   const layerProps = lookupFiles.data.layerProps;
   const services = lookupFiles.data.services;
@@ -512,6 +512,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
         sketchLayer.hybridLayer?.addMany(hybridGraphicsToAdd);
 
         let editsCopy = updateLayerEdits({
+          appType: 'sampling',
           edits,
           layer: sketchLayer,
           type: 'add',
@@ -525,6 +526,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
             aoiSketchLayer.sketchLayer.type === 'graphics'
           ) {
             editsCopy = updateLayerEdits({
+              appType: 'sampling',
               edits: editsCopy,
               layer: aoiSketchLayer,
               type: 'delete',

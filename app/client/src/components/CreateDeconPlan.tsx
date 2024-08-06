@@ -70,7 +70,7 @@ const pointStyles: ShapeTypeSelect[] = [
   },
 ];
 
-// --- styles (SketchButton) ---
+// --- styles (CreateDeconPlan) ---
 const panelContainer = css`
   display: flex;
   flex-direction: column;
@@ -236,14 +236,14 @@ const saveButtonStyles = (status: string) => {
   `;
 };
 
-// --- components (LocateSamples) ---
+// --- components (CreateDeconPlan) ---
 type GenerateRandomType = {
   status: 'none' | 'fetching' | 'success' | 'failure' | 'exceededTransferLimit';
   error?: ErrorType;
   data: __esri.Graphic[];
 };
 
-function LocateSamples() {
+function CreateDeconPlan() {
   const { contaminationMap, setContaminationMap } =
     useContext(CalculateContext);
   const { setGoTo, setGoToOptions } = useContext(NavigationContext);
@@ -385,7 +385,6 @@ function LocateSamples() {
       }
 
       if (aoiLayer?.sketchLayer && aoiLayer.sketchLayer.type === 'graphics') {
-        // aoiGraphics.push(...aoiLayer.sketchLayer.graphics.toArray());
         planGraphics[scenario.layerId] =
           aoiLayer.sketchLayer.graphics.toArray();
       }
@@ -444,8 +443,6 @@ function LocateSamples() {
   const [editPlanVisible, setEditPlanVisible] = useState(!planSettings.name);
   const [tempPlanSettings, setTempPlanSettings] =
     useState<PlanSettings>(planSettings);
-  // const [addLayerVisible, setAddLayerVisible] = useState(false);
-  // const [editLayerVisible, setEditLayerVisible] = useState(false);
   const [generateRandomMode, setGenerateRandomMode] = useState<
     'draw' | 'file' | ''
   >('draw');
@@ -526,6 +523,7 @@ function LocateSamples() {
                   );
                   if (aoiAssessedLayer?.sketchLayer?.type === 'graphics') {
                     editsCopy = updateLayerEdits({
+                      appType: 'decon',
                       edits,
                       scenario: selectedScenario,
                       layer: aoiAssessedLayer,
@@ -547,6 +545,7 @@ function LocateSamples() {
                   );
                   if (imageAnalysisLayer?.sketchLayer?.type === 'graphics') {
                     editsCopy = updateLayerEdits({
+                      appType: 'decon',
                       edits,
                       scenario: selectedScenario,
                       layer: imageAnalysisLayer,
@@ -568,6 +567,7 @@ function LocateSamples() {
                   );
                   if (aoiLayer?.sketchLayer?.type === 'graphics') {
                     editsCopy = updateLayerEdits({
+                      appType: 'decon',
                       edits,
                       scenario: selectedScenario,
                       layer: aoiLayer,
@@ -691,7 +691,7 @@ function LocateSamples() {
           )}
 
           {scenarios.length === 0 || !planSettings.name ? (
-            <EditScenario addDefaultSampleLayer={true} />
+            <EditScenario addDefaultSampleLayer={true} appType="decon" />
           ) : (
             <Fragment>
               <div css={iconButtonContainerStyles}>
@@ -822,11 +822,13 @@ function LocateSamples() {
               {addScenarioVisible && (
                 <EditScenario
                   addDefaultSampleLayer={true}
+                  appType="decon"
                   onSave={() => setAddScenarioVisible(false)}
                 />
               )}
               {editScenarioVisible && (
                 <EditScenario
+                  appType="decon"
                   initialScenario={selectedScenario}
                   onSave={() => setEditScenarioVisible(false)}
                 />
@@ -1105,7 +1107,8 @@ function LocateSamples() {
                           {generateRandomResponse.status ===
                             'exceededTransferLimit' &&
                             generateRandomExceededTransferLimitMessage}
-
+                          generateRandomResponse:{' '}
+                          {generateRandomResponse.status}
                           <button
                             css={submitButtonStyles}
                             disabled={
@@ -1178,7 +1181,7 @@ function DeconSelectionTable({
   editable = false,
   performUpdate = false,
 }: DeconSelectionProps) {
-  const { calculateResults, setCalculateResults } =
+  const { calculateResultsDecon, setCalculateResultsDecon } =
     useContext(CalculateContext);
   const {
     allSampleOptions,
@@ -1239,7 +1242,7 @@ function DeconSelectionTable({
 
   const [hasUpdatedSelections, setHasUpdatedSelections] = useState(false);
   useEffect(() => {
-    if (calculateResults.status !== 'success') {
+    if (calculateResultsDecon.status !== 'success') {
       setHasUpdatedSelections(false);
       return;
     }
@@ -1257,16 +1260,16 @@ function DeconSelectionTable({
     ) {
       setDeconSelections([...scenario.deconTechSelections]);
     }
-  }, [calculateResults, edits, hasUpdatedSelections, selectedScenario]);
+  }, [calculateResultsDecon, edits, hasUpdatedSelections, selectedScenario]);
 
   const updateEdits = useCallback(
     (newTable: any[] | null = null) => {
       if (!selectedScenario) return;
 
-      setCalculateResults((calculateResults) => {
+      setCalculateResultsDecon((calculateResultsDecon) => {
         return {
           status: 'fetching',
-          panelOpen: calculateResults.panelOpen,
+          panelOpen: calculateResultsDecon.panelOpen,
           data: null,
         };
       });
@@ -1300,7 +1303,7 @@ function DeconSelectionTable({
     [
       deconSelections,
       selectedScenario,
-      setCalculateResults,
+      setCalculateResultsDecon,
       setSelectedScenario,
       edits,
       setEdits,
@@ -1498,7 +1501,7 @@ function DeconSelectionPopup({
   onClose,
 }: DeconSelectionPopupProps) {
   const { selectedScenario } = useContext(SketchContext);
-  const { calculateResults } = useContext(CalculateContext);
+  const { calculateResultsDecon } = useContext(CalculateContext);
   const [performUpdate, setPerformUpdate] = useState(false);
 
   return (
@@ -1546,9 +1549,9 @@ function DeconSelectionPopup({
             </div>
           </div>
           <div>
-            {calculateResults.status === 'fetching' && <LoadingSpinner />}
-            {calculateResults.status === 'success' &&
-            calculateResults.data &&
+            {calculateResultsDecon.status === 'fetching' && <LoadingSpinner />}
+            {calculateResultsDecon.status === 'success' &&
+            calculateResultsDecon.data &&
             selectedScenario &&
             (selectedScenario.deconLayerResults?.cost ||
               selectedScenario.deconLayerResults?.time ||
@@ -1558,7 +1561,7 @@ function DeconSelectionPopup({
                 <div>
                   <strong>Total Cost:</strong> $
                   {Math.round(
-                    selectedScenario.deconLayerResults.cost ?? 0,
+                    selectedScenario?.deconLayerResults.cost ?? 0,
                   ).toLocaleString()}
                 </div>
                 <div>
@@ -1617,7 +1620,7 @@ function DeconSelectionPopup({
   );
 }
 
-export default LocateSamples;
+export default CreateDeconPlan;
 
 const resourceTallyContainerStyles = css`
   display: flex;

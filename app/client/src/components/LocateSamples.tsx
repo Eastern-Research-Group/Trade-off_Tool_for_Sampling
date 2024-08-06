@@ -268,8 +268,8 @@ function LocateSamples() {
     mapView,
   } = useContext(SketchContext);
   const startOver = useStartOver();
-  const { endSketch, startSketch } = use3dSketch();
-  const getPopupTemplate = useDynamicPopup();
+  const { endSketch, startSketch } = use3dSketch('sampling');
+  const getPopupTemplate = useDynamicPopup('sampling');
 
   // Sets the sketchLayer to the first layer in the layer selection drop down,
   // if available. If the drop down is empty, an empty sketchLayer will be
@@ -458,6 +458,7 @@ function LocateSamples() {
 
                 // make a copy of the edits context variable
                 const editsCopy = updateLayerEdits({
+                  appType: 'sampling',
                   edits,
                   layer: sketchLayer,
                   type: 'delete',
@@ -521,7 +522,7 @@ function LocateSamples() {
           )}
 
           {scenarios.length === 0 ? (
-            <EditScenario addDefaultSampleLayer={true} />
+            <EditScenario addDefaultSampleLayer={true} appType="sampling" />
           ) : (
             <Fragment>
               <div css={iconButtonContainerStyles}>
@@ -808,10 +809,14 @@ function LocateSamples() {
                 options={scenarios}
               />
               {addScenarioVisible && (
-                <EditScenario onSave={() => setAddScenarioVisible(false)} />
+                <EditScenario
+                  appType="sampling"
+                  onSave={() => setAddScenarioVisible(false)}
+                />
               )}
               {editScenarioVisible && (
                 <EditScenario
+                  appType="sampling"
                   initialScenario={selectedScenario}
                   onSave={() => setEditScenarioVisible(false)}
                 />
@@ -956,6 +961,7 @@ function LocateSamples() {
 
                             // update edits (move the layer to the selected scenario)
                             const editsCopy = updateLayerEdits({
+                              appType: 'sampling',
                               edits,
                               scenario: selectedScenario,
                               layer: sketchLayer,
@@ -1215,6 +1221,7 @@ function LocateSamples() {
                           // clone the active layer in edits
                           // make a copy of the edits context variable
                           let editsCopy = updateLayerEdits({
+                            appType: 'sampling',
                             changes: tempLayer.sketchLayer.graphics,
                             edits,
                             scenario: selectedScenario,
@@ -1314,10 +1321,14 @@ function LocateSamples() {
                 options={sampleLayers}
               />
               {addLayerVisible && (
-                <EditLayer onSave={() => setAddLayerVisible(false)} />
+                <EditLayer
+                  appType="sampling"
+                  onSave={() => setAddLayerVisible(false)}
+                />
               )}
               {editLayerVisible && (
                 <EditLayer
+                  appType="sampling"
                   initialLayer={sketchLayer}
                   onSave={() => setEditLayerVisible(false)}
                 />
@@ -1448,7 +1459,10 @@ function LocateSamples() {
               </AccordionItem>
               <AccordionItem title={'Create Custom Sample Types'}>
                 <div css={sectionContainer}>
-                  <CustomSampleType id="plan-custom-sample-types" />
+                  <CustomSampleType
+                    appType="sampling"
+                    id="plan-custom-sample-types"
+                  />
                 </div>
               </AccordionItem>
             </AccordionList>

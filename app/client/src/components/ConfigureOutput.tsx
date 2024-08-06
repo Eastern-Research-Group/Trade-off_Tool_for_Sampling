@@ -25,6 +25,7 @@ import { SketchContext } from 'contexts/Sketch';
 // types
 import { ScenarioEditsType } from 'types/Edits';
 import { ErrorType } from 'types/Misc';
+import { AppType } from 'types/Navigation';
 import {
   AttributesType,
   CodedValue,
@@ -154,10 +155,10 @@ const nestedAccordionStyles = css`
 
 // --- components (ConfigureOutput) ---
 type Props = {
-  type: 'decon' | 'sampling';
+  appType: AppType;
 };
 
-function ConfigureOutput({ type }: Props) {
+function ConfigureOutput({ appType }: Props) {
   const { signedIn } = useContext(AuthenticationContext);
   const { trainingMode } = useContext(NavigationContext);
   const {
@@ -411,7 +412,7 @@ function ConfigureOutput({ type }: Props) {
     webSceneRefOptions,
   ]);
 
-  if (type === 'decon') {
+  if (appType === 'decon') {
     return (
       <div css={panelContainer}>
         <div>
@@ -809,7 +810,7 @@ function ConfigureOutput({ type }: Props) {
                 </label>
               </div>
 
-              <EditCustomSampleTypesTable />
+              <EditCustomSampleTypesTable appType={appType} />
             </div>
           </AccordionItem>
         </AccordionList>

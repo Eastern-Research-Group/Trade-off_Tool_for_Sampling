@@ -15,6 +15,7 @@ import { Dispatch, SetStateAction } from 'react';
 // contexts
 import { SampleTypes } from 'contexts/LookupFiles';
 // types
+import { DefaultSymbolsType } from 'config/sampleAttributes';
 import {
   EditsType,
   EditType,
@@ -23,7 +24,7 @@ import {
   ScenarioEditsType,
 } from 'types/Edits';
 import { LayerType } from 'types/Layer';
-import { DefaultSymbolsType } from 'config/sampleAttributes';
+import { AppType } from 'types/Navigation';
 // config
 import {
   PolygonSymbol,
@@ -167,12 +168,15 @@ export function convertToSimpleGraphic(graphic: __esri.Graphic) {
   if (graphic?.geometry?.type === 'polygon') {
     geometry = graphic.geometry as __esri.Polygon;
   }
+  if (graphic?.geometry?.type === 'point') {
+    geometry = graphic.geometry as __esri.Point;
+  }
 
   // currently we only have polygons
   // in the future we may need to add code to handle different geometry types
   return {
     attributes: graphic.attributes ? { ...graphic.attributes } : {},
-    geometry: geometry,
+    geometry,
   };
 }
 
@@ -1120,6 +1124,7 @@ export function getZValue(graphic: __esri.Graphic) {
  * @param newLayer The new layer to move samples to. Only for "Move" type
  */
 export function handlePopupClick(
+  appType: AppType,
   edits: EditsType,
   setEdits: Dispatch<SetStateAction<EditsType>>,
   layers: LayerType[],
@@ -1177,6 +1182,7 @@ export function handlePopupClick(
 
       // make a copy of the edits context variable
       editsCopy = updateLayerEdits({
+        appType,
         edits: editsCopy,
         layer: tempSketchLayer,
         type: 'update',
@@ -1197,6 +1203,7 @@ export function handlePopupClick(
 
       // add the graphics to move to the new layer
       editsCopy = updateLayerEdits({
+        appType,
         edits: editsCopy,
         layer: newLayer,
         type: 'add',
@@ -1205,6 +1212,7 @@ export function handlePopupClick(
 
       // remove the graphics from the old layer
       editsCopy = updateLayerEdits({
+        appType,
         edits: editsCopy,
         layer: tempSketchLayer,
         type: 'delete',
@@ -1257,6 +1265,7 @@ export function handlePopupClick(
 
       // add the graphics to move to the new layer
       editsCopy = updateLayerEdits({
+        appType,
         edits: editsCopy,
         layer: tempSketchLayer,
         type: 'update',
@@ -1302,7 +1311,8 @@ export function handlePopupClick(
  * @returns false if all z values are the same and true if any are different
  */
 export function hasDifferingZ(graphic: __esri.Graphic) {
-  if (!graphic || graphic.geometry.type !== 'polygon') return false;
+  if (!graphic || !graphic.geometry || graphic.geometry.type !== 'polygon')
+    return false;
 
   const poly = graphic.geometry as __esri.Polygon;
   const firstCoordinate = poly.rings?.[0]?.[0];
@@ -1410,6 +1420,7 @@ export async function sampleValidation(
   async function performAreaToleranceCheck(graphic: __esri.Graphic) {
     // Get the area of the sample
     const area = await calculateArea(graphic, sceneView);
+    console.log('area3: ', area);
     if (typeof area !== 'number') return;
 
     // check that area is within allowable tolerance
@@ -1611,6 +1622,7 @@ export async function setZValues({
  * @param hasContaminationRan Keeps track of whether or not contamination has ran for this layer
  */
 export function updateLayerEdits({
+  appType,
   edits,
   scenario,
   layer,
@@ -1618,6 +1630,7 @@ export function updateLayerEdits({
   changes,
   hasContaminationRan = false,
 }: {
+  appType: AppType;
   edits: EditsType;
   scenario?: ScenarioEditsType | null;
   layer: LayerType;
@@ -1677,7 +1690,7 @@ export function updateLayerEdits({
     // handle property changes
     if (editsScenario) {
       editsScenario.visible = layer.visible;
-      editsScenario.listMode = layer.listMode;
+      if (appType === 'sampling') editsScenario.listMode = layer.listMode;
       if (editsScenario.status === 'published') editsScenario.status = 'edited';
     }
 

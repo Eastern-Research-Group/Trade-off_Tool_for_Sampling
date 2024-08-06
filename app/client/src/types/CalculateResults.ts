@@ -1,3 +1,5 @@
+import { JsonDownloadType } from 'contexts/Sketch';
+
 export type CalculateResultsDataType = {
   'Total Number of User-Defined Samples': number;
   'Total Number of Samples': number;
@@ -34,6 +36,34 @@ export type CalculateResultsDataType = {
   'Waste Weight': number;
 };
 
+export type CalculateResultsDeconDataType = {
+  'Total Number of User-Defined Decon Technologies': number;
+  'User Specified Number of Concurrent Applications': number;
+  'Total Number of Decon Applications': number;
+  'Total Cost': number;
+  'Total Time': number;
+  'Total Decontamination Area': number;
+  'Total Setup Time': number;
+  'Total Application Time': number;
+  'Total Setup Cost': number;
+  'Total Application Cost': number;
+  'Total Residence Time': number;
+  'Average Contamination Removal': number;
+  'Solid Waste Volume': number;
+  'Solid Waste Mass': number;
+  'Liquid Waste Volume': number;
+  'Liquid Waste Mass': number;
+  'Total Waste Volume': number;
+  'Total Waste Mass': number;
+  'Total Contaminated Area': number;
+  'Total Decontaminated Area': number;
+  'Total Reduction Area': number;
+  'Total Remaining Contaminated Area': number;
+  'Percent Contaminated Remaining': number;
+  'Contamination Type': string;
+  resultsTable: JsonDownloadType[];
+};
+
 export type CalculateResultsType = {
   status:
     | 'none'
@@ -45,4 +75,19 @@ export type CalculateResultsType = {
     | 'failure';
   panelOpen: boolean;
   data: CalculateResultsDataType | null;
+};
+
+export type CalculateResultsDeconType = {
+  status:
+    | 'none'
+    | 'no-contamination-graphics'
+    | 'no-graphics'
+    | 'no-layer'
+    | 'no-map'
+    | 'no-scenario'
+    | 'fetching'
+    | 'success'
+    | 'failure';
+  panelOpen: boolean;
+  data: CalculateResultsDeconDataType | null;
 };

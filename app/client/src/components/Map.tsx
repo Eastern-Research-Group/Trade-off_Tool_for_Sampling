@@ -9,16 +9,20 @@ import React, {
 } from 'react';
 import { css } from '@emotion/react';
 import EsriMap from '@arcgis/core/Map';
+import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import MapView from '@arcgis/core/views/MapView';
 import SceneView from '@arcgis/core/views/SceneView';
 import Viewpoint from '@arcgis/core/Viewpoint';
 // components
 import MapMouseEvents from 'components/MapMouseEvents';
+import MapSketchWidgets from 'components/MapSketchWidgets';
 import MapWidgets from 'components/MapWidgets';
 // contexts
 import { SketchContext } from 'contexts/Sketch';
 // utils
 import { getGraphicsArray } from 'utils/sketchUtils';
+// types
+import { AppType } from 'types/Navigation';
 
 // --- styles (Map) ---
 const mapStyles = (height: number) => {
@@ -39,10 +43,11 @@ const mapStyles = (height: number) => {
 
 // --- components (Map) ---
 type Props = {
+  appType: AppType;
   height: number;
 };
 
-function Map({ height }: Props) {
+function Map({ appType, height }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -65,10 +70,30 @@ function Map({ height }: Props) {
     if (!mapRef.current) return;
     if (mapView || sceneView) return;
 
+    const layers: __esri.Layer[] = [];
+    if (appType === 'decon') {
+      layers.push(
+        ...[
+          new GraphicsLayer({
+            id: 'deconResults',
+            title: 'Decontamination Results',
+            visible: false,
+            listMode: 'hide',
+          }),
+          new GraphicsLayer({
+            id: 'contaminationMapUpdated',
+            title: 'Contamination Map (Updated)',
+            visible: false,
+            listMode: 'hide',
+          }),
+        ],
+      );
+    }
+
     const newMap = new EsriMap({
       basemap: 'streets-vector',
       ground: 'world-elevation',
-      layers: [],
+      layers,
     });
     setMap(newMap);
 
@@ -115,6 +140,7 @@ function Map({ height }: Props) {
       }),
     );
   }, [
+    appType,
     mapView,
     sceneView,
     setMap,
@@ -154,7 +180,13 @@ function Map({ height }: Props) {
           });
         }
 
-        if (layer.type === 'graphics' || groupType === 'graphics') {
+        if (layer.id === 'contaminationMapUpdated') {
+          type = 'contaminationMapUpdated';
+        } else if (layer.id === 'deconResults') {
+          type = 'deconResults';
+        } else if (layer.title === 'Sketched Decon Mask') {
+          type = 'sketchedMask';
+        } else if (layer.type === 'graphics' || groupType === 'graphics') {
           type = 'graphics';
         } else if (layer.type === 'feature' || groupType === 'feature') {
           type = 'feature';
@@ -183,6 +215,9 @@ function Map({ height }: Props) {
         'map-image',
         'file',
         'feature',
+        'contaminationMapUpdated',
+        'deconResults',
+        'sketchedMask',
         'graphics',
       ];
       map.layers.sort((a: __esri.Layer, b: __esri.Layer) => {
@@ -228,10 +263,19 @@ function Map({ height }: Props) {
   return (
     <Fragment>
       <div ref={mapRef} css={mapStyles(height)} data-testid="tots-map">
-        {mapView && sceneView && (
+        {map && mapView && sceneView && (
           <Fragment>
-            <MapWidgets mapView={mapView} sceneView={sceneView} />
-            <MapMouseEvents mapView={mapView} sceneView={sceneView} />
+            <MapWidgets map={map} mapView={mapView} sceneView={sceneView} />
+            <MapSketchWidgets
+              appType={appType}
+              mapView={mapView}
+              sceneView={sceneView}
+            />
+            <MapMouseEvents
+              appType={appType}
+              mapView={mapView}
+              sceneView={sceneView}
+            />
           </Fragment>
         )}
       </div>
