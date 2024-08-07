@@ -80,6 +80,7 @@ export function activateSketchButton(id: string) {
 export async function calculateArea(
   graphic: __esri.Graphic,
   sceneView: __esri.SceneView | null,
+  units: 'sqinches' | 'sqmeters' = 'sqmeters',
 ) {
   if (hasDifferingZ(graphic) && sceneView) {
     const areaMeasurement = new AreaMeasurementAnalysis({
@@ -98,7 +99,7 @@ export async function calculateArea(
     const areaSM = analysisView.result.area.value;
     const areaSI = areaSM * 1550.0031000062;
     sceneView.analyses.remove(areaMeasurement);
-    return areaSI;
+    return units === 'sqinches' ? areaSI : areaSM;
   } else {
     await loadProjection();
     if (!loadedProjection) return 'ERROR - Projection library not loaded';
@@ -134,7 +135,10 @@ export async function calculateArea(
     if (!projectedGeometry) return 'ERROR - Projected Geometry is null';
 
     // calulate the area
-    return geometryEngine.planarArea(projectedGeometry, 109454);
+    return geometryEngine.planarArea(
+      projectedGeometry,
+      units === 'sqinches' ? 109454 : 109404,
+    );
   }
 }
 

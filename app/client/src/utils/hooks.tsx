@@ -916,7 +916,11 @@ export function useCalculatePlan() {
           const calcGraphic = graphic.clone();
 
           // calculate the area using the custom hook
-          const areaSI = await calculateArea(graphic, sceneViewForArea);
+          const areaSI = await calculateArea(
+            graphic,
+            sceneViewForArea,
+            'sqinches',
+          );
           if (typeof areaSI !== 'number') {
             continue;
           }
@@ -1311,7 +1315,7 @@ export function useCalculateDeconPlan() {
       let planGraphics: PlanGraphics = {};
       const aoiGraphics: __esri.Graphic[] = [];
       for (const planId of Object.keys(aoiData.graphics)) {
-        if (!aoiData.graphics?.[planId]) return;
+        if (!aoiData.graphics?.[planId]) continue;
 
         aoiGraphics.push(...aoiData.graphics[planId]);
         let planAoiArea = 0;
@@ -1681,7 +1685,7 @@ export function useCalculateDeconPlan() {
         if (aoiData.graphics) {
           const aoiContamIntersectGraphics: __esri.Graphic[] = [];
           // partition AOI to determine where contamination is
-          for (const key in Object.keys(aoiData.graphics)) {
+          for (const key of Object.keys(aoiData.graphics)) {
             const planGraphics = aoiData.graphics?.[key] ?? [];
             for (const graphic of planGraphics) {
               for (const contamGraphic of (
@@ -1693,7 +1697,7 @@ export function useCalculateDeconPlan() {
                   graphic.geometry,
                   contamGraphic.geometry,
                 ) as __esri.Geometry;
-                if (!outGeometry) return;
+                if (!outGeometry) continue;
 
                 const clippedAreaM2 = await calculateArea(
                   new Graphic({ geometry: outGeometry }),
@@ -2301,7 +2305,7 @@ export function useCalculateDeconPlan() {
               contamGraphic.attributes.ROOFS = null;
               contamGraphic.attributes.FLOORS = null;
               newContamGraphics.push(contamGraphic);
-              return;
+              continue;
             }
 
             // const contamContainsDecon = geometryEngine.contains(
@@ -2346,7 +2350,7 @@ export function useCalculateDeconPlan() {
               // const avgFinal = sel.avgFinalContamination;
               if (sel.media.includes('Building')) {
                 for (const graphic of planData.graphics) {
-                  if (!graphic.attributes.CONTAMTYPE) return;
+                  if (!graphic.attributes.CONTAMTYPE) continue;
                   if (
                     !graphic.geometry ||
                     !contamGraphic.geometry ||
@@ -2355,7 +2359,7 @@ export function useCalculateDeconPlan() {
                       contamGraphic.geometry,
                     )
                   ) {
-                    return;
+                    continue;
                   }
 
                   const plumeCfu = graphic.attributes.CONTAMVALPLUME;
@@ -2386,7 +2390,7 @@ export function useCalculateDeconPlan() {
                   let cfu = mediaCfu * area;
 
                   const deconTech = sampleAttributesDecon[sel.deconTech?.value];
-                  if (!deconTech) return;
+                  if (!deconTech) continue;
 
                   const { LOD_NON: contaminationRemovalFactor } =
                     sampleAttributesDecon[sel.deconTech.value];
@@ -2407,7 +2411,7 @@ export function useCalculateDeconPlan() {
                 }
               } else {
                 surfaceRemovalCount += 1;
-                if (!sel.pctAoi || !sel.deconTech) return; // || !areaContamReduced) return;
+                if (!sel.pctAoi || !sel.deconTech) continue; // || !areaContamReduced) continue;
 
                 // console.log('sel.media: ', sel.media);
 
@@ -2451,7 +2455,7 @@ export function useCalculateDeconPlan() {
                     sceneViewForArea,
                   );
                   console.log('area1: ', area);
-                  if (typeof area !== 'number') return;
+                  if (typeof area !== 'number') continue;
 
                   // contaminatedSurfaceArea += area;
 
@@ -2665,7 +2669,7 @@ export function useCalculateDeconPlan() {
       let surfaceCfu = 0;
       let nonBuildingSurfaceArea = 0;
       for (const sel of newDeconTechSelections) {
-        if (!sel.pctAoi) return;
+        if (!sel.pctAoi) continue;
 
         const pctAoi = (planGraphics.aoiPercentages as any)[
           (mediaToBeepEnum as any)[sel.media]
@@ -2705,7 +2709,7 @@ export function useCalculateDeconPlan() {
 
             const area = await calculateArea(contamGraphic, sceneViewForArea);
             console.log('area2: ', area);
-            if (typeof area !== 'number') return;
+            if (typeof area !== 'number') continue;
 
             // contaminatedSurfaceArea += area;
 

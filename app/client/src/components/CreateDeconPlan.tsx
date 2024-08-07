@@ -1107,8 +1107,6 @@ function CreateDeconPlan() {
                           {generateRandomResponse.status ===
                             'exceededTransferLimit' &&
                             generateRandomExceededTransferLimitMessage}
-                          generateRandomResponse:{' '}
-                          {generateRandomResponse.status}
                           <button
                             css={submitButtonStyles}
                             disabled={

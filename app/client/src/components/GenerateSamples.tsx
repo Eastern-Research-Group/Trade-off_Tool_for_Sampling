@@ -646,7 +646,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       const sampleArea = sampleAttributes[sampleType.value as any].SA;
       for (const aoi of aois) {
         // calculate area of aoi
-        const areaOut = await calculateArea(aoi, sceneView);
+        const areaOut = await calculateArea(aoi, sceneView, 'sqinches');
         const area = typeof areaOut === 'number' ? areaOut : 0;
 
         // calculate statistical number of samples for aoi

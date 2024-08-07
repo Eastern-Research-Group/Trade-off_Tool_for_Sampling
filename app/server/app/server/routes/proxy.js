@@ -11,7 +11,11 @@ module.exports = function (app) {
   const router = express.Router();
 
   function deleteTSHeaders(response) {
-    if (!response.headers) return;
+    if (!response) return;
+
+    /* This is a workaround for an issue where service responses don't 
+      include headers. */
+    if (!response.headers) response.headers = {};
 
     /* The EPA Terminology Services (TS) exposes sensitive 
       information about its underlying technology. While we 
@@ -22,6 +26,9 @@ module.exports = function (app) {
     delete response.headers['server'];
     delete response.headers['x-aspnet-version'];
     // end of EPA TS work around.
+
+    // Disable cache for all proxy requests
+    response.headers['cache-control'] = 'no-cache';
   }
 
   router.get('/', function (req, res, next) {
