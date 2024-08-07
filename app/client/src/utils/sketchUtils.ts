@@ -1424,7 +1424,6 @@ export async function sampleValidation(
   async function performAreaToleranceCheck(graphic: __esri.Graphic) {
     // Get the area of the sample
     const area = await calculateArea(graphic, sceneView);
-    console.log('area3: ', area);
     if (typeof area !== 'number') return;
 
     // check that area is within allowable tolerance
