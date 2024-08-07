@@ -7,9 +7,12 @@ import * as geoprocessor from '@arcgis/core/rest/geoprocessor';
  * @param apiUrl The webservice url to fetch data from
  * @returns A promise that resolves to the fetch response.
  */
-export function fetchCheck(url: string) {
+export function fetchCheck(
+  url: string,
+  init: RequestInit | undefined = undefined,
+) {
   const startTime = performance.now();
-  return fetch(url)
+  return fetch(url, init)
     .then((response: any) => {
       logCallToGoogleAnalytics(url, response.status, startTime);
       return checkResponse(response);
@@ -22,6 +25,23 @@ export function fetchCheck(url: string) {
       logCallToGoogleAnalytics(url, status, startTime);
       return checkResponse(err);
     });
+}
+
+/**
+ * Performs a fetch through the TOTS proxy.
+ *
+ * @param url The webservice url to fetch data from
+ * @returns A promise that resolves to the fetch response.
+ */
+export function proxyFetch(
+  url: string,
+  init: RequestInit | undefined = undefined,
+) {
+  const { REACT_APP_PROXY_URL } = process.env;
+  // if environment variable is not set, default to use the current site origin
+  const proxyUrl = REACT_APP_PROXY_URL || `${window.location.origin}/proxy`;
+
+  return fetchCheck(`${proxyUrl}?url=${url}`, init);
 }
 
 /**

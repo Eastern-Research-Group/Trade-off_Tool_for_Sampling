@@ -5,6 +5,8 @@ import Popup from '@arcgis/core/widgets/Popup';
 import { SketchContext, SketchViewModelType } from 'contexts/Sketch';
 // utils
 import { use3dSketch } from 'utils/hooks';
+// types
+import { AppType } from 'types/Navigation';
 
 let ctrl = false;
 let shift = false;
@@ -28,18 +30,19 @@ function getGraphicFromResponse(res: any) {
 
 // --- components ---
 type Props = {
+  appType: AppType;
   mapView: __esri.MapView;
   sceneView: __esri.SceneView;
 };
 
-function MapMouseEvents({ mapView, sceneView }: Props) {
+function MapMouseEvents({ appType, mapView, sceneView }: Props) {
   const {
     displayDimensions,
     sampleAttributes,
     setSelectedSampleIds,
     sketchVM,
   } = useContext(SketchContext);
-  const { startSketch } = use3dSketch();
+  const { startSketch } = use3dSketch(appType);
 
   const handleMapClick = useCallback(
     (event: any, view: __esri.MapView | __esri.SceneView) => {
@@ -72,6 +75,7 @@ function MapMouseEvents({ mapView, sceneView }: Props) {
                 PERMANENT_IDENTIFIER,
                 DECISIONUNITUUID,
                 selection_method: 'sample-click',
+                graphic,
               },
             ];
           });
@@ -130,7 +134,7 @@ function MapMouseEvents({ mapView, sceneView }: Props) {
             curIds.toString() !== newIds.toString()
           ) {
             // find these graphics in the sketchLayer and open them
-            const sketchPopupItems = sketchVMG?.layer.graphics.filter((g) =>
+            const sketchPopupItems = sketchVMG?.layer?.graphics?.filter((g) =>
               newIds.includes(g.attributes.PERMANENT_IDENTIFIER),
             );
             if (sketchPopupItems && sketchPopupItems.length > 0)
@@ -170,15 +174,17 @@ function MapMouseEvents({ mapView, sceneView }: Props) {
         if (sceneView) sceneView.closePopup();
 
         // re-activate sketch tools if necessary
-        const button = document.querySelector('.sketch-button-selected');
-        if (button?.id && sketchVMG) {
-          const id = button.id;
+        if (appType === 'sampling') {
+          const button = document.querySelector('.sketch-button-selected');
+          if (button?.id && sketchVMG) {
+            const id = button.id;
 
-          // determine whether the sketch button draws points or polygons
-          const shapeType = id.includes('-sampling-mask')
-            ? 'polygon'
-            : sampleAttributesG[id as any].ShapeType;
-          startSketch(shapeType);
+            // determine whether the sketch button draws points or polygons
+            const shapeType = id.includes('-sampling-mask')
+              ? 'polygon'
+              : sampleAttributesG[id as any].ShapeType;
+            startSketch(shapeType);
+          }
         }
       }
     };
@@ -202,12 +208,12 @@ function MapMouseEvents({ mapView, sceneView }: Props) {
     sceneView.on('key-up', handleKeyUp);
 
     setInitialized(true);
-  }, [handleMapClick, initialized, mapView, sceneView, startSketch]);
+  }, [appType, handleMapClick, initialized, mapView, sceneView, startSketch]);
 
   // syncs the sampleAttributesG variable with the sampleAttributes context value
   useEffect(() => {
-    sampleAttributesG = sampleAttributes;
-  }, [sampleAttributes]);
+    if (appType === 'sampling') sampleAttributesG = sampleAttributes;
+  }, [appType, sampleAttributes]);
 
   // syncs the sketchVMG variable with the sketchVM context value
   useEffect(() => {

@@ -16,6 +16,7 @@ export type SelectedSampleType = {
   PERMANENT_IDENTIFIER: string;
   DECISIONUNITUUID: string;
   selection_method: 'row-click' | 'sample-click';
+  graphic: __esri.Graphic;
 };
 
 export type AttributeItems = {

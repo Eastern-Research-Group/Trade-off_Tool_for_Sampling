@@ -7,6 +7,7 @@ import React, {
   useContext,
   useEffect,
   useRef,
+  useState,
 } from 'react';
 import { css } from '@emotion/react';
 // components
@@ -14,6 +15,7 @@ import AddData from 'components/AddData';
 import Calculate from 'components/Calculate';
 import CalculateResults from 'components/CalculateResults';
 import ConfigureOutput from 'components/ConfigureOutput';
+import CreateDeconPlan from 'components/CreateDeconPlan';
 import LoadingSpinner from 'components/LoadingSpinner';
 import LocateSamples from 'components/LocateSamples';
 import Publish from 'components/Publish';
@@ -22,13 +24,16 @@ import GettingStarted from 'components/GettingStarted';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 import { NavigationContext } from 'contexts/Navigation';
+// utils
+import { useCalculateDeconPlan, useCalculatePlan } from 'utils/hooks';
 // config
 import { navPanelWidth } from 'config/appConfig';
-import { panels, PanelType } from 'config/navigation';
+import { deconPanels, PanelType, samplingPanels } from 'config/navigation';
+// types
+import { AppType } from 'types/Navigation';
 // styles
 import '@reach/dialog/styles.css';
 import { colors } from 'styles';
-import { useCalculatePlan } from 'utils/hooks';
 
 const panelWidth = '325px';
 const resultsPanelWidth = '500px';
@@ -87,6 +92,7 @@ const navTextStyles = css`
 // --- components (NavButton) ---
 type NavButtonProps = {
   panel: PanelType;
+  panelIndex: number;
   selectedPanel: PanelType | null;
   visitedStepIndex: number;
   onClick: (ev: ReactMouseEvent<HTMLElement>) => void;
@@ -94,6 +100,7 @@ type NavButtonProps = {
 
 function NavButton({
   panel,
+  panelIndex,
   selectedPanel,
   visitedStepIndex,
   onClick,
@@ -103,9 +110,6 @@ function NavButton({
   // check if this button is selected
   const selectedValue = selectedPanel && selectedPanel.value;
   const selected = value === selectedValue;
-
-  // get the index of the panel
-  const panelIndex = panels.findIndex((item) => item.value === panel.value);
 
   // get the color of the button
   let color = buttonColor;
@@ -313,10 +317,11 @@ const resultsCollapsePanelButton = css`
 
 // --- components (NavBar) ---
 type Props = {
+  appType: AppType;
   height: number;
 };
 
-function NavBar({ height }: Props) {
+function NavBar({ appType, height }: Props) {
   const { calculateResults } = useContext(CalculateContext);
   const {
     currentPanel,
@@ -332,6 +337,8 @@ function NavBar({ height }: Props) {
     resultsExpanded,
     setResultsExpanded,
   } = useContext(NavigationContext);
+
+  const [panels] = useState(appType === 'decon' ? deconPanels : samplingPanels);
 
   const toggleExpand = useCallback(
     (panel: PanelType, panelIndex: number) => {
@@ -371,7 +378,7 @@ function NavBar({ height }: Props) {
     if (goToPanel) toggleExpand(goToPanel, goToPanelIndex);
 
     setGoTo('');
-  }, [goTo, setGoTo, toggleExpand]);
+  }, [goTo, panels, setGoTo, toggleExpand]);
 
   useEffect(() => {
     if (calculateResults.status !== 'none') {
@@ -400,7 +407,9 @@ function NavBar({ height }: Props) {
   }
 
   // run calculations to update the running tally
-  useCalculatePlan();
+  const useCalcPlan =
+    appType === 'decon' ? useCalculateDeconPlan : useCalculatePlan;
+  useCalcPlan();
 
   const pannelRef = useRef<HTMLDivElement>(null);
 
@@ -431,6 +440,7 @@ function NavBar({ height }: Props) {
                 <NavButton
                   key={index}
                   panel={panel}
+                  panelIndex={index}
                   selectedPanel={currentPanel}
                   visitedStepIndex={latestStepIndex}
                   onClick={() => setGoTo(panel.value)}
@@ -498,13 +508,15 @@ function NavBar({ height }: Props) {
             </div>
           )}
 
-          <button
-            onClick={(ev) => setGettingStartedOpen(!gettingStartedOpen)}
-            css={navButtonStyles(false)}
-          >
-            <i className="fas fa-question" css={helpIconStyles} />
-            Help
-          </button>
+          {appType === 'sampling' && (
+            <button
+              onClick={(ev) => setGettingStartedOpen(!gettingStartedOpen)}
+              css={navButtonStyles(false)}
+            >
+              <i className="fas fa-question" css={helpIconStyles} />
+              Help
+            </button>
+          )}
         </div>
       </div>
       {currentPanel && (
@@ -523,12 +535,21 @@ function NavBar({ height }: Props) {
               id="tots-panel-scroll-container"
               css={floatPanelScrollContainerStyles}
             >
-              {currentPanel.value === 'search' && <Search />}
-              {currentPanel.value === 'addData' && <AddData />}
+              {currentPanel.value === 'search' && <Search appType={appType} />}
+              {currentPanel.value === 'addData' && (
+                <AddData appType={appType} />
+              )}
               {currentPanel.value === 'locateSamples' && <LocateSamples />}
-              {currentPanel.value === 'calculate' && <Calculate />}
-              {currentPanel.value === 'configureOutput' && <ConfigureOutput />}
-              {currentPanel.value === 'publish' && <Publish />}
+              {currentPanel.value === 'decon' && <CreateDeconPlan />}
+              {currentPanel.value === 'calculate' && (
+                <Calculate appType={appType} />
+              )}
+              {currentPanel.value === 'configureOutput' && (
+                <ConfigureOutput appType={appType} />
+              )}
+              {currentPanel.value === 'publish' && (
+                <Publish appType={appType} />
+              )}
             </div>
           </div>
         </div>

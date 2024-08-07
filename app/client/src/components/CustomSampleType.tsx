@@ -12,6 +12,7 @@ import { PublishContext } from 'contexts/Publish';
 import { SketchContext } from 'contexts/Sketch';
 // types
 import { EditsType } from 'types/Edits';
+import { AppType } from 'types/Navigation';
 // config
 import {
   AttributeItems,
@@ -125,10 +126,11 @@ const inputStyles = css`
 
 // --- components (CustomSampleType) ---
 type CustomSampleTypeProps = {
+  appType: AppType;
   id: string;
 };
 
-function CustomSampleType({ id }: CustomSampleTypeProps) {
+function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
   const { setOptions } = useContext(DialogContext);
   const { setSampleTypeSelections } = useContext(PublishContext);
   const {
@@ -499,6 +501,7 @@ function CustomSampleType({ id }: CustomSampleTypeProps) {
                             const collection = new Collection<__esri.Graphic>();
                             collection.addMany(graphicsToRemove);
                             editsCopy = updateLayerEdits({
+                              appType,
                               edits: editsCopy,
                               layer,
                               type: 'delete',
@@ -1021,6 +1024,7 @@ function CustomSampleType({ id }: CustomSampleTypeProps) {
                           const collection = new Collection<__esri.Graphic>();
                           collection.addMany(editedGraphics);
                           editsCopy = updateLayerEdits({
+                            appType,
                             edits: editsCopy,
                             layer,
                             type: 'update',

@@ -2,10 +2,10 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { createRoot } from 'react-dom/client';
 // components
-import App from 'components/App';
+import Root from 'index';
 
 it('renders without crashing', () => {
   const rootElement = document.createElement('div');
-  createRoot(rootElement).render(<App />);
+  createRoot(rootElement).render(<Root />);
   ReactDOM.unmountComponentAtNode(rootElement);
 });

@@ -47,7 +47,9 @@ import {
   LayerEditsType,
   ScenarioEditsType,
 } from 'types/Edits';
+import { LayerType } from 'types/Layer';
 import { ErrorType } from 'types/Misc';
+import { AppType } from 'types/Navigation';
 // config
 import {
   noSamplesPublishMessage,
@@ -58,7 +60,6 @@ import {
   publishSuccessMessage,
   webServiceErrorMessage,
 } from 'config/errorMessages';
-import { LayerType } from 'types/Layer';
 
 type PublishResults = {
   [key: string]: {
@@ -131,7 +132,11 @@ const webMapContainerCheckboxStyles = css`
 `;
 
 // --- components (Publish) ---
-function Publish() {
+type Props = {
+  appType: AppType;
+};
+
+function Publish({ appType }: Props) {
   const { oAuthInfo, portal, setSignedIn, setPortal, signedIn } = useContext(
     AuthenticationContext,
   );
@@ -1939,6 +1944,21 @@ function Publish() {
       (sampleTypesNameCheck.status === 'none' ||
         sampleTypesNameCheck.status === 'success'));
 
+  if (appType === 'decon') {
+    return (
+      <div css={panelContainer}>
+        <h2>Publish Output</h2>
+        <div css={sectionContainer}>
+          <MessageBox
+            severity="warning"
+            title="Feature Not Yet Available"
+            message="This feature is not available yet."
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div css={panelContainer}>
       <h2>Publish Output</h2>
@@ -1993,6 +2013,7 @@ function Publish() {
         {(publishResponse.status === 'name-not-available' ||
           publishPartialResponse.status === 'name-not-available') && (
           <EditScenario
+            appType={appType}
             initialScenario={selectedScenario}
             initialStatus="name-not-available"
             onSave={(saveResults) => {
@@ -2179,6 +2200,7 @@ function Publish() {
       {publishSamplesResponse.status === 'name-not-available' &&
         publishSamplesMode === 'new' && (
           <EditCustomSampleTypesTable
+            appType={appType}
             initialStatus="name-not-available"
             onSave={(saveResults) => {
               if (!saveResults) return;

@@ -22,6 +22,8 @@ import {
 } from 'react-table';
 import { VariableSizeList } from 'react-window';
 import { useWindowSize } from '@reach/window-size';
+// components
+import Select from 'components/Select';
 
 const inputStyles = css`
   width: 100%;
@@ -32,6 +34,7 @@ const inputStyles = css`
   border-radius: 3px;
   font-weight: 400;
   outline-width: 0;
+  height: 38px;
 `;
 
 function generateFilterInput({
@@ -68,7 +71,7 @@ const tableStyles = ({
   height?: number;
   hideHeader: boolean;
 }) => css`
-  ${height ? `height: ${height}px;` : 'max-height: 400px;'}
+  ${height === -1 ? '' : height ? `height: ${height}px;` : 'max-height: 400px;'}
   border: 1px solid rgba(0, 0, 0, 0.1);
 
   /* These styles are suggested for the table fill all available space in its containing element */
@@ -630,12 +633,17 @@ type EditableCellProps = {
 
 export function ReactTableEditableCell({
   value: initialValue,
-  row: { index },
-  column: { id },
+  row,
+  column,
   updateMyData, // This is a custom function that we supplied to our table instance
 }: EditableCellProps) {
   // We need to keep and update the state of the cell normally
   const [value, setValue] = useState(initialValue);
+
+  const index = row.index;
+  const id = column.id;
+  const editType: 'input' | 'select' | null | undefined = column.editType;
+  const options: { label: string; value: string }[] = column.options;
 
   const onChange = (e: any) => {
     setValue(e.target.value);
@@ -657,13 +665,33 @@ export function ReactTableEditableCell({
     setValue(initialValue);
   }, [initialValue]);
 
-  return (
-    <input
-      value={value}
-      onChange={onChange}
-      onBlur={onBlur}
-      onKeyDown={onKeyDown}
-      css={inputStyles}
-    />
-  );
+  if (editType === 'input')
+    return (
+      <input
+        value={value}
+        onChange={onChange}
+        onBlur={onBlur}
+        onKeyDown={onKeyDown}
+        css={inputStyles}
+      />
+    );
+
+  if (editType === 'select')
+    return (
+      <Select
+        styles={{
+          menuPortal: (base) => ({ ...base, fontSize: '0.78em', zIndex: 9999 }),
+        }}
+        value={value}
+        options={options}
+        menuPortalTarget={document.body}
+        onChange={(ev) => {
+          setValue(ev as any);
+          updateMyData(index, id, ev);
+        }}
+        isClearable={true}
+      />
+    );
+
+  return value;
 }

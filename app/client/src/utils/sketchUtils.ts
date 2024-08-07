@@ -15,6 +15,7 @@ import { Dispatch, SetStateAction } from 'react';
 // contexts
 import { SampleTypes } from 'contexts/LookupFiles';
 // types
+import { DefaultSymbolsType } from 'config/sampleAttributes';
 import {
   EditsType,
   EditType,
@@ -23,7 +24,7 @@ import {
   ScenarioEditsType,
 } from 'types/Edits';
 import { LayerType } from 'types/Layer';
-import { DefaultSymbolsType } from 'config/sampleAttributes';
+import { AppType } from 'types/Navigation';
 // config
 import {
   PolygonSymbol,
@@ -79,6 +80,7 @@ export function activateSketchButton(id: string) {
 export async function calculateArea(
   graphic: __esri.Graphic,
   sceneView: __esri.SceneView | null,
+  units: 'sqinches' | 'sqmeters' = 'sqmeters',
 ) {
   if (hasDifferingZ(graphic) && sceneView) {
     const areaMeasurement = new AreaMeasurementAnalysis({
@@ -97,7 +99,7 @@ export async function calculateArea(
     const areaSM = analysisView.result.area.value;
     const areaSI = areaSM * 1550.0031000062;
     sceneView.analyses.remove(areaMeasurement);
-    return areaSI;
+    return units === 'sqinches' ? areaSI : areaSM;
   } else {
     await loadProjection();
     if (!loadedProjection) return 'ERROR - Projection library not loaded';
@@ -133,7 +135,10 @@ export async function calculateArea(
     if (!projectedGeometry) return 'ERROR - Projected Geometry is null';
 
     // calulate the area
-    return geometryEngine.planarArea(projectedGeometry, 109454);
+    return geometryEngine.planarArea(
+      projectedGeometry,
+      units === 'sqinches' ? 109454 : 109404,
+    );
   }
 }
 
@@ -167,12 +172,15 @@ export function convertToSimpleGraphic(graphic: __esri.Graphic) {
   if (graphic?.geometry?.type === 'polygon') {
     geometry = graphic.geometry as __esri.Polygon;
   }
+  if (graphic?.geometry?.type === 'point') {
+    geometry = graphic.geometry as __esri.Point;
+  }
 
   // currently we only have polygons
   // in the future we may need to add code to handle different geometry types
   return {
     attributes: graphic.attributes ? { ...graphic.attributes } : {},
-    geometry: geometry,
+    geometry,
   };
 }
 
@@ -1120,6 +1128,7 @@ export function getZValue(graphic: __esri.Graphic) {
  * @param newLayer The new layer to move samples to. Only for "Move" type
  */
 export function handlePopupClick(
+  appType: AppType,
   edits: EditsType,
   setEdits: Dispatch<SetStateAction<EditsType>>,
   layers: LayerType[],
@@ -1177,6 +1186,7 @@ export function handlePopupClick(
 
       // make a copy of the edits context variable
       editsCopy = updateLayerEdits({
+        appType,
         edits: editsCopy,
         layer: tempSketchLayer,
         type: 'update',
@@ -1197,6 +1207,7 @@ export function handlePopupClick(
 
       // add the graphics to move to the new layer
       editsCopy = updateLayerEdits({
+        appType,
         edits: editsCopy,
         layer: newLayer,
         type: 'add',
@@ -1205,6 +1216,7 @@ export function handlePopupClick(
 
       // remove the graphics from the old layer
       editsCopy = updateLayerEdits({
+        appType,
         edits: editsCopy,
         layer: tempSketchLayer,
         type: 'delete',
@@ -1257,6 +1269,7 @@ export function handlePopupClick(
 
       // add the graphics to move to the new layer
       editsCopy = updateLayerEdits({
+        appType,
         edits: editsCopy,
         layer: tempSketchLayer,
         type: 'update',
@@ -1302,7 +1315,8 @@ export function handlePopupClick(
  * @returns false if all z values are the same and true if any are different
  */
 export function hasDifferingZ(graphic: __esri.Graphic) {
-  if (!graphic || graphic.geometry.type !== 'polygon') return false;
+  if (!graphic || !graphic.geometry || graphic.geometry.type !== 'polygon')
+    return false;
 
   const poly = graphic.geometry as __esri.Polygon;
   const firstCoordinate = poly.rings?.[0]?.[0];
@@ -1611,6 +1625,7 @@ export async function setZValues({
  * @param hasContaminationRan Keeps track of whether or not contamination has ran for this layer
  */
 export function updateLayerEdits({
+  appType,
   edits,
   scenario,
   layer,
@@ -1618,6 +1633,7 @@ export function updateLayerEdits({
   changes,
   hasContaminationRan = false,
 }: {
+  appType: AppType;
   edits: EditsType;
   scenario?: ScenarioEditsType | null;
   layer: LayerType;
@@ -1677,7 +1693,7 @@ export function updateLayerEdits({
     // handle property changes
     if (editsScenario) {
       editsScenario.visible = layer.visible;
-      editsScenario.listMode = layer.listMode;
+      if (appType === 'sampling') editsScenario.listMode = layer.listMode;
       if (editsScenario.status === 'published') editsScenario.status = 'edited';
     }
 

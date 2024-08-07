@@ -1,6 +1,37 @@
 import { EditsType } from 'types/Edits';
 import { LayerType } from 'types/Layer';
 
+export function activateSketchButton(id: string) {
+  const sketchSelectedClass = 'sketch-button-selected';
+  let wasSet = false;
+  const sketchButtons = document.getElementsByClassName('sketch-button');
+  for (let i = 0; i < sketchButtons.length; i++) {
+    const sketchButton = sketchButtons[i];
+
+    // make the button active if the id matches the provided id
+    if (sketchButton.id === id) {
+      // make the style of the button active
+      if (!sketchButton.classList.contains(sketchSelectedClass)) {
+        sketchButton.classList.add(sketchSelectedClass);
+        wasSet = true;
+      } else {
+        // toggle the button off
+        sketchButton.classList.remove(sketchSelectedClass);
+        const activeElm = document?.activeElement as any;
+        activeElm?.blur();
+      }
+      continue;
+    }
+
+    // remove the selected class from all other buttons
+    if (sketchButton.classList.contains(sketchSelectedClass)) {
+      sketchButton.classList.remove(sketchSelectedClass);
+    }
+  }
+
+  return wasSet;
+}
+
 /**
  * Utility function to split up an array into chunks of a designated length.
  *
@@ -82,6 +113,11 @@ export function escapeForLucene(value: string) {
  */
 export function escapeRegex(str: string) {
   return str.replace(/([.*+?^=!:${}()|\]\\])/g, '\\$1');
+}
+
+export function formatNumber(value: number, precision: number = 0) {
+  const output = parseSmallFloat(value, precision);
+  return output ? output.toLocaleString() : output;
 }
 
 /**
@@ -174,4 +210,21 @@ export function getScenarioName(edits: EditsType, desiredName: string) {
     return `${newName} (${
       duplicateCount === numInDesiredName ? duplicateCount + 1 : duplicateCount
     })`;
+}
+
+/**
+ * Checks if the provided error is an abort error.
+ *
+ * @param error
+ * @returns true if it is an abort error
+ */
+export function isAbort(error: unknown) {
+  if (!error || typeof error !== 'object' || !('name' in error)) return false;
+  return (error as Error).name === 'AbortError';
+}
+
+export function parseSmallFloat(number: number, precision: number = 15) {
+  if (precision < 0) return number;
+  if (typeof number !== 'number') return number;
+  return parseFloat(number.toFixed(precision));
 }

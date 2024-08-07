@@ -41,7 +41,7 @@ app.use(function (req, res, next) {
  Revoke unneeded and potentially harmful HTTP methods
  ****************************************************************/
 app.use(function (req, res, next) {
-  var whiteList = ['GET', 'POST', 'HEAD'];
+  var whiteList = ['GET', 'POST', 'HEAD', 'OPTIONS'];
   if (whiteList.indexOf(req.method) != -1) next();
   else {
     res.sendStatus(401);

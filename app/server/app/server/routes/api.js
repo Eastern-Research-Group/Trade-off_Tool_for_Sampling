@@ -96,14 +96,14 @@ module.exports = function (app) {
         'data/config/layerProps.json',
         'data/config/services.json',
         'data/notifications/messages.json',
-        'data/sampleTypes/sampleTypes.json',
+        'data/technologyTypes/types.json',
       ],
       (data) => {
         return {
           layerProps: data[0],
           services: data[1],
           notifications: data[2],
-          sampleTypes: data[3],
+          technologyTypes: data[3],
         };
       },
     );
