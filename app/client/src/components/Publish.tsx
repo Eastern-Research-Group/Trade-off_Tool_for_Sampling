@@ -1679,7 +1679,7 @@ function Publish({ appType }: Props) {
           setPublishSamplesResponse({
             status: 'success',
             summary: { success, failed },
-            rawData: res.edits,
+            rawData: res,
           });
           setUserDefinedAttributes(newUserDefinedAttributes);
 
@@ -2177,7 +2177,10 @@ function Publish({ appType }: Props) {
         (!includeCustomSampleTypes ||
           (includeCustomSampleTypes &&
             publishSamplesResponse.status === 'success')) &&
-        publishSuccessMessage}
+        publishSuccessMessage([
+          publishPartialResponse.rawData?.itemData,
+          publishSamplesResponse.rawData?.itemData,
+        ])}
 
       {!signedIn && notLoggedInMessage}
       {(includeFullPlan || includePartialPlan) &&

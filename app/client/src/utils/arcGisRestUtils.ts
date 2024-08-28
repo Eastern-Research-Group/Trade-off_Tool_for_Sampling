@@ -171,8 +171,7 @@ function getFeatureServiceRetry(
           } else {
             // recursive retry (1 second between retries)
             console.log(
-              `Failed to fetch feature service. Retrying (${
-                retryCount + 1
+              `Failed to fetch feature service. Retrying (${retryCount + 1
               } of 3)...`,
             );
             setTimeout(() => fetchLookup(retryCount + 1), 1000);
@@ -221,8 +220,7 @@ function getFeatureServiceWrapped(
           // Workaround for esri.Portal not having credential
           const tempPortal: any = portal;
           fetchCheck(
-            `${portalService.url}?f=json${getEnvironmentStringParam()}&token=${
-              tempPortal.credential.token
+            `${portalService.url}?f=json${getEnvironmentStringParam()}&token=${tempPortal.credential.token
             }`,
           )
             .then((res) => {
@@ -2575,6 +2573,8 @@ function publish({
 
     getFeatureService(portal, serviceMetaData)
       .then((service: any) => {
+        const itemName: string = service.portalService.name;
+        const itemServiceUrl: string = service.portalService.itemPageUrl;
         const serviceUrl: string = service.portalService.url;
         const portalId: string = service.portalService.id;
         const idMapping: any = {};
@@ -2724,6 +2724,10 @@ function publish({
                         edits: editsRes.response,
                         table: editsRes.table,
                         calculateSettings: editsRes.calculateSettingsTableOut,
+                        itemData: {
+                          name: itemName,
+                          serviceUrl: itemServiceUrl,
+                        },
                       });
                     } catch (err) {
                       window.logErrorToGa(err);
@@ -2784,6 +2788,8 @@ function publishTable({
 
     getFeatureService(portal, serviceMetaData, true)
       .then((service: any) => {
+        const itemName: string = service.portalService.name;
+        const itemServiceUrl: string = service.portalService.itemPageUrl;
         const serviceUrl: string = service.portalService.url;
 
         // publish the edits
@@ -2793,6 +2799,10 @@ function publishTable({
               resolve({
                 service,
                 edits: res,
+                itemData: {
+                  name: itemName,
+                  serviceUrl: itemServiceUrl,
+                },
               }),
             )
             .catch((err) => reject(err));
