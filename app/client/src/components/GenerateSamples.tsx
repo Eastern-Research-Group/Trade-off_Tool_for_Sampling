@@ -711,25 +711,24 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     console.log('aois (post calculations): ', aoisFull);
   }, [aoisFull]);
 
-  const [validationMessage, setValidationMessage] = useState('');
+  const [validationMessages, setValidationMessages] = useState<string[]>([]);
   useEffect(() => {
-    let failedFields = [];
-    if (!validateDecimalInput(percentConfidence))
-      failedFields.push('"Percent Confidence"');
-    if (!validateDecimalInput(percentComplient))
-      failedFields.push('"Percent Complient"');
-
-    setValidationMessage(
-      failedFields.length > 0
-        ? `${failedFields.join(' and ')} must be a number between 50 and 100.`
-        : '',
-    );
+    let messages: string[] = [];
+    validateDecimalInput(messages, percentConfidence, 'Percent Confidence');
+    validateDecimalInput(messages, percentComplient, 'Percent Complient', 100);
+    setValidationMessages(messages);
   }, [percentComplient, percentConfidence]);
 
-  function validateDecimalInput(value: string) {
+  function validateDecimalInput(
+    messages: string[],
+    value: string,
+    label: string,
+    topEnd = 99.999,
+  ) {
     const float = parseFloat(value);
-    if (isNaN(float) || float < 50 || float >= 100) return false;
-    return true;
+    if (isNaN(float) || float < 50 || float > topEnd) {
+      messages.push(`"${label}" must be a number between 50 and ${topEnd}.`);
+    }
   }
 
   return (
@@ -910,11 +909,21 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
                     {numberRandomSamples && (
                       <Fragment>
-                        {validationMessage && (
+                        {validationMessages.length > 0 && (
                           <MessageBox
                             severity="warning"
                             title=""
-                            message={validationMessage}
+                            message={
+                              validationMessages.length > 1 ? (
+                                <ul>
+                                  {validationMessages.map((m) => (
+                                    <li>{m}</li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                validationMessages[0]
+                              )
+                            }
                           />
                         )}
                         <span>
@@ -989,7 +998,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                     css={submitButtonStyles}
                     disabled={
                       generateRandomResponse.status === 'fetching' ||
-                      validationMessage !== ''
+                      validationMessages.length > 0
                     }
                     type="submit"
                   >
