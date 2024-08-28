@@ -362,16 +362,40 @@ export const noServiceNameMessage = (
 );
 
 export const publishSuccessMessage = (
-  <MessageBox
-    severity="info"
-    title="Publish Succeeded"
-    message={
-      'To view or share your TOTS content with others, go to the ' +
-      'My Content menu in the Content section of your ArcGIS ' +
-      'Online organization.'
-    }
-  />
-);
+  itemData?: { name: string; serviceUrl: string }[],
+) => {
+  const items = itemData?.filter((data) => data?.serviceUrl);
+  return (
+    <MessageBox
+      severity="info"
+      title="Publish Succeeded"
+      message={
+        <div>
+          <span>
+            To view or share your TOTS content with others, go to the My Content
+            menu in the Content section of your ArcGIS Online organization
+            {items && items.length > 0 ? ' or click the link(s) below' : ''}.
+          </span>
+          {items && items.length > 0 && (
+            <ul>
+              {items.map((item) => (
+                <li key={item.serviceUrl}>
+                  <a
+                    href={item.serviceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {item.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      }
+    />
+  );
+};
 
 // scenario name / description component messages
 export const scenarioNameTakenMessage = (scenarioName: string) => (
