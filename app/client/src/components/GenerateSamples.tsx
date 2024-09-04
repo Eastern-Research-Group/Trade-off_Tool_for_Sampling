@@ -142,6 +142,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     aoiSketchVM,
     defaultSymbols,
     displayDimensions,
+    displayGeometryType,
     edits,
     getGpMaxRecordCount,
     layers,
@@ -718,7 +719,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
   useEffect(() => {
     let messages: string[] = [];
     validateDecimalInput(messages, percentConfidence, 'Percent Confidence');
-    validateDecimalInput(messages, percentComplient, 'Percent Complient', 100);
+    validateDecimalInput(messages, percentComplient, 'Percent Complient');
     setValidationMessages(messages);
   }, [percentComplient, percentConfidence]);
 
@@ -996,6 +997,15 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                         Snap to Ground
                       </label>
                     </div>
+
+                    {type === 'statistic' &&
+                      displayGeometryType !== 'polygons' && (
+                        <MessageBox
+                          severity="warning"
+                          title=""
+                          message="For an accurate representation of samples, please use Polygons for the Shape in Settings."
+                        />
+                      )}
 
                     {generateRandomResponse.status === 'success' &&
                       sketchLayer &&
