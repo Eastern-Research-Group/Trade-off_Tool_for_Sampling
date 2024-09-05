@@ -879,6 +879,14 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                 {generateRandomMode && (
                   <Fragment>
                     <br />
+                    {type === 'statistic' &&
+                      displayGeometryType !== 'polygons' && (
+                        <MessageBox
+                          severity="warning"
+                          title=""
+                          message="For an accurate representation of samples, please use Polygons for the Shape in Settings."
+                        />
+                      )}
                     <label htmlFor={`${id}-sample-type-select-input`}>
                       Sample Type
                     </label>
@@ -1003,15 +1011,6 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                         Snap to Ground
                       </label>
                     </div>
-
-                    {type === 'statistic' &&
-                      displayGeometryType !== 'polygons' && (
-                        <MessageBox
-                          severity="warning"
-                          title=""
-                          message="For an accurate representation of samples, please use Polygons for the Shape in Settings."
-                        />
-                      )}
 
                     {generateRandomResponse.status === 'success' &&
                       sketchLayer &&
