@@ -279,6 +279,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
     // get the sample type definition (can be established or custom)
     const typeuuid = sampleType.value;
+    const attributes = sampleAttributes[typeuuid as any];
     const sampleTypeFeatureSet = {
       displayFieldName: '',
       geometryType: 'esriGeometryPolygon',
@@ -289,13 +290,17 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       features: [
         {
           attributes: {
-            ...sampleAttributes[typeuuid as any],
+            ...attributes,
             GLOBALID: generateUUID(),
             PERMANENT_IDENTIFIER: generateUUID(),
           },
         },
       ],
     };
+
+    const surfaceArea = attributes.SA;
+    const sampleWidth = Math.sqrt(surfaceArea);
+    const minDistance = sampleWidth;
 
     // determine the number of service calls needed to satisfy the request
     const samplesPerCall = Math.floor(maxRecordCount / graphics.length);
@@ -315,6 +320,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
         Sample_Type: sampleType.label,
         Area_of_Interest_Mask: featureSet.toJSON(),
         Sample_Type_Parameters: sampleTypeFeatureSet,
+        Minimum_Allowed_Distance_inches: minDistance,
       };
       appendEnvironmentObjectParam(props);
 
