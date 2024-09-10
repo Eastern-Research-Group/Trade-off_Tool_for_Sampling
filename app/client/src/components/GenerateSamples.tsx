@@ -1004,7 +1004,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                                 <MessageBox
                                   severity="warning"
                                   title=""
-                                  message={`Max sample limit (${maxRecordCount.toLocaleString()}) exceeded. Please split your AOI into smaller non-overlapping AOIs or reduce the settings above and try again.`}
+                                  message={`Max sample limit (${maxRecordCount.toLocaleString()}) exceeded. Please split your AOI into smaller non-overlapping AOIs and try again.`}
                                 />
                               )}
                             <span>
