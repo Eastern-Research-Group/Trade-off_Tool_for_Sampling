@@ -189,6 +189,29 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     setSampleType(sampleTypeContext.data.sampleSelectOptions[0]);
   }, [sampleTypeContext, sampleType, setSampleType]);
 
+  const [maxRecordCount, setMaxRecordCount] = useState(0);
+  useEffect(() => {
+    if (!getGpMaxRecordCount || maxRecordCount) return;
+    getGpMaxRecordCount()
+      .then((res) => {
+        setMaxRecordCount(res);
+      })
+      .catch((err) => {
+        console.error(err);
+
+        setGenerateRandomResponse({
+          status: 'failure',
+          error: {
+            error: createErrorObject(err),
+            message: err.message,
+          },
+          data: [],
+        });
+
+        window.logErrorToGa(err);
+      });
+  }, [getGpMaxRecordCount, maxRecordCount]);
+
   // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
   // dropdown this will create an AOI layer. This also sets the sketchVM to use the
   // selected AOI and triggers a React useEffect to allow the user to sketch on the map.
@@ -240,7 +263,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       graphics: __esri.GraphicProperties[];
     }[],
   ) {
-    if (!getGpMaxRecordCount || !map || !sampleType || !sketchLayer) return;
+    if (!maxRecordCount || !map || !sampleType || !sketchLayer) return;
 
     let graphics: __esri.GraphicProperties[] = [];
     const originalValuesZ: number[] = [];
@@ -380,7 +403,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
   // Handle a user generating random or statistical samples
   async function randomSamples(ev: FormEvent<HTMLFormElement>) {
     ev.preventDefault();
-    if (!getGpMaxRecordCount || !map || !sampleType || !sketchLayer) return;
+    if (!maxRecordCount || !map || !sampleType || !sketchLayer) return;
 
     activateSketchButton('disable-all-buttons');
     sketchVM?.[displayDimensions].cancel();
@@ -399,8 +422,6 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     if (aoiMaskLayer.sketchLayer.type === 'feature') return;
 
     try {
-      const maxRecordCount = await getGpMaxRecordCount();
-
       const parameters: {
         inputParameters: any;
         originalValuesZ: number[];
@@ -977,6 +998,15 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                                 }
                               />
                             )}
+                            {maxRecordCount &&
+                              parseInt(numberRandomSamples) >
+                                maxRecordCount && (
+                                <MessageBox
+                                  severity="warning"
+                                  title=""
+                                  message={`Max sample limit (${maxRecordCount.toLocaleString()}) exceeded. Please split your AOI into smaller non-overlapping AOIs or reduce the settings above and try again.`}
+                                />
+                              )}
                             <span>
                               Number of resulting samples:{' '}
                               <strong>
