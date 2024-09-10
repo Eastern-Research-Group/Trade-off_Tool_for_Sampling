@@ -14,6 +14,7 @@ import Graphic from '@arcgis/core/Graphic';
 import Polygon from '@arcgis/core/geometry/Polygon';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 // components
+import InfoIcon from 'components/InfoIcon';
 import LoadingSpinner from 'components/LoadingSpinner';
 import MessageBox from 'components/MessageBox';
 import Select from 'components/Select';
@@ -67,6 +68,11 @@ const fullWidthSelectStyles = css`
   width: 100%;
   margin-right: 10px;
   margin-bottom: 10px;
+`;
+
+const infoIconStyles = css`
+  color: #19a3dd;
+  margin-left: 10px;
 `;
 
 const inlineMenuStyles = css`
@@ -918,7 +924,17 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                     {type === 'statistic' && (
                       <Fragment>
                         <label>
-                          <span>Percent Confidence</span>
+                          <span>
+                            Percent Confidence
+                            <InfoIcon
+                              cssStyles={infoIconStyles}
+                              id="percent-confidence-tooltip"
+                              tooltip={
+                                'This definition of percent confidence is the complement of Type 1 error (e.g., when 95% is chosen, there is a 5% chance of making a Type 1 error).'
+                              }
+                              place="bottom"
+                            />
+                          </span>
                           <input
                             css={inputStyles}
                             required
