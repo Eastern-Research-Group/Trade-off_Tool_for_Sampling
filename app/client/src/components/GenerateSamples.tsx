@@ -12,7 +12,6 @@ import Collection from '@arcgis/core/core/Collection';
 import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
 import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import Graphic from '@arcgis/core/Graphic';
-import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Polygon from '@arcgis/core/geometry/Polygon';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 // components
