@@ -540,10 +540,11 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
               aoisFull[i].graphic.geometry,
             );
             geometryTrimmed.forEach((geom) => {
-              intersectionGeometry = geometryEngine.difference(
+              const tempGeometry = geometryEngine.difference(
                 intersectionGeometry,
                 geom,
               );
+              if (tempGeometry) intersectionGeometry = tempGeometry;
             });
             geometryTrimmed.push(
               ...(Array.isArray(intersectionGeometry)
