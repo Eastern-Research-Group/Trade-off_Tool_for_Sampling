@@ -10,7 +10,9 @@ import React, {
 import { css } from '@emotion/react';
 import Collection from '@arcgis/core/core/Collection';
 import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
+import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import Graphic from '@arcgis/core/Graphic';
+import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Polygon from '@arcgis/core/geometry/Polygon';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 // components
@@ -54,7 +56,7 @@ import {
   setZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import { createErrorObject } from 'utils/utils';
+import { createErrorObject, toScale } from 'utils/utils';
 // styles
 import { reactSelectStyles } from 'styles';
 
@@ -177,6 +179,8 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     `${id}-percentComplient`,
     '99',
   );
+  const [percentX, setPercentX] = useState<number | null>(null);
+  const [percentY, setPercentY] = useState<number | null>(null);
   const [
     sampleType,
     setSampleType, //
@@ -227,6 +231,8 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       status: 'none',
       data: [],
     });
+    setPercentX(null);
+    setPercentY(null);
 
     // put the sketch layer on the map, if it isn't there already
     const layerIndex = map.layers.findIndex(
@@ -458,6 +464,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       const graphicsToAdd: __esri.Graphic[] = [];
       const hybridGraphicsToAdd: __esri.Graphic[] = [];
       const pointsToAdd: __esri.Graphic[] = [];
+      const geometryTrimmed: __esri.Geometry[] = [];
       for (let i = 0; i < responses.length; i++) {
         res = responses[i];
         const numberOfAois = requests[i].graphics.length;
@@ -528,6 +535,24 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
               generateRandomElevationMode === 'aoiElevation' ? originalZ : null,
           });
 
+          if (type === 'statistic') {
+            let intersectionGeometry = geometryEngine.intersect(
+              poly.geometry,
+              aoisFull[i].graphic.geometry,
+            );
+            geometryTrimmed.forEach((geom) => {
+              intersectionGeometry = geometryEngine.difference(
+                intersectionGeometry,
+                geom,
+              );
+            });
+            geometryTrimmed.push(
+              ...(Array.isArray(intersectionGeometry)
+                ? intersectionGeometry
+                : [intersectionGeometry]),
+            );
+          }
+
           graphicsToAdd.push(poly);
           pointsToAdd.push(convertToPoint(poly));
           hybridGraphicsToAdd.push(
@@ -538,6 +563,22 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
           index += 1;
         }
+      }
+
+      if (type === 'statistic') {
+        // get non-overlapping area in sample zone
+        let totalSampleAreaInAoi = 0;
+        for (const geometry of geometryTrimmed) {
+          const graphic = new Graphic({
+            geometry,
+          });
+          const area = await calculateArea(graphic, sceneView);
+          if (typeof area === 'number') totalSampleAreaInAoi += area;
+        }
+
+        // calculate percentX
+        const totalAoiArea = aoisFull.reduce((acc, cur) => acc + cur.area, 0);
+        setPercentX(toScale((totalSampleAreaInAoi / totalAoiArea) * 100, 2));
       }
 
       // put the graphics on the map
@@ -681,6 +722,8 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       const complientFloat = parseFloat(percentComplient);
       const confidenceFloat = parseFloat(percentConfidence);
       const sampleArea = sampleAttributes[sampleType.value as any].SA;
+      let totalAoiArea = 0;
+      let totalNumSamples = 0;
       for (const aoi of aois) {
         // calculate area of aoi
         const areaOut = await calculateArea(aoi, sceneView);
@@ -696,6 +739,9 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
           0.5 * (1 - Math.pow(a, 1 / V)) * (2 * N - V + 1),
         );
 
+        totalAoiArea += area;
+        totalNumSamples += numSamples;
+
         aoisFull.push({
           area,
           numSamples,
@@ -703,6 +749,11 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
           gridDefinition: N,
         });
       }
+
+      if (totalNumSamples && type === 'statistic')
+        setPercentY(
+          toScale(((sampleArea * totalNumSamples) / totalAoiArea) * 100, 2),
+        );
 
       setAoisFull(aoisFull);
     }
@@ -754,6 +805,9 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     validateDecimalInput(messages, percentConfidence, 'Percent Confidence');
     validateDecimalInput(messages, percentComplient, 'Percent Complient');
     setValidationMessages(messages);
+
+    setPercentX(null);
+    setPercentY(null);
   }, [percentComplient, percentConfidence]);
 
   function validateDecimalInput(
@@ -1064,11 +1118,22 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                         generateRandomResponse.data.length,
                         sketchLayer.label,
                       )}
+                    {type === 'statistic' &&
+                      percentX &&
+                      percentY &&
+                      percentX !== percentY && (
+                        <MessageBox
+                          severity="warning"
+                          title=""
+                          message={`Due to limited sample overlap and/or sample areas partially outside of the specified AOI, the current sampling plan reflects ${percentX.toLocaleString()}% rather than the goal of ${percentY.toLocaleString()}% of the AOI sampled.`}
+                        />
+                      )}
                     {generateRandomResponse.status === 'failure' &&
                       webServiceErrorMessage(generateRandomResponse.error)}
                     {generateRandomResponse.status ===
                       'exceededTransferLimit' &&
                       generateRandomExceededTransferLimitMessage}
+
                     {((generateRandomMode === 'draw' &&
                       numberRandomSamples &&
                       aoiSketchLayer?.sketchLayer.type === 'graphics' &&
