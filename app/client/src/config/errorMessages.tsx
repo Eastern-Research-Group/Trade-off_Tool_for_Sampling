@@ -240,11 +240,12 @@ export const generateRandomExceededTransferLimitMessage = (
 export const generateRandomSuccessMessage = (
   numSamples: number,
   layerName: string,
+  targetSamples?: number,
 ) => (
   <MessageBox
     severity="info"
     title="Samples Added"
-    message={`${numSamples} samples added to the "${layerName}" layer`}
+    message={`${numSamples}${targetSamples && numSamples !== targetSamples ? ` out of the goal of ${targetSamples}` : ''} samples added to the "${layerName}" layer`}
   />
 );
 

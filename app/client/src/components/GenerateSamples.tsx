@@ -131,6 +131,7 @@ type GenerateRandomType = {
   status: 'none' | 'fetching' | 'success' | 'failure' | 'exceededTransferLimit';
   error?: ErrorType;
   data: __esri.Graphic[];
+  targetSampleCount?: number;
 };
 
 type GenerateSamplesProps = {
@@ -427,6 +428,8 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     if (aoiMaskLayer.sketchLayer.type === 'feature') return;
 
     try {
+      const numSamplesToGenerate = parseInt(numberRandomSamples);
+
       const parameters: {
         inputParameters: any;
         originalValuesZ: number[];
@@ -435,7 +438,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       if (type === 'random') {
         randomSamplesSendRequests(
           aoiMaskLayer.sketchLayer.graphics,
-          parseInt(numberRandomSamples),
+          numSamplesToGenerate,
           maxRecordCount,
           parameters,
         );
@@ -631,6 +634,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       setGenerateRandomResponse({
         status: 'success',
         data: graphicsToAdd,
+        targetSampleCount: numSamplesToGenerate,
       });
 
       if (generateRandomMode === 'draw') {
@@ -1117,6 +1121,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                       generateRandomSuccessMessage(
                         generateRandomResponse.data.length,
                         sketchLayer.label,
+                        generateRandomResponse.targetSampleCount,
                       )}
                     {type === 'statistic' &&
                       percentX &&
