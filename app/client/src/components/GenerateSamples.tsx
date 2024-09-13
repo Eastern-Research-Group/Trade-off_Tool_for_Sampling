@@ -12,7 +12,9 @@ import Collection from '@arcgis/core/core/Collection';
 import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
 import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import Graphic from '@arcgis/core/Graphic';
+import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Polygon from '@arcgis/core/geometry/Polygon';
+import Polyline from '@arcgis/core/geometry/Polyline';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 // components
 import InfoIcon from 'components/InfoIcon';
@@ -50,10 +52,12 @@ import {
   calculateArea,
   convertToPoint,
   getCurrentDateTime,
+  getSimplePopupTemplate,
   generateUUID,
   removeZValues,
   setZValues,
   updateLayerEdits,
+  getZValue,
 } from 'utils/sketchUtils';
 import { createErrorObject, toScale } from 'utils/utils';
 // styles
@@ -155,6 +159,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     getGpMaxRecordCount,
     layers,
     map,
+    mapView,
     sampleAttributes,
     sceneView,
     setEdits,
@@ -282,8 +287,8 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
         FID: 0,
         Id: 0,
         TYPE: 'Area of Interest',
-        PERMANENT_IDENTIFIER: graphic.attributes.PERMANENT_IDENTIFIER,
-        GLOBALID: graphic.attributes.GLOBALID,
+        PERMANENT_IDENTIFIER: generateUUID(),
+        GLOBALID: generateUUID(),
         OBJECTID: -1,
       };
     });
@@ -406,6 +411,144 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     return requests;
   }
 
+  async function getSplitAoiAreas(aois: AoiType[]) {
+    if (!sampleType || !sceneView) return [];
+
+    if (window.location.search.includes('devMode=true'))
+      mapView?.graphics.removeAll();
+
+    const tempLayer = new GraphicsLayer({
+      title: 'Test AOI Trimming',
+    });
+    const tempGraphics: __esri.Graphic[] = [];
+
+    const aoisFull: AoiType[] = [];
+    let aoiIndex = 0;
+    for (const aoi of aois) {
+      let aoisToProcess = [
+        {
+          area: aoi.area,
+          graphic: aoi.graphic,
+          cut: 'vertical',
+        },
+      ];
+
+      // get number of splits
+      const numSubAois = (aoi.numSamples / maxRecordCount) * 2;
+
+      let tempAois: {
+        area: number;
+        graphic: __esri.Graphic;
+        percentAoi: number;
+      }[] = [];
+      while (aoisToProcess.length > 0 && tempAois.length < numSubAois) {
+        aoisToProcess.sort((a, b) => a.area - b.area);
+        const currentAoi = aoisToProcess.pop();
+        if (!currentAoi) continue;
+
+        if (tempAois.length + aoisToProcess.length + 1 < numSubAois) {
+          const extent = currentAoi.graphic.geometry.extent;
+
+          const z = getZValue(currentAoi.graphic);
+          const cutLine = new Polyline({
+            paths:
+              currentAoi.cut === 'vertical'
+                ? [
+                    [
+                      [extent.center.x, extent.ymin, z],
+                      [extent.center.x, extent.ymax, z],
+                    ],
+                  ]
+                : [
+                    [
+                      [extent.xmin, extent.center.y, z],
+                      [extent.xmax, extent.center.y, z],
+                    ],
+                  ],
+            spatialReference: currentAoi.graphic.geometry.spatialReference,
+          });
+
+          const cutResult = geometryEngine.cut(
+            currentAoi.graphic.geometry,
+            cutLine,
+          );
+
+          if (cutResult && cutResult.length > 0) {
+            // add the new parts to the list of AOIs to process
+            for (const part of cutResult) {
+              const graphic = new Graphic({
+                attributes: {
+                  ...currentAoi.graphic.attributes,
+                  GLOBALID: generateUUID(),
+                  PERMANENT_IDENTIFIER: generateUUID(),
+                },
+                geometry: part,
+              });
+
+              // calculate area of aoi
+              const areaOut = await calculateArea(graphic, sceneView);
+              const area = typeof areaOut === 'number' ? areaOut : 0;
+
+              aoisToProcess.push({
+                area,
+                graphic,
+                cut: currentAoi.cut === 'vertical' ? 'horizontal' : 'vertical',
+              });
+            }
+          }
+        } else {
+          // calculate area of aoi
+          const areaOut = await calculateArea(currentAoi.graphic, sceneView);
+          const area = typeof areaOut === 'number' ? areaOut : 0;
+
+          tempAois.push({
+            area,
+            graphic: currentAoi.graphic,
+            percentAoi: area / aoi.area,
+          });
+
+          if (window.location.search.includes('devMode=true')) {
+            tempGraphics.push(
+              new Graphic({
+                ...currentAoi,
+                geometry: currentAoi.graphic.geometry,
+                symbol: aoi.graphic.symbol,
+              }),
+            );
+          }
+        }
+      }
+
+      let samplesLeft = aoi.numSamples;
+      tempAois.sort((a, b) => b.area - a.area);
+      let index = 0;
+      for (let subAoi of tempAois) {
+        const samplesToGenerate =
+          tempAois.length === index + 1
+            ? samplesLeft
+            : Math.floor(aoi.numSamples * subAoi.percentAoi);
+        samplesLeft -= samplesToGenerate;
+        aoisFull.push({
+          area: subAoi.area,
+          graphic: subAoi.graphic,
+          gridDefinition: 0,
+          numSamples: samplesToGenerate,
+          originalAoiIndex: aoiIndex,
+        });
+        index += 1;
+      }
+
+      aoiIndex += 1;
+    }
+
+    if (map && window.location.search.includes('devMode=true')) {
+      tempLayer.addMany(tempGraphics);
+      map.layers.add(tempLayer);
+    }
+
+    return aoisFull;
+  }
+
   // Handle a user generating random or statistical samples
   async function randomSamples(ev: FormEvent<HTMLFormElement>) {
     ev.preventDefault();
@@ -444,8 +587,12 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
         );
       }
 
+      let aoisFullSplit: AoiType[] = [];
+      let aoisIndex: number[] = [];
       if (type === 'statistic') {
-        aoisFull.forEach((aoi) => {
+        aoisFullSplit = await getSplitAoiAreas(aoisFull);
+        aoisFullSplit.forEach((aoi) => {
+          aoisIndex.push();
           randomSamplesSendRequests(
             new Collection([aoi.graphic]),
             aoi.numSamples,
@@ -540,7 +687,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
           if (type === 'statistic') {
             let intersectionGeometry = geometryEngine.intersect(
               poly.geometry,
-              aoisFull[i].graphic.geometry,
+              aoisFull[aoisFullSplit[i].originalAoiIndex].graphic.geometry,
             );
             geometryTrimmed.forEach((geom) => {
               const tempGeometry = geometryEngine.difference(
@@ -569,14 +716,38 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       }
 
       if (type === 'statistic') {
+        const tempLayer = new GraphicsLayer({
+          title: 'Test Layer Trimming',
+        });
+        const tempGraphics: __esri.Graphic[] = [];
+
         // get non-overlapping area in sample zone
         let totalSampleAreaInAoi = 0;
         for (const geometry of geometryTrimmed) {
+          // set the sample styles
+          let symbol: PolygonSymbol = defaultSymbols.symbols['Samples'];
+          if (defaultSymbols.symbols.hasOwnProperty(sampleType.value)) {
+            symbol = defaultSymbols.symbols[sampleType.value];
+          }
+
           const graphic = new Graphic({
             geometry,
+            symbol,
+            popupTemplate: getSimplePopupTemplate({
+              test1: 'test1',
+              test2: 'test2',
+              test3: 'test3',
+            }),
           });
+          tempGraphics.push(graphic);
+
           const area = await calculateArea(graphic, sceneView);
           if (typeof area === 'number') totalSampleAreaInAoi += area;
+
+          if (window.location.search.includes('devMode=true')) {
+            tempLayer.addMany(tempGraphics);
+            map.layers.add(tempLayer);
+          }
         }
 
         // calculate percentX
@@ -712,10 +883,11 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
   // get area of aois and num samples per aoi if in statistic mode
   type AoiType = {
-    graphic: __esri.Graphic;
     area: number;
-    numSamples: number;
+    graphic: __esri.Graphic;
     gridDefinition: number;
+    numSamples: number;
+    originalAoiIndex: number;
   };
   const [aoisFull, setAoisFull] = useState<AoiType[]>([]);
   useEffect(() => {
@@ -728,6 +900,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       const sampleArea = sampleAttributes[sampleType.value as any].SA;
       let totalAoiArea = 0;
       let totalNumSamples = 0;
+      let index = 0;
       for (const aoi of aois) {
         // calculate area of aoi
         const areaOut = await calculateArea(aoi, sceneView);
@@ -751,7 +924,9 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
           numSamples,
           graphic: aoi,
           gridDefinition: N,
+          originalAoiIndex: index,
         });
+        index += 1;
       }
 
       if (totalNumSamples && type === 'statistic')
@@ -764,11 +939,12 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
     if (type === 'random') {
       setAoisFull(
-        aois.map((graphic) => ({
+        aois.map((graphic, index) => ({
           area: 0,
           numSamples: 0,
           graphic,
           gridDefinition: 0,
+          originalAoiIndex: index,
         })),
       );
     }
@@ -1056,15 +1232,6 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                                 }
                               />
                             )}
-                            {maxRecordCount &&
-                              parseInt(numberRandomSamples) >
-                                maxRecordCount && (
-                                <MessageBox
-                                  severity="warning"
-                                  title=""
-                                  message={`Max sample limit (${maxRecordCount.toLocaleString()}) exceeded. Please split your AOI into smaller non-overlapping AOIs and try again.`}
-                                />
-                              )}
                             <span>
                               Number of resulting samples:{' '}
                               <strong>
