@@ -10,10 +10,14 @@ import React, {
 import { css } from '@emotion/react';
 import Collection from '@arcgis/core/core/Collection';
 import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
+import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import Graphic from '@arcgis/core/Graphic';
+import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Polygon from '@arcgis/core/geometry/Polygon';
+import Polyline from '@arcgis/core/geometry/Polyline';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 // components
+import InfoIcon from 'components/InfoIcon';
 import MessageBox from 'components/MessageBox';
 import Select from 'components/Select';
 // contexts
@@ -42,12 +46,14 @@ import {
   calculateArea,
   convertToPoint,
   getCurrentDateTime,
+  getSimplePopupTemplate,
   generateUUID,
   removeZValues,
   setZValues,
   updateLayerEdits,
+  getZValue,
 } from 'utils/sketchUtils';
-import { createErrorObject } from 'utils/utils';
+import { createErrorObject, toScale } from 'utils/utils';
 // styles
 import { reactSelectStyles } from 'styles';
 
@@ -61,6 +67,11 @@ const fullWidthSelectStyles = css`
   width: 100%;
   margin-right: 10px;
   margin-bottom: 10px;
+`;
+
+const infoIconStyles = css`
+  color: #19a3dd;
+  margin-left: 10px;
 `;
 
 const inlineMenuStyles = css`
@@ -118,6 +129,7 @@ type GenerateRandomType = {
   status: 'none' | 'fetching' | 'success' | 'failure' | 'exceededTransferLimit';
   error?: ErrorType;
   data: __esri.Graphic[];
+  targetSampleCount?: number;
 };
 
 type GenerateSamplesProps = {
@@ -137,10 +149,12 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     aoiSketchVM,
     defaultSymbols,
     displayDimensions,
+    displayGeometryType,
     edits,
     getGpMaxRecordCount,
     layers,
     map,
+    mapView,
     sampleAttributes,
     sceneView,
     setEdits,
@@ -165,6 +179,8 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     `${id}-percentComplient`,
     '99',
   );
+  const [percentX, setPercentX] = useState<number | null>(null);
+  const [percentY, setPercentY] = useState<number | null>(null);
   const [
     sampleType,
     setSampleType, //
@@ -176,6 +192,29 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
     setSampleType(sampleTypes.sampleSelectOptions[0]);
   }, [sampleTypes, sampleType, setSampleType]);
+
+  const [maxRecordCount, setMaxRecordCount] = useState(0);
+  useEffect(() => {
+    if (!getGpMaxRecordCount || maxRecordCount) return;
+    getGpMaxRecordCount()
+      .then((res) => {
+        setMaxRecordCount(res);
+      })
+      .catch((err) => {
+        console.error(err);
+
+        setGenerateRandomResponse({
+          status: 'failure',
+          error: {
+            error: createErrorObject(err),
+            message: err.message,
+          },
+          data: [],
+        });
+
+        window.logErrorToGa(err);
+      });
+  }, [getGpMaxRecordCount, maxRecordCount]);
 
   // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
   // dropdown this will create an AOI layer. This also sets the sketchVM to use the
@@ -192,6 +231,8 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       status: 'none',
       data: [],
     });
+    setPercentX(null);
+    setPercentY(null);
 
     // put the sketch layer on the map, if it isn't there already
     const layerIndex = map.layers.findIndex(
@@ -228,7 +269,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       graphics: __esri.GraphicProperties[];
     }[],
   ) {
-    if (!getGpMaxRecordCount || !map || !sampleType || !sketchLayer) return;
+    if (!maxRecordCount || !map || !sampleType || !sketchLayer) return;
 
     let graphics: __esri.GraphicProperties[] = [];
     const originalValuesZ: number[] = [];
@@ -241,8 +282,8 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
         FID: 0,
         Id: 0,
         TYPE: 'Area of Interest',
-        PERMANENT_IDENTIFIER: graphic.attributes.PERMANENT_IDENTIFIER,
-        GLOBALID: graphic.attributes.GLOBALID,
+        PERMANENT_IDENTIFIER: generateUUID(),
+        GLOBALID: generateUUID(),
         OBJECTID: -1,
       };
     });
@@ -273,6 +314,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
     // get the sample type definition (can be established or custom)
     const typeuuid = sampleType.value;
+    const attributes = sampleAttributes[typeuuid as any];
     const sampleTypeFeatureSet = {
       displayFieldName: '',
       geometryType: 'esriGeometryPolygon',
@@ -283,13 +325,17 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       features: [
         {
           attributes: {
-            ...sampleAttributes[typeuuid as any],
+            ...attributes,
             GLOBALID: generateUUID(),
             PERMANENT_IDENTIFIER: generateUUID(),
           },
         },
       ],
     };
+
+    const surfaceArea = attributes.SA;
+    const sampleWidth = Math.sqrt(surfaceArea);
+    const minDistance = sampleWidth;
 
     // determine the number of service calls needed to satisfy the request
     const samplesPerCall = Math.floor(maxRecordCount / graphics.length);
@@ -309,6 +355,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
         Sample_Type: sampleType.label,
         Area_of_Interest_Mask: featureSet.toJSON(),
         Sample_Type_Parameters: sampleTypeFeatureSet,
+        Minimum_Allowed_Distance_inches: minDistance,
       };
       appendEnvironmentObjectParam(props);
 
@@ -359,10 +406,156 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     return requests;
   }
 
+  async function getSplitAoiAreas(aois: AoiType[]) {
+    if (!sampleType || !sceneView) return [];
+
+    if (window.location.search.includes('devMode=true'))
+      mapView?.graphics.removeAll();
+
+    const tempLayer = new GraphicsLayer({
+      title: 'Test AOI Trimming',
+    });
+    const tempGraphics: __esri.Graphic[] = [];
+
+    const aoisFull: AoiType[] = [];
+    let aoiIndex = 0;
+    for (const aoi of aois) {
+      let aoisToProcess = [
+        {
+          area: aoi.area,
+          graphic: aoi.graphic,
+          cut: 'vertical',
+        },
+      ];
+
+      // get number of splits
+      const numSubAois = (aoi.numSamples / maxRecordCount) * 2;
+
+      let tempAois: {
+        area: number;
+        graphic: __esri.Graphic;
+        percentAoi: number;
+      }[] = [];
+      while (aoisToProcess.length > 0 && tempAois.length < numSubAois) {
+        aoisToProcess.sort((a, b) => a.area - b.area);
+        const currentAoi = aoisToProcess.pop();
+        if (!currentAoi) continue;
+
+        if (tempAois.length + aoisToProcess.length + 1 < numSubAois) {
+          const extent = currentAoi.graphic.geometry.extent;
+
+          const z = getZValue(currentAoi.graphic);
+          const cutLine = new Polyline({
+            paths:
+              currentAoi.cut === 'vertical'
+                ? [
+                    [
+                      [extent.center.x, extent.ymin, z],
+                      [extent.center.x, extent.ymax, z],
+                    ],
+                  ]
+                : [
+                    [
+                      [extent.xmin, extent.center.y, z],
+                      [extent.xmax, extent.center.y, z],
+                    ],
+                  ],
+            spatialReference: currentAoi.graphic.geometry.spatialReference,
+          });
+
+          const cutResult = geometryEngine.cut(
+            currentAoi.graphic.geometry,
+            cutLine,
+          );
+
+          if (cutResult && cutResult.length > 0) {
+            // add the new parts to the list of AOIs to process
+            for (const part of cutResult) {
+              const graphic = new Graphic({
+                attributes: {
+                  ...currentAoi.graphic.attributes,
+                  GLOBALID: generateUUID(),
+                  PERMANENT_IDENTIFIER: generateUUID(),
+                },
+                geometry: part,
+              });
+
+              // calculate area of aoi
+              const areaOut = await calculateArea(
+                graphic,
+                sceneView,
+                'sqinches',
+              );
+              const area = typeof areaOut === 'number' ? areaOut : 0;
+
+              aoisToProcess.push({
+                area,
+                graphic,
+                cut: currentAoi.cut === 'vertical' ? 'horizontal' : 'vertical',
+              });
+            }
+          }
+        } else {
+          // calculate area of aoi
+          const areaOut = await calculateArea(
+            currentAoi.graphic,
+            sceneView,
+            'sqinches',
+          );
+          const area = typeof areaOut === 'number' ? areaOut : 0;
+
+          tempAois.push({
+            area,
+            graphic: currentAoi.graphic,
+            percentAoi: area / aoi.area,
+          });
+
+          if (window.location.search.includes('devMode=true')) {
+            tempGraphics.push(
+              new Graphic({
+                ...currentAoi,
+                geometry: currentAoi.graphic.geometry,
+                symbol: aoi.graphic.symbol,
+              }),
+            );
+          }
+        }
+      }
+
+      let samplesLeft = aoi.numSamples;
+      tempAois.sort((a, b) => b.area - a.area);
+      let index = 0;
+      for (let subAoi of tempAois) {
+        const samplesToGenerate =
+          tempAois.length === index + 1
+            ? samplesLeft
+            : Math.floor(aoi.numSamples * subAoi.percentAoi);
+        samplesLeft -= samplesToGenerate;
+        aoisFull.push({
+          area: subAoi.area,
+          graphic: subAoi.graphic,
+          gridDefinition: 0,
+          numSamples: samplesToGenerate,
+          originalAoiIndex: aoiIndex,
+        });
+        index += 1;
+      }
+
+      aoiIndex += 1;
+    }
+
+    if (map && window.location.search.includes('devMode=true')) {
+      tempLayer.addMany(tempGraphics);
+      map.layers.add(tempLayer);
+    }
+
+    return aoisFull;
+  }
+
   // Handle a user generating random or statistical samples
   async function randomSamples(ev: FormEvent<HTMLFormElement>) {
     ev.preventDefault();
-    if (!getGpMaxRecordCount || !map || !sampleType || !sketchLayer) return;
+    if (!maxRecordCount || !map || !sampleType || !sketchLayer) return;
 
     activateSketchButton('disable-all-buttons');
     sketchVM?.[displayDimensions].cancel();
@@ -381,7 +574,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     if (aoiMaskLayer.sketchLayer.type === 'feature') return;
 
     try {
-      const maxRecordCount = await getGpMaxRecordCount();
+      const numSamplesToGenerate = parseInt(numberRandomSamples);
 
       const parameters: {
         inputParameters: any;
@@ -391,14 +584,18 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       if (type === 'random') {
         randomSamplesSendRequests(
           aoiMaskLayer.sketchLayer.graphics,
-          parseInt(numberRandomSamples),
+          numSamplesToGenerate,
           maxRecordCount,
           parameters,
         );
       }
 
+      let aoisFullSplit: AoiType[] = [];
+      let aoisIndex: number[] = [];
       if (type === 'statistic') {
-        aoisFull.forEach((aoi) => {
+        aoisFullSplit = await getSplitAoiAreas(aoisFull);
+        aoisFullSplit.forEach((aoi) => {
+          aoisIndex.push();
           randomSamplesSendRequests(
             new Collection([aoi.graphic]),
             aoi.numSamples,
@@ -419,6 +616,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       const graphicsToAdd: __esri.Graphic[] = [];
       const hybridGraphicsToAdd: __esri.Graphic[] = [];
       const pointsToAdd: __esri.Graphic[] = [];
+      const geometryTrimmed: __esri.Geometry[] = [];
       for (let i = 0; i < responses.length; i++) {
         res = responses[i];
         const numberOfAois = requests[i].graphics.length;
@@ -489,6 +687,25 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
               generateRandomElevationMode === 'aoiElevation' ? originalZ : null,
           });
 
+          if (type === 'statistic') {
+            let intersectionGeometry = geometryEngine.intersect(
+              poly.geometry,
+              aoisFull[aoisFullSplit[i].originalAoiIndex].graphic.geometry,
+            );
+            geometryTrimmed.forEach((geom) => {
+              const tempGeometry = geometryEngine.difference(
+                intersectionGeometry,
+                geom,
+              );
+              if (tempGeometry) intersectionGeometry = tempGeometry;
+            });
+            geometryTrimmed.push(
+              ...(Array.isArray(intersectionGeometry)
+                ? intersectionGeometry
+                : [intersectionGeometry]),
+            );
+          }
+
           graphicsToAdd.push(poly);
           pointsToAdd.push(convertToPoint(poly));
           hybridGraphicsToAdd.push(
@@ -499,6 +716,46 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
           index += 1;
         }
+      }
+
+      if (type === 'statistic') {
+        const tempLayer = new GraphicsLayer({
+          title: 'Test Layer Trimming',
+        });
+        const tempGraphics: __esri.Graphic[] = [];
+
+        // get non-overlapping area in sample zone
+        let totalSampleAreaInAoi = 0;
+        for (const geometry of geometryTrimmed) {
+          // set the sample styles
+          let symbol: PolygonSymbol = defaultSymbols.symbols['Samples'];
+          if (defaultSymbols.symbols.hasOwnProperty(sampleType.value)) {
+            symbol = defaultSymbols.symbols[sampleType.value];
+          }
+
+          const graphic = new Graphic({
+            geometry,
+            symbol,
+            popupTemplate: getSimplePopupTemplate({
+              test1: 'test1',
+              test2: 'test2',
+              test3: 'test3',
+            }),
+          });
+          tempGraphics.push(graphic);
+
+          const area = await calculateArea(graphic, sceneView, 'sqinches');
+          if (typeof area === 'number') totalSampleAreaInAoi += area;
+
+          if (window.location.search.includes('devMode=true')) {
+            tempLayer.addMany(tempGraphics);
+            map.layers.add(tempLayer);
+          }
+        }
+
+        // calculate percentX
+        const totalAoiArea = aoisFull.reduce((acc, cur) => acc + cur.area, 0);
+        setPercentX(toScale((totalSampleAreaInAoi / totalAoiArea) * 100, 2));
       }
 
       // put the graphics on the map
@@ -553,6 +810,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       setGenerateRandomResponse({
         status: 'success',
         data: graphicsToAdd,
+        targetSampleCount: numSamplesToGenerate,
       });
 
       if (generateRandomMode === 'draw') {
@@ -630,10 +888,11 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
   // get area of aois and num samples per aoi if in statistic mode
   type AoiType = {
-    graphic: __esri.Graphic;
     area: number;
-    numSamples: number;
+    graphic: __esri.Graphic;
     gridDefinition: number;
+    numSamples: number;
+    originalAoiIndex: number;
   };
   const [aoisFull, setAoisFull] = useState<AoiType[]>([]);
   useEffect(() => {
@@ -644,6 +903,9 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       const complientFloat = parseFloat(percentComplient);
       const confidenceFloat = parseFloat(percentConfidence);
       const sampleArea = sampleAttributes[sampleType.value as any].SA;
+      let totalAoiArea = 0;
+      let totalNumSamples = 0;
+      let index = 0;
       for (const aoi of aois) {
         // calculate area of aoi
         const areaOut = await calculateArea(aoi, sceneView, 'sqinches');
@@ -659,24 +921,35 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
           0.5 * (1 - Math.pow(a, 1 / V)) * (2 * N - V + 1),
         );
 
+        totalAoiArea += area;
+        totalNumSamples += numSamples;
+
         aoisFull.push({
           area,
           numSamples,
           graphic: aoi,
           gridDefinition: N,
+          originalAoiIndex: index,
         });
+        index += 1;
       }
+
+      if (totalNumSamples && type === 'statistic')
+        setPercentY(
+          toScale(((sampleArea * totalNumSamples) / totalAoiArea) * 100, 2),
+        );
 
       setAoisFull(aoisFull);
     }
 
     if (type === 'random') {
       setAoisFull(
-        aois.map((graphic) => ({
+        aois.map((graphic, index) => ({
           area: 0,
           numSamples: 0,
           graphic,
           gridDefinition: 0,
+          originalAoiIndex: index,
         })),
       );
     }
@@ -715,8 +988,11 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
   useEffect(() => {
     let messages: string[] = [];
     validateDecimalInput(messages, percentConfidence, 'Percent Confidence');
-    validateDecimalInput(messages, percentComplient, 'Percent Complient', 100);
+    validateDecimalInput(messages, percentComplient, 'Percent Complient');
     setValidationMessages(messages);
+
+    setPercentX(null);
+    setPercentY(null);
   }, [percentComplient, percentConfidence]);
 
   function validateDecimalInput(
@@ -738,283 +1014,307 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
         displayDimensions === '3d' &&
         cantUseWith3dMessage}
       {sketchLayer?.layerType !== 'VSP' && displayDimensions === '2d' && (
-        <Fragment>
-          <form onSubmit={randomSamples}>
-            {type === 'random' && (
-              <p>
-                Select "Draw Sampling Mask" to draw a boundary on your map for
-                placing samples or select "Use Imported Area of Interest" to use
-                an Area of Interest file to place samples. Select a Sample Type
-                from the menu and specify the number of samples to add. Click
-                Submit to add samples.
-              </p>
-            )}
-            {type === 'statistic' && (
-              <p>
-                Select "Draw Sampling Mask" to draw a boundary on your map for
-                placing samples or select "Use Imported Area of Interest" to use
-                an Area of Interest file to place samples. Select a Sample Type
-                from the menu and specify the "Percent Confidence and "Percent
-                Area Clear/Complient". Click Submit to add samples.
-              </p>
-            )}
+        <form onSubmit={randomSamples}>
+          {type === 'random' && (
+            <p>
+              Select "Draw Sampling Mask" to draw a boundary on your map for
+              placing samples or select "Use Imported Area of Interest" to use
+              an Area of Interest file to place samples. Select a Sample Type
+              from the menu and specify the number of samples to add. Click
+              Submit to add samples.
+            </p>
+          )}
+          {type === 'statistic' && (
+            <p>
+              Select "Draw Sampling Mask" to draw a boundary on your map for
+              placing samples or select "Use Imported Area of Interest" to use
+              an Area of Interest file to place samples. Select a Sample Type
+              from the menu and specify the "Percent Confidence and "Percent
+              Area Clear/Complient". Click Submit to add samples.
+            </p>
+          )}
 
-            <div>
-              <input
-                id={`${id}-draw-aoi`}
-                type="radio"
-                name={`${id}-mode`}
-                value="Draw area of Interest"
-                disabled={generateRandomResponse.status === 'fetching'}
-                checked={generateRandomMode === 'draw'}
-                onChange={(ev) => {
-                  setGenerateRandomMode('draw');
-                }}
-              />
-              <label htmlFor={`${id}-draw-aoi`} css={radioLabelStyles}>
-                Draw Sampling Mask
+          <div>
+            <input
+              id={`${id}-draw-aoi`}
+              type="radio"
+              name={`${id}-mode`}
+              value="Draw area of Interest"
+              disabled={generateRandomResponse.status === 'fetching'}
+              checked={generateRandomMode === 'draw'}
+              onChange={(ev) => {
+                setGenerateRandomMode('draw');
+              }}
+            />
+            <label htmlFor={`${id}-draw-aoi`} css={radioLabelStyles}>
+              Draw Sampling Mask
+            </label>
+          </div>
+
+          {generateRandomMode === 'draw' && (
+            <button
+              id={`${id}-sampling-mask`}
+              title="Draw Sampling Mask"
+              className="sketch-button"
+              disabled={generateRandomResponse.status === 'fetching'}
+              type="button"
+              onClick={() => {
+                if (!aoiSketchLayer) return;
+
+                sketchAoiButtonClick();
+              }}
+              css={sketchAoiButtonStyles}
+            >
+              <span css={sketchAoiTextStyles}>
+                <i className="fas fa-draw-polygon" />{' '}
+                <span>Draw Sampling Mask</span>
+              </span>
+            </button>
+          )}
+
+          <div>
+            <input
+              id={`${id}-use-aoi-file`}
+              type="radio"
+              name={`${id}-mode`}
+              value="Use Imported Area of Interest"
+              disabled={generateRandomResponse.status === 'fetching'}
+              checked={generateRandomMode === 'file'}
+              onChange={(ev) => {
+                setGenerateRandomMode('file');
+
+                if (!selectedAoiFile) {
+                  const aoiLayers = layers.filter(
+                    (layer) => layer.layerType === 'Area of Interest',
+                  );
+                  setSelectedAoiFile(aoiLayers[0]);
+                }
+              }}
+            />
+            <label htmlFor={`${id}-use-aoi-file`} css={radioLabelStyles}>
+              Use Imported Area of Interest
+            </label>
+          </div>
+
+          {generateRandomMode === 'file' && (
+            <Fragment>
+              <label htmlFor={`${id}-aoi-mask-select-input`}>
+                Area of Interest Mask
               </label>
-            </div>
-
-            {generateRandomMode === 'draw' && (
-              <button
-                id={`${id}-sampling-mask`}
-                title="Draw Sampling Mask"
-                className="sketch-button"
-                disabled={generateRandomResponse.status === 'fetching'}
-                type="button"
-                onClick={() => {
-                  if (!aoiSketchLayer) return;
-
-                  sketchAoiButtonClick();
-                }}
-                css={sketchAoiButtonStyles}
-              >
-                <span css={sketchAoiTextStyles}>
-                  <i className="fas fa-draw-polygon" />{' '}
-                  <span>Draw Sampling Mask</span>
-                </span>
-              </button>
-            )}
-
-            <div>
-              <input
-                id={`${id}-use-aoi-file`}
-                type="radio"
-                name={`${id}-mode`}
-                value="Use Imported Area of Interest"
-                disabled={generateRandomResponse.status === 'fetching'}
-                checked={generateRandomMode === 'file'}
-                onChange={(ev) => {
-                  setGenerateRandomMode('file');
-
-                  if (!selectedAoiFile) {
-                    const aoiLayers = layers.filter(
-                      (layer) => layer.layerType === 'Area of Interest',
-                    );
-                    setSelectedAoiFile(aoiLayers[0]);
-                  }
-                }}
-              />
-              <label htmlFor={`${id}-use-aoi-file`} css={radioLabelStyles}>
-                Use Imported Area of Interest
-              </label>
-            </div>
-
-            {generateRandomMode === 'file' && (
-              <Fragment>
-                <label htmlFor={`${id}-aoi-mask-select-input`}>
-                  Area of Interest Mask
-                </label>
-                <div css={inlineMenuStyles}>
-                  <Select
-                    id={`${id}-aoi-mask-select`}
-                    inputId={`${id}-aoi-mask-select-input`}
-                    css={inlineSelectStyles}
-                    styles={reactSelectStyles as any}
-                    isClearable={true}
-                    value={selectedAoiFile}
-                    onChange={(ev) => setSelectedAoiFile(ev as LayerType)}
-                    options={layers.filter(
-                      (layer) => layer.layerType === 'Area of Interest',
-                    )}
-                  />
-                  <button
-                    css={addButtonStyles}
-                    disabled={generateRandomResponse.status === 'fetching'}
-                    onClick={(ev) => {
-                      setGoTo('addData');
-                      setGoToOptions({
-                        from: 'file',
-                        layerType: 'Area of Interest',
-                      });
-                    }}
-                  >
-                    Add
-                  </button>
-                </div>
-              </Fragment>
-            )}
-            {generateRandomMode && (
-              <Fragment>
-                <br />
-                <label htmlFor={`${id}-sample-type-select-input`}>
-                  Sample Type
-                </label>
+              <div css={inlineMenuStyles}>
                 <Select
-                  id={`${id}-sample-type-select`}
-                  inputId={`${id}-sample-type-select-input`}
-                  css={fullWidthSelectStyles}
-                  value={sampleType}
-                  onChange={(ev) => setSampleType(ev as SampleSelectType)}
-                  options={allSampleOptions}
+                  id={`${id}-aoi-mask-select`}
+                  inputId={`${id}-aoi-mask-select-input`}
+                  css={inlineSelectStyles}
+                  styles={reactSelectStyles as any}
+                  isClearable={true}
+                  value={selectedAoiFile}
+                  onChange={(ev) => setSelectedAoiFile(ev as LayerType)}
+                  options={layers.filter(
+                    (layer) => layer.layerType === 'Area of Interest',
+                  )}
                 />
+                <button
+                  css={addButtonStyles}
+                  disabled={generateRandomResponse.status === 'fetching'}
+                  onClick={(ev) => {
+                    setGoTo('addData');
+                    setGoToOptions({
+                      from: 'file',
+                      layerType: 'Area of Interest',
+                    });
+                  }}
+                >
+                  Add
+                </button>
+              </div>
+            </Fragment>
+          )}
+          {generateRandomMode && (
+            <Fragment>
+              <br />
+              {type === 'statistic' && displayGeometryType !== 'polygons' && (
+                <MessageBox
+                  severity="warning"
+                  title=""
+                  message="For an accurate representation of samples, please use Polygons for the Shape in Settings."
+                />
+              )}
+              <label htmlFor={`${id}-sample-type-select-input`}>
+                Sample Type
+              </label>
+              <Select
+                id={`${id}-sample-type-select`}
+                inputId={`${id}-sample-type-select-input`}
+                css={fullWidthSelectStyles}
+                value={sampleType}
+                onChange={(ev) => setSampleType(ev as SampleSelectType)}
+                options={allSampleOptions}
+              />
 
-                {type === 'random' && (
+              {type === 'random' && (
+                <label>
+                  <span>Number of Samples</span>
+                  <input
+                    css={inputStyles}
+                    min={1}
+                    required
+                    type="number"
+                    value={numberRandomSamples}
+                    onChange={(ev) => setNumberRandomSamples(ev.target.value)}
+                  />
+                </label>
+              )}
+
+              {type === 'statistic' && (
+                <Fragment>
                   <label>
-                    <span>Number of Samples</span>
+                    <span>
+                      Percent Confidence
+                      <InfoIcon
+                        cssStyles={infoIconStyles}
+                        id="percent-confidence-tooltip"
+                        tooltip={
+                          'This definition of percent confidence is the complement of Type 1 error (e.g., when 95% is chosen, there is a 5% chance of making a Type 1 error).'
+                        }
+                        place="bottom"
+                      />
+                    </span>
                     <input
                       css={inputStyles}
-                      min={1}
                       required
-                      type="number"
-                      value={numberRandomSamples}
-                      onChange={(ev) => setNumberRandomSamples(ev.target.value)}
+                      type="text"
+                      value={percentConfidence}
+                      onChange={(ev) => setPercentConfidence(ev.target.value)}
                     />
                   </label>
-                )}
-
-                {type === 'statistic' && (
-                  <Fragment>
-                    <label>
-                      <span>Percent Confidence</span>
-                      <input
-                        css={inputStyles}
-                        required
-                        type="text"
-                        value={percentConfidence}
-                        onChange={(ev) => setPercentConfidence(ev.target.value)}
-                      />
-                    </label>
-                    <label>
-                      <span>Percent Area Clear/Compliant</span>
-                      <input
-                        css={inputStyles}
-                        required
-                        type="text"
-                        value={percentComplient}
-                        onChange={(ev) => setPercentComplient(ev.target.value)}
-                      />
-                    </label>
-
-                    {numberRandomSamples && (
-                      <Fragment>
-                        {validationMessages.length > 0 && (
-                          <MessageBox
-                            severity="warning"
-                            title=""
-                            message={
-                              validationMessages.length > 1 ? (
-                                <ul>
-                                  {validationMessages.map((m) => (
-                                    <li>{m}</li>
-                                  ))}
-                                </ul>
-                              ) : (
-                                validationMessages[0]
-                              )
-                            }
-                          />
-                        )}
-                        <span>
-                          Number of resulting samples:{' '}
-                          <strong>
-                            {parseInt(numberRandomSamples).toLocaleString()}
-                          </strong>
-                        </span>
-                        <br />
-                      </Fragment>
-                    )}
-                  </Fragment>
-                )}
-
-                <div>
-                  <input
-                    id={`${id}-use-aoi-elevation`}
-                    type="radio"
-                    name={`${id}-elevation-mode`}
-                    value="Use AOI Elevation"
-                    disabled={generateRandomResponse.status === 'fetching'}
-                    checked={generateRandomElevationMode === 'aoiElevation'}
-                    onChange={(ev) => {
-                      setGenerateRandomElevationMode('aoiElevation');
-                    }}
-                  />
-                  <label
-                    htmlFor={`${id}-use-aoi-elevation`}
-                    css={radioLabelStyles}
-                  >
-                    Use AOI Elevation
+                  <label>
+                    <span>Percent Area Clear/Compliant</span>
+                    <input
+                      css={inputStyles}
+                      required
+                      type="text"
+                      value={percentComplient}
+                      onChange={(ev) => setPercentComplient(ev.target.value)}
+                    />
                   </label>
-                </div>
-                <div>
-                  <input
-                    id={`${id}-snap-to-ground`}
-                    type="radio"
-                    name={`${id}-elevation-mode`}
-                    value="Snap to Ground"
-                    disabled={generateRandomResponse.status === 'fetching'}
-                    checked={generateRandomElevationMode === 'ground'}
-                    onChange={(ev) => {
-                      setGenerateRandomElevationMode('ground');
-                    }}
-                  />
-                  <label
-                    htmlFor={`${id}-snap-to-ground`}
-                    css={radioLabelStyles}
-                  >
-                    Snap to Ground
-                  </label>
-                </div>
 
-                {generateRandomResponse.status === 'success' &&
-                  sketchLayer &&
-                  generateRandomSuccessMessage(
-                    generateRandomResponse.data.length,
-                    sketchLayer.label,
+                  {numberRandomSamples && (
+                    <Fragment>
+                      {validationMessages.length > 0 && (
+                        <MessageBox
+                          severity="warning"
+                          title=""
+                          message={
+                            validationMessages.length > 1 ? (
+                              <ul>
+                                {validationMessages.map((m) => (
+                                  <li>{m}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              validationMessages[0]
+                            )
+                          }
+                        />
+                      )}
+                      <span>
+                        Number of resulting samples:{' '}
+                        <strong>
+                          {parseInt(numberRandomSamples).toLocaleString()}
+                        </strong>
+                      </span>
+                      <br />
+                    </Fragment>
                   )}
-                {generateRandomResponse.status === 'failure' &&
-                  webServiceErrorMessage(generateRandomResponse.error)}
-                {generateRandomResponse.status === 'exceededTransferLimit' &&
-                  generateRandomExceededTransferLimitMessage}
-                {((generateRandomMode === 'draw' &&
-                  numberRandomSamples &&
-                  aoiSketchLayer?.sketchLayer.type === 'graphics' &&
-                  aoiSketchLayer.sketchLayer.graphics.length > 0) ||
-                  (generateRandomMode === 'file' &&
-                    selectedAoiFile?.sketchLayer.type === 'graphics' &&
-                    selectedAoiFile.sketchLayer.graphics.length > 0)) && (
-                  <button
-                    css={submitButtonStyles}
-                    disabled={
-                      generateRandomResponse.status === 'fetching' ||
-                      validationMessages.length > 0
-                    }
-                    type="submit"
-                  >
-                    {generateRandomResponse.status !== 'fetching' && 'Submit'}
-                    {generateRandomResponse.status === 'fetching' && (
-                      <Fragment>
-                        <i className="fas fa-spinner fa-pulse" />
-                        &nbsp;&nbsp;Loading...
-                      </Fragment>
-                    )}
-                  </button>
+                </Fragment>
+              )}
+
+              <div>
+                <input
+                  id={`${id}-use-aoi-elevation`}
+                  type="radio"
+                  name={`${id}-elevation-mode`}
+                  value="Use AOI Elevation"
+                  disabled={generateRandomResponse.status === 'fetching'}
+                  checked={generateRandomElevationMode === 'aoiElevation'}
+                  onChange={(ev) => {
+                    setGenerateRandomElevationMode('aoiElevation');
+                  }}
+                />
+                <label
+                  htmlFor={`${id}-use-aoi-elevation`}
+                  css={radioLabelStyles}
+                >
+                  Use AOI Elevation
+                </label>
+              </div>
+              <div>
+                <input
+                  id={`${id}-snap-to-ground`}
+                  type="radio"
+                  name={`${id}-elevation-mode`}
+                  value="Snap to Ground"
+                  disabled={generateRandomResponse.status === 'fetching'}
+                  checked={generateRandomElevationMode === 'ground'}
+                  onChange={(ev) => {
+                    setGenerateRandomElevationMode('ground');
+                  }}
+                />
+                <label htmlFor={`${id}-snap-to-ground`} css={radioLabelStyles}>
+                  Snap to Ground
+                </label>
+              </div>
+
+              {generateRandomResponse.status === 'success' &&
+                sketchLayer &&
+                generateRandomSuccessMessage(
+                  generateRandomResponse.data.length,
+                  sketchLayer.label,
+                  generateRandomResponse.targetSampleCount,
                 )}
-              </Fragment>
-            )}
-          </form>
-        </Fragment>
+              {type === 'statistic' &&
+                percentX &&
+                percentY &&
+                percentX !== percentY && (
+                  <MessageBox
+                    severity="warning"
+                    title=""
+                    message={`Due to limited sample overlap and/or sample areas partially outside of the specified AOI, the current sampling plan reflects ${percentX.toLocaleString()}% rather than the goal of ${percentY.toLocaleString()}% of the AOI sampled.`}
+                  />
+                )}
+              {generateRandomResponse.status === 'failure' &&
+                webServiceErrorMessage(generateRandomResponse.error)}
+              {generateRandomResponse.status === 'exceededTransferLimit' &&
+                generateRandomExceededTransferLimitMessage}
+
+              {((generateRandomMode === 'draw' &&
+                numberRandomSamples &&
+                aoiSketchLayer?.sketchLayer.type === 'graphics' &&
+                aoiSketchLayer.sketchLayer.graphics.length > 0) ||
+                (generateRandomMode === 'file' &&
+                  selectedAoiFile?.sketchLayer.type === 'graphics' &&
+                  selectedAoiFile.sketchLayer.graphics.length > 0)) && (
+                <button
+                  css={submitButtonStyles}
+                  disabled={
+                    generateRandomResponse.status === 'fetching' ||
+                    validationMessages.length > 0
+                  }
+                  type="submit"
+                >
+                  {generateRandomResponse.status !== 'fetching' && 'Submit'}
+                  {generateRandomResponse.status === 'fetching' && (
+                    <Fragment>
+                      <i className="fas fa-spinner fa-pulse" />
+                      &nbsp;&nbsp;Loading...
+                    </Fragment>
+                  )}
+                </button>
+              )}
+            </Fragment>
+          )}
+        </form>
       )}
     </Fragment>
   );

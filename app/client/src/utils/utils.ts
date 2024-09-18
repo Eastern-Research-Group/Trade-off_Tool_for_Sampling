@@ -228,3 +228,17 @@ export function parseSmallFloat(number: number, precision: number = 15) {
   if (typeof number !== 'number') return number;
   return parseFloat(number.toFixed(precision));
 }
+
+/**
+ * Rounds a float to a specified number of points after the decimal.
+ *
+ * @param num The number to be rounded
+ * @param scale The number of points after the decimal
+ * @returns A number rounded to the specified scale
+ */
+export function toScale(num: number | null, scale: number = 0) {
+  if (num === null) return null;
+  if (scale < 0) return num;
+  const offset = 10 ** scale;
+  return Math.round((num + Number.EPSILON) * offset) / offset;
+}
