@@ -1132,7 +1132,7 @@ function CreateDeconPlan() {
                               setGoTo('addData');
                               setGoToOptions({
                                 from: 'file',
-                                layerType: 'Area of Interest',
+                                layerType: 'GSG',
                               });
                             }}
                           >
