@@ -1436,6 +1436,22 @@ function FilePanel({ appType }: Props) {
 
   const filename = file?.file?.name ? file.file.name : '';
 
+  let selectLayerOptions = layerOptions;
+  if (appType === 'decon') {
+    selectLayerOptions = selectLayerOptions.filter(
+      (option) => option.value !== 'Samples',
+    );
+  }
+  if (appType === 'sampling') {
+    selectLayerOptions = selectLayerOptions.filter(
+      (option) => option.value !== 'GSG',
+    );
+    if (!trainingMode)
+      selectLayerOptions = selectLayerOptions.filter(
+        (option) => option.value !== 'Contamination Map',
+      );
+  }
+
   return (
     <div css={searchContainerStyles}>
       <label htmlFor="layer-type-select-input">Layer Type</label>
@@ -1449,15 +1465,7 @@ function FilePanel({ appType }: Props) {
           setUploadStatus('');
           setError(null);
         }}
-        options={
-          appType === 'decon'
-            ? layerOptions.filter((option) => option.value !== 'Samples')
-            : trainingMode
-              ? layerOptions
-              : layerOptions.filter(
-                  (option) => option.value !== 'Contamination Map',
-                )
-        }
+        options={selectLayerOptions}
       />
       {!layerType ? (
         <Fragment>
@@ -1655,6 +1663,15 @@ function FilePanel({ appType }: Props) {
                       minutes to complete.
                     </p>
                   )}
+                  {layerType.value === 'GSG' && (
+                    <p css={sectionParagraph}>
+                      Ground Sampled Group (gsg) is a file format used for
+                      machine learning workflows. TODS will use this file for
+                      performing imagery analysis. This file isn't required but
+                      providing one can help the accuracy of the imagery
+                      analysis results.
+                    </p>
+                  )}
                   {uploadStatus === 'invalid-file-type' &&
                     invalidFileTypeMessage(filename)}
                   {uploadStatus === 'import-error' &&
@@ -1690,19 +1707,23 @@ function FilePanel({ appType }: Props) {
                       }}
                     />
                   )}
-                  <input
-                    id="generalize-features-input"
-                    type="checkbox"
-                    css={checkBoxStyles}
-                    checked={generalizeFeatures}
-                    onChange={(ev) =>
-                      setGeneralizeFeatures(!generalizeFeatures)
-                    }
-                  />
-                  <label htmlFor="generalize-features-input">
-                    Generalize features for web display
-                  </label>
-                  <br />
+                  {layerType.value !== 'GSG' && (
+                    <Fragment>
+                      <input
+                        id="generalize-features-input"
+                        type="checkbox"
+                        css={checkBoxStyles}
+                        checked={generalizeFeatures}
+                        onChange={(ev) =>
+                          setGeneralizeFeatures(!generalizeFeatures)
+                        }
+                      />
+                      <label htmlFor="generalize-features-input">
+                        Generalize features for web display
+                      </label>
+                      <br />
+                    </Fragment>
+                  )}
                   <div {...getRootProps({ className: 'dropzone' })}>
                     <input
                       id="tots-dropzone"
@@ -1713,14 +1734,20 @@ function FilePanel({ appType }: Props) {
                       <p>Drop the files here ...</p>
                     ) : (
                       <div css={fileIconTextColor}>
-                        <div>
-                          <FileIcon label="Shape File" />
-                          <FileIcon label="CSV" />
-                          <FileIcon label="KML" />
-                          <br />
-                          <FileIcon label="GPX" />
-                          <FileIcon label="Geo JSON" />
-                        </div>
+                        {layerType.value === 'GSG' ? (
+                          <div>
+                            <FileIcon label="GSG" />
+                          </div>
+                        ) : (
+                          <div>
+                            <FileIcon label="Shape File" />
+                            <FileIcon label="CSV" />
+                            <FileIcon label="KML" />
+                            <br />
+                            <FileIcon label="GPX" />
+                            <FileIcon label="Geo JSON" />
+                          </div>
+                        )}
                         <br />
                         <label htmlFor="tots-dropzone">Drop or Browse</label>
                         <br />
