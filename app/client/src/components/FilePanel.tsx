@@ -47,7 +47,7 @@ import {
   chunkArray,
   convertFileToBase64,
   createErrorObject,
-  getLayerName,
+  getNewName,
 } from 'utils/utils';
 // types
 import { ScenarioEditsType } from 'types/Edits';
@@ -415,12 +415,19 @@ function FilePanel({ appType }: Props) {
     async function loadGsgFile() {
       const base64String = await convertFileToBase64(file.file);
       setGsgFiles((gsg) => {
+        const fileName = getNewName(
+          gsg.files.map((file) => file.path),
+          file.file.path,
+        );
+        setNewLayerName(fileName);
+
         return {
           ...gsg,
           files: [
             ...gsg.files,
             {
               ...file.file,
+              path: fileName,
               file: base64String,
             },
           ],
@@ -921,7 +928,10 @@ function FilePanel({ appType }: Props) {
       layerType.value,
       appType === 'decon' ? true : trainingMode,
     );
-    const layerName = getLayerName(layers, file.file.name);
+    const layerName = getNewName(
+      layers.map((layer) => layer.label),
+      file.file.name,
+    );
     setNewLayerName(layerName);
 
     const visible = layerType.value === 'Contamination Map' ? false : true;
@@ -1310,7 +1320,10 @@ function FilePanel({ appType }: Props) {
         };
       }
 
-      const layerName = getLayerName(layers, file.file.name);
+      const layerName = getNewName(
+        layers.map((layer) => layer.label),
+        file.file.name,
+      );
       setNewLayerName(layerName);
       const layerProps: __esri.FeatureLayerProperties = {
         fields,

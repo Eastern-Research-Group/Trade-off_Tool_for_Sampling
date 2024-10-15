@@ -1,5 +1,4 @@
 import { EditsType } from 'types/Edits';
-import { LayerType } from 'types/Layer';
 
 export function activateSketchButton(id: string) {
   const sketchSelectedClass = 'sketch-button-selected';
@@ -140,7 +139,7 @@ export function getEnvironment() {
  * Determines if the desired name has already been used as a layer name.
  * If it has it appends in index to the end (i.e. '<desiredName> (2)').
  */
-export function getLayerName(layers: LayerType[], desiredName: string) {
+export function getNewName(existingNames: string[], desiredName: string) {
   const numInDesiredName = getNumberFromParen(desiredName);
   let newName =
     numInDesiredName || numInDesiredName === 0
@@ -149,14 +148,14 @@ export function getLayerName(layers: LayerType[], desiredName: string) {
 
   // get a list of names in use
   let duplicateCount = 0;
-  layers.forEach((layer) => {
+  existingNames.forEach((name) => {
     // remove any counts from the end of the name to ge an accurate count
     // for the new name
-    const numInParen = getNumberFromParen(layer.label);
+    const numInParen = getNumberFromParen(name);
     const possibleName =
       numInParen || numInParen === 0
-        ? layer.label.replaceAll(`(${numInParen})`, '').trim()
-        : layer.label;
+        ? name.replaceAll(`(${numInParen})`, '').trim()
+        : name;
 
     if (possibleName === newName) duplicateCount += 1;
   });

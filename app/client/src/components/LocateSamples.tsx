@@ -39,7 +39,7 @@ import {
   getSketchableLayers,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import { getLayerName, getScenarioName } from 'utils/utils';
+import { getNewName, getScenarioName } from 'utils/utils';
 
 // --- styles (SketchButton) ---
 const buttonContainerStyles = css`
@@ -1157,8 +1157,8 @@ function LocateSamples() {
                         title="Clone Layer"
                         onClick={(ev) => {
                           // get the name for the new layer
-                          const newLayerName = getLayerName(
-                            layers,
+                          const newLayerName = getNewName(
+                            layers.map((layer) => layer.label),
                             sketchLayer.label,
                           );
 
