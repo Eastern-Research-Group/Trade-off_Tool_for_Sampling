@@ -294,49 +294,55 @@ function FilePanel({ appType }: Props) {
 
   // Handles the user uploading a file
   const [file, setFile] = useState<any>(null);
-  const onDrop = useCallback((acceptedFiles: any) => {
-    // Do something with the files
-    if (
-      !acceptedFiles ||
-      acceptedFiles.length === 0 ||
-      !acceptedFiles[0].name
-    ) {
-      return;
-    }
+  const onDrop = useCallback(
+    (acceptedFiles: any) => {
+      // Do something with the files
+      if (
+        !acceptedFiles ||
+        acceptedFiles.length === 0 ||
+        !acceptedFiles[0].name
+      ) {
+        return;
+      }
 
-    // get the filetype
-    const file = acceptedFiles[0];
-    let fileType = '';
-    if (file.name.endsWith('.zip')) fileType = 'shapefile';
-    if (file.name.endsWith('.csv')) fileType = 'csv';
-    if (file.name.endsWith('.kml')) fileType = 'kml';
-    if (file.name.endsWith('.geojson')) fileType = 'geojson';
-    if (file.name.endsWith('.geo.json')) fileType = 'geojson';
-    if (file.name.endsWith('.gpx')) fileType = 'gpx';
-    if (file.name.endsWith('.gsg')) fileType = 'gsg';
+      // get the filetype
+      const file = acceptedFiles[0];
+      let fileType = '';
+      if (layerType?.value === 'GSG') {
+        if (file.name.endsWith('.gsg')) fileType = 'gsg';
+      } else {
+        if (file.name.endsWith('.zip')) fileType = 'shapefile';
+        if (file.name.endsWith('.csv')) fileType = 'csv';
+        if (file.name.endsWith('.kml')) fileType = 'kml';
+        if (file.name.endsWith('.geojson')) fileType = 'geojson';
+        if (file.name.endsWith('.geo.json')) fileType = 'geojson';
+        if (file.name.endsWith('.gpx')) fileType = 'gpx';
+      }
 
-    // set the file state
-    file['esriFileType'] = fileType;
-    setFile({
-      file,
-      lastFileName: '',
-      analyzeCalled: false,
-    });
+      // set the file state
+      file['esriFileType'] = fileType;
+      setFile({
+        file,
+        lastFileName: '',
+        analyzeCalled: false,
+      });
 
-    // reset state management values
-    setUploadStatus('fetching');
-    setError(null);
-    setAnalyzeResponse(null);
-    setGenerateResponse(null);
-    setFeaturesAdded(false);
-    setFileValidationStarted(false);
-    setFileValidated(false);
-    setMissingAttributes('');
+      // reset state management values
+      setUploadStatus('fetching');
+      setError(null);
+      setAnalyzeResponse(null);
+      setGenerateResponse(null);
+      setFeaturesAdded(false);
+      setFileValidationStarted(false);
+      setFileValidated(false);
+      setMissingAttributes('');
 
-    if (!fileType) {
-      setUploadStatus('invalid-file-type');
-    }
-  }, []);
+      if (!fileType) {
+        setUploadStatus('invalid-file-type');
+      }
+    },
+    [layerType],
+  );
 
   // Configuration for the dropzone component
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
@@ -423,11 +429,12 @@ function FilePanel({ appType }: Props) {
 
         return {
           ...gsg,
+          selectedIndex: gsg.selectedIndex ?? gsg.files.length,
           files: [
             ...gsg.files,
             {
               ...file.file,
-              path: fileName,
+              name: fileName,
               file: base64String,
             },
           ],

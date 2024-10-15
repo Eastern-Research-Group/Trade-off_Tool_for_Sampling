@@ -1379,7 +1379,7 @@ export function useCalculateDeconPlan() {
 
       try {
         let gsgParam: GsgParam | undefined;
-        if (gsgFiles) {
+        if (gsgFiles && gsgFiles.selectedIndex !== null) {
           const file = gsgFiles.files[gsgFiles.selectedIndex];
           const gsgFile = await convertBase64ToFile(file.file, file.path);
           const gsgFileUploaded: any = await fetchPostFile(

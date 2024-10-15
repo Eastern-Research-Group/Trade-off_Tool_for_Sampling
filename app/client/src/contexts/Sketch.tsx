@@ -70,12 +70,13 @@ export type PlanSettings = {
 export type GsgFile = {
   esriFileType: 'gsg';
   file: string;
+  name: string;
   path: string;
 };
 
 export type GsgFiles = {
   files: GsgFile[];
-  selectedIndex: number;
+  selectedIndex: number | null;
 };
 
 type SketchType = {
@@ -205,7 +206,7 @@ export const SketchContext = createContext<SketchType>({
   setPortalLayers: () => {},
   referenceLayers: [],
   setReferenceLayers: () => {},
-  gsgFiles: { files: [], selectedIndex: 0 },
+  gsgFiles: { files: [], selectedIndex: null },
   setGsgFiles: () => {},
   urlLayers: [],
   setUrlLayers: () => {},
@@ -323,7 +324,7 @@ export function SketchProvider({ children }: Props) {
   const [referenceLayers, setReferenceLayers] = useState<any[]>([]);
   const [gsgFiles, setGsgFiles] = useState<GsgFiles>({
     files: [],
-    selectedIndex: 0,
+    selectedIndex: null,
   });
   const [urlLayers, setUrlLayers] = useState<UrlLayerType[]>([]);
   const [sketchLayer, setSketchLayer] = useState<LayerType | null>(null);

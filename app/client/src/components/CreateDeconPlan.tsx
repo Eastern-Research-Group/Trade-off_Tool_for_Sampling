@@ -453,6 +453,21 @@ function CreateDeconPlan() {
   );
   const [selectedGsgFile, setSelectedGsgFile] = useState<any | null>(null);
 
+  // get gsg file options
+  const [gsgFileOptions] = useState(
+    gsgFiles.files.map((file, index) => ({
+      label: file.name,
+      value: index,
+      file,
+    })),
+  );
+
+  // initialize the selected gsg file
+  useEffect(() => {
+    if (gsgFiles.selectedIndex === null) return;
+    setSelectedGsgFile(gsgFileOptions[gsgFiles.selectedIndex]);
+  }, [gsgFileOptions, gsgFiles]);
+
   // get a list of scenarios from edits
   const scenarios = getScenarios(edits);
 
@@ -1113,15 +1128,11 @@ function CreateDeconPlan() {
                               setGsgFiles((gsg) => {
                                 return {
                                   ...gsg,
-                                  selectedIndex: (ev as any)?.value ?? 0,
+                                  selectedIndex: (ev as any)?.value ?? null,
                                 };
                               });
                             }}
-                            options={gsgFiles.files.map((file, index) => ({
-                              label: file.path,
-                              value: index,
-                              file,
-                            }))}
+                            options={gsgFileOptions}
                           />
                           <button
                             css={addButtonStyles}
