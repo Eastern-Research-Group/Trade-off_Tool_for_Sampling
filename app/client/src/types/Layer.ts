@@ -9,7 +9,8 @@ export type LayerTypeName =
   | 'Sampling Mask'
   | 'Decon Results'
   | 'AOI Assessed'
-  | 'Image Analysis';
+  | 'Image Analysis'
+  | 'GSG';
 
 export type LayerTypeLabel =
   | 'Contamination Map'
@@ -18,7 +19,8 @@ export type LayerTypeLabel =
   | 'Area of Interest'
   | 'VSP'
   | 'Samples'
-  | 'Sampling Mask';
+  | 'Sampling Mask'
+  | 'GSG';
 
 export type LayerSelectType = {
   value: LayerTypeName;

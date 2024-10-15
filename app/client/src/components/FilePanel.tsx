@@ -43,7 +43,12 @@ import {
   setZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import { chunkArray, createErrorObject, getLayerName } from 'utils/utils';
+import {
+  chunkArray,
+  convertFileToBase64,
+  createErrorObject,
+  getNewName,
+} from 'utils/utils';
 // types
 import { ScenarioEditsType } from 'types/Edits';
 import { LayerType, LayerSelectType, LayerTypeName } from 'types/Layer';
@@ -69,6 +74,7 @@ const layerOptions: LayerSelectType[] = [
   { value: 'Reference Layer', label: 'Reference Layer' },
   { value: 'Area of Interest', label: 'Area of Interest' },
   { value: 'VSP', label: 'VSP' },
+  { value: 'GSG', label: 'GSG' },
 ];
 
 function fileVerification(type: LayerTypeName, attributes: any) {
@@ -236,6 +242,7 @@ function FilePanel({ appType }: Props) {
     displayDimensions,
     edits,
     setEdits,
+    setGsgFiles,
     layers,
     setLayers,
     map,
@@ -287,48 +294,55 @@ function FilePanel({ appType }: Props) {
 
   // Handles the user uploading a file
   const [file, setFile] = useState<any>(null);
-  const onDrop = useCallback((acceptedFiles: any) => {
-    // Do something with the files
-    if (
-      !acceptedFiles ||
-      acceptedFiles.length === 0 ||
-      !acceptedFiles[0].name
-    ) {
-      return;
-    }
+  const onDrop = useCallback(
+    (acceptedFiles: any) => {
+      // Do something with the files
+      if (
+        !acceptedFiles ||
+        acceptedFiles.length === 0 ||
+        !acceptedFiles[0].name
+      ) {
+        return;
+      }
 
-    // get the filetype
-    const file = acceptedFiles[0];
-    let fileType = '';
-    if (file.name.endsWith('.zip')) fileType = 'shapefile';
-    if (file.name.endsWith('.csv')) fileType = 'csv';
-    if (file.name.endsWith('.kml')) fileType = 'kml';
-    if (file.name.endsWith('.geojson')) fileType = 'geojson';
-    if (file.name.endsWith('.geo.json')) fileType = 'geojson';
-    if (file.name.endsWith('.gpx')) fileType = 'gpx';
+      // get the filetype
+      const file = acceptedFiles[0];
+      let fileType = '';
+      if (layerType?.value === 'GSG') {
+        if (file.name.endsWith('.gsg')) fileType = 'gsg';
+      } else {
+        if (file.name.endsWith('.zip')) fileType = 'shapefile';
+        if (file.name.endsWith('.csv')) fileType = 'csv';
+        if (file.name.endsWith('.kml')) fileType = 'kml';
+        if (file.name.endsWith('.geojson')) fileType = 'geojson';
+        if (file.name.endsWith('.geo.json')) fileType = 'geojson';
+        if (file.name.endsWith('.gpx')) fileType = 'gpx';
+      }
 
-    // set the file state
-    file['esriFileType'] = fileType;
-    setFile({
-      file,
-      lastFileName: '',
-      analyzeCalled: false,
-    });
+      // set the file state
+      file['esriFileType'] = fileType;
+      setFile({
+        file,
+        lastFileName: '',
+        analyzeCalled: false,
+      });
 
-    // reset state management values
-    setUploadStatus('fetching');
-    setError(null);
-    setAnalyzeResponse(null);
-    setGenerateResponse(null);
-    setFeaturesAdded(false);
-    setFileValidationStarted(false);
-    setFileValidated(false);
-    setMissingAttributes('');
+      // reset state management values
+      setUploadStatus('fetching');
+      setError(null);
+      setAnalyzeResponse(null);
+      setGenerateResponse(null);
+      setFeaturesAdded(false);
+      setFileValidationStarted(false);
+      setFileValidated(false);
+      setMissingAttributes('');
 
-    if (!fileType) {
-      setUploadStatus('invalid-file-type');
-    }
-  }, []);
+      if (!fileType) {
+        setUploadStatus('invalid-file-type');
+      }
+    },
+    [layerType],
+  );
 
   // Configuration for the dropzone component
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
@@ -393,6 +407,45 @@ function FilePanel({ appType }: Props) {
       setFirstGeocodeService(newBatchGeocodeServices[0]);
     }
   }, [portal, batchGeocodeServices]);
+
+  // load gsg files
+  useEffect(() => {
+    if (!file?.file?.esriFileType) return;
+    if (
+      file.file.name === file.lastFileName ||
+      file.file.esriFileType !== 'gsg'
+    ) {
+      return;
+    }
+
+    async function loadGsgFile() {
+      const base64String = await convertFileToBase64(file.file);
+      setGsgFiles((gsg) => {
+        const fileName = getNewName(
+          gsg.files.map((file) => file.path),
+          file.file.path,
+        );
+        setNewLayerName(fileName);
+
+        return {
+          ...gsg,
+          selectedIndex: gsg.selectedIndex ?? gsg.files.length,
+          files: [
+            ...gsg.files,
+            {
+              ...file.file,
+              name: fileName,
+              file: base64String,
+            },
+          ],
+        };
+      });
+
+      setUploadStatus('success');
+    }
+
+    loadGsgFile();
+  }, [file, firstGeocodeService, portal, setGsgFiles, sharingUrl]);
 
   // analyze csv files
   useEffect(() => {
@@ -462,6 +515,7 @@ function FilePanel({ appType }: Props) {
     ) {
       return;
     }
+    if (file.file.esriFileType === 'gsg') return; // gsg doesn't need to do this
     if (file.file.esriFileType === 'kml') return; // KML doesn't need to do this
     if (file.file.esriFileType === 'csv' && !analyzeResponse) return; // CSV needs to wait for the analyze response
     if (layerType.value === 'VSP' && !sampleType) return; // VSP layers need a sample type
@@ -785,6 +839,7 @@ function FilePanel({ appType }: Props) {
     ) {
       return;
     }
+    if (layerType.value === 'GSG' || file.file.esriFileType === 'gsg') return;
     if (layerType.value === 'Reference Layer') return;
     if (!generateResponse) return;
     if (
@@ -863,6 +918,7 @@ function FilePanel({ appType }: Props) {
     ) {
       return;
     }
+    if (layerType.value === 'GSG' || file.file.esriFileType === 'gsg') return;
     if (layerType.value === 'Reference Layer') return;
     if (!generateResponse) return;
     if (
@@ -879,7 +935,10 @@ function FilePanel({ appType }: Props) {
       layerType.value,
       appType === 'decon' ? true : trainingMode,
     );
-    const layerName = getLayerName(layers, file.file.name);
+    const layerName = getNewName(
+      layers.map((layer) => layer.label),
+      file.file.name,
+    );
     setNewLayerName(layerName);
 
     const visible = layerType.value === 'Contamination Map' ? false : true;
@@ -1206,6 +1265,7 @@ function FilePanel({ appType }: Props) {
     ) {
       return;
     }
+    if (layerType.value === 'GSG' || file.file.esriFileType === 'gsg') return;
     if (layerType.value !== 'Reference Layer') return;
     if (!generateResponse) return;
     if (
@@ -1267,7 +1327,10 @@ function FilePanel({ appType }: Props) {
         };
       }
 
-      const layerName = getLayerName(layers, file.file.name);
+      const layerName = getNewName(
+        layers.map((layer) => layer.label),
+        file.file.name,
+      );
       setNewLayerName(layerName);
       const layerProps: __esri.FeatureLayerProperties = {
         fields,
@@ -1380,6 +1443,22 @@ function FilePanel({ appType }: Props) {
 
   const filename = file?.file?.name ? file.file.name : '';
 
+  let selectLayerOptions = layerOptions;
+  if (appType === 'decon') {
+    selectLayerOptions = selectLayerOptions.filter(
+      (option) => option.value !== 'Samples',
+    );
+  }
+  if (appType === 'sampling') {
+    selectLayerOptions = selectLayerOptions.filter(
+      (option) => option.value !== 'GSG',
+    );
+    if (!trainingMode)
+      selectLayerOptions = selectLayerOptions.filter(
+        (option) => option.value !== 'Contamination Map',
+      );
+  }
+
   return (
     <div css={searchContainerStyles}>
       <label htmlFor="layer-type-select-input">Layer Type</label>
@@ -1393,15 +1472,7 @@ function FilePanel({ appType }: Props) {
           setUploadStatus('');
           setError(null);
         }}
-        options={
-          appType === 'decon'
-            ? layerOptions.filter((option) => option.value !== 'Samples')
-            : trainingMode
-              ? layerOptions
-              : layerOptions.filter(
-                  (option) => option.value !== 'Contamination Map',
-                )
-        }
+        options={selectLayerOptions}
       />
       {!layerType ? (
         <Fragment>
@@ -1472,6 +1543,7 @@ function FilePanel({ appType }: Props) {
             layerType.value === 'Reference Layer' ||
             layerType.value === 'Contamination Map' ||
             layerType.value === 'Samples' ||
+            layerType.value === 'GSG' ||
             (layerType.value === 'VSP' && sampleType)) && (
             <Fragment>
               {uploadStatus === 'fetching' && <LoadingSpinner />}
@@ -1598,6 +1670,15 @@ function FilePanel({ appType }: Props) {
                       minutes to complete.
                     </p>
                   )}
+                  {layerType.value === 'GSG' && (
+                    <p css={sectionParagraph}>
+                      Ground Sampled Group (gsg) is a file format used for
+                      machine learning workflows. TODS will use this file for
+                      performing imagery analysis. This file isn't required but
+                      providing one can help the accuracy of the imagery
+                      analysis results.
+                    </p>
+                  )}
                   {uploadStatus === 'invalid-file-type' &&
                     invalidFileTypeMessage(filename)}
                   {uploadStatus === 'import-error' &&
@@ -1633,19 +1714,23 @@ function FilePanel({ appType }: Props) {
                       }}
                     />
                   )}
-                  <input
-                    id="generalize-features-input"
-                    type="checkbox"
-                    css={checkBoxStyles}
-                    checked={generalizeFeatures}
-                    onChange={(ev) =>
-                      setGeneralizeFeatures(!generalizeFeatures)
-                    }
-                  />
-                  <label htmlFor="generalize-features-input">
-                    Generalize features for web display
-                  </label>
-                  <br />
+                  {layerType.value !== 'GSG' && (
+                    <Fragment>
+                      <input
+                        id="generalize-features-input"
+                        type="checkbox"
+                        css={checkBoxStyles}
+                        checked={generalizeFeatures}
+                        onChange={(ev) =>
+                          setGeneralizeFeatures(!generalizeFeatures)
+                        }
+                      />
+                      <label htmlFor="generalize-features-input">
+                        Generalize features for web display
+                      </label>
+                      <br />
+                    </Fragment>
+                  )}
                   <div {...getRootProps({ className: 'dropzone' })}>
                     <input
                       id="tots-dropzone"
@@ -1656,14 +1741,20 @@ function FilePanel({ appType }: Props) {
                       <p>Drop the files here ...</p>
                     ) : (
                       <div css={fileIconTextColor}>
-                        <div>
-                          <FileIcon label="Shape File" />
-                          <FileIcon label="CSV" />
-                          <FileIcon label="KML" />
-                          <br />
-                          <FileIcon label="GPX" />
-                          <FileIcon label="Geo JSON" />
-                        </div>
+                        {layerType.value === 'GSG' ? (
+                          <div>
+                            <FileIcon label="GSG" />
+                          </div>
+                        ) : (
+                          <div>
+                            <FileIcon label="Shape File" />
+                            <FileIcon label="CSV" />
+                            <FileIcon label="KML" />
+                            <br />
+                            <FileIcon label="GPX" />
+                            <FileIcon label="Geo JSON" />
+                          </div>
+                        )}
                         <br />
                         <label htmlFor="tots-dropzone">Drop or Browse</label>
                         <br />

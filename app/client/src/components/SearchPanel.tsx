@@ -2601,6 +2601,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
             },
             importedAoiLayer: null,
             aoiLayerMode: 'draw',
+            gsgFile: null,
           };
 
           // make a copy of the edits context variable

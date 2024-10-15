@@ -125,6 +125,7 @@ export function useSessionStorage(appType: AppType) {
   useTablePanelStorage();
   usePublishStorage();
   useDisplayModeStorage();
+  useGsgFileStorage();
 }
 
 function useSessionStorageDecon() {
@@ -1534,4 +1535,31 @@ function usePlanSettingsStorage() {
 
     writeToStorage(key, planSettings, setOptions);
   }, [planSettings, localPlanSettingsInitialized, setOptions]);
+}
+
+// Uses browser storage for holding the gsg files.
+function useGsgFileStorage() {
+  const key = 'gsg_files';
+
+  const { setOptions } = useContext(DialogContext);
+  const { gsgFiles, setGsgFiles } = useContext(SketchContext);
+
+  // Retreives training mode data from browser storage when the app loads
+  const [localInitialized, setLocalInitialized] = useState(false);
+  useEffect(() => {
+    if (localInitialized) return;
+
+    setLocalInitialized(true);
+
+    const gsgFilesStr = readFromStorage(key);
+    if (!gsgFilesStr) return;
+
+    const gsgFiles = JSON.parse(gsgFilesStr);
+    setGsgFiles(gsgFiles);
+  }, [localInitialized, setGsgFiles]);
+
+  useEffect(() => {
+    if (!localInitialized) return;
+    writeToStorage(key, gsgFiles, setOptions);
+  }, [gsgFiles, localInitialized, setOptions]);
 }

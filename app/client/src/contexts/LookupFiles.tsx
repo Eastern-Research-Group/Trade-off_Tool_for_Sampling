@@ -104,6 +104,7 @@ type Content = {
   services: {
     gpServerInputMaxRecordCount: number;
     proxyUrl: string;
+    shippTestGPServer: string;
     totsGPServer: string;
     useProxyForGPServer: boolean;
     googleAnalyticsMapping: {

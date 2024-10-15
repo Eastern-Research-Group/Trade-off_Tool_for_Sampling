@@ -582,6 +582,7 @@ function EditScenario({
         calculateSettings: { current: settingDefaults },
         importedAoiLayer: null,
         aoiLayerMode: 'draw',
+        gsgFile: null,
       };
 
       // make a copy of the edits context variable

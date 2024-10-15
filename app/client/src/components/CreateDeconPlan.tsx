@@ -269,6 +269,8 @@ function CreateDeconPlan() {
     setAoiData,
     sceneView,
     mapView,
+    gsgFiles,
+    setGsgFiles,
   } = useContext(SketchContext);
   const startOver = useStartOver();
 
@@ -449,6 +451,22 @@ function CreateDeconPlan() {
   const [selectedAoiFile, setSelectedAoiFile] = useState<LayerType | null>(
     null,
   );
+  const [selectedGsgFile, setSelectedGsgFile] = useState<any | null>(null);
+
+  // get gsg file options
+  const [gsgFileOptions] = useState(
+    gsgFiles.files.map((file, index) => ({
+      label: file.name,
+      value: index,
+      file,
+    })),
+  );
+
+  // initialize the selected gsg file
+  useEffect(() => {
+    if (gsgFiles.selectedIndex === null) return;
+    setSelectedGsgFile(gsgFileOptions[gsgFiles.selectedIndex]);
+  }, [gsgFileOptions, gsgFiles]);
 
   // get a list of scenarios from edits
   const scenarios = getScenarios(edits);
@@ -1091,6 +1109,49 @@ function CreateDeconPlan() {
                           </div>
                         </Fragment>
                       )}
+
+                      <div>
+                        <label htmlFor="gsg-file-select-input">
+                          GSG File (optional)
+                        </label>
+                        <div css={inlineMenuStyles}>
+                          <Select
+                            id="gsg-file-select"
+                            inputId="gsg-file-select-input"
+                            css={inlineSelectStyles}
+                            styles={reactSelectStyles as any}
+                            isClearable={true}
+                            value={selectedGsgFile}
+                            onChange={(ev) => {
+                              setSelectedGsgFile(ev);
+
+                              setGsgFiles((gsg) => {
+                                return {
+                                  ...gsg,
+                                  selectedIndex: (ev as any)?.value ?? null,
+                                };
+                              });
+                            }}
+                            options={gsgFileOptions}
+                          />
+                          <button
+                            css={addButtonStyles}
+                            disabled={
+                              generateRandomResponse.status === 'fetching'
+                            }
+                            onClick={(ev) => {
+                              setGoTo('addData');
+                              setGoToOptions({
+                                from: 'file',
+                                layerType: 'GSG',
+                              });
+                            }}
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+
                       {generateRandomMode && (
                         <Fragment>
                           <br />

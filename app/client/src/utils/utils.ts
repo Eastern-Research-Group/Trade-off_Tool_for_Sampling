@@ -1,5 +1,4 @@
 import { EditsType } from 'types/Edits';
-import { LayerType } from 'types/Layer';
 
 export function activateSketchButton(id: string) {
   const sketchSelectedClass = 'sketch-button-selected';
@@ -140,7 +139,7 @@ export function getEnvironment() {
  * Determines if the desired name has already been used as a layer name.
  * If it has it appends in index to the end (i.e. '<desiredName> (2)').
  */
-export function getLayerName(layers: LayerType[], desiredName: string) {
+export function getNewName(existingNames: string[], desiredName: string) {
   const numInDesiredName = getNumberFromParen(desiredName);
   let newName =
     numInDesiredName || numInDesiredName === 0
@@ -149,14 +148,14 @@ export function getLayerName(layers: LayerType[], desiredName: string) {
 
   // get a list of names in use
   let duplicateCount = 0;
-  layers.forEach((layer) => {
+  existingNames.forEach((name) => {
     // remove any counts from the end of the name to ge an accurate count
     // for the new name
-    const numInParen = getNumberFromParen(layer.label);
+    const numInParen = getNumberFromParen(name);
     const possibleName =
       numInParen || numInParen === 0
-        ? layer.label.replaceAll(`(${numInParen})`, '').trim()
-        : layer.label;
+        ? name.replaceAll(`(${numInParen})`, '').trim()
+        : name;
 
     if (possibleName === newName) duplicateCount += 1;
   });
@@ -241,4 +240,67 @@ export function toScale(num: number | null, scale: number = 0) {
   if (scale < 0) return num;
   const offset = 10 ** scale;
   return Math.round((num + Number.EPSILON) * offset) / offset;
+}
+
+/**
+ * Converts base64 to a blob
+ *
+ * @param base64String base64 item to convert
+ * @param contentType content type of the item
+ * @param sliceSize slice size for converting
+ * @returns blob
+ */
+export async function convertBase64ToBlob(
+  base64String: string,
+  contentType = '',
+  sliceSize = 512,
+) {
+  const byteCharacters = atob(base64String.split(',')[1]); // Decoding Base64
+  const byteArrays = [];
+
+  for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+    const slice = byteCharacters.slice(offset, offset + sliceSize);
+
+    const byteNumbers = new Array(slice.length);
+    for (let i = 0; i < slice.length; i++) {
+      byteNumbers[i] = slice.charCodeAt(i);
+    }
+
+    const byteArray = new Uint8Array(byteNumbers);
+    byteArrays.push(byteArray);
+  }
+
+  return new Blob(byteArrays, { type: contentType });
+}
+
+/**
+ * Converts base64 to a File
+ *
+ * @param base64String base64 item to convert
+ * @param fileName name of the resulting file
+ * @param contentType content type of the item
+ * @returns file
+ */
+export async function convertBase64ToFile(
+  base64String: string,
+  fileName: string,
+  contentType = '',
+) {
+  const blob = await convertBase64ToBlob(base64String, contentType);
+  return new File([blob], fileName, { type: contentType });
+}
+
+/**
+ * Convert file to base64 (useful for storing files in session storage)
+ *
+ * @param file File to convert to base64
+ * @returns base64 string
+ */
+export function convertFileToBase64(file: any) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
