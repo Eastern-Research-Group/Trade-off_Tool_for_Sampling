@@ -56,7 +56,12 @@ import { FieldInfos, LayerType, LayerTypeName } from 'types/Layer';
 import { AppType } from 'types/Navigation';
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
-import { geoprocessorFetch, proxyFetch } from 'utils/fetchUtils';
+import {
+  fetchPost,
+  fetchPostFile,
+  geoprocessorFetch,
+  proxyFetch,
+} from 'utils/fetchUtils';
 import {
   calculateArea,
   convertToPoint,
@@ -69,7 +74,7 @@ import {
   removeZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import { parseSmallFloat } from 'utils/utils';
+import { convertBase64ToFile, parseSmallFloat } from 'utils/utils';
 
 // type AoiPercentages = {
 //   numAois: number;
@@ -79,6 +84,8 @@ import { parseSmallFloat } from 'utils/utils';
 //   // zone: number;
 //   // aoiId: string;
 // };
+
+type GsgParam = { itemID: string };
 
 type NsiData = {
   status: 'none' | 'fetching' | 'success' | 'failure';
@@ -353,6 +360,7 @@ async function fetchBuildingData(
   services: any,
   planGraphics: PlanGraphics,
   responseIndexes: string[],
+  gsgFile: GsgParam | undefined,
   buildingFilter: string[] = [],
 ) {
   const requests: any[] = [];
@@ -482,9 +490,11 @@ async function fetchBuildingData(
     const props = {
       f: 'json',
       Feature_Set: featureSet.toJSON(),
+      GSG_File: gsgFile,
       Imagery_Layer_URL:
         'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
     };
+
     appendEnvironmentObjectParam(props);
 
     iaResponses.push(
@@ -496,7 +506,6 @@ async function fetchBuildingData(
   }
 
   iaResponses.forEach((response, index) => {
-    // console.log('response: ', response);
     const summaryOutput = response.results.find(
       (r: any) => r.paramName === 'Output_Classification_Summary',
     );
@@ -532,7 +541,12 @@ async function fetchBuildingData(
               ...f.attributes,
               PERMANENT_IDENTIFIER: permId,
             },
-            geometry: f.geometry,
+            geometry: new Polygon({
+              rings: f.geometry.rings,
+              spatialReference: {
+                wkid: 3857,
+              },
+            }),
             symbol,
             popupTemplate: {
               title: '',
@@ -1203,6 +1217,7 @@ export function useCalculateDeconPlan() {
     defaultDeconSelections,
     displayDimensions,
     edits,
+    gsgFiles,
     layers,
     mapView,
     resultsOpen,
@@ -1363,6 +1378,22 @@ export function useCalculateDeconPlan() {
       }
 
       try {
+        let gsgParam: GsgParam | undefined;
+        if (gsgFiles) {
+          const file = gsgFiles.files[gsgFiles.selectedIndex];
+          const gsgFile = await convertBase64ToFile(file.file, file.path);
+          const gsgFileUploaded: any = await fetchPostFile(
+            `${services.shippTestGPServer}/uploads/upload`,
+            {
+              f: 'json',
+            },
+            gsgFile,
+          );
+          gsgParam = {
+            itemID: gsgFileUploaded.item.itemID,
+          };
+        }
+
         // TODO - look into adding more queries here
         await fetchBuildingData(
           aoiGraphics,
@@ -1370,6 +1401,7 @@ export function useCalculateDeconPlan() {
           services,
           planGraphics,
           responseIndexes,
+          gsgParam,
         );
 
         // TODO call nsi for buildings in contamination plumes
@@ -1457,7 +1489,17 @@ export function useCalculateDeconPlan() {
             services,
             planGraphics,
             responseIndexes,
+            gsgParam,
             buildingIds,
+          );
+        }
+
+        if (gsgParam) {
+          await fetchPost(
+            `${services.shippTestGPServer}/uploads/${gsgParam.itemID}/delete`,
+            {
+              f: 'json',
+            },
           );
         }
 
@@ -1484,6 +1526,7 @@ export function useCalculateDeconPlan() {
     aoiData,
     calculateResultsDecon,
     contaminationMap,
+    gsgFiles,
     layers,
     nsiData,
     sceneViewForArea,

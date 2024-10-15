@@ -94,6 +94,7 @@ export type ScenarioEditsType = {
   calculateSettings: CalculateSettingsType;
   importedAoiLayer?: LayerEditsType | null;
   aoiLayerMode?: '' | 'draw' | 'file';
+  gsgFile?: any;
   // contaminationResults: LayerEditsType; // TODO add this in if time permits
 };
 

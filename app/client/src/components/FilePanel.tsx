@@ -43,7 +43,12 @@ import {
   setZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import { chunkArray, createErrorObject, getLayerName } from 'utils/utils';
+import {
+  chunkArray,
+  convertFileToBase64,
+  createErrorObject,
+  getLayerName,
+} from 'utils/utils';
 // types
 import { ScenarioEditsType } from 'types/Edits';
 import { LayerType, LayerSelectType, LayerTypeName } from 'types/Layer';
@@ -69,6 +74,7 @@ const layerOptions: LayerSelectType[] = [
   { value: 'Reference Layer', label: 'Reference Layer' },
   { value: 'Area of Interest', label: 'Area of Interest' },
   { value: 'VSP', label: 'VSP' },
+  { value: 'GSG', label: 'GSG' },
 ];
 
 function fileVerification(type: LayerTypeName, attributes: any) {
@@ -236,6 +242,7 @@ function FilePanel({ appType }: Props) {
     displayDimensions,
     edits,
     setEdits,
+    setGsgFiles,
     layers,
     setLayers,
     map,
@@ -306,6 +313,7 @@ function FilePanel({ appType }: Props) {
     if (file.name.endsWith('.geojson')) fileType = 'geojson';
     if (file.name.endsWith('.geo.json')) fileType = 'geojson';
     if (file.name.endsWith('.gpx')) fileType = 'gpx';
+    if (file.name.endsWith('.gsg')) fileType = 'gsg';
 
     // set the file state
     file['esriFileType'] = fileType;
@@ -394,6 +402,37 @@ function FilePanel({ appType }: Props) {
     }
   }, [portal, batchGeocodeServices]);
 
+  // load gsg files
+  useEffect(() => {
+    if (!file?.file?.esriFileType) return;
+    if (
+      file.file.name === file.lastFileName ||
+      file.file.esriFileType !== 'gsg'
+    ) {
+      return;
+    }
+
+    async function loadGsgFile() {
+      const base64String = await convertFileToBase64(file.file);
+      setGsgFiles((gsg) => {
+        return {
+          ...gsg,
+          files: [
+            ...gsg.files,
+            {
+              ...file.file,
+              file: base64String,
+            },
+          ],
+        };
+      });
+
+      setUploadStatus('success');
+    }
+
+    loadGsgFile();
+  }, [file, firstGeocodeService, portal, setGsgFiles, sharingUrl]);
+
   // analyze csv files
   useEffect(() => {
     if (!file?.file?.esriFileType || !sharingUrl || file.analyzeCalled) return;
@@ -462,6 +501,7 @@ function FilePanel({ appType }: Props) {
     ) {
       return;
     }
+    if (file.file.esriFileType === 'gsg') return; // gsg doesn't need to do this
     if (file.file.esriFileType === 'kml') return; // KML doesn't need to do this
     if (file.file.esriFileType === 'csv' && !analyzeResponse) return; // CSV needs to wait for the analyze response
     if (layerType.value === 'VSP' && !sampleType) return; // VSP layers need a sample type
@@ -785,6 +825,7 @@ function FilePanel({ appType }: Props) {
     ) {
       return;
     }
+    if (layerType.value === 'GSG' || file.file.esriFileType === 'gsg') return;
     if (layerType.value === 'Reference Layer') return;
     if (!generateResponse) return;
     if (
@@ -863,6 +904,7 @@ function FilePanel({ appType }: Props) {
     ) {
       return;
     }
+    if (layerType.value === 'GSG' || file.file.esriFileType === 'gsg') return;
     if (layerType.value === 'Reference Layer') return;
     if (!generateResponse) return;
     if (
@@ -1206,6 +1248,7 @@ function FilePanel({ appType }: Props) {
     ) {
       return;
     }
+    if (layerType.value === 'GSG' || file.file.esriFileType === 'gsg') return;
     if (layerType.value !== 'Reference Layer') return;
     if (!generateResponse) return;
     if (
@@ -1472,6 +1515,7 @@ function FilePanel({ appType }: Props) {
             layerType.value === 'Reference Layer' ||
             layerType.value === 'Contamination Map' ||
             layerType.value === 'Samples' ||
+            layerType.value === 'GSG' ||
             (layerType.value === 'VSP' && sampleType)) && (
             <Fragment>
               {uploadStatus === 'fetching' && <LoadingSpinner />}

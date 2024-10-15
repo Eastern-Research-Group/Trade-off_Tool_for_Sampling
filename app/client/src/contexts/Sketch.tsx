@@ -67,6 +67,17 @@ export type PlanSettings = {
   description: string;
 };
 
+export type GsgFile = {
+  esriFileType: 'gsg';
+  file: string;
+  path: string;
+};
+
+export type GsgFiles = {
+  files: GsgFile[];
+  selectedIndex: number;
+};
+
 type SketchType = {
   autoZoom: boolean;
   setAutoZoom: Dispatch<SetStateAction<boolean>>;
@@ -102,6 +113,8 @@ type SketchType = {
   setPortalLayers: Dispatch<SetStateAction<PortalLayerType[]>>;
   referenceLayers: any[];
   setReferenceLayers: Dispatch<SetStateAction<any[]>>;
+  gsgFiles: GsgFiles;
+  setGsgFiles: Dispatch<SetStateAction<GsgFiles>>;
   urlLayers: UrlLayerType[];
   setUrlLayers: Dispatch<SetStateAction<UrlLayerType[]>>;
   sketchLayer: LayerType | null;
@@ -192,6 +205,8 @@ export const SketchContext = createContext<SketchType>({
   setPortalLayers: () => {},
   referenceLayers: [],
   setReferenceLayers: () => {},
+  gsgFiles: { files: [], selectedIndex: 0 },
+  setGsgFiles: () => {},
   urlLayers: [],
   setUrlLayers: () => {},
   selectedSampleIds: [],
@@ -306,6 +321,10 @@ export function SketchProvider({ children }: Props) {
   const [layers, setLayers] = useState<LayerType[]>([]);
   const [portalLayers, setPortalLayers] = useState<PortalLayerType[]>([]);
   const [referenceLayers, setReferenceLayers] = useState<any[]>([]);
+  const [gsgFiles, setGsgFiles] = useState<GsgFiles>({
+    files: [],
+    selectedIndex: 0,
+  });
   const [urlLayers, setUrlLayers] = useState<UrlLayerType[]>([]);
   const [sketchLayer, setSketchLayer] = useState<LayerType | null>(null);
   const [aoiSketchLayer, setAoiSketchLayer] = useState<LayerType | null>(null);
@@ -595,6 +614,8 @@ export function SketchProvider({ children }: Props) {
         setPortalLayers,
         referenceLayers,
         setReferenceLayers,
+        gsgFiles,
+        setGsgFiles,
         urlLayers,
         setUrlLayers,
         selectedSampleIds,

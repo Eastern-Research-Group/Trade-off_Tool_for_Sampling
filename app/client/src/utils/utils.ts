@@ -242,3 +242,66 @@ export function toScale(num: number | null, scale: number = 0) {
   const offset = 10 ** scale;
   return Math.round((num + Number.EPSILON) * offset) / offset;
 }
+
+/**
+ * Converts base64 to a blob
+ *
+ * @param base64String base64 item to convert
+ * @param contentType content type of the item
+ * @param sliceSize slice size for converting
+ * @returns blob
+ */
+export async function convertBase64ToBlob(
+  base64String: string,
+  contentType = '',
+  sliceSize = 512,
+) {
+  const byteCharacters = atob(base64String.split(',')[1]); // Decoding Base64
+  const byteArrays = [];
+
+  for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+    const slice = byteCharacters.slice(offset, offset + sliceSize);
+
+    const byteNumbers = new Array(slice.length);
+    for (let i = 0; i < slice.length; i++) {
+      byteNumbers[i] = slice.charCodeAt(i);
+    }
+
+    const byteArray = new Uint8Array(byteNumbers);
+    byteArrays.push(byteArray);
+  }
+
+  return new Blob(byteArrays, { type: contentType });
+}
+
+/**
+ * Converts base64 to a File
+ *
+ * @param base64String base64 item to convert
+ * @param fileName name of the resulting file
+ * @param contentType content type of the item
+ * @returns file
+ */
+export async function convertBase64ToFile(
+  base64String: string,
+  fileName: string,
+  contentType = '',
+) {
+  const blob = await convertBase64ToBlob(base64String, contentType);
+  return new File([blob], fileName, { type: contentType });
+}
+
+/**
+ * Convert file to base64 (useful for storing files in session storage)
+ *
+ * @param file File to convert to base64
+ * @returns base64 string
+ */
+export function convertFileToBase64(file: any) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
