@@ -244,8 +244,7 @@ describe("Visual Testing", () => {
 
   it("Verify location from Locate", () => {
     cy.mapLoadDelay();
-    cy.findByRole("button", { name: "Locate" }).click({ force: true });
-    cy.get("#esri-search-component").type("dallas{enter}");
+    cy.findAllByPlaceholderText("Find address or place").type("dallas{enter}");
 
     //need for map load from given input
     cy.wait(10000);
