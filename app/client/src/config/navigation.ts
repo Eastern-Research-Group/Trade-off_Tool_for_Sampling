@@ -1,5 +1,4 @@
 export type PanelValueType =
-  | 'search'
   | 'addData'
   | 'locateSamples'
   | 'decon'
@@ -14,11 +13,6 @@ export type PanelType = {
 };
 
 export const samplingPanels: PanelType[] = [
-  {
-    value: 'search',
-    label: 'Locate',
-    iconClass: 'fas fa-search',
-  },
   {
     value: 'addData',
     label: 'Add Data',
@@ -47,11 +41,6 @@ export const samplingPanels: PanelType[] = [
 ];
 
 export const deconPanels: PanelType[] = [
-  {
-    value: 'search',
-    label: 'Locate',
-    iconClass: 'fas fa-search',
-  },
   {
     value: 'addData',
     label: 'Add Data',

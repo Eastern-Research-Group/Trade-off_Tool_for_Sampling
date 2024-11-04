@@ -76,10 +76,6 @@ function GettingStarted({ isOpen, children }: Props) {
 
         <ul>
           <li>
-            <strong>Locate</strong> – Start here to zoom to a location on the
-            map to create a sampling design for an outdoor area.
-          </li>
-          <li>
             <strong>Add Data</strong> – Begin with an existing sampling design
             or add an indoor environment representation to begin. Layers to
             bring to the project include:

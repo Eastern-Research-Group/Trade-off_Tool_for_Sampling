@@ -3,29 +3,19 @@
 import { useContext, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { css } from '@emotion/react';
+import Search from '@arcgis/core/widgets/Search';
 import Handles from '@arcgis/core/core/Handles';
 import Home from '@arcgis/core/widgets/Home';
-import Locate from '@arcgis/core/widgets/Locate';
 import Measurement from '@arcgis/core/widgets/Measurement';
 import ScaleBar from '@arcgis/core/widgets/ScaleBar';
 // contexts
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 
-// Replaces the prevClassName with nextClassName for all elements with
-// prevClassName on the DOM.
-function replaceClassName(prevClassName: string, nextClassName: string) {
-  // timeout is necessary to handle race condition of loading indicator classname vs prevClassName
-  setTimeout(() => {
-    // get all elements with prevClassName and replace it with nextClassName
-    const elms: HTMLCollectionOf<Element> =
-      document.getElementsByClassName(prevClassName);
-    for (let i = 0; i < elms.length; i++) {
-      const el = elms[i];
-      el.className = el.className.replace(prevClassName, nextClassName);
-    }
-  }, 100);
-}
+type SearchWidgetType = {
+  '2d': Search;
+  '3d': Search;
+};
 
 const buttonSharedStyles = css`
   margin: 8.5px;
@@ -110,16 +100,50 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
     if (!mapView || !sceneView || !setHomeWidget || homeWidget) return;
 
     const widget2d = new Home({ view: mapView });
-    mapView.ui.add(widget2d, { position: 'top-right', index: 1 });
+    mapView.ui.add(widget2d, { position: 'top-right', index: 2 });
 
     const widget3d = new Home({ view: sceneView });
-    sceneView.ui.add(widget3d, { position: 'top-right', index: 1 });
+    sceneView.ui.add(widget3d, { position: 'top-right', index: 2 });
 
     setHomeWidget({
       '2d': widget2d,
       '3d': widget3d,
     });
   }, [mapView, homeWidget, setHomeWidget, sceneView]);
+
+  // Initialize the search widget
+  const [searchWidget, setSearchWidget] = useState<SearchWidgetType | null>(
+    null,
+  );
+  useEffect(() => {
+    if (!mapView || !sceneView || searchWidget) return;
+
+    const widget2d = new Search({
+      view: mapView,
+      locationEnabled: true,
+      label: 'Search',
+      popupEnabled: false,
+    });
+    const widget3d = new Search({
+      view: sceneView,
+      locationEnabled: true,
+      label: 'Search',
+      popupEnabled: false,
+    });
+
+    mapView.ui.add(widget2d, { position: 'top-right', index: 0 });
+    mapView.ui.move('zoom', { position: 'top-right', index: 3 });
+
+    sceneView.ui.add(widget3d, { position: 'top-right', index: 0 });
+    sceneView.ui.move('zoom', { position: 'top-right', index: 3 });
+    sceneView.ui.move('navigation-toggle', { position: 'top-right', index: 4 });
+    sceneView.ui.move('compass', { position: 'top-right', index: 5 });
+
+    setSearchWidget({
+      '2d': widget2d,
+      '3d': widget3d,
+    });
+  }, [mapView, sceneView, searchWidget]);
 
   // Initialize the measurement widget
   const [measurementWidget, setMeasurementWidget] =
@@ -151,12 +175,12 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
       });
     } else {
       sceneView.ui.remove(measurementWidget);
-      mapView.ui.add(measurementWidget, { position: 'bottom-right', index: 0 });
+      mapView.ui.add(measurementWidget, { position: 'bottom-right', index: 1 });
     }
 
     // add measurement widget to 2d view
     const node2d = document.createElement('div');
-    mapView.ui.add(node2d, { position: 'top-right', index: 0 });
+    mapView.ui.add(node2d, { position: 'top-right', index: 1 });
     createRoot(node2d).render(
       <CustomMeasurementWidget
         displayDimensions={displayDimensions}
@@ -166,7 +190,7 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
 
     // add measurement widget to 3d view
     const node3d = document.createElement('div');
-    sceneView.ui.add(node3d, { position: 'top-right', index: 0 });
+    sceneView.ui.add(node3d, { position: 'top-right', index: 1 });
     createRoot(node3d).render(
       <CustomMeasurementWidget
         displayDimensions={displayDimensions}
@@ -192,43 +216,6 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
     mapView.ui.add(newScaleBar, { position: 'bottom-right', index: 1 });
     setScaleBar(newScaleBar);
   }, [mapView, scaleBar]);
-
-  // Creates and adds the locate widget to the map.
-  const [
-    locateWidget,
-    setLocateWidget, //
-  ] = useState<__esri.Locate | null>(null);
-  useEffect(() => {
-    if (!mapView || locateWidget) return;
-
-    function buildWidget(view: __esri.MapView | __esri.SceneView) {
-      const widget = new Locate({ view });
-
-      // show the locate icon on success
-      widget.on('locate', (event) => {
-        replaceClassName('esri-icon-error2', 'esri-icon-locate');
-      });
-
-      // show the error icon on failure
-      widget.on('locate-error', (event) => {
-        replaceClassName('esri-icon-locate', 'esri-icon-error2');
-      });
-
-      return widget;
-    }
-
-    const widget2d = buildWidget(mapView);
-    mapView.ui.add(widget2d, { position: 'top-right', index: 2 });
-    mapView.ui.move('zoom', { position: 'top-right', index: 3 });
-
-    const widget3d = buildWidget(sceneView);
-    sceneView.ui.add(widget3d, { position: 'top-right', index: 2 });
-    sceneView.ui.move('zoom', { position: 'top-right', index: 3 });
-    sceneView.ui.move('navigation-toggle', { position: 'top-right', index: 4 });
-    sceneView.ui.move('compass', { position: 'top-right', index: 5 });
-
-    setLocateWidget(widget2d);
-  }, [mapView, sceneView, locateWidget]);
 
   // Gets the graphics to be highlighted and highlights them
   const [handles] = useState(new Handles());
