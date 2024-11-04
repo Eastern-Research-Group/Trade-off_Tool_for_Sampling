@@ -19,7 +19,6 @@ import CreateDeconPlan from 'components/CreateDeconPlan';
 import LoadingSpinner from 'components/LoadingSpinner';
 import LocateSamples from 'components/LocateSamples';
 import Publish from 'components/Publish';
-import Search from 'components/Search';
 import GettingStarted from 'components/GettingStarted';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
@@ -535,7 +534,6 @@ function NavBar({ appType, height }: Props) {
               id="tots-panel-scroll-container"
               css={floatPanelScrollContainerStyles}
             >
-              {currentPanel.value === 'search' && <Search appType={appType} />}
               {currentPanel.value === 'addData' && (
                 <AddData appType={appType} />
               )}
