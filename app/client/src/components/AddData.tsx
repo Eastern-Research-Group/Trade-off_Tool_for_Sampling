@@ -80,7 +80,9 @@ function AddData({ appType }: Props) {
         {location.value === 'url' && <URLPanel />}
         {location.value === 'file' && <FilePanel appType={appType} />}
       </div>
-      <NavigationButton goToPanel="locateSamples" />
+      <NavigationButton
+        goToPanel={appType === 'decon' ? 'decon' : 'locateSamples'}
+      />
     </div>
   );
 }

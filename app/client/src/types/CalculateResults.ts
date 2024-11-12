@@ -1,4 +1,5 @@
 import { JsonDownloadType } from 'contexts/Sketch';
+import { ErrorType } from 'types/Misc';
 
 export type CalculateResultsDataType = {
   'Total Number of User-Defined Samples': number;
@@ -90,4 +91,5 @@ export type CalculateResultsDeconType = {
     | 'failure';
   panelOpen: boolean;
   data: CalculateResultsDeconDataType | null;
+  error?: ErrorType;
 };

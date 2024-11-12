@@ -28,12 +28,9 @@ import {
 // types
 import { LayerType } from 'types/Layer';
 import { EditsType, LayerEditsType, ScenarioEditsType } from 'types/Edits';
-import { ErrorType } from 'types/Misc';
 // config
 import {
   cantUseWithVspMessage,
-  generateRandomExceededTransferLimitMessage,
-  generateRandomSuccessMessage,
   webServiceErrorMessage,
 } from 'config/errorMessages';
 // utils
@@ -237,14 +234,8 @@ const saveButtonStyles = (status: string) => {
 };
 
 // --- components (CreateDeconPlan) ---
-type GenerateRandomType = {
-  status: 'none' | 'fetching' | 'success' | 'failure' | 'exceededTransferLimit';
-  error?: ErrorType;
-  data: __esri.Graphic[];
-};
-
 function CreateDeconPlan() {
-  const { contaminationMap, setContaminationMap } =
+  const { calculateResultsDecon, contaminationMap, setContaminationMap } =
     useContext(CalculateContext);
   const { setGoTo, setGoToOptions } = useContext(NavigationContext);
   const {
@@ -326,20 +317,8 @@ function CreateDeconPlan() {
   // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
   // dropdown this will create an AOI layer. This also sets the sketchVM to use the
   // selected AOI and triggers a React useEffect to allow the user to sketch on the map.
-  const [
-    generateRandomResponse,
-    setGenerateRandomResponse, //
-  ] = useState<GenerateRandomType>({
-    status: 'none',
-    data: [],
-  });
   function sketchAoiButtonClick() {
     if (!map || !sketchVM || !sketchLayer || !sceneView || !mapView) return;
-
-    setGenerateRandomResponse({
-      status: 'none',
-      data: [],
-    });
 
     // save changes from other sketchVM and disable to prevent
     // interference
@@ -913,9 +892,7 @@ function CreateDeconPlan() {
                           type="radio"
                           name="mode"
                           value="Draw area of Interest"
-                          disabled={
-                            generateRandomResponse.status === 'fetching'
-                          }
+                          disabled={calculateResultsDecon.status === 'fetching'}
                           checked={generateRandomMode === 'draw'}
                           onChange={(ev) => {
                             setGenerateRandomMode('draw');
@@ -958,9 +935,7 @@ function CreateDeconPlan() {
                           id="sampling-mask"
                           title="Draw Sampling Mask"
                           className="sketch-button"
-                          disabled={
-                            generateRandomResponse.status === 'fetching'
-                          }
+                          disabled={calculateResultsDecon.status === 'fetching'}
                           onClick={() => {
                             if (!aoiSketchLayer) return;
 
@@ -981,9 +956,7 @@ function CreateDeconPlan() {
                           type="radio"
                           name="mode"
                           value="Use Imported Area of Interest"
-                          disabled={
-                            generateRandomResponse.status === 'fetching'
-                          }
+                          disabled={calculateResultsDecon.status === 'fetching'}
                           checked={generateRandomMode === 'file'}
                           onChange={(ev) => {
                             setGenerateRandomMode('file');
@@ -1094,7 +1067,7 @@ function CreateDeconPlan() {
                             <button
                               css={addButtonStyles}
                               disabled={
-                                generateRandomResponse.status === 'fetching'
+                                calculateResultsDecon.status === 'fetching'
                               }
                               onClick={(ev) => {
                                 setGoTo('addData');
@@ -1137,7 +1110,7 @@ function CreateDeconPlan() {
                           <button
                             css={addButtonStyles}
                             disabled={
-                              generateRandomResponse.status === 'fetching'
+                              calculateResultsDecon.status === 'fetching'
                             }
                             onClick={(ev) => {
                               setGoTo('addData');
@@ -1155,29 +1128,18 @@ function CreateDeconPlan() {
                       {generateRandomMode && (
                         <Fragment>
                           <br />
-                          {generateRandomResponse.status === 'success' &&
-                            sketchLayer &&
-                            generateRandomSuccessMessage(
-                              generateRandomResponse.data.length,
-                              sketchLayer.label,
-                            )}
-                          {generateRandomResponse.status === 'failure' &&
-                            webServiceErrorMessage(
-                              generateRandomResponse.error,
-                            )}
-                          {generateRandomResponse.status ===
-                            'exceededTransferLimit' &&
-                            generateRandomExceededTransferLimitMessage}
+                          {calculateResultsDecon.status === 'failure' &&
+                            webServiceErrorMessage(calculateResultsDecon.error)}
                           <button
                             css={submitButtonStyles}
                             disabled={
-                              generateRandomResponse.status === 'fetching'
+                              calculateResultsDecon.status === 'fetching'
                             }
                             onClick={assessAoi}
                           >
-                            {generateRandomResponse.status !== 'fetching' &&
+                            {calculateResultsDecon.status !== 'fetching' &&
                               'Submit'}
-                            {generateRandomResponse.status === 'fetching' && (
+                            {calculateResultsDecon.status === 'fetching' && (
                               <Fragment>
                                 <i className="fas fa-spinner fa-pulse" />
                                 &nbsp;&nbsp;Loading...
