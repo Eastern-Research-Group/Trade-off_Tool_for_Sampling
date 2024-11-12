@@ -216,10 +216,15 @@ module.exports = function (app) {
         }
 
         deleteTSHeaders(err.response);
-        res
-          .status(err.response.status)
-          .header(err.response.headers)
-          .send(err.response.data);
+
+        if (err.response) {
+          res
+            .status(err.response.status)
+            .header(err.response.headers)
+            .send(err.response.data);
+        } else {
+          res.status(500);
+        }
       });
   });
 

@@ -321,7 +321,8 @@ type Props = {
 };
 
 function NavBar({ appType, height }: Props) {
-  const { calculateResults } = useContext(CalculateContext);
+  const { calculateResults, calculateResultsDecon } =
+    useContext(CalculateContext);
   const {
     currentPanel,
     setCurrentPanel,
@@ -384,6 +385,12 @@ function NavBar({ appType, height }: Props) {
       setResultsExpanded(true);
     }
   }, [calculateResults, setResultsExpanded]);
+
+  useEffect(() => {
+    if (calculateResultsDecon.status !== 'none') {
+      setResultsExpanded(true);
+    }
+  }, [calculateResultsDecon, setResultsExpanded]);
 
   // determine how far to the right the expand/collapse buttons should be
   let expandLeft = navPanelWidth;
@@ -448,73 +455,129 @@ function NavBar({ appType, height }: Props) {
             })}
           </div>
 
-          {calculateResults.status === 'fetching' && <LoadingSpinner />}
-          {calculateResults.status === 'success' && calculateResults.data && (
-            <div css={resourceTallyStyles}>
-              <h3 css={tallyTitle}>Resource Tally</h3>
-              <div css={resourceTallyContainerStyles}>
-                <div css={mainTallyStyles}>
-                  Total Cost: $
-                  {Math.round(
-                    calculateResults.data['Total Cost'],
-                  ).toLocaleString()}
-                </div>
-                <div css={subTallyStyles}>
-                  <i className="fas fa-users fa-fw" /> $
-                  {Math.round(
-                    calculateResults.data['Total Sampling Cost'],
-                  ).toLocaleString()}
-                </div>
-                <div css={subTallyStyles}>
-                  <i className="fas fa-flask fa-fw" /> $
-                  {Math.round(
-                    calculateResults.data['Total Analysis Cost'],
-                  ).toLocaleString()}
-                </div>
-                <div css={mainTallyStyles}>
-                  Max Time day(s):{' '}
-                  {calculateResults.data['Total Time'].toLocaleString()}
-                </div>
-                <div css={subTallyStyles}>
-                  <i className="fas fa-users fa-fw" />{' '}
-                  {(
-                    Math.round(
-                      calculateResults.data['Time to Complete Sampling'] * 10,
-                    ) / 10
-                  ).toLocaleString()}
-                </div>
-                <div css={subTallyStyles}>
-                  <i className="fas fa-flask fa-fw" />{' '}
-                  {(
-                    Math.round(
-                      calculateResults.data['Time to Complete Analyses'] * 10,
-                    ) / 10
-                  ).toLocaleString()}
-                </div>
-                <hr css={resourceTallySeparator} />
-              </div>
-              {calculateResults.data['Limiting Time Factor'] && (
-                <div>
-                  <span css={mainTallyStyles}>Limiting Factor</span>
-                  <br />
-                  {calculateResults.data['Limiting Time Factor'] ===
-                    'Sampling' && <i className="fas fa-users fa-fw" />}
-                  {calculateResults.data['Limiting Time Factor'] ===
-                    'Analysis' && <i className="fas fa-flask fa-fw" />}{' '}
-                  <span>{calculateResults.data['Limiting Time Factor']}</span>
-                </div>
-              )}
-            </div>
+          {appType === 'sampling' && (
+            <Fragment>
+              {calculateResults.status === 'fetching' && <LoadingSpinner />}
+              {calculateResults.status === 'success' &&
+                calculateResults.data && (
+                  <div css={resourceTallyStyles}>
+                    <h3 css={tallyTitle}>Resource Tally</h3>
+                    <div css={resourceTallyContainerStyles}>
+                      <div css={mainTallyStyles}>
+                        Total Cost: $
+                        {Math.round(
+                          calculateResults.data['Total Cost'],
+                        ).toLocaleString()}
+                      </div>
+                      <div css={subTallyStyles}>
+                        <i className="fas fa-users fa-fw" /> $
+                        {Math.round(
+                          calculateResults.data['Total Sampling Cost'],
+                        ).toLocaleString()}
+                      </div>
+                      <div css={subTallyStyles}>
+                        <i className="fas fa-flask fa-fw" /> $
+                        {Math.round(
+                          calculateResults.data['Total Analysis Cost'],
+                        ).toLocaleString()}
+                      </div>
+                      <div css={mainTallyStyles}>
+                        Max Time day(s):{' '}
+                        {calculateResults.data['Total Time'].toLocaleString()}
+                      </div>
+                      <div css={subTallyStyles}>
+                        <i className="fas fa-users fa-fw" />{' '}
+                        {(
+                          Math.round(
+                            calculateResults.data['Time to Complete Sampling'] *
+                              10,
+                          ) / 10
+                        ).toLocaleString()}
+                      </div>
+                      <div css={subTallyStyles}>
+                        <i className="fas fa-flask fa-fw" />{' '}
+                        {(
+                          Math.round(
+                            calculateResults.data['Time to Complete Analyses'] *
+                              10,
+                          ) / 10
+                        ).toLocaleString()}
+                      </div>
+                      <hr css={resourceTallySeparator} />
+                    </div>
+                    {calculateResults.data['Limiting Time Factor'] && (
+                      <div>
+                        <span css={mainTallyStyles}>Limiting Factor</span>
+                        <br />
+                        {calculateResults.data['Limiting Time Factor'] ===
+                          'Sampling' && <i className="fas fa-users fa-fw" />}
+                        {calculateResults.data['Limiting Time Factor'] ===
+                          'Analysis' && (
+                          <i className="fas fa-flask fa-fw" />
+                        )}{' '}
+                        <span>
+                          {calculateResults.data['Limiting Time Factor']}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+              <button
+                onClick={(ev) => setGettingStartedOpen(!gettingStartedOpen)}
+                css={navButtonStyles(false)}
+              >
+                <i className="fas fa-question" css={helpIconStyles} />
+                Help
+              </button>
+            </Fragment>
           )}
 
-          {appType === 'sampling' && (
-            <button
-              onClick={(ev) => setGettingStartedOpen(!gettingStartedOpen)}
-              css={navButtonStyles(false)}
-            >
-              <i className="fas fa-question" css={helpIconStyles} />
-              Help
-            </button>
+          {appType === 'decon' && (
+            <Fragment>
+              {calculateResultsDecon.status === 'fetching' && (
+                <LoadingSpinner />
+              )}
+              {calculateResultsDecon.status === 'failure' && (
+                <div css={resourceTallyStyles}>
+                  An error occurred. Please try again.
+                </div>
+              )}
+              {calculateResultsDecon.status === 'success' &&
+                calculateResultsDecon.data && (
+                  <div css={resourceTallyStyles}>
+                    <h3 css={tallyTitle}>Resource Tally</h3>
+                    <div css={resourceTallyContainerStyles}>
+                      <div css={mainTallyStyles}>
+                        Total Cost: $
+                        {Math.round(
+                          calculateResultsDecon.data['Total Cost'],
+                        ).toLocaleString()}
+                      </div>
+                      <div css={mainTallyStyles}>
+                        Max Time day(s):{' '}
+                        {calculateResultsDecon.data[
+                          'Total Time'
+                        ].toLocaleString()}
+                      </div>
+                      <div css={mainTallyStyles}>
+                        Total Waste Volume (m<sup>3</sup>):{' '}
+                        {Math.round(
+                          calculateResultsDecon.data['Total Waste Volume'],
+                        ).toLocaleString()}
+                      </div>
+                      <div css={mainTallyStyles}>
+                        Total Waste Mass (kg):{' '}
+                        {Math.round(
+                          calculateResultsDecon.data['Total Waste Mass'],
+                        ).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              <div />
+            </Fragment>
           )}
         </div>
       </div>

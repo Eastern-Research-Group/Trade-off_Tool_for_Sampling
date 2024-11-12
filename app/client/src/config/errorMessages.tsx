@@ -32,7 +32,7 @@ export const webServiceErrorMessage = (
       title={title}
       message={
         <Fragment>
-          <span>{error.message}</span>
+          {error.message && <span>{error.message}</span>}
           <br />
           <ShowLessMore
             text={

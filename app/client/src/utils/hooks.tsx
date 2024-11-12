@@ -74,7 +74,11 @@ import {
   removeZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import { convertBase64ToFile, parseSmallFloat } from 'utils/utils';
+import {
+  convertBase64ToFile,
+  createErrorObject,
+  parseSmallFloat,
+} from 'utils/utils';
 
 // type AoiPercentages = {
 //   numAois: number;
@@ -1507,7 +1511,7 @@ export function useCalculateDeconPlan() {
           status: 'success',
           planGraphics,
         });
-      } catch (ex) {
+      } catch (ex: any) {
         console.error(ex);
         setNsiData({
           status: 'failure',
@@ -1517,6 +1521,10 @@ export function useCalculateDeconPlan() {
           status: 'failure',
           data: null,
           panelOpen: false,
+          error: {
+            error: createErrorObject(ex),
+            message: ex?.message ?? '',
+          },
         });
       }
     }
