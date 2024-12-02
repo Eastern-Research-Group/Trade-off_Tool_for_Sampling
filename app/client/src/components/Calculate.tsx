@@ -494,14 +494,36 @@ function Calculate({ appType }: Props) {
           return;
         }
 
-        resFeatures.push({
-          attributes: {
-            CONTAMTYPE: contamGraphic.attributes.CONTAMTYPE,
-            CONTAMUNIT: contamGraphic.attributes.CONTAMUNIT,
-            CONTAMVAL: contamGraphic.attributes.CONTAMVAL,
-            PERMANENT_IDENTIFIER: sampleGraphic.attributes.PERMANENT_IDENTIFIER,
-          },
-        });
+        const resFeature = resFeatures.find(
+          (feature: any) =>
+            sampleGraphic.attributes.PERMANENT_IDENTIFIER.toLowerCase()
+              .replace('{', '')
+              .replace('}', '') ===
+            feature.attributes.PERMANENT_IDENTIFIER.toLowerCase()
+              .replace('{', '')
+              .replace('}', ''),
+        );
+
+        if (!resFeature) {
+          resFeatures.push({
+            attributes: {
+              CONTAMTYPE: contamGraphic.attributes.CONTAMTYPE,
+              CONTAMUNIT: contamGraphic.attributes.CONTAMUNIT,
+              CONTAMVAL: contamGraphic.attributes.CONTAMVAL,
+              PERMANENT_IDENTIFIER:
+                sampleGraphic.attributes.PERMANENT_IDENTIFIER,
+            },
+          });
+        } else if (
+          resFeature &&
+          resFeature.attributes.CONTAMVAL < contamGraphic.attributes.CONTAMVAL
+        ) {
+          resFeature.attributes.CONTAMTYPE =
+            contamGraphic.attributes.CONTAMTYPE;
+          resFeature.attributes.CONTAMUNIT =
+            contamGraphic.attributes.CONTAMUNIT;
+          resFeature.attributes.CONTAMVAL = contamGraphic.attributes.CONTAMVAL;
+        }
       });
     });
 
