@@ -483,6 +483,16 @@ function Calculate({ appType }: Props) {
     // loop through contamination map
     graphics.forEach((contamGraphic) => {
       sketchedGraphics.forEach((sampleGraphic) => {
+        const resFeature = resFeatures.find(
+          (feature: any) =>
+            sampleGraphic.attributes.PERMANENT_IDENTIFIER.toLowerCase()
+              .replace('{', '')
+              .replace('}', '') ===
+            feature.attributes.PERMANENT_IDENTIFIER.toLowerCase()
+              .replace('{', '')
+              .replace('}', ''),
+        );
+
         if (
           !contamGraphic.geometry ||
           !sampleGraphic.geometry ||
@@ -493,16 +503,6 @@ function Calculate({ appType }: Props) {
         ) {
           return;
         }
-
-        const resFeature = resFeatures.find(
-          (feature: any) =>
-            sampleGraphic.attributes.PERMANENT_IDENTIFIER.toLowerCase()
-              .replace('{', '')
-              .replace('}', '') ===
-            feature.attributes.PERMANENT_IDENTIFIER.toLowerCase()
-              .replace('{', '')
-              .replace('}', ''),
-        );
 
         if (!resFeature) {
           resFeatures.push({
@@ -632,6 +632,35 @@ function Calculate({ appType }: Props) {
         data: resFeatures,
       });
     } else {
+      // loop through the layers and update the contam values
+      groupLayer.layers.forEach((graphicsLayer) => {
+        if (graphicsLayer.type !== 'graphics') return;
+
+        const tempLayer = graphicsLayer as __esri.GraphicsLayer;
+        // update the contam value attribute of the graphics
+        tempLayer.graphics.forEach((graphic) => {
+          graphic.attributes.CONTAMVAL = null;
+          graphic.attributes.CONTAMTYPE = null;
+          graphic.attributes.CONTAMUNIT = null;
+        });
+
+        // find the layer
+        const layer = layers.find(
+          (layer) => layer.layerId === graphicsLayer.id,
+        );
+        if (!layer) return;
+
+        // update the graphics of the sketch layer
+        editsCopy = updateLayerEdits({
+          appType,
+          edits: editsCopy,
+          layer: layer,
+          type: 'update',
+          changes: tempLayer.graphics,
+          hasContaminationRan: true,
+        });
+      });
+
       setContaminationResults({
         status: 'success',
         data: [],
