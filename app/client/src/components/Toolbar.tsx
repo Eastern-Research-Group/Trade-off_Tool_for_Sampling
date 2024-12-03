@@ -34,7 +34,7 @@ import { ScenarioEditsType, LayerEditsType } from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { AppType } from 'types/Navigation';
 // styles
-import { colors } from 'styles';
+import { appTheme } from 'styles';
 import {
   DefaultSymbolsType,
   PolygonSymbol,
@@ -288,7 +288,7 @@ type LegendRowType = {
 
 // --- styles (Toolbar) ---
 const toolBarTitle = css`
-  color: white;
+  color: ${appTheme.headerColor};
   margin: 0;
   padding: 0 16px;
   font-size: 100%;
@@ -335,7 +335,7 @@ const toolBarStyles = css`
   justify-content: space-between;
   padding: 0;
   padding-right: 0;
-  background-color: ${colors.darkblue()};
+  background-color: ${appTheme.headerBackgroundColor};
 `;
 
 const toolBarButtonsStyles = css`
@@ -348,8 +348,8 @@ const toolBarButtonStyles = (width?: string) => {
     height: ${toolBarHeight};
     margin-bottom: 0;
     padding: 0.75em 1em;
-    color: white;
-    background-color: ${colors.darkblue()};
+    color: ${appTheme.headerColor};
+    background-color: ${appTheme.headerBackgroundColor};
     border-radius: 0;
     line-height: 16px;
     text-decoration: none;
@@ -357,7 +357,7 @@ const toolBarButtonStyles = (width?: string) => {
     ${width ? `width: ${width};` : ''}
 
     &:hover {
-      background-color: ${colors.darkblue()};
+      background-color: ${appTheme.headerBackgroundColor};
     }
 
     &:visited {
@@ -365,7 +365,7 @@ const toolBarButtonStyles = (width?: string) => {
     }
 
     &.tots-button-selected {
-      background-color: #004f83;
+      background-color: ${appTheme.headerButtonSelectedColor};
       border-top: 2px solid #8491a1;
     }
   `;
@@ -422,7 +422,7 @@ const legendStyles = (legendVisible: boolean, right: string) => {
 };
 
 const navIconStyles = css`
-  color: white;
+  color: ${appTheme.headerColor};
   width: 10px;
   margin-left: -2px;
   margin-right: 10px;
@@ -922,6 +922,8 @@ function Toolbar({ appType }: Props) {
     };
   }, [map, viewUnderground3d]);
 
+  const buttonSelectedClass = 'tots-button-selected';
+
   return (
     <div css={toolBarStyles} data-testid="tots-toolbar">
       <h1 css={toolBarTitle}>
@@ -935,7 +937,7 @@ function Toolbar({ appType }: Props) {
         <div>
           <button
             css={toolBarButtonStyles()}
-            className={settingsVisible ? 'tots-button-selected' : ''}
+            className={settingsVisible ? buttonSelectedClass : ''}
             onClick={(ev) => {
               setSettingsVisible(!settingsVisible);
               setBasemapVisible(false);
@@ -1094,7 +1096,7 @@ function Toolbar({ appType }: Props) {
         <div>
           <button
             css={toolBarButtonStyles()}
-            className={basemapVisible ? 'tots-button-selected' : ''}
+            className={basemapVisible ? buttonSelectedClass : ''}
             onClick={(ev) => {
               setBasemapVisible(!basemapVisible);
               setLegendVisible(false);
@@ -1112,7 +1114,7 @@ function Toolbar({ appType }: Props) {
         <div>
           <button
             css={toolBarButtonStyles()}
-            className={legendVisible ? 'tots-button-selected' : ''}
+            className={legendVisible ? buttonSelectedClass : ''}
             onClick={(ev) => {
               setLegendVisible(!legendVisible);
               setBasemapVisible(false);

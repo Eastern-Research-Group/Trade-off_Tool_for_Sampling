@@ -32,7 +32,7 @@ import { deconPanels, PanelType, samplingPanels } from 'config/navigation';
 import { AppType } from 'types/Navigation';
 // styles
 import '@reach/dialog/styles.css';
-import { colors } from 'styles';
+import { appTheme, colors } from 'styles';
 
 const panelWidth = '325px';
 const resultsPanelWidth = '500px';
@@ -41,25 +41,25 @@ const buttonColor = colors.darkblue2();
 const buttonVisitedColor = colors.darkaqua();
 
 // --- styles (NavButton) ---
-const navButtonStyles = (selected: boolean) => {
-  return css`
-    display: flex;
-    align-items: center;
-    text-align: justify;
-    color: ${selected ? 'black' : 'white'};
-    background-color: ${selected ? colors.white() : 'transparent'};
-    margin: 0;
-    padding: 0;
-    font-size: 14px;
+const navButtonStyles = (selected: boolean) => css`
+  display: flex;
+  align-items: center;
+  text-align: justify;
+  color: ${selected ? appTheme.headerColorSelected : appTheme.headerColor};
+  background-color: ${selected
+    ? appTheme.headerBackgroundColorSelected
+    : 'transparent'};
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
 
-    /* 
+  /* 
       shift the button so the icon centers with the 
       left side of the button 
     */
-    width: calc(100% - 30px);
-    margin-left: calc(0.75em + 23px);
-  `;
-};
+  width: calc(100% - 30px);
+  margin-left: calc(0.75em + 23px);
+`;
 
 const verticalButtonBar = (color: string) => {
   return css`
@@ -155,7 +155,7 @@ const navPanelStyles = (height: number) => {
     position: relative;
     height: ${height}px;
     width: ${navPanelWidth};
-    background-color: ${colors.darkblue()};
+    background-color: ${appTheme.headerBackgroundColor};
   `;
 };
 

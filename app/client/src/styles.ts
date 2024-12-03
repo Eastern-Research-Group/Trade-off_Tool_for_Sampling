@@ -1,9 +1,12 @@
 import { css } from '@emotion/react';
 import { CSSProperties } from 'react';
 
+const isDecon = window.location.pathname === '/decon';
+
 const colors = {
   black: (alpha: number = 1) => `rgba(0, 0, 0, ${alpha})`, // #000,
   white: (alpha: number = 1) => `rgba(255, 255, 255, ${alpha})`, // #fff,
+  lightGray: (alpha: number = 1) => `rgba(217, 232, 246, ${alpha})`, // #d9e8f6,
   blue: (alpha: number = 1) => `rgba(0, 113, 187, ${alpha})`, // #0071bb,
   gold: (alpha: number = 1) => `rgba(252, 171, 83, ${alpha})`, // #fcab53,
   teal: (alpha: number = 1) => `rgba(80, 210, 194, ${alpha})`, // #50d2c2,
@@ -15,6 +18,14 @@ const colors = {
   darkblue2: (alpha: number = 1) => `rgba(1, 33, 59, ${alpha})`, //#01213B
   epaBlue: '#0a71b9',
   gray6: '#666',
+};
+
+const appTheme = {
+  headerBackgroundColor: isDecon ? colors.lightGray() : colors.darkblue(),
+  headerBackgroundColorSelected: colors.white(),
+  headerButtonSelectedColor: isDecon ? colors.white() : '#004f83',
+  headerColor: isDecon ? colors.black() : colors.white(),
+  headerColorSelected: colors.black(),
 };
 
 const reactSelectStyles = {
@@ -46,4 +57,4 @@ const linkButtonStyles = css`
   }
 `;
 
-export { colors, reactSelectStyles, linkButtonStyles };
+export { appTheme, colors, isDecon, linkButtonStyles, reactSelectStyles };
