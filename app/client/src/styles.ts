@@ -26,6 +26,7 @@ const appTheme = {
   headerButtonSelectedColor: isDecon ? colors.white() : '#004f83',
   headerColor: isDecon ? colors.black() : colors.white(),
   headerColorSelected: colors.black(),
+  resourceTallyColor: isDecon ? colors.black() : colors.white(),
 };
 
 const reactSelectStyles = {

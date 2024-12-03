@@ -170,7 +170,7 @@ const navPanelContainerStyles = css`
 `;
 
 const resourceTallyStyles = css`
-  color: white;
+  color: ${appTheme.resourceTallyColor};
   text-align: center;
   border-top: 5px solid ${buttonVisitedColor};
   border-bottom: 5px solid ${buttonVisitedColor};
@@ -179,7 +179,7 @@ const resourceTallyStyles = css`
 `;
 
 const tallyTitle = css`
-  color: white;
+  color: ${appTheme.resourceTallyColor};
   margin: 0;
   padding: 0 0 0.25em;
   font-size: 100%;
