@@ -348,11 +348,12 @@ function CreateDeconPlan() {
       // locate the layer
       if (scenario.aoiLayerMode === 'draw') {
         const aoiEditsLayer = scenario.layers.find(
-          (l) => l.layerType === 'Samples',
+          (l) => l.layerType === 'Decon Mask',
         );
         aoiLayer = layers.find(
           (l) =>
-            l.layerType === 'Samples' && l.layerId === aoiEditsLayer?.layerId,
+            l.layerType === 'Decon Mask' &&
+            l.layerId === aoiEditsLayer?.layerId,
         );
       }
 
@@ -897,8 +898,10 @@ function CreateDeconPlan() {
                           onChange={(ev) => {
                             setGenerateRandomMode('draw');
 
-                            const maskLayers = layers.filter(
-                              (layer) => layer.layerType === 'Sampling Mask',
+                            const maskLayers = layers.filter((layer) =>
+                              ['Sampling Mask', 'Decon Mask'].includes(
+                                layer.layerType,
+                              ),
                             );
                             setAoiSketchLayer(maskLayers[0]);
 

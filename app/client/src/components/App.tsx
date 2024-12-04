@@ -404,7 +404,7 @@ function App({ appType }: Props) {
   // determine which rows of the table should be selected
   const ids: { [key: string]: boolean } = {};
   let selectionMethod: 'row-click' | 'sample-click' = 'sample-click';
-  sampleData.forEach((sample, index) => {
+  sampleData.forEach((sample) => {
     const selectedIndex = selectedSampleIds.findIndex(
       (item) => item.PERMANENT_IDENTIFIER === sample.PERMANENT_IDENTIFIER,
     );

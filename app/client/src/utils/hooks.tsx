@@ -79,6 +79,7 @@ import {
   createErrorObject,
   parseSmallFloat,
 } from 'utils/utils';
+import { isDecon } from 'styles';
 
 // type AoiPercentages = {
 //   numAois: number;
@@ -411,6 +412,13 @@ async function fetchBuildingData(
       const extWallsSqM = Math.sqrt(footprintSqM) * 10 * 4 * num_story;
       const intWallsSqM = extWallsSqM * 3;
 
+      const actions = new Collection<any>();
+      actions.add({
+        title: 'View In Table',
+        id: 'table',
+        className: 'esri-icon-table',
+      });
+
       const planId = responseIndexes[index];
       const permId = generateUUID();
       planGraphics[planId].graphics.push(
@@ -452,6 +460,7 @@ async function fetchBuildingData(
           popupTemplate: {
             title: '',
             content: buildingMapPopup,
+            actions,
           },
         }),
       );
@@ -1743,7 +1752,7 @@ export function useCalculateDeconPlan() {
           (l: any) => l.layerType === 'Image Analysis',
         );
         const deconAoi = scenario?.layers.find(
-          (l: any) => l.layerType === 'Samples',
+          (l: any) => l.layerType === 'Decon Mask',
         );
 
         if (aoiAssessed && imageAnalysis && deconAoi) {
@@ -2157,7 +2166,7 @@ export function useCalculateDeconPlan() {
         const planData = nsiData.planGraphics[scenario.layerId];
 
         const deconAoi = scenario?.layers.find(
-          (l: any) => l.layerType === 'Samples',
+          (l: any) => l.layerType === 'Decon Mask',
         );
         const deconAoiLayer = deconAoi
           ? layers.find((l: any) => l.layerId === deconAoi.layerId)
@@ -2652,7 +2661,7 @@ export function useDynamicPopup(appType: AppType) {
     includeContaminationFields: boolean = false,
     includeControls: boolean = true,
   ) {
-    if (type === 'Sampling Mask') {
+    if (['Decon Mask', 'Sampling Mask'].includes(type)) {
       const actions = new Collection<any>();
       if (includeControls) {
         actions.addMany([
@@ -2678,7 +2687,7 @@ export function useDynamicPopup(appType: AppType) {
         actions,
       };
     }
-    if (type === 'Area of Interest') {
+    if (type === 'Area of Interest' || (type === 'Samples' && isDecon)) {
       return {
         title: '',
         content: [
@@ -2705,7 +2714,7 @@ export function useDynamicPopup(appType: AppType) {
         ],
       };
     }
-    if (type === 'Samples' || type === 'VSP') {
+    if ((type === 'Samples' || type === 'VSP') && !isDecon) {
       const fieldInfos = [
         { fieldName: 'DECISIONUNIT', label: 'Layer' },
         { fieldName: 'TYPE', label: 'Sample Type' },

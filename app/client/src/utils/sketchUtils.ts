@@ -342,7 +342,8 @@ export function createLayer({
   displayedFeatures.forEach((graphic) => {
     let layerType = editsLayer.layerType;
     if (layerType === 'VSP') layerType = 'Samples';
-    if (layerType === 'Sampling Mask') layerType = 'Area of Interest';
+    if (['Sampling Mask', 'Decon Mask'].includes(layerType))
+      layerType = 'Area of Interest';
 
     // set the symbol styles based on sample/layer type
     let symbol = defaultSymbols.symbols[layerType] as any;
@@ -363,7 +364,8 @@ export function createLayer({
     });
 
     polyFeatures.push(poly);
-    pointFeatures.push(convertToPoint(poly));
+    if (editsLayer.layerType !== 'Decon Mask')
+      pointFeatures.push(convertToPoint(poly));
     hybridFeatures.push(
       poly.attributes.ShapeType === 'point'
         ? convertToPoint(poly)
@@ -453,6 +455,12 @@ export function createSampleLayer(
   name: string = 'Default Sample Layer',
   parentLayer: __esri.GroupLayer | null = null,
 ) {
+  let layerType = 'Samples';
+  if (window.location.pathname === '/decon') {
+    name = 'Area of Interest';
+    layerType = 'Decon Mask';
+  }
+
   const layerUuid = generateUUID();
   const graphicsLayer = new GraphicsLayer({
     id: layerUuid,
@@ -480,7 +488,7 @@ export function createSampleLayer(
     value: graphicsLayer.id,
     name,
     label: name,
-    layerType: 'Samples',
+    layerType,
     editType: 'add',
     visible: true,
     listMode: 'show',
@@ -760,7 +768,7 @@ export function getPointSymbol(
   symbolColor: PolygonSymbol | null = null,
 ) {
   let point;
-  if (polygon.symbol.type.includes('-3d')) {
+  if (polygon.symbol?.type?.includes('-3d')) {
     point = getPointSymbol3d(polygon, symbolColor);
   } else {
     point = getPointSymbol2d(polygon, symbolColor);

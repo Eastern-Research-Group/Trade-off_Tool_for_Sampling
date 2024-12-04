@@ -41,6 +41,7 @@ import {
   setZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
+import { isDecon } from 'styles';
 
 type SketchWidgetType = {
   '2d': Sketch;
@@ -563,8 +564,8 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
           // get the predefined attributes using the id of the clicked button
           const uuid = generateUUID();
           let layerType: LayerTypeName = 'Samples';
-          if (id.includes('-sampling-mask')) {
-            layerType = 'Sampling Mask';
+          if (id === 'sampling-mask' || id.includes('-sampling-mask')) {
+            layerType = isDecon ? 'Decon Mask' : 'Sampling Mask';
             graphic.attributes = {
               DECISIONUNITUUID: graphic.layer.id,
               DECISIONUNIT: graphic.layer.title,

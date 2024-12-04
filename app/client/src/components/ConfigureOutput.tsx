@@ -636,7 +636,6 @@ function ConfigureOutput({ appType }: Props) {
                       idColumn={'ID'}
                       striped={true}
                       initialSelectedRowIds={{ ids: [] }}
-                      allowHighlight={false}
                       sortBy={[{ id: 'ID', desc: false }]}
                       getColumns={(tableWidth: any) => {
                         return [
