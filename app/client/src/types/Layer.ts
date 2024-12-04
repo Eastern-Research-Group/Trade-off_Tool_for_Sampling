@@ -7,6 +7,7 @@ export type LayerTypeName =
   | 'Area of Interest'
   | 'VSP'
   | 'Sampling Mask'
+  | 'Decon Mask'
   | 'Decon Results'
   | 'AOI Assessed'
   | 'Image Analysis'

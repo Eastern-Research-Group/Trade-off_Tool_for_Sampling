@@ -20,7 +20,11 @@ function getGraphicFromResponse(res: any) {
 
   const match = res.results.filter((result: any) => {
     const { attributes: attr } = result.graphic;
-    if (!attr?.PERMANENT_IDENTIFIER || !attr?.DECISIONUNITUUID) return null;
+    if (
+      !attr?.PERMANENT_IDENTIFIER ||
+      (!attr?.DECISIONUNITUUID && window.location.pathname !== '/decon')
+    )
+      return null;
 
     return result;
   });

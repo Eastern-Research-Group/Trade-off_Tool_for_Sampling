@@ -23,11 +23,18 @@ import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // utilities
 import { useSessionStorage } from 'utils/browserStorage';
-import { getSampleTableColumns } from 'utils/sketchUtils';
+import {
+  getBuildingTableColumns,
+  getSampleTableColumns,
+} from 'utils/sketchUtils';
+import { parseSmallFloat } from 'utils/utils';
 // config
 import { navPanelWidth } from 'config/appConfig';
 // types
+import { ScenarioEditsType } from 'types/Edits';
 import { AppType } from 'types/Navigation';
+//styles
+import { isDecon } from 'styles';
 
 const resizerHeight = 10;
 const esrifooterheight = 16;
@@ -201,6 +208,7 @@ function App({ appType }: Props) {
   } = useContext(NavigationContext);
   const {
     displayDimensions,
+    edits,
     layers,
     mapView,
     sceneView,
@@ -288,24 +296,99 @@ function App({ appType }: Props) {
 
   // count the number of samples
   const sampleData: any[] = [];
-  layers.forEach((layer) => {
-    if (!layer.sketchLayer || layer.sketchLayer.type === 'feature') return;
-    if (layer?.parentLayer?.id !== selectedScenario?.layerId) return;
-    if (layer.layerType === 'Samples' || layer.layerType === 'VSP') {
-      const graphics = layer.sketchLayer.graphics.toArray();
-      graphics.sort((a, b) =>
-        a.attributes.PERMANENT_IDENTIFIER.localeCompare(
-          b.attributes.PERMANENT_IDENTIFIER,
-        ),
+  if (isDecon) {
+    const scenarios = edits.edits.filter(
+      (e) => e.type === 'scenario',
+    ) as ScenarioEditsType[];
+    scenarios.forEach((scenario) => {
+      const aoiAssessed = scenario.layers.find(
+        (l) => l.layerType === 'AOI Assessed',
       );
-      graphics.forEach((sample) => {
-        sampleData.push({
-          graphic: sample,
-          ...sample.attributes,
+      const aoiAssessedLayer = layers.find(
+        (l) =>
+          l.layerType === 'AOI Assessed' && l.layerId === aoiAssessed?.layerId,
+      );
+      if (!aoiAssessedLayer) return;
+
+      (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
+        (sample) => {
+          sampleData.push({
+            graphic: sample,
+            ...sample.attributes,
+            layerName:
+              aoiAssessedLayer.parentLayer?.title ?? aoiAssessedLayer.label,
+            ground_elv: parseSmallFloat(
+              sample.attributes.ground_elv,
+              2,
+            ).toLocaleString(),
+            ground_elv_m: parseSmallFloat(
+              sample.attributes.ground_elv_m,
+              2,
+            ).toLocaleString(),
+            footprintSqM: parseSmallFloat(
+              sample.attributes.footprintSqM,
+              2,
+            ).toLocaleString(),
+            floorsSqM: parseSmallFloat(
+              sample.attributes.floorsSqM,
+              2,
+            ).toLocaleString(),
+            totalSqM: parseSmallFloat(
+              sample.attributes.totalSqM,
+              2,
+            ).toLocaleString(),
+            extWallsSqM: parseSmallFloat(
+              sample.attributes.extWallsSqM,
+              2,
+            ).toLocaleString(),
+            intWallsSqM: parseSmallFloat(
+              sample.attributes.intWallsSqM,
+              2,
+            ).toLocaleString(),
+            roofSqM: parseSmallFloat(
+              sample.attributes.roofSqM,
+              2,
+            ).toLocaleString(),
+            footprintSqFt: parseSmallFloat(
+              sample.attributes.footprintSqFt,
+              2,
+            ).toLocaleString(),
+            floorsSqFt: parseSmallFloat(
+              sample.attributes.floorsSqFt,
+              2,
+            ).toLocaleString(),
+            extWallsSqFt: parseSmallFloat(
+              sample.attributes.extWallsSqFt,
+              2,
+            ).toLocaleString(),
+            intWallsSqFt: parseSmallFloat(
+              sample.attributes.intWallsSqFt,
+              2,
+            ).toLocaleString(),
+          });
+        },
+      );
+    });
+  } else {
+    layers.forEach((layer) => {
+      if (!layer.sketchLayer || layer.sketchLayer.type === 'feature') return;
+      if (layer?.parentLayer?.id !== selectedScenario?.layerId) return;
+      if (layer.layerType === 'Samples' || layer.layerType === 'VSP') {
+        const graphics = layer.sketchLayer.graphics.toArray();
+        graphics.sort((a, b) =>
+          a.attributes.PERMANENT_IDENTIFIER.localeCompare(
+            b.attributes.PERMANENT_IDENTIFIER,
+          ),
+        );
+        graphics.forEach((sample) => {
+          sampleData.push({
+            graphic: sample,
+            ...sample.attributes,
+          });
         });
-      });
-    }
-  });
+      }
+    });
+  }
 
   // calculate the width of the table
   let tablePanelWidth = 150;
@@ -321,7 +404,7 @@ function App({ appType }: Props) {
   // determine which rows of the table should be selected
   const ids: { [key: string]: boolean } = {};
   let selectionMethod: 'row-click' | 'sample-click' = 'sample-click';
-  sampleData.forEach((sample, index) => {
+  sampleData.forEach((sample) => {
     const selectedIndex = selectedSampleIds.findIndex(
       (item) => item.PERMANENT_IDENTIFIER === sample.PERMANENT_IDENTIFIER,
     );
@@ -581,6 +664,14 @@ function App({ appType }: Props) {
                             ]
                       }
                       getColumns={(tableWidth: any) => {
+                        const tableColumns =
+                          appType === 'decon'
+                            ? getBuildingTableColumns({ tableWidth })
+                            : getSampleTableColumns({
+                                tableWidth,
+                                includeContaminationFields: trainingMode,
+                              });
+
                         return [
                           {
                             Header: () => null,
@@ -629,11 +720,7 @@ function App({ appType }: Props) {
                               </div>
                             ),
                           },
-                          ...getSampleTableColumns({
-                            tableWidth,
-                            includeContaminationFields:
-                              appType === 'decon' ? false : trainingMode,
-                          }),
+                          ...tableColumns,
                         ];
                       }}
                     />

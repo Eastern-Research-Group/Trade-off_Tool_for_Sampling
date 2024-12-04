@@ -342,7 +342,8 @@ export function createLayer({
   displayedFeatures.forEach((graphic) => {
     let layerType = editsLayer.layerType;
     if (layerType === 'VSP') layerType = 'Samples';
-    if (layerType === 'Sampling Mask') layerType = 'Area of Interest';
+    if (['Sampling Mask', 'Decon Mask'].includes(layerType))
+      layerType = 'Area of Interest';
 
     // set the symbol styles based on sample/layer type
     let symbol = defaultSymbols.symbols[layerType] as any;
@@ -363,7 +364,8 @@ export function createLayer({
     });
 
     polyFeatures.push(poly);
-    pointFeatures.push(convertToPoint(poly));
+    if (editsLayer.layerType !== 'Decon Mask')
+      pointFeatures.push(convertToPoint(poly));
     hybridFeatures.push(
       poly.attributes.ShapeType === 'point'
         ? convertToPoint(poly)
@@ -453,6 +455,12 @@ export function createSampleLayer(
   name: string = 'Default Sample Layer',
   parentLayer: __esri.GroupLayer | null = null,
 ) {
+  let layerType = 'Samples';
+  if (window.location.pathname === '/decon') {
+    name = 'Area of Interest';
+    layerType = 'Decon Mask';
+  }
+
   const layerUuid = generateUUID();
   const graphicsLayer = new GraphicsLayer({
     id: layerUuid,
@@ -480,7 +488,7 @@ export function createSampleLayer(
     value: graphicsLayer.id,
     name,
     label: name,
-    layerType: 'Samples',
+    layerType,
     editType: 'add',
     visible: true,
     listMode: 'show',
@@ -760,7 +768,7 @@ export function getPointSymbol(
   symbolColor: PolygonSymbol | null = null,
 ) {
   let point;
-  if (polygon.symbol.type.includes('-3d')) {
+  if (polygon.symbol?.type?.includes('-3d')) {
     point = getPointSymbol3d(polygon, symbolColor);
   } else {
     point = getPointSymbol2d(polygon, symbolColor);
@@ -1015,6 +1023,274 @@ export function getSampleTableColumns({
         width: baseColumnWidth,
       },
     ];
+  }
+
+  if (useEqualWidth) {
+    // set the column widths
+    const numColumns = columns.filter(
+      (col) => typeof col.show !== 'boolean' || col.show,
+    ).length;
+    const columnWidth = tableWidth > 0 ? tableWidth / numColumns - 1 : 0;
+    columns = columns.map((col) => {
+      return {
+        ...col,
+        width: col.show === 'boolean' && !col.show ? 0 : columnWidth,
+      };
+    });
+  }
+
+  return columns;
+}
+
+/**
+ * Gets the building info columns to include on the expandable table.
+ *
+ * @param tableWidth Used to determine how wide the columns should be.
+ * @param useEqualWidth Forces the table to use equal width columns.
+ */
+export function getBuildingTableColumns({
+  tableWidth,
+  useEqualWidth = false,
+}: {
+  tableWidth: number;
+  useEqualWidth?: boolean;
+}) {
+  const baseColumnWidth = 100;
+  const mediumColumnWidth = 140;
+  const largeColumnWidth = 160;
+
+  // add the base columns
+  let columns: any[] = [
+    {
+      Header: 'Building ID',
+      accessor: 'bid',
+      width: 0,
+      show: false,
+    },
+    {
+      Header: 'ID',
+      accessor: 'fd_id',
+      width: 0,
+      show: false,
+    },
+    {
+      Header: 'Layer',
+      accessor: 'layerName',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Building Type',
+      accessor: 'bldgtype',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Census Block FIPS',
+      accessor: 'cbfips',
+      width: mediumColumnWidth,
+    },
+    {
+      Header: 'Flood Zone (2021)',
+      accessor: 'firmzone',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Foundation Height (feet)',
+      accessor: 'found_ht',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Foundation Type',
+      accessor: 'found_type',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Footprint ID',
+      accessor: 'ftprntid',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Footprint Source',
+      accessor: 'ftprntsrc',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Ground Elevation (feet)',
+      accessor: 'ground_elv',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Ground Elevation (meters)',
+      accessor: 'ground_elv_m',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Median Year Built',
+      accessor: 'med_yr_blt',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Number of Stories',
+      accessor: 'num_story',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Percent Over 65 Disabled',
+      accessor: 'o65disable',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Occupancy Type',
+      accessor: 'occtype',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Population Night Over 65',
+      accessor: 'pop2amo65',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Population Night Under 65',
+      accessor: 'pop2amu65',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Population Day Over 65',
+      accessor: 'pop2pmo65',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Population Day Under 65',
+      accessor: 'pop2pmu65',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Source',
+      accessor: 'source',
+      width: baseColumnWidth,
+    },
+    // {
+    //   Header: 'Square Feet',
+    //   accessor: 'sqft',
+    //   width: baseColumnWidth,
+    // },
+    {
+      Header: 'Structure Damage Category',
+      accessor: 'st_damcat',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Students',
+      accessor: 'students',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Percent Under 65 Disabled',
+      accessor: 'u65disable',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Value of Contents',
+      accessor: 'val_cont',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Value of Structure',
+      accessor: 'val_struct',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Value of Vehicles',
+      accessor: 'vale_vehic',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'X',
+      accessor: 'x',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Y',
+      accessor: 'y',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Footprint Area (square meters)',
+      accessor: 'footprintSqM',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Floors Area (square meters)',
+      accessor: 'floorsSqM',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Total Area (square meters)',
+      accessor: 'totalSqM',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Ext Walls Area (square meters)',
+      accessor: 'extWallsSqM',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Int Walls Area (square meters)',
+      accessor: 'intWallsSqM',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Roof Area (square meters)',
+      accessor: 'roofSqM',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Footprint Area (square feet)',
+      accessor: 'footprintSqFt',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Floors Area (square feet)',
+      accessor: 'floorsSqFt',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Total Area (square feet)',
+      accessor: 'totalSqFt',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Ext Walls Area (square feet)',
+      accessor: 'extWallsSqFt',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Int Walls Area (square feet)',
+      accessor: 'intWallsSqFt',
+      width: baseColumnWidth,
+    },
+    {
+      Header: 'Roof Area (square feet)',
+      accessor: 'roofSqFt',
+      width: baseColumnWidth,
+    },
+  ];
+
+  if (window.location.search.includes('devMode=true')) {
+    columns.push({
+      Header: 'Contamination Type',
+      accessor: 'CONTAMTYPE',
+      width: largeColumnWidth,
+    });
+    columns.push({
+      Header: 'Activity',
+      accessor: 'CONTAMVAL',
+      width: baseColumnWidth,
+    });
+    columns.push({
+      Header: 'Unit of Measure',
+      accessor: 'CONTAMUNIT',
+      width: baseColumnWidth,
+    });
   }
 
   if (useEqualWidth) {

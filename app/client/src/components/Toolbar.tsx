@@ -13,6 +13,7 @@ import Portal from '@arcgis/core/portal/Portal';
 import PortalBasemapsSource from '@arcgis/core/widgets/BasemapGallery/support/PortalBasemapsSource';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 import Slider from '@arcgis/core/widgets/Slider';
+import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 // components
 import InfoIcon from 'components/InfoIcon';
 import Switch from 'components/Switch';
@@ -24,6 +25,7 @@ import { SketchContext } from 'contexts/Sketch';
 // utils
 import { getEnvironmentStringParam } from 'utils/arcGisRestUtils';
 import { fetchCheck } from 'utils/fetchUtils';
+import { baseBuildingSymbolProps, imageAnalysisSymbols } from 'utils/hooks';
 import {
   findLayerInEdits,
   getElevationLayer,
@@ -90,6 +92,7 @@ function buildLegendListItem(event: any) {
       value: 'Area of Interest',
       title: 'Area of Interest',
       symbol: defaultSymbols.symbols['Area of Interest'],
+      type: 'polygon',
       style: null,
     });
   }
@@ -99,6 +102,7 @@ function buildLegendListItem(event: any) {
       title: 'Contamination Map',
       symbol: defaultSymbols.symbols['Contamination Map'],
       style: null,
+      type: 'polygon',
     });
   }
   if (layer?.layerType === 'Samples' || layer?.layerType === 'VSP') {
@@ -117,6 +121,7 @@ function buildLegendListItem(event: any) {
             title: option.label,
             symbol: defaultSymbols.symbols[option.value],
             style,
+            type: 'polygon',
           });
         } else {
           legendItems.push({
@@ -124,10 +129,80 @@ function buildLegendListItem(event: any) {
             title: option.label,
             symbol: defaultSymbols.symbols['Samples'],
             style,
+            type: 'polygon',
           });
         }
       },
     );
+  }
+  if (layer?.layerType === 'Decon Mask') {
+    legendItems.push({
+      value: 'Area of Interest',
+      title: 'Area of Interest',
+      symbol: defaultSymbols.symbols['Area of Interest'],
+      type: 'polygon',
+      style: null,
+    });
+  }
+  if (layer?.layerType === 'AOI Assessed') {
+    // legendItems.push({
+    //   value: 'good',
+    //   title: 'Final Contamination < 100',
+    //   symbol: new TextSymbol({
+    //     ...baseBuildingSymbolProps,
+    //     color: 'green',
+    //   }),
+    //   type: 'text',
+    //   style: null,
+    // });
+    // legendItems.push({
+    //   value: 'bad',
+    //   title: 'Final Contamination >= 100',
+    //   symbol: new TextSymbol({
+    //     ...baseBuildingSymbolProps,
+    //     color: 'red',
+    //   }),
+    //   type: 'text',
+    //   style: null,
+    // });
+    legendItems.push({
+      value: 'none',
+      title: 'Building',
+      symbol: new TextSymbol(baseBuildingSymbolProps),
+      type: 'text',
+      style: null,
+    });
+  }
+  if (layer?.layerType === 'Image Analysis') {
+    Object.keys(imageAnalysisSymbols).forEach((key) => {
+      if (key === 'Vegetation') return;
+      const esriSymbol = (imageAnalysisSymbols as any)[key];
+      const label = key === 'Soil' ? 'Soil/Vegetation' : key;
+      legendItems.push({
+        value: label,
+        title: label,
+        symbol: {
+          type: esriSymbol.type,
+          color: [
+            esriSymbol.color.r,
+            esriSymbol.color.g,
+            esriSymbol.color.b,
+            esriSymbol.color.a,
+          ],
+          outline: {
+            color: [
+              esriSymbol.outline.color.r,
+              esriSymbol.outline.color.g,
+              esriSymbol.outline.color.b,
+              esriSymbol.outline.color.a,
+            ],
+            width: esriSymbol.outline.width,
+          },
+        },
+        type: 'polygon',
+        style: null,
+      });
+    });
   }
 
   // sort the legend items
@@ -153,11 +228,28 @@ function buildLegendListItem(event: any) {
                           opacity: 1;
                         `}
                       >
-                        <ShapeStyle
-                          color={row.symbol.color}
-                          outline={row.symbol.outline}
-                          style={row.style}
-                        />
+                        {row.type === 'polygon' && (
+                          <ShapeStyle
+                            color={row.symbol.color}
+                            outline={row.symbol.outline}
+                            style={row.style}
+                          />
+                        )}
+                        {row.type === 'text' && (
+                          <span
+                            className="esri-icon-organization"
+                            css={css`
+                              font-size: 22px;
+                              font-weight: bold;
+                              color: rgba(
+                                ${row.symbol.color.r},
+                                ${row.symbol.color.g},
+                                ${row.symbol.color.b},
+                                ${row.symbol.color.a}
+                              );
+                            `}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -279,12 +371,21 @@ const basemapNames = [
   'USA Topo Maps',
 ];
 
-type LegendRowType = {
-  title: string;
-  value: string;
-  symbol: PolygonSymbol;
-  style: string | null;
-};
+type LegendRowType =
+  | {
+      type: 'polygon';
+      title: string;
+      value: string;
+      symbol: PolygonSymbol;
+      style: string | null;
+    }
+  | {
+      title: string;
+      value: string;
+      symbol: TextSymbol;
+      type: 'text';
+      style: string | null;
+    };
 
 // --- styles (Toolbar) ---
 const toolBarTitle = css`

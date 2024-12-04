@@ -180,7 +180,6 @@ type Props = {
   height?: number;
   initialSelectedRowIds?: any;
   onSelectionChange?: Function;
-  allowHighlight?: boolean;
   sortBy?: any;
 };
 
@@ -193,7 +192,6 @@ export function ReactTable({
   height,
   initialSelectedRowIds,
   onSelectionChange,
-  allowHighlight = true,
   sortBy,
 }: Props) {
   // Initializes the column widths based on the table width
