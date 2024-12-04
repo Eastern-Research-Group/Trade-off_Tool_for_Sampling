@@ -29,6 +29,8 @@ import { colors, linkButtonStyles } from 'styles';
 
 type SaveStatusType = 'none' | 'success' | 'failure';
 
+const maxFields = 4;
+
 // --- styles (FeatureTool) ---
 const containerStyles = css`
   padding: 6px;
@@ -280,7 +282,8 @@ function MapPopup({
           <table className="esri-widget__table">
             <tbody>
               {fieldInfos.map((fieldInfo, index) => {
-                if (includeControls && !showMore && index > 4) return null;
+                if (includeControls && !showMore && index > maxFields)
+                  return null;
 
                 return (
                   <tr key={index}>
@@ -295,7 +298,7 @@ function MapPopup({
               })}
             </tbody>
           </table>
-          {includeControls && (
+          {includeControls && fieldInfos.length > maxFields && (
             <button
               css={linkButtonStyles}
               onClick={() => setShowMore(!showMore)}
@@ -465,7 +468,7 @@ function MapPopupSimple({ feature, fieldInfos }: MapPopupSimpleProps) {
           <table className="esri-widget__table">
             <tbody>
               {fieldInfos.map((fieldInfo, index) => {
-                if (!showMore && index > 4) return null;
+                if (!showMore && index > maxFields) return null;
 
                 const fieldValue =
                   feature.graphic.attributes[fieldInfo.fieldName];
@@ -490,13 +493,18 @@ function MapPopupSimple({ feature, fieldInfos }: MapPopupSimpleProps) {
               })}
             </tbody>
           </table>
-          <button css={linkButtonStyles} onClick={() => setShowMore(!showMore)}>
-            <i
-              css={iconStyles}
-              className={`fas fa-arrow-${showMore ? 'up' : 'down'}`}
-            />
-            Show {showMore ? 'Less' : 'More'}
-          </button>
+          {fieldInfos.length > maxFields && (
+            <button
+              css={linkButtonStyles}
+              onClick={() => setShowMore(!showMore)}
+            >
+              <i
+                css={iconStyles}
+                className={`fas fa-arrow-${showMore ? 'up' : 'down'}`}
+              />
+              Show {showMore ? 'Less' : 'More'}
+            </button>
+          )}
         </div>
       )}
     </div>
