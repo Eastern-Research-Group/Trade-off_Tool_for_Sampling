@@ -26,6 +26,7 @@ import {
 import { LayerType } from 'types/Layer';
 import { AppType } from 'types/Navigation';
 // config
+import { isDecon } from 'config/navigation';
 import {
   PolygonSymbol,
   SampleIssues,
@@ -456,7 +457,7 @@ export function createSampleLayer(
   parentLayer: __esri.GroupLayer | null = null,
 ) {
   let layerType = 'Samples';
-  if (window.location.pathname === '/decon') {
+  if (isDecon()) {
     name = 'Area of Interest';
     layerType = 'Decon Mask';
   }

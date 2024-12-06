@@ -7,6 +7,8 @@ import { SketchContext, SketchViewModelType } from 'contexts/Sketch';
 import { use3dSketch } from 'utils/hooks';
 // types
 import { AppType } from 'types/Navigation';
+// config
+import { isDecon } from 'config/navigation';
 
 let ctrl = false;
 let shift = false;
@@ -20,10 +22,7 @@ function getGraphicFromResponse(res: any) {
 
   const match = res.results.filter((result: any) => {
     const { attributes: attr } = result.graphic;
-    if (
-      !attr?.PERMANENT_IDENTIFIER ||
-      (!attr?.DECISIONUNITUUID && window.location.pathname !== '/decon')
-    )
+    if (!attr?.PERMANENT_IDENTIFIER || (!attr?.DECISIONUNITUUID && !isDecon()))
       return null;
 
     return result;

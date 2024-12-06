@@ -25,6 +25,8 @@ import {
   SelectedSampleType,
   PolygonSymbol,
 } from 'config/sampleAttributes';
+// config
+import { isDecon } from 'config/navigation';
 
 export const hazardousOptions: { label: string; value: string }[] = [
   { label: 'Hazardous', value: 'hazardous' },
@@ -274,12 +276,10 @@ export function SketchProvider({ children }: Props) {
     },
   };
 
-  const isDecon = window.location.pathname === '/decon';
-
   const initialDefaultSymbols = {
     symbols: {
       'Area of Interest': defaultSymbol,
-      'Contamination Map': isDecon
+      'Contamination Map': isDecon()
         ? ({
             type: 'simple-fill',
             color: [4, 53, 255, 0.2],

@@ -6,6 +6,8 @@ import React, { createContext, ReactNode, useContext } from 'react';
 import { fetchCheck } from 'utils/fetchUtils';
 // types
 import { LayerProps } from 'types/Misc';
+// config
+import { isDecon } from 'config/navigation';
 
 type State = {
   lookupFiles: LookupFiles;
@@ -63,10 +65,9 @@ function useLookupFiles() {
       .then((res) => {
         const data = res as Content;
         const sampleSelectOptions: SampleSelectType[] = [];
-        const sampleAttributes =
-          window.location.pathname === '/decon'
-            ? data.technologyTypes.deconAttributes
-            : data.technologyTypes.sampleAttributes;
+        const sampleAttributes = isDecon()
+          ? data.technologyTypes.deconAttributes
+          : data.technologyTypes.sampleAttributes;
         Object.keys(sampleAttributes).forEach((key: any) => {
           const value = sampleAttributes[key].TYPEUUID;
           const label = sampleAttributes[key].TYPE;
