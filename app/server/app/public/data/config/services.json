@@ -6,6 +6,9 @@
   "proxyUrl": "https://app7.erg.com/PHP/proxy.php?",
   "nsi": "https://nsi.sec.usace.army.mil/nsiapi",
   "useProxyForGPServer": false,
+  "radarDatasets": {
+    "sampleMetadata": "https://radar-staging.app.cloud.gov/api/v1/datasets/b334f501-10be-4bc3-8fbf-7eacd163eff7/data/1"
+  },
   "googleAnalyticsMapping": [
     {
       "urlLookup": "totsGPServer",

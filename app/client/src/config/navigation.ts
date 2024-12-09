@@ -1,16 +1,4 @@
-export type PanelValueType =
-  | 'addData'
-  | 'locateSamples'
-  | 'decon'
-  | 'calculate'
-  | 'configureOutput'
-  | 'publish';
-
-export type PanelType = {
-  value: PanelValueType;
-  label: string;
-  iconClass: string;
-};
+export const isDecon = () => window.location.pathname === '/decon';
 
 export const samplingPanels: PanelType[] = [
   {
@@ -67,3 +55,17 @@ export const deconPanels: PanelType[] = [
     iconClass: 'fas fa-upload',
   },
 ];
+
+export type PanelValueType =
+  | 'addData'
+  | 'locateSamples'
+  | 'decon'
+  | 'calculate'
+  | 'configureOutput'
+  | 'publish';
+
+export type PanelType = {
+  value: PanelValueType;
+  label: string;
+  iconClass: string;
+};

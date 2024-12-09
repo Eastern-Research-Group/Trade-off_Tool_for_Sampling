@@ -79,7 +79,8 @@ import {
   createErrorObject,
   parseSmallFloat,
 } from 'utils/utils';
-import { isDecon } from 'styles';
+// config
+import { isDecon } from 'config/navigation';
 
 // type AoiPercentages = {
 //   numAois: number;
@@ -2666,10 +2667,7 @@ export function useDynamicPopup(appType: AppType) {
       if (includeControls) {
         actions.addMany([
           {
-            title:
-              window.location.pathname === '/decon'
-                ? 'Delete Decon Technology'
-                : 'Delete Sample',
+            title: isDecon() ? 'Delete Decon Technology' : 'Delete Sample',
             id: 'delete',
             className: 'esri-icon-trash',
           },
@@ -2687,7 +2685,7 @@ export function useDynamicPopup(appType: AppType) {
         actions,
       };
     }
-    if (type === 'Area of Interest' || (type === 'Samples' && isDecon)) {
+    if (type === 'Area of Interest' || (type === 'Samples' && isDecon())) {
       return {
         title: '',
         content: [
@@ -2714,7 +2712,7 @@ export function useDynamicPopup(appType: AppType) {
         ],
       };
     }
-    if ((type === 'Samples' || type === 'VSP') && !isDecon) {
+    if ((type === 'Samples' || type === 'VSP') && !isDecon()) {
       const fieldInfos = [
         { fieldName: 'DECISIONUNIT', label: 'Layer' },
         { fieldName: 'TYPE', label: 'Sample Type' },
@@ -2762,10 +2760,7 @@ export function useDynamicPopup(appType: AppType) {
       if (includeControls) {
         actions.addMany([
           {
-            title:
-              window.location.pathname === '/decon'
-                ? 'Delete Decon'
-                : 'Delete Sample',
+            title: isDecon() ? 'Delete Decon' : 'Delete Sample',
             id: 'delete',
             className: 'esri-icon-trash',
           },

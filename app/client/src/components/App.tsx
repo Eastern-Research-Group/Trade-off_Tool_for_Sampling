@@ -30,11 +30,10 @@ import {
 import { parseSmallFloat } from 'utils/utils';
 // config
 import { navPanelWidth } from 'config/appConfig';
+import { isDecon } from 'config/navigation';
 // types
 import { ScenarioEditsType } from 'types/Edits';
 import { AppType } from 'types/Navigation';
-//styles
-import { isDecon } from 'styles';
 
 const resizerHeight = 10;
 const esrifooterheight = 16;
@@ -296,7 +295,7 @@ function App({ appType }: Props) {
 
   // count the number of samples
   const sampleData: any[] = [];
-  if (isDecon) {
+  if (isDecon()) {
     const scenarios = edits.edits.filter(
       (e) => e.type === 'scenario',
     ) as ScenarioEditsType[];

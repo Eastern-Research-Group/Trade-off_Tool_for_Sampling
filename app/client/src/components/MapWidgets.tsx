@@ -11,7 +11,8 @@ import ScaleBar from '@arcgis/core/widgets/ScaleBar';
 // contexts
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
-import { isDecon } from 'styles';
+// config
+import { isDecon } from 'config/navigation';
 
 type SearchWidgetType = {
   '2d': Search;
@@ -310,7 +311,7 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
 
     const samples: any = {};
     selectedSampleIds.forEach((sample) => {
-      const key = isDecon ? 'aoi-assessed' : sample.DECISIONUNITUUID;
+      const key = isDecon() ? 'aoi-assessed' : sample.DECISIONUNITUUID;
       if (!samples.hasOwnProperty(key)) {
         samples[key] = [sample.PERMANENT_IDENTIFIER];
       } else {

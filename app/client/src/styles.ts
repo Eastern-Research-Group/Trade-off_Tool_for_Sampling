@@ -1,7 +1,7 @@
 import { css } from '@emotion/react';
 import { CSSProperties } from 'react';
-
-const isDecon = window.location.pathname === '/decon';
+// config
+import { isDecon } from 'config/navigation';
 
 const colors = {
   black: (alpha: number = 1) => `rgba(0, 0, 0, ${alpha})`, // #000,
@@ -21,12 +21,12 @@ const colors = {
 };
 
 const appTheme = {
-  headerBackgroundColor: isDecon ? colors.lightGray() : colors.darkblue(),
+  headerBackgroundColor: isDecon() ? colors.lightGray() : colors.darkblue(),
   headerBackgroundColorSelected: colors.white(),
-  headerButtonSelectedColor: isDecon ? colors.white() : '#004f83',
-  headerColor: isDecon ? colors.black() : colors.white(),
+  headerButtonSelectedColor: isDecon() ? colors.white() : '#004f83',
+  headerColor: isDecon() ? colors.black() : colors.white(),
   headerColorSelected: colors.black(),
-  resourceTallyColor: isDecon ? colors.black() : colors.white(),
+  resourceTallyColor: isDecon() ? colors.black() : colors.white(),
 };
 
 const reactSelectStyles = {
