@@ -20,7 +20,7 @@ export type SelectedSampleType = {
 };
 
 export type AttributeItems = {
-  OBJECTID: string | null;
+  OBJECTID: number | string | null;
   PERMANENT_IDENTIFIER: string | null;
   GLOBALID: string | null;
   TYPEUUID: string;
