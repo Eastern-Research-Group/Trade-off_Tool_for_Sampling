@@ -4,7 +4,7 @@
   "shippTestGPServer": "https://ags.erg.com/arcgis/rest/services/ORD/SHIPP/GPServer",
   "gpServerInputMaxRecordCount": 2000,
   "proxyUrl": "https://app7.erg.com/PHP/proxy.php?",
-  "nsi": "https://nsi.sec.usace.army.mil/nsiapi",
+  "structures": "https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/USA_Structures_View/FeatureServer/0",
   "useProxyForGPServer": false,
   "radarDatasets": {
     "sampleMetadata": "https://radar-staging.app.cloud.gov/api/v1/datasets/b334f501-10be-4bc3-8fbf-7eacd163eff7/data/1"

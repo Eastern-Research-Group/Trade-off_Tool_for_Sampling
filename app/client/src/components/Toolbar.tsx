@@ -320,7 +320,7 @@ function buildLegendListItem(event: any) {
 
     // don't show legend twice
     item.panel = {
-      content: container,
+      content: legendItems.length > 0 ? container : 'legend',
       className: 'esri-icon-layer-list',
       open: true,
     };

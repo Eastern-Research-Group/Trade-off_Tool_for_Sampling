@@ -23,6 +23,7 @@ import Point from '@arcgis/core/geometry/Point';
 import Polygon from '@arcgis/core/geometry/Polygon';
 import PolygonSymbol3D from '@arcgis/core/symbols/PolygonSymbol3D';
 import PopupTemplate from '@arcgis/core/PopupTemplate';
+import * as query from '@arcgis/core/rest/query';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
@@ -56,12 +57,7 @@ import { FieldInfos, LayerType, LayerTypeName } from 'types/Layer';
 import { AppType } from 'types/Navigation';
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
-import {
-  fetchPost,
-  fetchPostFile,
-  geoprocessorFetch,
-  proxyFetch,
-} from 'utils/fetchUtils';
+import { fetchPost, fetchPostFile, geoprocessorFetch } from 'utils/fetchUtils';
 import {
   calculateArea,
   convertToPoint,
@@ -135,41 +131,13 @@ export const baseBuildingSymbolProps = {
 
 export const detectionLimit = 100;
 
-const bldgTypeEnum = {
-  C: 'Concrete',
-  H: 'Manufactured',
-  M: 'Masonry',
-  S: 'Steel',
-  W: 'Wood',
-};
-const foundTypeEnum = {
-  C: 'Crawl',
-  B: 'Basement',
-  S: 'Slab',
-  P: 'Pier',
-  I: 'Pile',
-  F: 'Fill',
-  W: 'Solid Wall',
-};
-const ftprntsrcEnum = {
-  B: 'Bing',
-  O: 'Oak Ridge National Labs',
-  N: 'National Geospatial-Intelligence Agency',
-  M: 'Map Building Layer',
-};
-const sourceEnum = {
-  P: 'Parcel',
-  E: 'ESRI',
-  H: 'HIFLD Hospital',
-  N: 'HIFLD Nursing Home',
-  S: 'National Center for Education Statistics',
-  X: 'HAZUS/NSI-2015',
-};
-const stDamcatEnum = {
-  RES: 'Residential',
-  COM: 'Commercial',
-  IND: 'Industrial',
-  PUB: 'Public',
+const buildingColors: { [key: string]: number[] } = {
+  Residential: [255, 222, 62, 191],
+  Commercial: [255, 127, 127, 191],
+  Government: [20, 158, 206, 191],
+  Education: [252, 146, 31, 191],
+  Industrial: [133, 133, 133, 191],
+  Other: [255, 222, 62, 191],
 };
 
 const mediaToBeepEnum = {
@@ -254,10 +222,6 @@ function hasGraphics(aoiData: AoiDataType) {
   }
 
   return false;
-}
-
-function handleEnum(value: string, obj: any) {
-  return obj.hasOwnProperty(value) ? obj[value] : value;
 }
 
 type ContaminationPercentages = {
@@ -362,7 +326,7 @@ function processScenario(
 
 async function fetchBuildingData(
   aoiGraphics: __esri.Graphic[],
-  features: any[],
+  features: __esri.Graphic[],
   services: any,
   planGraphics: PlanGraphics,
   responseIndexes: string[],
@@ -371,46 +335,33 @@ async function fetchBuildingData(
 ) {
   const requests: any[] = [];
   features.forEach((feature) => {
-    const request: any = proxyFetch(`${services.nsi}/structures?fmt=fc`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        type: 'FeatureCollection',
-        features: [feature],
+    requests.push(
+      query.executeQueryJSON(services.structures, {
+        geometry: feature.geometry,
+        returnGeometry: true,
+        outFields: ['*'],
       }),
-    });
-
-    requests.push(request);
+    );
   });
 
   const responses = await Promise.all(requests);
   responses.forEach((results, index) => {
     results.features.forEach((feature: any) => {
-      const {
-        // bid,
-        bldgtype,
-        found_type,
-        ftprntsrc,
-        num_story,
-        source,
-        sqft,
-        st_damcat,
-      } = feature.properties;
+      const { HEIGHT, SQFEET } = feature.attributes;
 
       // if (buildingFilter.includes(bid)) return;
 
       // feet
-      const footprintSqFt = sqft;
-      const floorsSqFt = num_story * footprintSqFt;
-      const extWallsSqFt = Math.sqrt(sqft) * 10 * 4 * num_story;
+      const footprintSqFt = SQFEET;
+      const numStory = Math.max(HEIGHT / 4.572, 1); // floor height assumed to be 15 feet
+      const floorsSqFt = numStory * footprintSqFt;
+      const extWallsSqFt = Math.sqrt(SQFEET) * 10 * 4 * numStory;
       const intWallsSqFt = extWallsSqFt * 3;
 
       // meters
-      const footprintSqM = sqft / 10.7639104167;
-      const floorsSqM = num_story * footprintSqM;
-      const extWallsSqM = Math.sqrt(footprintSqM) * 10 * 4 * num_story;
+      const footprintSqM = SQFEET / 10.7639104167;
+      const floorsSqM = numStory * footprintSqM;
+      const extWallsSqM = Math.sqrt(footprintSqM) * 10 * 4 * numStory;
       const intWallsSqM = extWallsSqM * 3;
 
       const actions = new Collection<any>();
@@ -422,16 +373,12 @@ async function fetchBuildingData(
 
       const planId = responseIndexes[index];
       const permId = generateUUID();
+      const occCls = feature.attributes.OCC_CLS;
       planGraphics[planId].graphics.push(
         new Graphic({
           attributes: {
-            ...feature.properties,
+            ...feature.attributes,
             PERMANENT_IDENTIFIER: permId,
-            bldgtype: handleEnum(bldgtype, bldgTypeEnum),
-            found_type: handleEnum(found_type, foundTypeEnum),
-            ftprntsrc: handleEnum(ftprntsrc, ftprntsrcEnum),
-            source: handleEnum(source, sourceEnum),
-            st_damcat: handleEnum(st_damcat, stDamcatEnum),
             CONTAMTYPE: '',
             CONTAMUNIT: '',
             CONTAMVALPLUME: 0,
@@ -449,15 +396,18 @@ async function fetchBuildingData(
             extWallsSqFt,
             intWallsSqFt,
             roofSqFt: footprintSqFt,
+            numStory,
           },
-          geometry: new Point({
-            longitude: feature.geometry.coordinates[0],
-            latitude: feature.geometry.coordinates[1],
-            spatialReference: {
-              wkid: 102100,
+          geometry: feature.geometry,
+          symbol: new SimpleFillSymbol({
+            color: buildingColors.hasOwnProperty(occCls)
+              ? buildingColors[occCls]
+              : buildingColors['Other'],
+            outline: {
+              color: [153, 153, 153, 64],
+              width: 0.84,
             },
           }),
-          symbol: new TextSymbol(baseBuildingSymbolProps),
           popupTemplate: {
             title: '',
             content: buildingMapPopup,
@@ -1314,7 +1264,7 @@ export function useCalculateDeconPlan() {
 
     async function fetchAoiData() {
       if (!aoiData.graphics) return;
-      const features: any[] = [];
+      const features: __esri.Graphic[] = [];
       let responseIndexes: string[] = [];
       let planGraphics: PlanGraphics = {};
       const aoiGraphics: __esri.Graphic[] = [];
@@ -1324,7 +1274,7 @@ export function useCalculateDeconPlan() {
         aoiGraphics.push(...aoiData.graphics[planId]);
         let planAoiArea = 0;
         for (const graphic of aoiData.graphics[planId]) {
-          const geometry = graphic.geometry as __esri.Polygon;
+          features.push(graphic);
 
           const areaSM = await calculateArea(graphic, sceneViewForArea);
           if (typeof areaSM === 'number') {
@@ -1332,35 +1282,7 @@ export function useCalculateDeconPlan() {
             graphic.attributes.AREA = areaSM;
           }
 
-          const dim1Rings: number[][][] = [];
-          geometry.rings.forEach((dim1) => {
-            const dim2Rings: number[][] = [];
-            dim1.forEach((dim2) => {
-              const point = new Point({
-                spatialReference: {
-                  wkid: 102100,
-                },
-                x: dim2[0],
-                y: dim2[1],
-              });
-
-              dim2Rings.push([point.longitude, point.latitude]);
-            });
-
-            dim1Rings.push(dim2Rings);
-          });
-
           responseIndexes.push(planId);
-
-          const feature = {
-            type: 'Feature',
-            properties: {},
-            geometry: {
-              type: 'Polygon',
-              coordinates: dim1Rings,
-            },
-          };
-          features.push(feature);
         }
 
         if (!planGraphics.hasOwnProperty(planId)) {
@@ -1418,7 +1340,7 @@ export function useCalculateDeconPlan() {
           gsgParam,
         );
 
-        // TODO call nsi for buildings in contamination plumes
+        // TODO call usa structures for buildings in contamination plumes
         if (contaminationMap) {
           const contaminationLayer =
             contaminationMap.sketchLayer as __esri.GraphicsLayer;
@@ -1462,39 +1384,11 @@ export function useCalculateDeconPlan() {
             });
           });
 
-          const features: any[] = [];
+          const features: __esri.Graphic[] = [];
           const responseIndexes: string[] = [];
           contaminationLayer.graphics.forEach((graphic) => {
-            const geometry = graphic.geometry as __esri.Polygon;
+            features.push(graphic);
             responseIndexes.push('contaminationMap');
-
-            const dim1Rings: number[][][] = [];
-            geometry.rings.forEach((dim1) => {
-              const dim2Rings: number[][] = [];
-              dim1.forEach((dim2) => {
-                const point = new Point({
-                  spatialReference: {
-                    wkid: 102100,
-                  },
-                  x: dim2[0],
-                  y: dim2[1],
-                });
-
-                dim2Rings.push([point.longitude, point.latitude]);
-              });
-
-              dim1Rings.push(dim2Rings);
-            });
-
-            const feature = {
-              type: 'Feature',
-              properties: {},
-              geometry: {
-                type: 'Polygon',
-                coordinates: dim1Rings,
-              },
-            };
-            features.push(feature);
           });
 
           await fetchBuildingData(
