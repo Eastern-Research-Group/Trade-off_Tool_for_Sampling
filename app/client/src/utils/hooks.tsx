@@ -26,7 +26,6 @@ import PopupTemplate from '@arcgis/core/PopupTemplate';
 import * as query from '@arcgis/core/rest/query';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
-import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 // components
 import MapPopup, {
   buildingMapPopup,
@@ -374,11 +373,15 @@ async function fetchBuildingData(
       const planId = responseIndexes[index];
       const permId = generateUUID();
       const occCls = feature.attributes.OCC_CLS;
+      const prodDate = feature.attributes.PROD_DATE;
+      const imageDate = feature.attributes.IMAGE_DATE;
       planGraphics[planId].graphics.push(
         new Graphic({
           attributes: {
             ...feature.attributes,
             PERMANENT_IDENTIFIER: permId,
+            PROD_DATE: prodDate ? new Date(prodDate).toLocaleString() : '',
+            IMAGE_DATE: imageDate ? new Date(imageDate).toLocaleString() : '',
             CONTAMTYPE: '',
             CONTAMUNIT: '',
             CONTAMVALPLUME: 0,
@@ -2340,14 +2343,11 @@ export function useCalculateDeconPlan() {
                 if (!g.attributes.CONTAMTYPE || !hasDeconTech) return g;
 
                 const newG = g.clone();
-                let props = {
-                  ...baseBuildingSymbolProps,
-                };
                 if (window.location.search.includes('devMode=true')) {
-                  props.color =
+                  (newG.symbol as any).outline.color =
                     g.attributes.CONTAMVAL < detectionLimit ? 'green' : 'red';
+                  (newG.symbol as any).outline.width = 2;
                 }
-                newG.symbol = new TextSymbol(props);
 
                 return newG;
               }),

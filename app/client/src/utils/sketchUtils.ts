@@ -1075,7 +1075,7 @@ export function getBuildingTableColumns({
       show: false,
     },
     {
-      Header: 'Universally Unique Identifier (UUID)',
+      Header: 'UUID',
       accessor: 'UUID',
       width: 0,
       show: false,
@@ -1141,11 +1141,6 @@ export function getBuildingTableColumns({
       width: baseColumnWidth,
     },
     {
-      Header: 'Number of Stories',
-      accessor: 'num_story',
-      width: baseColumnWidth,
-    },
-    {
       Header: 'Highest Ground Elevation (meters)',
       accessor: 'H_ADJ_ELEV',
       width: baseColumnWidth,
@@ -1171,8 +1166,8 @@ export function getBuildingTableColumns({
       width: baseColumnWidth,
     },
     {
-      Header: 'SOURCE',
-      accessor: 'Source',
+      Header: 'Source',
+      accessor: 'SOURCE',
       width: baseColumnWidth,
     },
     {

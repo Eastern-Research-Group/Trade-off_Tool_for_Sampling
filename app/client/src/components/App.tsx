@@ -331,6 +331,11 @@ function App({ appType }: Props) {
                 sample.attributes.SQMETERS,
                 2,
               )?.toLocaleString() ?? '',
+            footprintSqM:
+              parseSmallFloat(
+                sample.attributes.footprintSqM,
+                2,
+              )?.toLocaleString() ?? '',
             floorsSqM:
               parseSmallFloat(
                 sample.attributes.floorsSqM,
@@ -354,12 +359,22 @@ function App({ appType }: Props) {
             roofSqM:
               parseSmallFloat(sample.attributes.roofSqM, 2)?.toLocaleString() ??
               '',
+            footprintSqFt:
+              parseSmallFloat(
+                sample.attributes.footprintSqFt,
+                2,
+              )?.toLocaleString() ?? '',
             SQFEET:
               parseSmallFloat(sample.attributes.SQFEET, 2)?.toLocaleString() ??
               '',
             floorsSqFt:
               parseSmallFloat(
                 sample.attributes.floorsSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            totalSqFt:
+              parseSmallFloat(
+                sample.attributes.totalSqFt,
                 2,
               )?.toLocaleString() ?? '',
             extWallsSqFt:
@@ -370,6 +385,11 @@ function App({ appType }: Props) {
             intWallsSqFt:
               parseSmallFloat(
                 sample.attributes.intWallsSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            roofSqFt:
+              parseSmallFloat(
+                sample.attributes.roofSqFt,
                 2,
               )?.toLocaleString() ?? '',
           });

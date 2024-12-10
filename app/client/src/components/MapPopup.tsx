@@ -568,27 +568,27 @@ export function buildingMapPopup(feature: any) {
     { label: 'ZIP Code', fieldName: 'PROP_ZIP' },
     { label: 'Outbuilding or Non-Primary Structure', fieldName: 'OUTBLDG' },
     { label: 'Height (meters)', fieldName: 'HEIGHT' },
-    { label: 'Square Meters', fieldName: 'SQMETERS' },
-    { label: 'Square Feet', fieldName: 'SQFEET' },
+    { label: 'Square Meters', fieldName: 'SQMETERS', format: 'number' },
+    { label: 'Square Feet', fieldName: 'SQFEET', format: 'number' },
     {
-      label:
-        'Highest Elevation (in Meters) of the Ground Adjacent to the Structure',
+      label: 'Highest Ground Elevation (meters)',
       fieldName: 'H_ADJ_ELEV',
+      format: 'number',
     },
     {
-      label:
-        'Lowest Elevation (in Meters) of the Ground Adjacent to the Structure',
+      label: 'Lowest Ground Elevation (meters)',
       fieldName: 'L_ADJ_ELEV',
+      format: 'number',
     },
     {
-      label: 'County Federal Information Processing Standards (FIPS) Code',
+      label: 'County FIPS',
       fieldName: 'FIPS',
     },
     { label: 'Census Tract Identifier', fieldName: 'CENSUSCODE' },
     { label: 'Production Date', fieldName: 'PROD_DATE' },
     { label: 'Source', fieldName: 'SOURCE' },
     {
-      label: 'United States National Grid (USNG) Coordinates',
+      label: 'USNG Coordinates',
       fieldName: 'USNG',
     },
     { label: 'Longitude', fieldName: 'LONGITUDE' },
@@ -596,13 +596,13 @@ export function buildingMapPopup(feature: any) {
     { label: 'Image Name', fieldName: 'IMAGE_NAME' },
     { label: 'Image Date', fieldName: 'IMAGE_DATE' },
     {
-      label: 'Methodology Used to Validate Building Outline',
+      label: 'Building Outline Validation Methodology',
       fieldName: 'VAL_METHOD',
     },
     { label: 'Remarks', fieldName: 'REMARKS' },
-    { label: 'Universally Unique Identifier (UUID)', fieldName: 'UUID' },
+    { label: 'UUID', fieldName: 'UUID' },
     {
-      label: 'State Federal Information Processing System (FIPS)',
+      label: 'State FIPS',
       fieldName: 'STATE_FIPS',
     },
     {
