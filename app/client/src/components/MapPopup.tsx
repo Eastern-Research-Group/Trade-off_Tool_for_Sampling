@@ -567,7 +567,7 @@ export function buildingMapPopup(feature: any) {
     { label: 'State', fieldName: 'PROP_ST' },
     { label: 'ZIP Code', fieldName: 'PROP_ZIP' },
     { label: 'Outbuilding or Non-Primary Structure', fieldName: 'OUTBLDG' },
-    { label: 'Height (meters)', fieldName: 'HEIGHT' },
+    { label: 'Height (meters)', fieldName: 'HEIGHT', format: 'number' },
     { label: 'Square Meters', fieldName: 'SQMETERS', format: 'number' },
     { label: 'Square Feet', fieldName: 'SQFEET', format: 'number' },
     {

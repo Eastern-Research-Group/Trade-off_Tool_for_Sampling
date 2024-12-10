@@ -337,21 +337,23 @@ async function fetchBuildingData(
   const responses = await Promise.all(requests);
   responses.forEach((results, index) => {
     results.features.forEach((feature: any) => {
-      const { HEIGHT, SQFEET } = feature.attributes;
+      const { HEIGHT, SQFEET, SQMETERS } = feature.attributes;
 
       // if (buildingFilter.includes(bid)) return;
 
       // feet
+      const heightM = HEIGHT ?? 4.572; // default to 15 feet if no height is provided
+      const heightFt = heightM * 3.280839895;
       const footprintSqFt = SQFEET;
-      const numStory = Math.max(HEIGHT / 4.572, 1); // floor height assumed to be 15 feet
+      const numStory = Math.max(heightFt / 15, 1); // floor height assumed to be 15 feet
       const floorsSqFt = numStory * footprintSqFt;
-      const extWallsSqFt = Math.sqrt(SQFEET) * 10 * 4 * numStory;
+      const extWallsSqFt = Math.sqrt(SQFEET) * heightFt * 4;
       const intWallsSqFt = extWallsSqFt * 3;
 
       // meters
-      const footprintSqM = SQFEET / 10.7639104167;
+      const footprintSqM = SQMETERS;
       const floorsSqM = numStory * footprintSqM;
-      const extWallsSqM = Math.sqrt(footprintSqM) * 10 * 4 * numStory;
+      const extWallsSqM = Math.sqrt(footprintSqM) * heightM * 4;
       const intWallsSqM = extWallsSqM * 3;
 
       const actions = new Collection<any>();
@@ -371,6 +373,7 @@ async function fetchBuildingData(
           attributes: {
             ...feature.attributes,
             PERMANENT_IDENTIFIER: permId,
+            HEIGHT: heightM,
             PROD_DATE: prodDate ? new Date(prodDate).toLocaleString() : '',
             IMAGE_DATE: imageDate ? new Date(imageDate).toLocaleString() : '',
             CONTAMTYPE: '',

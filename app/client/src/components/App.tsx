@@ -326,6 +326,9 @@ function App({ appType }: Props) {
                 sample.attributes.L_ADJ_ELEV,
                 2,
               )?.toLocaleString() ?? '',
+            HEIGHT:
+              parseSmallFloat(sample.attributes.HEIGHT, 2)?.toLocaleString() ??
+              '',
             SQMETERS:
               parseSmallFloat(
                 sample.attributes.SQMETERS,
