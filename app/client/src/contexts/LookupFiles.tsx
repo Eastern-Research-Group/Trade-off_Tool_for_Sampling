@@ -177,7 +177,9 @@ type Content = {
     gpServerInputMaxRecordCount: number;
     proxyUrl: string;
     shippTestGPServer: string;
+    structures: string;
     totsGPServer: string;
+    totsTestGPServer: string;
     useProxyForGPServer: boolean;
     radarDatasets: {
       sampleMetadata: string;
