@@ -25,7 +25,7 @@ import { SketchContext } from 'contexts/Sketch';
 // utils
 import { getEnvironmentStringParam } from 'utils/arcGisRestUtils';
 import { fetchCheck } from 'utils/fetchUtils';
-import { baseBuildingSymbolProps, imageAnalysisSymbols } from 'utils/hooks';
+import { buildingColors, imageAnalysisSymbols } from 'utils/hooks';
 import {
   findLayerInEdits,
   getElevationLayer,
@@ -145,32 +145,21 @@ function buildLegendListItem(event: any) {
     });
   }
   if (layer?.layerType === 'AOI Assessed') {
-    // legendItems.push({
-    //   value: 'good',
-    //   title: 'Final Contamination < 100',
-    //   symbol: new TextSymbol({
-    //     ...baseBuildingSymbolProps,
-    //     color: 'green',
-    //   }),
-    //   type: 'text',
-    //   style: null,
-    // });
-    // legendItems.push({
-    //   value: 'bad',
-    //   title: 'Final Contamination >= 100',
-    //   symbol: new TextSymbol({
-    //     ...baseBuildingSymbolProps,
-    //     color: 'red',
-    //   }),
-    //   type: 'text',
-    //   style: null,
-    // });
-    legendItems.push({
-      value: 'none',
-      title: 'Building',
-      symbol: new TextSymbol(baseBuildingSymbolProps),
-      type: 'text',
-      style: null,
+    Object.keys(buildingColors).forEach((key) => {
+      legendItems.push({
+        value: key,
+        title: key,
+        symbol: {
+          type: 'simple-fill',
+          color: buildingColors[key],
+          outline: {
+            color: [153, 153, 153, 64],
+            width: 0.84,
+          },
+        },
+        type: 'polygon',
+        style: null,
+      });
     });
   }
   if (layer?.layerType === 'Image Analysis') {

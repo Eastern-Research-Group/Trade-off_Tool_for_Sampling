@@ -118,19 +118,10 @@ type PlanGraphics = {
 };
 
 let view: __esri.MapView | __esri.SceneView | null = null;
-export const baseBuildingSymbolProps = {
-  text: '\ue687',
-  color: 'blue',
-  yoffset: -13,
-  font: {
-    family: 'CalciteWebCoreIcons',
-    size: 24,
-  },
-};
 
 export const detectionLimit = 100;
 
-const buildingColors: { [key: string]: number[] } = {
+export const buildingColors: { [key: string]: number[] } = {
   Residential: [255, 222, 62, 191],
   Commercial: [255, 127, 127, 191],
   Government: [20, 158, 206, 191],
