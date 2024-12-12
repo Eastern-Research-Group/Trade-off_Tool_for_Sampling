@@ -1303,11 +1303,13 @@ function EditAttributePopup({
                           Header: 'Label',
                           accessor: 'label',
                           width: 189,
+                          editType: 'input',
                         },
                         {
                           Header: 'Value',
                           accessor: 'value',
                           width: 189,
+                          editType: 'input',
                         },
                       ];
                     }}
