@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
 
-import React, { Fragment, useContext, useEffect, useState } from 'react';
+import React, { Fragment, JSX, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
 import Collection from '@arcgis/core/core/Collection';
 // components

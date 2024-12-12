@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
 
-import React, { Fragment } from 'react';
+import React, { Fragment, JSX } from 'react';
 import { css } from '@emotion/react';
 // components
 import MessageBox from 'components/MessageBox';

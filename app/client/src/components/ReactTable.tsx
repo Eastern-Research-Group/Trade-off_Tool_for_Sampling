@@ -287,7 +287,7 @@ export function ReactTable({
     // cast as any to workaround toggleRowSelected not being on the type
     const row = rows[index] as any;
 
-    const rowRef = useRef();
+    const rowRef = useRef(null);
 
     const selected = Object.keys(selectedRowIds).includes(
       row.original.PERMANENT_IDENTIFIER,
