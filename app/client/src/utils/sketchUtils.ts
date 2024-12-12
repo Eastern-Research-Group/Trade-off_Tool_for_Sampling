@@ -686,7 +686,9 @@ export function getDefaultSamplingMaskLayer() {
  * @returns Elevation layer
  */
 export function getElevationLayer(map: __esri.Map) {
-  return map.ground.layers.find((l) => l.id === 'worldElevation');
+  return map.ground.layers.find(
+    (l) => l.id === 'worldElevation',
+  ) as __esri.ElevationLayer;
 }
 
 /**

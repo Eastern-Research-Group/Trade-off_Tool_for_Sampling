@@ -1,5 +1,3 @@
-// @flow
-
 import { AttributeItems, SampleSelectType } from 'config/sampleAttributes';
 import React, { createContext, ReactNode, useContext } from 'react';
 // utils

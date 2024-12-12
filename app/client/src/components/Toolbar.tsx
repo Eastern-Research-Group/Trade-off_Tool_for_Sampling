@@ -10,7 +10,6 @@ import LayerList from '@arcgis/core/widgets/LayerList';
 import Legend from '@arcgis/core/widgets/Legend';
 import OAuthInfo from '@arcgis/core/identity/OAuthInfo';
 import Portal from '@arcgis/core/portal/Portal';
-import PortalBasemapsSource from '@arcgis/core/widgets/BasemapGallery/support/PortalBasemapsSource';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 import Slider from '@arcgis/core/widgets/Slider';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
@@ -46,9 +45,8 @@ import {
 const toolBarHeight = '40px';
 
 // Builds the legend item for a layer
-function buildLegendListItem(event: any) {
+function buildLegendListItem(event: any, view: __esri.MapView) {
   const item = event.item;
-  const view = event.view;
 
   // create the slider
   const sliderContainer = document.createElement('div');
@@ -300,23 +298,22 @@ function buildLegendListItem(event: any) {
       layerInfos: [
         {
           layer: item.layer,
-          title: item.layer.title,
-          hideLayers: [],
+          title: item.title,
         } as any,
       ],
     });
+    container.append(slider.domNode);
     container.append(legend.domNode);
 
     // don't show legend twice
     item.panel = {
-      content: legendItems.length > 0 ? container : 'legend',
+      content: container,
       className: 'esri-icon-layer-list',
       open: true,
     };
   }
 
   // add a delete button for each layer, but don't add it to sublayers
-  item.actionsOpen = true;
   item.actionsSections = [
     [
       {
@@ -332,33 +329,6 @@ function buildLegendListItem(event: any) {
     ],
   ];
 }
-
-const basemapNames = [
-  'Streets',
-  'Imagery',
-  'Imagery Hybrid',
-  'Topographic',
-  'Terrain with Labels',
-  'Light Gray Canvas',
-  'Dark Gray Canvas',
-  'Navigation',
-  'Streets (Night)',
-  'Oceans',
-  'National Geographic Style Map',
-  'OpenStreetMap',
-  'Charted Territory Map',
-  'Community Map',
-  'Navigation (Dark Mode)',
-  'Newspaper Map',
-  'Human Geography Map',
-  'Human Geography Dark Map',
-  'Modern Antique Map',
-  'Mid-Century Map',
-  'Nova Map',
-  'Colored Pencil Map',
-  'Firefly Imagery Hybrid',
-  'USA Topo Maps',
-];
 
 type LegendRowType =
   | {
@@ -493,6 +463,7 @@ const floatContainerStyles = (containerVisible: boolean, right: string) => {
 const legendStyles = (legendVisible: boolean, right: string) => {
   return css`
     ${floatContainerStyles(legendVisible, right)}
+    padding: 0.5em 0;
 
     /* Hide/show the actions panel */
     .esri-layer-list__item-actions[hidden] {
@@ -529,7 +500,6 @@ function Toolbar({ appType }: Props) {
   const {
     autoZoom,
     setAutoZoom,
-    basemapWidget,
     setBasemapWidget,
     defaultSymbols,
     edits,
@@ -650,7 +620,7 @@ function Toolbar({ appType }: Props) {
       view: mapView,
       container: 'legend-container',
       listItemCreatedFunction: (event) => {
-        buildLegendListItem(event);
+        buildLegendListItem(event, mapView);
       },
     });
 
@@ -704,12 +674,12 @@ function Toolbar({ appType }: Props) {
 
   // Rebuild the legend if the sample type definitions are changed
   useEffect(() => {
-    if (!layerList) return;
+    if (!layerList || !mapView) return;
 
     layerList.listItemCreatedFunction = (event) => {
-      buildLegendListItem(event);
+      buildLegendListItem(event, mapView);
     };
-  }, [defaultSymbols, layerList, userDefinedAttributes]);
+  }, [defaultSymbols, layerList, mapView, userDefinedAttributes]);
 
   // Deletes layers from the map and session variables when the delete button is clicked
   useEffect(() => {
@@ -849,40 +819,27 @@ function Toolbar({ appType }: Props) {
   const [basemapVisible, setBasemapVisible] = useState(false);
   const [basemapInitialized, setBasemapInitialized] = useState(false);
   useEffect(() => {
-    if (!mapView || basemapInitialized) return;
+    if (!mapView || !sceneView || basemapInitialized) return;
 
-    const basemapsSource = new PortalBasemapsSource({
-      filterFunction: (basemap: __esri.Basemap) => {
-        return basemapNames.indexOf(basemap.portalItem.title) !== -1;
-      },
-      updateBasemapsCallback: (basemaps: __esri.Basemap[]) => {
-        // sort the basemaps based on the ordering of basemapNames
-        return basemaps.sort((a, b) => {
-          return (
-            basemapNames.indexOf(a.portalItem.title) -
-            basemapNames.indexOf(b.portalItem.title)
-          );
-        });
-      },
-    });
-
-    setBasemapWidget(
-      new BasemapGallery({
-        container: 'basemap-container',
+    setBasemapWidget({
+      '2d': new BasemapGallery({
+        container: 'basemap-container-2d',
         view: mapView,
-        source: basemapsSource,
       }),
-    );
+      '3d': new BasemapGallery({
+        container: 'basemap-container-3d',
+        view: sceneView,
+      }),
+    });
     setBasemapInitialized(true);
-  }, [mapView, basemapInitialized, setBasemapWidget]);
+  }, [mapView, basemapInitialized, setBasemapWidget, sceneView]);
 
   // Switches the layer list and basemap widgets between 2D and 3D
   useEffect(() => {
-    if (!basemapWidget || !layerList || !mapView || !sceneView) return;
+    if (!layerList || !mapView || !sceneView) return;
 
     layerList.view = displayDimensions === '2d' ? mapView : sceneView;
-    basemapWidget.view = displayDimensions === '2d' ? mapView : sceneView;
-  }, [basemapWidget, displayDimensions, layerList, mapView, sceneView]);
+  }, [displayDimensions, layerList, mapView, sceneView]);
 
   // Switches between point and polygon representations
   useEffect(() => {
@@ -1196,10 +1153,16 @@ function Toolbar({ appType }: Props) {
             <i className="esri-icon-basemap" css={navIconStyles} />
             Basemap{' '}
           </button>
-          <div
-            css={floatContainerStyles(basemapVisible, '131px')}
-            id="basemap-container"
-          />
+          <div css={floatContainerStyles(basemapVisible, '131px')}>
+            <div
+              id="basemap-container-2d"
+              style={{ display: displayDimensions === '2d' ? 'block' : 'none' }}
+            />
+            <div
+              id="basemap-container-3d"
+              style={{ display: displayDimensions === '3d' ? 'block' : 'none' }}
+            />
+          </div>
         </div>
         <div>
           <button

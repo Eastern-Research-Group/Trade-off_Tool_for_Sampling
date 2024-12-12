@@ -81,11 +81,16 @@ export type GsgFiles = {
   selectedIndex: number | null;
 };
 
+type BasemapWidget = {
+  '2d': __esri.BasemapGallery;
+  '3d': __esri.BasemapGallery;
+};
+
 type SketchType = {
   autoZoom: boolean;
   setAutoZoom: Dispatch<SetStateAction<boolean>>;
-  basemapWidget: __esri.BasemapGallery | null;
-  setBasemapWidget: Dispatch<SetStateAction<__esri.BasemapGallery | null>>;
+  basemapWidget: BasemapWidget | null;
+  setBasemapWidget: Dispatch<SetStateAction<BasemapWidget | null>>;
   defaultSymbols: DefaultSymbolsType;
   setDefaultSymbols: Dispatch<SetStateAction<DefaultSymbolsType>>;
   setDefaultSymbolSingle: Function;
@@ -298,7 +303,7 @@ export function SketchProvider({ children }: Props) {
   const [
     basemapWidget,
     setBasemapWidget, //
-  ] = useState<__esri.BasemapGallery | null>(null);
+  ] = useState<BasemapWidget | null>(null);
   const [defaultSymbols, setDefaultSymbols] = useState<DefaultSymbolsType>(
     initialDefaultSymbols,
   );

@@ -849,7 +849,7 @@ const dialogStyles = css`
     margin: 0;
     padding: 1.5rem;
     width: auto;
-    max-width: 26rem;
+    max-width: 30rem;
   }
 
   p,
@@ -1199,8 +1199,9 @@ function EditAttributePopup({
           <input
             css={hiddenInput}
             aria-hidden="true"
-            value={dataType?.label}
+            value={dataType?.label ?? ''}
             required
+            readOnly
           />
 
           {dataType && dataType.value === 'string' && (
@@ -1246,8 +1247,9 @@ function EditAttributePopup({
               <input
                 css={hiddenInput}
                 aria-hidden="true"
-                value={domainType?.label}
+                value={domainType?.label ?? ''}
                 required
+                readOnly
               />
 
               {domainType?.value === 'range' && (
@@ -1300,12 +1302,14 @@ function EditAttributePopup({
                         {
                           Header: 'Label',
                           accessor: 'label',
-                          width: 181,
+                          width: 189,
+                          editType: 'input',
                         },
                         {
                           Header: 'Value',
                           accessor: 'value',
-                          width: 181,
+                          width: 189,
+                          editType: 'input',
                         },
                       ];
                     }}
@@ -1315,8 +1319,9 @@ function EditAttributePopup({
                   <input
                     css={hiddenInput}
                     aria-hidden="true"
-                    value={codes.filter((c) => c.id !== -1)[0]?.label}
+                    value={codes.filter((c) => c.id !== -1)[0]?.label ?? ''}
                     required
+                    readOnly
                   />
                 </div>
               )}

@@ -287,7 +287,7 @@ export function ReactTable({
     // cast as any to workaround toggleRowSelected not being on the type
     const row = rows[index] as any;
 
-    const rowRef = useRef();
+    const rowRef = useRef(null);
 
     const selected = Object.keys(selectedRowIds).includes(
       row.original.PERMANENT_IDENTIFIER,
@@ -305,6 +305,8 @@ export function ReactTable({
     }, [setSize, index, windowWidth]);
 
     prepareRow(row);
+
+    const { key: keyRow, ...restRowProps } = row.getRowProps();
     return (
       <div
         id={row.original[idColumn]}
@@ -312,7 +314,8 @@ export function ReactTable({
           isEven ? '-odd' : '-even'
         } ${selected ? 'rt-selected' : ''}`}
         role="row"
-        {...row.getRowProps()}
+        key={keyRow}
+        {...restRowProps}
         onClick={() => {
           row.toggleRowSelected(!selected);
 
@@ -327,8 +330,15 @@ export function ReactTable({
           if (typeof column.show === 'boolean' && !column.show) {
             return null;
           }
+
+          const { key: keyCell, ...restCellProps } = cell.getCellProps();
           return (
-            <div className="rt-td" role="gridcell" {...cell.getCellProps()}>
+            <div
+              className="rt-td"
+              role="gridcell"
+              key={keyCell}
+              {...restCellProps}
+            >
               {cell.render('Cell')}
             </div>
           );
@@ -353,6 +363,8 @@ export function ReactTable({
     listRef.current.scrollToItem(scrollToRow, 'center');
   }, [scrollToRow]);
 
+  const { key: keyTable, ...restTableProps } = getTableProps();
+  const { key: keyTableBody, ...restTableBodyProps } = getTableBodyProps();
   return (
     <div
       id={id}
@@ -364,60 +376,72 @@ export function ReactTable({
         hideHeader: false,
       })}
     >
-      <div className="rt-table" role="grid" {...getTableProps()}>
+      <div className="rt-table" role="grid" key={keyTable} {...restTableProps}>
         <div className="rt-thead">
-          {headerGroups.map((headerGroup) => (
-            <div
-              className="rt-tr"
-              role="row"
-              {...headerGroup.getHeaderGroupProps()}
-            >
-              {headerGroup.headers.map((column: any) => {
-                if (typeof column.show === 'boolean' && !column.show) {
-                  return null;
-                }
-                return (
-                  <div
-                    className="rt-th"
-                    role="columnheader"
-                    {...column.getHeaderProps(column.getSortByToggleProps())}
-                  >
-                    <div>
-                      <div className="rt-col-title">
-                        {column.render('Header')}
-                        <span>
-                          {column.isSorted ? (
-                            column.isSortedDesc ? (
-                              <i className="fas fa-arrow-down" />
+          {headerGroups.map((headerGroup) => {
+            const { key: keyHeaderGroup, ...restHeaderGroupProps } =
+              headerGroup.getHeaderGroupProps();
+            return (
+              <div
+                className="rt-tr"
+                role="row"
+                key={keyHeaderGroup}
+                {...restHeaderGroupProps}
+              >
+                {headerGroup.headers.map((column: any) => {
+                  if (typeof column.show === 'boolean' && !column.show) {
+                    return null;
+                  }
+
+                  const { key: keyHeader, ...restHeaderProps } =
+                    column.getHeaderProps(column.getSortByToggleProps());
+                  const { key: keyResizer, ...restResizerProps } =
+                    column.getResizerProps();
+                  return (
+                    <div
+                      className="rt-th"
+                      role="columnheader"
+                      key={keyHeader}
+                      {...restHeaderProps}
+                    >
+                      <div>
+                        <div className="rt-col-title">
+                          {column.render('Header')}
+                          <span>
+                            {column.isSorted ? (
+                              column.isSortedDesc ? (
+                                <i className="fas fa-arrow-down" />
+                              ) : (
+                                <i className="fas fa-arrow-up" />
+                              )
                             ) : (
-                              <i className="fas fa-arrow-up" />
-                            )
-                          ) : (
-                            ''
-                          )}
-                        </span>
-                      </div>
-                      {column.filterable && (
-                        <div className="rt-filter">
-                          {column.render('Filter')}
+                              ''
+                            )}
+                          </span>
                         </div>
+                        {column.filterable && (
+                          <div className="rt-filter">
+                            {column.render('Filter')}
+                          </div>
+                        )}
+                      </div>
+                      {column.canResize && (
+                        <div
+                          key={keyResizer}
+                          {...restResizerProps}
+                          className={`rt-resizer ${
+                            column.isResizing ? 'isResizing' : ''
+                          }`}
+                        />
                       )}
                     </div>
-                    {column.canResize && (
-                      <div
-                        {...column.getResizerProps()}
-                        className={`rt-resizer ${
-                          column.isResizing ? 'isResizing' : ''
-                        }`}
-                      />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
-        <div className="rt-tbody" {...getTableBodyProps()}>
+        <div className="rt-tbody" key={keyTableBody} {...restTableBodyProps}>
           <VariableSizeList
             height={(height ?? 400) - 97}
             itemCount={rows.length}
@@ -522,6 +546,8 @@ export function ReactTableEditable({
     setTableWidth(node.getBoundingClientRect().width);
   }, []);
 
+  const { keyTable, restTableProps } = getTableProps();
+  const { keyTableBody, restTableBodyProps } = getTableBodyProps();
   return (
     <div
       id={id}
@@ -529,66 +555,80 @@ export function ReactTableEditable({
       className="ReactTable"
       css={tableStyles({ tableWidth: totalColumnsWidth, height, hideHeader })}
     >
-      <div className="rt-table" role="grid" {...getTableProps()}>
+      <div className="rt-table" role="grid" key={keyTable} {...restTableProps}>
         <div className="rt-thead">
-          {headerGroups.map((headerGroup) => (
-            <div
-              className="rt-tr"
-              role="row"
-              {...headerGroup.getHeaderGroupProps()}
-            >
-              {headerGroup.headers.map((column: any) => {
-                if (typeof column.show === 'boolean' && !column.show) {
-                  return null;
-                }
-                return (
-                  <div
-                    className="rt-th"
-                    role="columnheader"
-                    {...column.getHeaderProps()}
-                  >
-                    <div>
-                      <div className="rt-col-title">
-                        {column.render('Header')}
-                        <span>
-                          {column.isSorted ? (
-                            column.isSortedDesc ? (
-                              <i className="fas fa-arrow-down" />
+          {headerGroups.map((headerGroup) => {
+            const { key: keyHeaderGroup, ...restHeaderGroupProps } =
+              headerGroup.getHeaderGroupProps();
+            return (
+              <div
+                className="rt-tr"
+                role="row"
+                key={keyHeaderGroup}
+                {...restHeaderGroupProps}
+              >
+                {headerGroup.headers.map((column: any) => {
+                  if (typeof column.show === 'boolean' && !column.show) {
+                    return null;
+                  }
+
+                  const { key: keyHeader, ...restHeaderProps } =
+                    column.getHeaderProps();
+                  const { key: keyResizer, ...restResizerProps } =
+                    column.getResizerProps();
+                  return (
+                    <div
+                      className="rt-th"
+                      role="columnheader"
+                      key={keyHeader}
+                      {...restHeaderProps}
+                    >
+                      <div>
+                        <div className="rt-col-title">
+                          {column.render('Header')}
+                          <span>
+                            {column.isSorted ? (
+                              column.isSortedDesc ? (
+                                <i className="fas fa-arrow-down" />
+                              ) : (
+                                <i className="fas fa-arrow-up" />
+                              )
                             ) : (
-                              <i className="fas fa-arrow-up" />
-                            )
-                          ) : (
-                            ''
-                          )}
-                        </span>
-                      </div>
-                      {column.filterable && (
-                        <div className="rt-filter">
-                          {column.render('Filter')}
+                              ''
+                            )}
+                          </span>
                         </div>
+                        {column.filterable && (
+                          <div className="rt-filter">
+                            {column.render('Filter')}
+                          </div>
+                        )}
+                      </div>
+                      {column.canResize && (
+                        <div
+                          key={keyResizer}
+                          {...restResizerProps}
+                          className={`rt-resizer ${
+                            column.isResizing ? 'isResizing' : ''
+                          }`}
+                        />
                       )}
                     </div>
-                    {column.canResize && (
-                      <div
-                        {...column.getResizerProps()}
-                        className={`rt-resizer ${
-                          column.isResizing ? 'isResizing' : ''
-                        }`}
-                      />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
-        <div className="rt-tbody" {...getTableBodyProps()}>
+        <div className="rt-tbody" key={keyTableBody} {...restTableBodyProps}>
           {rows.map((row, i) => {
             // cast as any to workaround toggleRowSelected not being on the type
             const tempRow = row as any;
 
             const isEven = i % 2 === 0;
             prepareRow(row);
+
+            const { key: keyRow, ...restRowProps } = row.getRowProps();
             return (
               <div
                 id={tempRow.original[idColumn]}
@@ -596,18 +636,23 @@ export function ReactTableEditable({
                   isEven ? '-odd' : '-even'
                 }`}
                 role="row"
-                {...row.getRowProps()}
+                key={keyRow}
+                {...restRowProps}
               >
                 {row.cells.map((cell) => {
                   const column: any = cell.column;
                   if (typeof column.show === 'boolean' && !column.show) {
                     return null;
                   }
+
+                  const { key: keyCell, ...restCellProps } =
+                    cell.getCellProps();
                   return (
                     <div
                       className="rt-td"
                       role="gridcell"
-                      {...cell.getCellProps()}
+                      key={keyCell}
+                      {...restCellProps}
                     >
                       {cell.render('Cell')}
                     </div>

@@ -85,7 +85,7 @@ describe("Toolbar tests", () => {
   it("Verify Basemap ", () => {
     cy.findByRole("button", { name: "OK" }).click();
     cy.findByRole("button", { name: "Basemap" }).click({ force: true });
-    cy.get("#basemap-container")
+    cy.get("#basemap-container-2d")
       .find("li")
       .each(($el, index) => {
         if (index === 2) {

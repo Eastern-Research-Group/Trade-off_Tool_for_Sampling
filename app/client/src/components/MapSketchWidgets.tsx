@@ -193,7 +193,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
       },
     });
     const widget2d = buildWidget(mapView, sketchLayer, svm2d);
-    mapView.ui.add(widget2d, { position: 'top-right', index: 0 });
+    mapView.ui.add(widget2d, { position: 'top-right', index: 1 });
 
     const svm3d = new SketchViewModel({
       layer: sketchLayer.sketchLayer,
