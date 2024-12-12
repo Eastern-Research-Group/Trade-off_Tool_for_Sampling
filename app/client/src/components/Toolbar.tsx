@@ -46,9 +46,8 @@ import {
 const toolBarHeight = '40px';
 
 // Builds the legend item for a layer
-function buildLegendListItem(event: any) {
+function buildLegendListItem(event: any, view: __esri.MapView) {
   const item = event.item;
-  const view = event.view;
 
   // create the slider
   const sliderContainer = document.createElement('div');
@@ -300,23 +299,22 @@ function buildLegendListItem(event: any) {
       layerInfos: [
         {
           layer: item.layer,
-          title: item.layer.title,
-          hideLayers: [],
+          title: item.title,
         } as any,
       ],
     });
+    container.append(slider.domNode);
     container.append(legend.domNode);
 
     // don't show legend twice
     item.panel = {
-      content: legendItems.length > 0 ? container : 'legend',
+      content: container,
       className: 'esri-icon-layer-list',
       open: true,
     };
   }
 
   // add a delete button for each layer, but don't add it to sublayers
-  item.actionsOpen = true;
   item.actionsSections = [
     [
       {
@@ -493,6 +491,7 @@ const floatContainerStyles = (containerVisible: boolean, right: string) => {
 const legendStyles = (legendVisible: boolean, right: string) => {
   return css`
     ${floatContainerStyles(legendVisible, right)}
+    padding: 0.5em 0;
 
     /* Hide/show the actions panel */
     .esri-layer-list__item-actions[hidden] {
@@ -650,7 +649,7 @@ function Toolbar({ appType }: Props) {
       view: mapView,
       container: 'legend-container',
       listItemCreatedFunction: (event) => {
-        buildLegendListItem(event);
+        buildLegendListItem(event, mapView);
       },
     });
 
@@ -704,12 +703,12 @@ function Toolbar({ appType }: Props) {
 
   // Rebuild the legend if the sample type definitions are changed
   useEffect(() => {
-    if (!layerList) return;
+    if (!layerList || !mapView) return;
 
     layerList.listItemCreatedFunction = (event) => {
-      buildLegendListItem(event);
+      buildLegendListItem(event, mapView);
     };
-  }, [defaultSymbols, layerList, userDefinedAttributes]);
+  }, [defaultSymbols, layerList, mapView, userDefinedAttributes]);
 
   // Deletes layers from the map and session variables when the delete button is clicked
   useEffect(() => {

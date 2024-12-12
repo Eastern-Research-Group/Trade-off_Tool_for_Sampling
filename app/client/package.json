@@ -30,7 +30,7 @@
     "lint:css": "stylelint './src/**/*.{js,jsx,ts,tsx,css}'"
   },
   "dependencies": {
-    "@arcgis/core": "4.28.10",
+    "@arcgis/core": "4.30.9",
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.0",
