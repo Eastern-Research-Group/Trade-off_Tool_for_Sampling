@@ -710,14 +710,16 @@ export function useStartOver() {
     }
 
     if (basemapWidget) {
-      // Search for the basemap with the matching basemap
-      let selectedBasemap: __esri.Basemap | null = null;
-      basemapWidget.source.basemaps.forEach((basemap) => {
-        if (basemap.title === 'Streets') selectedBasemap = basemap;
-      });
+      Object.values(basemapWidget).forEach((widget) => {
+        // Search for the basemap with the matching basemap
+        let selectedBasemap: __esri.Basemap | null = null;
+        widget.source.basemaps.forEach((basemap) => {
+          if (basemap.title === 'Streets') selectedBasemap = basemap;
+        });
 
-      // Set the activeBasemap to the basemap that was found
-      if (selectedBasemap) basemapWidget.activeBasemap = selectedBasemap;
+        // Set the activeBasemap to the basemap that was found
+        if (selectedBasemap) widget.activeBasemap = selectedBasemap;
+      });
     }
   }
 

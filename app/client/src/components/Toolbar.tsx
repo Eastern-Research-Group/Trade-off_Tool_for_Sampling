@@ -10,7 +10,6 @@ import LayerList from '@arcgis/core/widgets/LayerList';
 import Legend from '@arcgis/core/widgets/Legend';
 import OAuthInfo from '@arcgis/core/identity/OAuthInfo';
 import Portal from '@arcgis/core/portal/Portal';
-import PortalBasemapsSource from '@arcgis/core/widgets/BasemapGallery/support/PortalBasemapsSource';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 import Slider from '@arcgis/core/widgets/Slider';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
@@ -331,33 +330,6 @@ function buildLegendListItem(event: any, view: __esri.MapView) {
   ];
 }
 
-const basemapNames = [
-  'Streets',
-  'Imagery',
-  'Imagery Hybrid',
-  'Topographic',
-  'Terrain with Labels',
-  'Light Gray Canvas',
-  'Dark Gray Canvas',
-  'Navigation',
-  'Streets (Night)',
-  'Oceans',
-  'National Geographic Style Map',
-  'OpenStreetMap',
-  'Charted Territory Map',
-  'Community Map',
-  'Navigation (Dark Mode)',
-  'Newspaper Map',
-  'Human Geography Map',
-  'Human Geography Dark Map',
-  'Modern Antique Map',
-  'Mid-Century Map',
-  'Nova Map',
-  'Colored Pencil Map',
-  'Firefly Imagery Hybrid',
-  'USA Topo Maps',
-];
-
 type LegendRowType =
   | {
       type: 'polygon';
@@ -528,7 +500,6 @@ function Toolbar({ appType }: Props) {
   const {
     autoZoom,
     setAutoZoom,
-    basemapWidget,
     setBasemapWidget,
     defaultSymbols,
     edits,
@@ -848,40 +819,27 @@ function Toolbar({ appType }: Props) {
   const [basemapVisible, setBasemapVisible] = useState(false);
   const [basemapInitialized, setBasemapInitialized] = useState(false);
   useEffect(() => {
-    if (!mapView || basemapInitialized) return;
+    if (!mapView || !sceneView || basemapInitialized) return;
 
-    const basemapsSource = new PortalBasemapsSource({
-      filterFunction: (basemap: __esri.Basemap) => {
-        return basemapNames.indexOf(basemap.portalItem.title) !== -1;
-      },
-      updateBasemapsCallback: (basemaps: __esri.Basemap[]) => {
-        // sort the basemaps based on the ordering of basemapNames
-        return basemaps.sort((a, b) => {
-          return (
-            basemapNames.indexOf(a.portalItem.title) -
-            basemapNames.indexOf(b.portalItem.title)
-          );
-        });
-      },
-    });
-
-    setBasemapWidget(
-      new BasemapGallery({
-        container: 'basemap-container',
+    setBasemapWidget({
+      '2d': new BasemapGallery({
+        container: 'basemap-container-2d',
         view: mapView,
-        source: basemapsSource,
       }),
-    );
+      '3d': new BasemapGallery({
+        container: 'basemap-container-3d',
+        view: sceneView,
+      }),
+    });
     setBasemapInitialized(true);
-  }, [mapView, basemapInitialized, setBasemapWidget]);
+  }, [mapView, basemapInitialized, setBasemapWidget, sceneView]);
 
   // Switches the layer list and basemap widgets between 2D and 3D
   useEffect(() => {
-    if (!basemapWidget || !layerList || !mapView || !sceneView) return;
+    if (!layerList || !mapView || !sceneView) return;
 
     layerList.view = displayDimensions === '2d' ? mapView : sceneView;
-    basemapWidget.view = displayDimensions === '2d' ? mapView : sceneView;
-  }, [basemapWidget, displayDimensions, layerList, mapView, sceneView]);
+  }, [displayDimensions, layerList, mapView, sceneView]);
 
   // Switches between point and polygon representations
   useEffect(() => {
@@ -1195,10 +1153,16 @@ function Toolbar({ appType }: Props) {
             <i className="esri-icon-basemap" css={navIconStyles} />
             Basemap{' '}
           </button>
-          <div
-            css={floatContainerStyles(basemapVisible, '131px')}
-            id="basemap-container"
-          />
+          <div css={floatContainerStyles(basemapVisible, '131px')}>
+            <div
+              id="basemap-container-2d"
+              style={{ display: displayDimensions === '2d' ? 'block' : 'none' }}
+            />
+            <div
+              id="basemap-container-3d"
+              style={{ display: displayDimensions === '3d' ? 'block' : 'none' }}
+            />
+          </div>
         </div>
         <div>
           <button

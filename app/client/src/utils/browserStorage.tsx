@@ -119,7 +119,8 @@ export function useSessionStorage(appType: AppType) {
   useGenerateRandomMaskStorage();
   useCalculateSettingsStorage();
   useCurrentTabSettings();
-  useBasemapStorage();
+  useBasemapStorage2d();
+  useBasemapStorage3d();
   useUserDefinedSampleOptionsStorage();
   useUserDefinedSampleAttributesStorage();
   useTablePanelStorage();
@@ -1009,8 +1010,8 @@ function useCurrentTabSettings() {
 }
 
 // Uses browser storage for holding the currently selected basemap.
-function useBasemapStorage() {
-  const key = 'selected_basemap_layer';
+function useBasemapStorage2d() {
+  const key = 'selected_basemap_layer_2d';
 
   const { setOptions } = useContext(DialogContext);
   const { basemapWidget } = useContext(SketchContext);
@@ -1035,7 +1036,7 @@ function useBasemapStorage() {
     }
 
     // create the watch handler for finding the selected basemap
-    const newWatchHandle = basemapWidget.watch(
+    const newWatchHandle = basemapWidget['2d'].watch(
       'source.basemaps.length',
       (newValue) => {
         // wait for the basemaps to be populated
@@ -1045,12 +1046,13 @@ function useBasemapStorage() {
 
         // Search for the basemap with the matching portal id
         let selectedBasemap: __esri.Basemap | null = null;
-        basemapWidget.source.basemaps.forEach((basemap) => {
+        basemapWidget['2d'].source.basemaps.forEach((basemap) => {
           if (basemap.portalItem.id === portalId) selectedBasemap = basemap;
         });
 
         // Set the activeBasemap to the basemap that was found
-        if (selectedBasemap) basemapWidget.activeBasemap = selectedBasemap;
+        if (selectedBasemap)
+          basemapWidget['2d'].activeBasemap = selectedBasemap;
       },
     );
 
@@ -1075,7 +1077,90 @@ function useBasemapStorage() {
       return;
     }
 
-    basemapWidget.watch('activeBasemap.portalItem.id', (newValue) => {
+    basemapWidget['2d'].watch('activeBasemap.portalItem.id', (newValue) => {
+      if (!newValue) return;
+      writeToStorage(key, newValue, setOptions);
+    });
+
+    setWatchBasemapInitialized(true);
+  }, [
+    basemapWidget,
+    localBasemapInitialized,
+    watchBasemapInitialized,
+    setOptions,
+  ]);
+}
+
+// Uses browser storage for holding the currently selected basemap.
+function useBasemapStorage3d() {
+  const key = 'selected_basemap_layer_3d';
+
+  const { setOptions } = useContext(DialogContext);
+  const { basemapWidget } = useContext(SketchContext);
+
+  // Retreives the selected basemap from browser storage when the app loads
+  const [
+    localBasemapInitialized,
+    setLocalBasemapInitialized, //
+  ] = useState(false);
+  const [
+    watchHandler,
+    setWatchHandler, //
+  ] = useState<__esri.WatchHandle | null>(null);
+  useEffect(() => {
+    if (!basemapWidget || watchHandler || localBasemapInitialized) return;
+
+    const portalId = readFromStorage(key);
+    if (!portalId) {
+      // early return since this field isn't in storage
+      setLocalBasemapInitialized(true);
+      return;
+    }
+
+    // create the watch handler for finding the selected basemap
+    const newWatchHandle = basemapWidget['3d'].watch(
+      'source.basemaps.length',
+      (newValue) => {
+        // wait for the basemaps to be populated
+        if (newValue === 0) return;
+
+        setLocalBasemapInitialized(true);
+
+        // Search for the basemap with the matching portal id
+        let selectedBasemap: __esri.Basemap | null = null;
+        basemapWidget['3d'].source.basemaps.forEach((basemap) => {
+          if (basemap.portalItem.id === portalId) selectedBasemap = basemap;
+        });
+
+        // Set the activeBasemap to the basemap that was found
+        if (selectedBasemap)
+          basemapWidget['3d'].activeBasemap = selectedBasemap;
+      },
+    );
+
+    setWatchHandler(newWatchHandle);
+  }, [basemapWidget, watchHandler, localBasemapInitialized]);
+
+  // destroys the watch handler after initialization completes
+  useEffect(() => {
+    if (!watchHandler || !localBasemapInitialized) return;
+
+    watchHandler.remove();
+    setWatchHandler(null);
+  }, [watchHandler, localBasemapInitialized]);
+
+  // Saves the selected basemap to browser storage whenever it changes
+  const [
+    watchBasemapInitialized,
+    setWatchBasemapInitialized, //
+  ] = useState(false);
+  useEffect(() => {
+    if (!basemapWidget || !localBasemapInitialized || watchBasemapInitialized) {
+      return;
+    }
+
+    basemapWidget['3d'].watch('activeBasemap.portalItem.id', (newValue) => {
+      if (!newValue) return;
       writeToStorage(key, newValue, setOptions);
     });
 
