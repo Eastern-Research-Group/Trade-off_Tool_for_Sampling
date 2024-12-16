@@ -3,6 +3,7 @@ const express = require('express');
 const helmet = require('helmet');
 const favicon = require('serve-favicon');
 const basicAuth = require('express-basic-auth');
+const { checkClientRouteExists } = require('./middleware');
 const { getEnvironment } = require('./server/utilities/environment');
 const logger = require('./server/utilities/logger');
 const log = logger.logger;
@@ -189,6 +190,9 @@ require('./server/routes')(app);
 // serve static assets normally
 app.use(express.static(__dirname + '/public'));
 
+// Ensure that requested client route exists (otherwise send 404).
+app.use(checkClientRouteExists);
+
 // setup client routes (built React app)
 app.get('*', function (req, res) {
   res.sendFile(path.join(__dirname, 'public/index.html'));
@@ -202,11 +206,11 @@ app.use(favicon(path.join(__dirname, 'public/favicon.ico')));
 /* Note, the React app should be handling 404 at this point
    but we're leaving the below 404 check in for now */
 app.use(function (req, res, next) {
-  res.sendFile(path.join(__dirname, 'public', '404.html'));
+  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
 });
 
 app.use(function (err, req, res, next) {
-  res.sendFile(path.join(__dirname, 'public', '500.html'));
+  res.status(500).sendFile(path.join(__dirname, 'public', '500.html'));
 });
 
 module.exports = app;

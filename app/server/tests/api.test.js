@@ -43,6 +43,14 @@ describe('API Tests', () => {
     expect(response.body).toEqual({ message: 'The api route does not exist.' });
   });
 
+  test('GET test checkClientRouteExists middleware', async () => {
+    await supertest(app).get('/decon').expect(500);
+  });
+
+  test('GET test checkClientRouteExists middleware', async () => {
+    await supertest(app).get('/deconTest').expect(404);
+  });
+
   test('PUT should be unauthorized', async () => {
     await supertest(app).put('/api/health').expect(401);
   });

@@ -232,5 +232,12 @@ module.exports = function (app) {
       });
   });
 
+  router.get('/*', (req, res) => {
+    res.status(404).json({ message: 'The api route does not exist.' });
+  });
+  router.post('/*', (req, res) => {
+    res.status(404).json({ message: 'The api route does not exist.' });
+  });
+
   app.use('/proxy', router);
 };
