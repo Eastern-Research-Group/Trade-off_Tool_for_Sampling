@@ -248,13 +248,13 @@ function URLPanel() {
           {urlType.value === 'ArcGIS' && (
             <div>
               <p>
-                https://maps7.arcgisonline.com/arcgis/rest/services/EPA_Regions/MapServer
+                https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/EPA_Regions/FeatureServer
               </p>
               <p>
                 https://geopub.epa.gov/arcgis/rest/services/EMEF/tribal/MapServer
               </p>
               <p>
-                https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Counties/FeatureServer/0
+                https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Census_Counties/FeatureServer/0
               </p>
             </div>
           )}
