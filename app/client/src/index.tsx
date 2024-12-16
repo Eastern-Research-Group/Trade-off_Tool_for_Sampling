@@ -7,7 +7,15 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Global, css } from '@emotion/react';
 import esriConfig from '@arcgis/core/config';
 import * as urlUtils from '@arcgis/core/core/urlUtils';
-import * as serviceWorker from './serviceWorker';
+/*
+  NOTE: regenerator-runtime is imported to avoid a bug with a GitHub Action
+  workflow including regenerator-runtime in the build as an external dependency.
+  For reference, the GitHub Action workflow's log message stated:
+    "regenerator-runtime/runtime.js" is imported by
+    "regenerator-runtime/runtime.js?commonjs-external", but could not be
+    resolved – treating it as an external dependency.
+*/
+import 'regenerator-runtime';
 // routes
 import ErrorPage from 'routes/404';
 import Decon from 'routes/Decon';
@@ -252,10 +260,5 @@ function Root() {
 
 const rootElement = document.getElementById('root') as HTMLElement;
 createRoot(rootElement).render(<Root />);
-
-// If you want your app to work offline and load faster, you can change
-// unregister() to register() below. Note this comes with some pitfalls.
-// Learn more about service workers: https://bit.ly/CRA-PWA
-serviceWorker.unregister();
 
 export default Root;

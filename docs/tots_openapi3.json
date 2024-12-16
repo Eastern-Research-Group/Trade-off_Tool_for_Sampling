@@ -18,7 +18,7 @@
       "url": " http://localhost:{port}",
       "variables": {
         "port": {
-          "default": "9090"
+          "default": "3002"
         }
       }
     }
@@ -41,6 +41,18 @@
     "url": ""
   },
   "paths": {
+    "/api/health": {
+      "get": {
+        "tags": ["Trade-off Tool for Sampling (TOTS)"],
+        "description": "Check the status of the web server.",
+        "summary": "Web server health check",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/HealthSuccess"
+          }
+        }
+      }
+    },
     "/api/lookupFiles": {
       "get": {
         "tags": ["Trade-off Tool for Sampling (TOTS)"],
@@ -79,18 +91,6 @@
         "responses": {
           "200": {
             "$ref": "#/components/responses/UserGuideSuccess"
-          }
-        }
-      }
-    },
-    "/health": {
-      "get": {
-        "tags": ["Trade-off Tool for Sampling (TOTS)"],
-        "description": "Check the status of the web server.",
-        "summary": "Web server health check",
-        "responses": {
-          "200": {
-            "$ref": "#/components/responses/HealthSuccess"
           }
         }
       }

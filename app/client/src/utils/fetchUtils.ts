@@ -37,9 +37,9 @@ export function proxyFetch(
   url: string,
   init: RequestInit | undefined = undefined,
 ) {
-  const { REACT_APP_PROXY_URL } = process.env;
+  const { VITE_PROXY_URL } = import.meta.env;
   // if environment variable is not set, default to use the current site origin
-  const proxyUrl = REACT_APP_PROXY_URL || `${window.location.origin}/proxy`;
+  const proxyUrl = VITE_PROXY_URL || `${window.location.origin}/proxy`;
 
   return fetchCheck(`${proxyUrl}?url=${url}`, init);
 }

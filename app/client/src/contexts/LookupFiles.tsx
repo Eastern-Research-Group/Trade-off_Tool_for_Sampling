@@ -68,14 +68,14 @@ function useLookupFiles() {
   if (!lookupFilesInitialized) {
     lookupFilesInitialized = true;
 
-    function parseNumeric(value: string) {
+    const parseNumeric = (value: string) => {
       if (value === undefined || value === null) return value;
       return parseFloat(value);
-    }
+    };
 
-    async function getData() {
-      const { REACT_APP_SERVER_URL } = process.env;
-      const baseUrl = REACT_APP_SERVER_URL || window.location.origin;
+    const getData = async () => {
+      const { VITE_SERVER_URL } = import.meta.env;
+      const baseUrl = VITE_SERVER_URL || window.location.origin;
       try {
         const data = (await fetchCheck(
           `${baseUrl}/api/lookupFiles`,
@@ -148,7 +148,7 @@ function useLookupFiles() {
         window.logErrorToGa(err);
         setLookupFiles({ status: 'failure', data: {} });
       }
-    }
+    };
 
     getData();
   }
