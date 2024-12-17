@@ -547,7 +547,7 @@ function Toolbar({ appType }: Props) {
     if (oAuthInfo) return;
 
     const info = new OAuthInfo({
-      appId: process.env.REACT_APP_ARCGIS_APP_ID,
+      appId: import.meta.env.VITE_ARCGIS_CLIENT_ID,
       popup: true,
       flowType: 'authorization-code',
       popupCallbackUrl: `${window.location.origin}/oauth-callback.html`,

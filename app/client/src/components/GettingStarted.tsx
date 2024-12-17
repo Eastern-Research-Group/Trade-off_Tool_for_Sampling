@@ -56,8 +56,8 @@ type Props = {
 };
 
 function GettingStarted({ isOpen, children }: Props) {
-  const { REACT_APP_SERVER_URL } = process.env;
-  const baseUrl = REACT_APP_SERVER_URL || window.location.origin;
+  const { VITE_SERVER_URL } = import.meta.env;
+  const baseUrl = VITE_SERVER_URL || window.location.origin;
 
   return (
     <DialogOverlay

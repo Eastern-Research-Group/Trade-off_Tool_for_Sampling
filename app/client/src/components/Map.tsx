@@ -100,6 +100,7 @@ function Map({ appType, height }: Props) {
     const viewParams: any = {
       container: mapRef.current,
       map: newMap,
+      spatialReferenceLocked: true,
       center: [-95, 37],
       zoom: 3,
       popup: {

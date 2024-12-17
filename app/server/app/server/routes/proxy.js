@@ -4,8 +4,11 @@ const axios = require('axios');
 const bodyParser = require('body-parser');
 const querystring = require('querystring');
 const config = require('../config/proxyConfig.json');
+const { getEnvironment } = require('../utilities/environment');
 const logger = require('../utilities/logger');
 const log = logger.logger;
+
+const { isLocal, isTest } = getEnvironment();
 
 module.exports = function (app) {
   const router = express.Router();
@@ -71,7 +74,8 @@ module.exports = function (app) {
 
     let request_headers = {};
     if (
-      !app.enabled('isLocal') &&
+      !isLocal &&
+      !isTest &&
       parsedUrl.toLowerCase().includes('://' + req.hostname.toLowerCase()) &&
       parsedUrl.toLowerCase().includes('/data/')
     ) {
@@ -226,6 +230,13 @@ module.exports = function (app) {
           res.status(500);
         }
       });
+  });
+
+  router.get('/*', (req, res) => {
+    res.status(404).json({ message: 'The api route does not exist.' });
+  });
+  router.post('/*', (req, res) => {
+    res.status(404).json({ message: 'The api route does not exist.' });
   });
 
   app.use('/proxy', router);

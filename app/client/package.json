@@ -1,7 +1,6 @@
 {
   "name": "epa-hsrp-tots-client",
   "version": "3.0.0",
-  "private": true,
   "description": "Trade-off Tool for Sampling (TOTS) is JavaScript Web Mapping application to create sampling strategy for chemical and radiological contamination characterization easily accessible to field collection applications via the EPA GeoPlatform.",
   "keywords": [
     "TOTS",
@@ -21,16 +20,15 @@
     "node": "22.x"
   },
   "main": "src/index.js",
-  "homepage": ".",
+  "type": "module",
   "scripts": {
-    "start": "react-scripts -r @cypress/instrument-cra start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "lint:css": "stylelint './src/**/*.{js,jsx,ts,tsx,css}'"
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@arcgis/core": "4.30.9",
+    "@arcgis/core": "4.31.6",
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.0",
@@ -44,18 +42,16 @@
     "react-dom": "19.0.0",
     "react-dropzone": "14.3.5",
     "react-router-dom": "7.0.2",
-    "react-scripts": "5.0.1",
     "react-select": "5.9.0",
-    "react-switch": "7.0.0",
+    "react-switch": "7.1.0",
     "react-table": "7.8.0",
     "react-tooltip": "5.28.0",
     "react-window": "1.8.10",
-    "typescript": "5.7.2",
+    "regenerator-runtime": "0.14.1",
     "universal-cookie": "7.2.2",
     "uuid": "11.0.3"
   },
   "devDependencies": {
-    "@cypress/instrument-cra": "1.4.0",
     "@types/file-saver": "2.0.7",
     "@types/jest": "29.5.14",
     "@types/mocha": "10.0.10",
@@ -67,35 +63,21 @@
     "@types/react-table": "7.7.20",
     "@types/react-window": "1.8.8",
     "@types/uuid": "10.0.0",
+    "@typescript-eslint/eslint-plugin": "8.18.1",
+    "@typescript-eslint/parser": "8.18.1",
+    "@vitejs/plugin-react": "4.3.4",
+    "eslint": "9.17.0",
+    "eslint-plugin-react-hooks": "5.1.0",
+    "eslint-plugin-react-refresh": "0.4.16",
     "husky": "9.1.7",
     "lint-staged": "15.2.11",
     "prettier": "3.4.2",
-    "stylelint": "16.11.0",
-    "stylelint-config-standard": "36.0.1"
-  },
-  "lint-staged": {
-    "src/**/*.{js,jsx,ts,tsx,json,css,scss,md}": [
-      "prettier --write",
-      "npm run lint:css"
-    ]
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all",
-      "not ie > 0",
-      "not android < 5"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "stylelint": "16.12.0",
+    "stylelint-config-standard": "36.0.1",
+    "typescript": "5.7.2",
+    "vite": "6.0.3",
+    "vite-plugin-html": "3.2.2",
+    "vite-plugin-istanbul": "6.0.2",
+    "vite-tsconfig-paths": "5.1.4"
   }
 }
