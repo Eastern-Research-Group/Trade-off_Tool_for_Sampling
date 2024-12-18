@@ -2122,11 +2122,6 @@ function CalculateResultsPopup({
                       alias: 'Permanent Identifier',
                     },
                     {
-                      name: 'AREA',
-                      type: 'double',
-                      alias: 'AREA',
-                    },
-                    {
                       name: 'CONTAMTYPE',
                       type: 'string',
                       alias: 'Contamination Type',

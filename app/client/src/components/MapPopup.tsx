@@ -538,7 +538,6 @@ export function contaminationMapPopup(feature: any) {
           fieldName: 'ROOFS',
           label: 'Contamination Value Roofs',
         },
-        { label: 'Area', fieldName: 'AREA' },
         { label: 'FID', fieldName: 'FID' },
         { label: 'ID', fieldName: 'Id' },
       ]}

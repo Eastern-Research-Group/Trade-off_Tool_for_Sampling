@@ -2110,7 +2110,6 @@ export function useCalculateDeconPlan() {
               const geometry = Array.isArray(newOuterContamGeometry)
                 ? newOuterContamGeometry
                 : [newOuterContamGeometry];
-              if (geometry.length > 0) console.log('adding outer...');
               for (const geom of geometry) {
                 newContamGraphics.push(
                   new Graphic({
@@ -2132,7 +2131,6 @@ export function useCalculateDeconPlan() {
               }
             }
 
-            if (innerGeometry.length > 0) console.log('adding inner...');
             for (const geom of innerGeometry) {
               let newCfu = CONTAMVAL;
               if (CONTAMVALEXTWALLS > newCfu) newCfu = CONTAMVALEXTWALLS;
