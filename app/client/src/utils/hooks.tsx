@@ -241,7 +241,6 @@ function processScenario(
     totalBuildingIntWallsSqM,
     totalBuildingRoofSqM,
   } = planGraphics.summary;
-  const nonBuildingArea = totalAoiSqM - totalBuildingFootprintSqM;
 
   if (isScenario && scenario.aoiSummary) {
     scenario.aoiSummary.area = planGraphics.aoiArea;
@@ -279,7 +278,7 @@ function processScenario(
 
       // get surface area of soil, asphalt or concrete
       //             60 =             100 * 0.6 surface area of concrete
-      surfaceArea = nonBuildingArea * pctFactor;
+      surfaceArea = totalAoiSqM * pctFactor;
 
       // get total CFU for media
       let totalArea = 0;
@@ -563,8 +562,9 @@ async function fetchBuildingData(
       }
 
       const totalArea = planGraphics[planId].aoiArea;
+      const { numAois } = planGraphics[planId].aoiPercentages;
       planGraphics[planId].aoiPercentages = {
-        numAois: 1,
+        numAois,
         asphalt: (imageAreas['asphalt'] / totalArea) * 100,
         concrete: (imageAreas['concrete'] / totalArea) * 100,
         soil:
@@ -1509,7 +1509,7 @@ export function useCalculateDeconPlan() {
   useEffect(() => {
     if (
       ['none', 'success'].includes(calculateResultsDecon.status) ||
-      ['none', 'failure', 'fetching'].includes(nsiData.status)
+      nsiData.status !== 'success'
     )
       return;
 
