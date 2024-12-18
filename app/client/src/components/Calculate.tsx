@@ -47,7 +47,7 @@ import {
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
 import { geoprocessorFetch } from 'utils/fetchUtils';
-import { detectionLimit, useDynamicPopup } from 'utils/hooks';
+import { useDynamicPopup } from 'utils/hooks';
 import {
   generateUUID,
   getGraphicsArray,
@@ -1030,8 +1030,7 @@ function CalculateResultsPopup({
   isOpen,
   onClose,
 }: CalculateResultsPopupProps) {
-  const { edits, jsonDownload, planSettings, efficacyResults } =
-    useContext(SketchContext);
+  const { edits, jsonDownload, planSettings } = useContext(SketchContext);
   const [tableId] = useState(
     `tots-decon-results-selectionstable-${generateUUID()}`,
   );
@@ -1318,35 +1317,6 @@ function CalculateResultsPopup({
       summarySheet.getCell(11, 2).value = Math.round(
         calculateResultsDecon.data['Total Waste Mass'],
       ).toLocaleString();
-
-      if (devMode) {
-        summarySheet.mergeCells(7, 3, 7, 4);
-        summarySheet.getCell(7, 3).alignment = columnTitleAlignment;
-        summarySheet.getCell(7, 3).font = underlinedLabelFont;
-        summarySheet.getCell(7, 3).value = 'Efficacy';
-
-        summarySheet.getCell(8, 3).font = labelFont;
-        summarySheet.getCell(8, 3).value = 'Average Initial Contamination';
-        summarySheet.getCell(8, 4).font = defaultFont;
-        summarySheet.getCell(8, 4).value =
-          `${(efficacyResults?.averageInitialCfu ?? '').toLocaleString()} (CFU/m²)`;
-        summarySheet.getCell(9, 3).font = labelFont;
-        summarySheet.getCell(9, 3).value = 'Average Final Contamination';
-        summarySheet.getCell(9, 4).font = defaultFont;
-        summarySheet.getCell(9, 4).value =
-          `${(efficacyResults?.averageFinalCfu ?? '').toLocaleString()} (CFU/m²)`;
-        summarySheet.getCell(10, 3).font = labelFont;
-        summarySheet.getCell(10, 3).value = 'Detection Limit';
-        summarySheet.getCell(10, 4).font = defaultFont;
-        summarySheet.getCell(10, 4).value = `${detectionLimit} (CFU/m²)`;
-        summarySheet.getCell(11, 3).font = labelFont;
-        summarySheet.getCell(11, 3).value = 'Above/Below Detection Limit';
-        summarySheet.getCell(11, 4).font = defaultFont;
-        summarySheet.getCell(11, 4).value =
-          efficacyResults?.averageFinalCfu >= detectionLimit
-            ? 'Above'
-            : 'Below';
-      }
 
       summarySheet.mergeCells(14, 3, 14, 4);
       summarySheet.getCell(14, 3).alignment = columnTitleAlignment;
@@ -1799,7 +1769,6 @@ function CalculateResultsPopup({
     devMode,
     downloadStatus,
     edits,
-    efficacyResults,
     jsonDownload,
     layers,
     map,
@@ -1892,28 +1861,6 @@ function CalculateResultsPopup({
                   ).toLocaleString()}
                 </div>
               </div>
-              {devMode && efficacyResults && (
-                <div>
-                  <div>
-                    <strong>Average Initial Contamination:</strong>{' '}
-                    {efficacyResults.averageInitialCfu.toLocaleString()}{' '}
-                    (CFU/m²)
-                  </div>
-                  <div>
-                    <strong>Average Final Contamination:</strong>{' '}
-                    {efficacyResults.averageFinalCfu.toLocaleString()} (CFU/m²)
-                  </div>
-                  <div>
-                    <strong>Detection Limit:</strong> {detectionLimit} (CFU/m²)
-                  </div>
-                  <div>
-                    <strong>Above/Below Detection Limit:</strong>{' '}
-                    {efficacyResults.averageFinalCfu >= detectionLimit
-                      ? 'Above'
-                      : 'Below'}
-                  </div>
-                </div>
-              )}
             </div>
           )}
         <br />
