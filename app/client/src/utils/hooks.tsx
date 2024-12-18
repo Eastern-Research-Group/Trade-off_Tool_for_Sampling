@@ -316,18 +316,19 @@ function processScenario(
 
 async function fetchBuildingData(
   aoiGraphics: __esri.Graphic[],
-  features: __esri.Graphic[],
   services: any,
   planGraphics: PlanGraphics,
   responseIndexes: string[],
   gsgFile: GsgParam | undefined,
+  sceneViewForArea: __esri.SceneView | null,
+  cutFootprintsOut: boolean = true,
   buildingFilter: string[] = [],
 ) {
   const requests: any[] = [];
-  features.forEach((feature) => {
+  aoiGraphics.forEach((graphic) => {
     requests.push(
       query.executeQueryJSON(services.structures, {
-        geometry: feature.geometry,
+        geometry: graphic.geometry,
         returnGeometry: true,
         outFields: ['*'],
       }),
@@ -496,39 +497,92 @@ async function fetchBuildingData(
         const planId = responseIndexes[index];
         const permId = generateUUID();
 
-        planGraphics[planId].imageGraphics.push(
-          new Graphic({
-            attributes: {
-              ...f.attributes,
-              PERMANENT_IDENTIFIER: permId,
-            },
-            geometry: new Polygon({
-              rings: f.geometry.rings,
-              spatialReference: {
-                wkid: 3857,
+        const startPolygon = new Polygon({
+          rings: f.geometry.rings,
+          spatialReference: {
+            wkid: 3857,
+          },
+        });
+        let polygons: __esri.Geometry[] = [startPolygon];
+        if (cutFootprintsOut) {
+          for (const buildingGraphic of planGraphics[planId].graphics) {
+            if (geometryEngine.contains(buildingGraphic.geometry, startPolygon))
+              return;
+          }
+
+          planGraphics[planId].graphics.forEach((buildingGraphic) => {
+            const difference = geometryEngine.difference(
+              polygons,
+              buildingGraphic.geometry,
+            );
+            if (!difference) return;
+
+            const newPolygons: __esri.Geometry[] = [];
+            if (!Array.isArray(difference)) newPolygons.push(difference);
+            else {
+              difference.forEach((diff) => {
+                if (!diff) return;
+                newPolygons.push(diff);
+              });
+            }
+            if (newPolygons.length > 0) polygons = newPolygons;
+          });
+        }
+
+        polygons.forEach((polygon) => {
+          planGraphics[planId].imageGraphics.push(
+            new Graphic({
+              attributes: {
+                ...f.attributes,
+                PERMANENT_IDENTIFIER: permId,
+              },
+              geometry: polygon,
+              symbol,
+              popupTemplate: {
+                title: '',
+                content: imageryAnalysisMapPopup,
               },
             }),
-            symbol,
-            popupTemplate: {
-              title: '',
-              content: imageryAnalysisMapPopup,
-            },
-          }),
-        );
+          );
+        });
       });
     }
   });
 
-  Object.keys(planGraphics).forEach((planId) => {
-    const { numAois, asphalt, concrete, soil } =
-      planGraphics[planId].aoiPercentages;
-    planGraphics[planId].aoiPercentages = {
-      numAois,
-      asphalt: asphalt / numAois,
-      concrete: concrete / numAois,
-      soil: soil / numAois,
-    };
-  });
+  for (const planId of Object.keys(planGraphics)) {
+    if (cutFootprintsOut) {
+      const imageAreas: { [key: string]: number } = {};
+      for (const graphic of planGraphics[planId].imageGraphics) {
+        const key = graphic.attributes.category.toLowerCase();
+
+        const areaSM = await calculateArea(graphic, sceneViewForArea);
+        if (typeof areaSM === 'number') {
+          if (imageAreas.hasOwnProperty(key)) imageAreas[key] += areaSM;
+          else imageAreas[key] = areaSM;
+        }
+      }
+
+      const totalArea = planGraphics[planId].aoiArea;
+      planGraphics[planId].aoiPercentages = {
+        numAois: 1,
+        asphalt: (imageAreas['asphalt'] / totalArea) * 100,
+        concrete: (imageAreas['concrete'] / totalArea) * 100,
+        soil:
+          ((imageAreas['soil'] + imageAreas['vegetation']) / totalArea) * 100,
+      };
+    } else {
+      const { numAois, asphalt, concrete, soil } =
+        planGraphics[planId].aoiPercentages;
+      planGraphics[planId].aoiPercentages = {
+        numAois,
+        asphalt: asphalt / numAois,
+        concrete: concrete / numAois,
+        soil: soil / numAois,
+      };
+    }
+
+    console.log('planGraphics: ', planGraphics);
+  }
 }
 
 // Saves data to session storage
@@ -1263,7 +1317,6 @@ export function useCalculateDeconPlan() {
 
     async function fetchAoiData() {
       if (!aoiData.graphics) return;
-      const features: __esri.Graphic[] = [];
       let responseIndexes: string[] = [];
       let planGraphics: PlanGraphics = {};
       const aoiGraphics: __esri.Graphic[] = [];
@@ -1273,8 +1326,6 @@ export function useCalculateDeconPlan() {
         aoiGraphics.push(...aoiData.graphics[planId]);
         let planAoiArea = 0;
         for (const graphic of aoiData.graphics[planId]) {
-          features.push(graphic);
-
           const areaSM = await calculateArea(graphic, sceneViewForArea);
           if (typeof areaSM === 'number') {
             planAoiArea += areaSM;
@@ -1332,11 +1383,12 @@ export function useCalculateDeconPlan() {
         // TODO - look into adding more queries here
         await fetchBuildingData(
           aoiGraphics,
-          features,
           services,
           planGraphics,
           responseIndexes,
           gsgParam,
+          sceneViewForArea,
+          true,
         );
 
         // TODO call usa structures for buildings in contamination plumes
@@ -1383,20 +1435,19 @@ export function useCalculateDeconPlan() {
             });
           });
 
-          const features: __esri.Graphic[] = [];
           const responseIndexes: string[] = [];
           contaminationLayer.graphics.forEach((graphic) => {
-            features.push(graphic);
             responseIndexes.push('contaminationMap');
           });
 
           await fetchBuildingData(
             contaminationLayer.graphics.toArray(),
-            features,
             services,
             planGraphics,
             responseIndexes,
             gsgParam,
+            sceneViewForArea,
+            false,
             buildingIds,
           );
         }
