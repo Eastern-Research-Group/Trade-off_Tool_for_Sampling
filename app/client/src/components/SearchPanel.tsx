@@ -34,6 +34,7 @@ import {
 } from 'utils/arcGisRestUtils';
 import { useDynamicPopup } from 'utils/hooks';
 import {
+  applyRendererForTotsLayer,
   convertToPoint,
   deepCopyObject,
   generateUUID,
@@ -837,62 +838,6 @@ function ResultCard({ appType, result }: ResultCardProps) {
       if (watcher) watcher.remove();
     };
   }, [watcher]);
-
-  function setRenderer(layer: __esri.FeatureLayer, isPoints: boolean = false) {
-    const type = isPoints ? 'simple-marker' : 'simple-fill';
-
-    // 1,000,000 | 10,000,000 | 100,000,000
-    layer.renderer = {
-      type: 'class-breaks',
-      field: 'CONTAMVAL',
-      defaultSymbol: {
-        type,
-        color: [150, 150, 150, 0.2],
-        outline: {
-          color: [150, 150, 150],
-          width: 2,
-        },
-      },
-      classBreakInfos: [
-        {
-          minValue: 1,
-          maxValue: 1_000_000,
-          symbol: {
-            type,
-            color: [255, 255, 0, 0.7],
-            outline: {
-              color: [255, 255, 0],
-              width: 2,
-            },
-          },
-        },
-        {
-          minValue: 1_000_001,
-          maxValue: 10_000_000,
-          symbol: {
-            type,
-            color: [255, 165, 0, 0.7],
-            outline: {
-              color: [255, 165, 0],
-              width: 2,
-            },
-          },
-        },
-        {
-          minValue: 10_000_001,
-          maxValue: Number.MAX_SAFE_INTEGER,
-          symbol: {
-            type,
-            color: [255, 0, 0, 0.7],
-            outline: {
-              color: [255, 0, 0],
-              width: 2,
-            },
-          },
-        },
-      ],
-    } as any;
-  }
 
   /**
    * Adds layers, published through TOTS, such that the sample layer is
@@ -1926,59 +1871,39 @@ function ResultCard({ appType, result }: ResultCardProps) {
   async function addTotsLayerForTods() {
     if (!map) return;
 
-    Layer.fromPortalItem({
+    const layer = await Layer.fromPortalItem({
       portalItem: new PortalItem({
         id: result.id,
       }),
-    }).then((layer) => {
-      // setup the watch event to see when the layer finishes loading
-      const watcher = reactiveUtils.watch(
-        () => layer.loadStatus,
-        () => {
-          // set the status based on the load status
-          if (layer.loadStatus === 'loaded') {
-            setPortalLayers((portalLayers) => [
-              ...portalLayers,
-              {
-                id: result.id,
-                label: result.title,
-                layerType: result.type,
-                type: 'tots',
-                url: result.url,
-              },
-            ]);
-            setStatus('');
-
-            if (layer.type === 'feature') {
-              setRenderer(layer as __esri.FeatureLayer);
-            }
-            if (layer.type === 'group') {
-              const groupLayer = layer as __esri.GroupLayer;
-              groupLayer.layers.forEach((layer, index) => {
-                setRenderer(layer as __esri.FeatureLayer, index === 1);
-              });
-            }
-
-            layer.visible = true;
-
-            // zoom to the layer if it has an extent
-            if (layer.fullExtent) {
-              if (mapView && displayDimensions === '2d')
-                mapView.goTo(layer.fullExtent);
-              if (sceneView && displayDimensions === '3d')
-                sceneView.goTo(layer.fullExtent);
-            }
-          } else if (layer.loadStatus === 'failed') {
-            setStatus('error');
-          }
-        },
-      );
-
-      setWatcher(watcher);
-
-      // add the layer to the map
-      map.add(layer);
     });
+    map.add(layer);
+
+    try {
+      await applyRendererForTotsLayer(layer);
+
+      setPortalLayers((portalLayers) => [
+        ...portalLayers,
+        {
+          id: result.id,
+          label: result.title,
+          layerType: result.type,
+          type: 'tots',
+          url: result.url,
+        },
+      ]);
+      setStatus('');
+
+      // zoom to the layer if it has an extent
+      if (layer.fullExtent) {
+        if (mapView && displayDimensions === '2d')
+          mapView.goTo(layer.fullExtent);
+        if (sceneView && displayDimensions === '3d')
+          sceneView.goTo(layer.fullExtent);
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus('error');
+    }
   }
 
   /**

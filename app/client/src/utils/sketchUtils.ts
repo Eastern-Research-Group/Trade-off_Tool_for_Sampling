@@ -2182,3 +2182,118 @@ export function updatePolygonSymbol(
     });
   });
 }
+
+/**
+ * Sets renderer for TOTS layers being pulled into TODS. The renderer
+ * color codes the samples based on the contamination value.
+ *
+ * @param layer - layer to set renderer on
+ * @param isPoints - Are graphics points or polygons
+ */
+function setRenderer(layer: __esri.FeatureLayer, isPoints: boolean = false) {
+  console.log('isPoints: ', isPoints);
+  const type = isPoints ? 'simple-marker' : 'simple-fill';
+
+  // 1,000,000 | 10,000,000 | 100,000,000
+  layer.renderer = {
+    type: 'class-breaks',
+    field: 'CONTAMVAL',
+    defaultSymbol: {
+      type,
+      color: [150, 150, 150, 0.2],
+      outline: {
+        color: [150, 150, 150],
+        width: 2,
+      },
+    },
+    classBreakInfos: [
+      {
+        minValue: 1,
+        maxValue: 1_000_000,
+        symbol: {
+          type,
+          color: [255, 255, 0, 0.7],
+          outline: {
+            color: [255, 255, 0],
+            width: 2,
+          },
+        },
+      },
+      {
+        minValue: 1_000_001,
+        maxValue: 10_000_000,
+        symbol: {
+          type,
+          color: [255, 165, 0, 0.7],
+          outline: {
+            color: [255, 165, 0],
+            width: 2,
+          },
+        },
+      },
+      {
+        minValue: 10_000_001,
+        maxValue: Number.MAX_SAFE_INTEGER,
+        symbol: {
+          type,
+          color: [255, 0, 0, 0.7],
+          outline: {
+            color: [255, 0, 0],
+            width: 2,
+          },
+        },
+      },
+    ],
+  } as any;
+}
+
+/**
+ * Waits for layer and sub layers to load.
+ *
+ * @param layer - layer to wait for load
+ * @returns - true if successfully loaded, false if failed
+ */
+function loadLayer(layer: __esri.Layer) {
+  return new Promise((resolve, reject) => {
+    // setup the watch event to see when the layer finishes loading
+    if (layer.loadStatus === 'loaded') resolve(true);
+    if (layer.loadStatus === 'failed') reject(false);
+
+    const watcher = reactiveUtils.watch(
+      () => layer.loadStatus,
+      () => {
+        console.log('layer.loadStatus: ', layer.loadStatus);
+        // set the status based on the load status
+        if (layer.loadStatus === 'loaded') {
+          watcher.remove();
+          resolve(true);
+        } else if (layer.loadStatus === 'failed') {
+          watcher.remove();
+          reject(false);
+        }
+      },
+    );
+  });
+}
+
+/**
+ * Waits for layers to load and sets renderers for TOTS layers
+ * being pulled into TODS.
+ *
+ * @param layer - layer to set renderer on
+ */
+export async function applyRendererForTotsLayer(layer: __esri.Layer) {
+  await loadLayer(layer);
+
+  if (layer.type === 'feature') {
+    setRenderer(layer as __esri.FeatureLayer);
+  }
+  if (layer.type === 'group') {
+    for (const l of (layer as __esri.GroupLayer).layers) {
+      await loadLayer(l);
+      setRenderer(l as __esri.FeatureLayer, l.title.includes('-points'));
+    }
+  }
+
+  layer.visible = true;
+}
