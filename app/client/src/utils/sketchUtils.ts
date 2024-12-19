@@ -2191,7 +2191,6 @@ export function updatePolygonSymbol(
  * @param isPoints - Are graphics points or polygons
  */
 function setRenderer(layer: __esri.FeatureLayer, isPoints: boolean = false) {
-  console.log('isPoints: ', isPoints);
   const type = isPoints ? 'simple-marker' : 'simple-fill';
 
   // 1,000,000 | 10,000,000 | 100,000,000
@@ -2262,7 +2261,6 @@ function loadLayer(layer: __esri.Layer) {
     const watcher = reactiveUtils.watch(
       () => layer.loadStatus,
       () => {
-        console.log('layer.loadStatus: ', layer.loadStatus);
         // set the status based on the load status
         if (layer.loadStatus === 'loaded') {
           watcher.remove();
