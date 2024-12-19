@@ -7,6 +7,11 @@ export const samplingPanels: PanelType[] = [
     iconClass: 'fas fa-layer-group',
   },
   {
+    value: 'setup',
+    label: 'Additional Setup',
+    iconClass: 'fas fa-wrench',
+  },
+  {
     value: 'locateSamples',
     label: 'Create Plan',
     iconClass: 'fas fa-thumbtack',
@@ -35,6 +40,11 @@ export const deconPanels: PanelType[] = [
     iconClass: 'fas fa-layer-group',
   },
   {
+    value: 'setup',
+    label: 'Additional Setup',
+    iconClass: 'fas fa-wrench',
+  },
+  {
     value: 'decon',
     label: 'Create Decon Plan',
     iconClass: 'fas fa-thumbtack',
@@ -58,6 +68,7 @@ export const deconPanels: PanelType[] = [
 
 export type PanelValueType =
   | 'addData'
+  | 'setup'
   | 'locateSamples'
   | 'decon'
   | 'calculate'
