@@ -35,7 +35,7 @@ import { ScenarioEditsType, LayerEditsType } from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { AppType } from 'types/Navigation';
 // styles
-import { appTheme } from 'styles';
+import { appTheme, isDecon } from 'styles';
 import {
   DefaultSymbolsType,
   PolygonSymbol,
@@ -1030,51 +1030,53 @@ function Toolbar({ appType }: Props) {
               <label htmlFor="dimension-3d">3D</label>
             </fieldset>
 
-            <fieldset css={fieldsetStyles}>
-              <legend>
-                Shape
-                <InfoIcon
-                  cssStyles={infoIconStyles}
-                  id="poly-points-switch"
-                  tooltip={`The "Polygons" view displays ${appType === 'decon' ? 'decon applications' : 'samples'} on the map as their<br/>exact size which do not scale as you zoom out on the map.<br/>The "Points" view displays the ${appType === 'decon' ? 'decon applications' : 'samples'} as icons that scale<br/>as you zoom in/out and may be useful for viewing many<br/>${appType === 'decon' ? 'decon applications' : 'samples'} over a large geographic area. ${appType === 'sampling' ? 'The "Hybrid" view<br/>displays point based samples as points and polygon based<br/>samples as polygons. The "Hybrid" view may be useful for<br/>viewing in "3D".' : ''}`}
-                  place="bottom"
-                />
-              </legend>
-              <input
-                id="shape-points"
-                type="radio"
-                name="shape"
-                value="points"
-                checked={displayGeometryType === 'points'}
-                onChange={(ev) => setDisplayGeometryType('points')}
-              />
-              <label htmlFor="shape-points">Points</label>
-              <br />
-
-              <input
-                id="shape-polygons"
-                type="radio"
-                name="shape"
-                value="polygons"
-                checked={displayGeometryType === 'polygons'}
-                onChange={(ev) => setDisplayGeometryType('polygons')}
-              />
-              <label htmlFor="shape-polygons">Polygons</label>
-              <br />
-
-              {appType === 'sampling' && (
-                <label>
-                  <input
-                    type="radio"
-                    name="shape"
-                    value="hybrid"
-                    checked={displayGeometryType === 'hybrid'}
-                    onChange={(ev) => setDisplayGeometryType('hybrid')}
+            {!isDecon() && (
+              <fieldset css={fieldsetStyles}>
+                <legend>
+                  Shape
+                  <InfoIcon
+                    cssStyles={infoIconStyles}
+                    id="poly-points-switch"
+                    tooltip={`The "Polygons" view displays ${appType === 'decon' ? 'decon applications' : 'samples'} on the map as their<br/>exact size which do not scale as you zoom out on the map.<br/>The "Points" view displays the ${appType === 'decon' ? 'decon applications' : 'samples'} as icons that scale<br/>as you zoom in/out and may be useful for viewing many<br/>${appType === 'decon' ? 'decon applications' : 'samples'} over a large geographic area. ${appType === 'sampling' ? 'The "Hybrid" view<br/>displays point based samples as points and polygon based<br/>samples as polygons. The "Hybrid" view may be useful for<br/>viewing in "3D".' : ''}`}
+                    place="bottom"
                   />
-                  <span>Hybrid</span>
-                </label>
-              )}
-            </fieldset>
+                </legend>
+                <input
+                  id="shape-points"
+                  type="radio"
+                  name="shape"
+                  value="points"
+                  checked={displayGeometryType === 'points'}
+                  onChange={(ev) => setDisplayGeometryType('points')}
+                />
+                <label htmlFor="shape-points">Points</label>
+                <br />
+
+                <input
+                  id="shape-polygons"
+                  type="radio"
+                  name="shape"
+                  value="polygons"
+                  checked={displayGeometryType === 'polygons'}
+                  onChange={(ev) => setDisplayGeometryType('polygons')}
+                />
+                <label htmlFor="shape-polygons">Polygons</label>
+                <br />
+
+                {appType === 'sampling' && (
+                  <label>
+                    <input
+                      type="radio"
+                      name="shape"
+                      value="hybrid"
+                      checked={displayGeometryType === 'hybrid'}
+                      onChange={(ev) => setDisplayGeometryType('hybrid')}
+                    />
+                    <span>Hybrid</span>
+                  </label>
+                )}
+              </fieldset>
+            )}
 
             {displayDimensions === '3d' && (
               <Fragment>

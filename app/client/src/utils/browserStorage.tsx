@@ -34,14 +34,14 @@ import { LayerType, PortalLayerType, UrlLayerType } from 'types/Layer';
 import { AppType, GoToOptions } from 'types/Navigation';
 import { SampleTypeOptions } from 'types/Publish';
 // config
-import { PanelValueType } from 'config/navigation';
+import { isDecon, PanelValueType } from 'config/navigation';
 import {
   SampleSelectType,
   UserDefinedAttributes,
 } from 'config/sampleAttributes';
 // utils
 import { useDynamicPopup } from 'utils/hooks';
-import { createLayer } from 'utils/sketchUtils';
+import { applyRendererForTotsLayer, createLayer } from 'utils/sketchUtils';
 
 let appKey = 'tots';
 
@@ -496,6 +496,17 @@ function usePortalLayerStorage() {
   useEffect(() => {
     if (!map || portalLayers.length === 0) return;
 
+    async function addTotsLayerForTods(layer: Promise<__esri.Layer>) {
+      if (!map) return;
+
+      try {
+        const layerLocal = await layer;
+        await applyRendererForTotsLayer(layerLocal);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
     // add the portal layers to the map
     portalLayers.forEach((portalLayer) => {
       const id = portalLayer.id;
@@ -508,12 +519,16 @@ function usePortalLayerStorage() {
       // The only reason tots layers are also in portal layers is
       // so the search panel will show the layer as having been
       // added.
-      if (portalLayer.type === 'tots') return;
+      if (portalLayer.type === 'tots' && !isDecon()) return;
 
       const layer = Layer.fromPortalItem({
         portalItem: new PortalItem({ id }),
       });
       map.add(layer);
+
+      if (isDecon()) {
+        addTotsLayerForTods(layer);
+      }
     });
   }, [map, portalLayers]);
 }

@@ -1274,8 +1274,8 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                   generateRandomResponse.targetSampleCount,
                 )}
               {type === 'statistic' &&
-                percentX &&
-                percentY &&
+                Boolean(percentX) &&
+                Boolean(percentY) &&
                 percentX !== percentY && (
                   <MessageBox
                     severity="warning"
