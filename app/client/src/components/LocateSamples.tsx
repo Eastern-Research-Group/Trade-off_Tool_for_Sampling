@@ -8,7 +8,6 @@ import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import ColorPicker from 'components/ColorPicker';
-import CustomSampleType from 'components/CustomSampleType';
 import { EditScenario, EditLayer } from 'components/EditLayerMetaData';
 import GenerateSamples from 'components/GenerateSamples';
 import MessageBox from 'components/MessageBox';
@@ -1454,14 +1453,6 @@ function LocateSamples() {
                     id="gen-statistic"
                     title="Add Statistical Sampling Approach"
                     type="statistic"
-                  />
-                </div>
-              </AccordionItem>
-              <AccordionItem title={'Create Custom Sample Types'}>
-                <div css={sectionContainer}>
-                  <CustomSampleType
-                    appType="sampling"
-                    id="plan-custom-sample-types"
                   />
                 </div>
               </AccordionItem>

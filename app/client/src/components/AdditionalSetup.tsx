@@ -4,11 +4,14 @@ import React, { useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
+import CustomSampleType from 'components/CustomSampleType';
 import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 // types
 import { ErrorType } from 'types/Misc';
 import { AppType } from 'types/Navigation';
+// styles
+import { isDecon } from 'styles';
 
 export type SaveStatusType =
   | 'none'
@@ -60,7 +63,7 @@ function AdditionalSetup({ appType }: Props) {
         <AccordionList>
           <AccordionItem
             title={'Characterize Area of Interest'}
-            initiallyExpanded={true}
+            initiallyExpanded={isDecon()}
           >
             <div css={sectionContainer}>
               <p>Placeholder...</p>
@@ -69,7 +72,10 @@ function AdditionalSetup({ appType }: Props) {
           {appType === 'sampling' && (
             <AccordionItem title="Create Custom Sample Types">
               <div css={sectionContainer}>
-                <p>Placeholder...</p>
+                <CustomSampleType
+                  appType="sampling"
+                  id="plan-custom-sample-types"
+                />
               </div>
             </AccordionItem>
           )}
