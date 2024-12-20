@@ -381,7 +381,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
     if (!sketchVM) return;
 
     if (
-      ['locateSamples', 'decon'].includes(currentPanel?.value ?? '') &&
+      ['locateSamples', 'setup'].includes(currentPanel?.value ?? '') &&
       sketchLayer?.sketchLayer?.type === 'graphics'
     ) {
       sketchVM['2d'].layer = sketchLayer.sketchLayer;

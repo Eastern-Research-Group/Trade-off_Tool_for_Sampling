@@ -36,7 +36,7 @@ import {
 // config
 import { notLoggedInMessage } from 'config/errorMessages';
 // styles
-import { colors } from 'styles';
+import { colors, infoIconStyles } from 'styles';
 
 export type SaveStatusType =
   | 'none'
@@ -141,12 +141,6 @@ const editButtonStyles = css`
 
 const nextInstructionStyles = css`
   margin-top: 20px;
-`;
-
-const infoIconStyles = css`
-  margin-left: 10px;
-  color: #19a3dd;
-  pointer-events: all;
 `;
 
 const nestedAccordionStyles = css`

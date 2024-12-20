@@ -1450,9 +1450,6 @@ function FilePanel({ appType }: Props) {
     );
   }
   if (appType === 'sampling') {
-    selectLayerOptions = selectLayerOptions.filter(
-      (option) => option.value !== 'GSG',
-    );
     if (!trainingMode)
       selectLayerOptions = selectLayerOptions.filter(
         (option) => option.value !== 'Contamination Map',
