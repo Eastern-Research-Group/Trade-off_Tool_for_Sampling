@@ -1185,7 +1185,7 @@ function FilePanel({ appType }: Props) {
 
           const scenario = editsCopy.edits.find(
             (edit) =>
-              edit.type === 'scenario' &&
+              ['scenario', 'scenario-decon'].includes(edit.type) &&
               edit.layerId === selectedScenario.layerId,
           ) as ScenarioEditsType;
           const newLayer = scenario.layers.find(

@@ -21,6 +21,7 @@ import {
   EditType,
   FeatureEditsType,
   LayerEditsType,
+  ScenarioDeconEditsType,
   ScenarioEditsType,
 } from 'types/Edits';
 import { LayerType } from 'types/Layer';
@@ -545,7 +546,7 @@ export function deepCopyObject(obj: any) {
  * @returns the layer that was found in the edits object
  */
 export function findLayerInEdits(
-  edits: (ScenarioEditsType | LayerEditsType)[],
+  edits: (ScenarioEditsType | ScenarioDeconEditsType | LayerEditsType)[],
   layerId: string,
 ) {
   // find the layer in the edits using it's id and name
@@ -555,10 +556,13 @@ export function findLayerInEdits(
     if (edit.type === 'layer' && edit.layerId === layerId) {
       // the desired item is a layer
       layerIndex = scenarioIdx;
-    } else if (edit.type === 'scenario' && edit.layerId === layerId) {
+    } else if (
+      ['scenario', 'scenario-decon'].includes(edit.type) &&
+      edit.layerId === layerId
+    ) {
       // the desired item is a scenario
       scenarioIndex = scenarioIdx;
-    } else if (edit.type === 'scenario') {
+    } else if (edit.type === 'scenario' || edit.type === 'scenario-decon') {
       // search for the layer in scenarios
       edit.layers.forEach((layer, layerIdx) => {
         if (layer.layerId === layerId) {
@@ -570,9 +574,11 @@ export function findLayerInEdits(
   });
 
   // get the scenario if the index was found
-  let editsScenario: ScenarioEditsType | null = null;
+  let editsScenario: ScenarioEditsType | ScenarioDeconEditsType | null = null;
   if (scenarioIndex > -1) {
-    editsScenario = edits[scenarioIndex] as ScenarioEditsType;
+    editsScenario = edits[scenarioIndex] as
+      | ScenarioEditsType
+      | ScenarioDeconEditsType;
   }
 
   // get the layer if the index was found
@@ -730,10 +736,10 @@ export function getGraphicsArray(layers: (LayerType | null)[]) {
 export function getNextScenarioLayer(
   edits: EditsType,
   layers: LayerType[],
-  selectedScenario: ScenarioEditsType | null,
+  selectedScenario: ScenarioEditsType | ScenarioDeconEditsType | null,
   sketchLayer: LayerType | null,
 ) {
-  let nextScenario: ScenarioEditsType | null = null;
+  let nextScenario: ScenarioEditsType | ScenarioDeconEditsType | null = null;
   let nextLayer: LayerType | null = null;
 
   // determine which scenario to get layers for and
@@ -1332,6 +1338,18 @@ export function getScenarios(edits: EditsType) {
 }
 
 /**
+ * Searches the edits storage variable to find all available
+ * scenarios.
+ *
+ * @param edits The edits context variable to search through.
+ */
+export function getScenariosDecon(edits: EditsType) {
+  return edits.edits.filter(
+    (item) => item.type === 'scenario-decon',
+  ) as ScenarioDeconEditsType[];
+}
+
+/**
  * Creates a simple popup that contains all of the attributes on the
  * graphic.
  *
@@ -1362,7 +1380,7 @@ export function getSimplePopupTemplate(attributes: any) {
  */
 export function getSketchableLayers(
   layers: LayerType[],
-  edits: (ScenarioEditsType | LayerEditsType)[],
+  edits: (ScenarioEditsType | ScenarioDeconEditsType | LayerEditsType)[],
 ) {
   return layers.filter(
     (layer) =>
@@ -1920,7 +1938,7 @@ export function updateLayerEdits({
 }: {
   appType: AppType;
   edits: EditsType;
-  scenario?: ScenarioEditsType | null;
+  scenario?: ScenarioEditsType | ScenarioDeconEditsType | null;
   layer: LayerType;
   type: EditType;
   changes?: __esri.Collection<__esri.Graphic>;
@@ -1995,7 +2013,8 @@ export function updateLayerEdits({
   editsLayer.editType = type;
 
   // set the hasContaminationRan value (default is false)
-  if (editsScenario) editsScenario.hasContaminationRan = hasContaminationRan;
+  if (editsScenario?.type === 'scenario')
+    editsScenario.hasContaminationRan = hasContaminationRan;
   editsLayer.hasContaminationRan = hasContaminationRan;
 
   if (changes) {

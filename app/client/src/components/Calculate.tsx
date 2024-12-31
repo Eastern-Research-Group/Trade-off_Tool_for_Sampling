@@ -26,7 +26,7 @@ import { CalculateContext } from 'contexts/Calculate';
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // types
-import { ScenarioEditsType } from 'types/Edits';
+import { ScenarioDeconEditsType } from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { ErrorType } from 'types/Misc';
 import { AppType } from 'types/Navigation';
@@ -1095,7 +1095,7 @@ function CalculateResultsPopup({
 
     const scenarioIds: string[] = [];
     edits.edits.forEach((e) => {
-      if (e.type !== 'scenario') return;
+      if (!['scenario', 'scenario-decon'].includes(e.type)) return;
       scenarioIds.push(e.layerId);
     });
 
@@ -1494,8 +1494,8 @@ function CalculateResultsPopup({
 
       let curRow = 3;
       const scenarios = edits.edits.filter(
-        (e) => e.type === 'scenario',
-      ) as ScenarioEditsType[];
+        (e) => e.type === 'scenario-decon',
+      ) as ScenarioDeconEditsType[];
       scenarios.forEach((scenario) => {
         summarySheet.getCell(curRow, 1).value = {
           richText: [
@@ -1692,8 +1692,8 @@ function CalculateResultsPopup({
 
       const graphics: __esri.Graphic[] = [];
       const scenarios = edits.edits.filter(
-        (e) => e.type === 'scenario',
-      ) as ScenarioEditsType[];
+        (e) => e.type === 'scenario-decon',
+      ) as ScenarioDeconEditsType[];
       scenarios.forEach((scenario) => {
         const aoiAssessed = scenario.layers.find(
           (l) => l.layerType === 'AOI Assessed',
@@ -1815,8 +1815,8 @@ function CalculateResultsPopup({
   });
 
   const scenarios = edits.edits.filter(
-    (e) => e.type === 'scenario',
-  ) as ScenarioEditsType[];
+    (e) => e.type === 'scenario-decon',
+  ) as ScenarioDeconEditsType[];
 
   const contamMapUpdated = map?.layers.find(
     (l) => l.id === 'contaminationMapUpdated',

@@ -51,7 +51,11 @@ import {
   CalculateResultsDataType,
   CalculateResultsDeconDataType,
 } from 'types/CalculateResults';
-import { EditsType, ScenarioEditsType } from 'types/Edits';
+import {
+  EditsType,
+  ScenarioDeconEditsType,
+  ScenarioEditsType,
+} from 'types/Edits';
 import { FieldInfos, LayerType, LayerTypeName } from 'types/Layer';
 import { AppType } from 'types/Navigation';
 // utils
@@ -220,7 +224,7 @@ type ContaminationPercentages = {
 type PlanBuildingCfu = { [planId: string]: number };
 
 function processScenario(
-  scenario: ScenarioEditsType | string,
+  scenario: ScenarioDeconEditsType | string,
   nsiData: NsiData,
   contaminationPercentages: ContaminationPercentages,
   planBuildingCfu: PlanBuildingCfu,
@@ -1462,8 +1466,8 @@ export function useCalculateDeconPlan() {
 
       let editsCopy: EditsType = edits;
       const scenarios = editsCopy.edits.filter(
-        (i) => i.type === 'scenario',
-      ) as ScenarioEditsType[];
+        (i) => i.type === 'scenario-decon',
+      ) as ScenarioDeconEditsType[];
 
       const graphics: __esri.Graphic[] = [];
       Object.values(nsiData.planGraphics).forEach((planGraphics) => {
@@ -1704,8 +1708,8 @@ export function useCalculateDeconPlan() {
 
     let editsCopy: EditsType = edits;
     const scenarios = editsCopy.edits.filter(
-      (i) => i.type === 'scenario',
-    ) as ScenarioEditsType[];
+      (i) => i.type === 'scenario-decon',
+    ) as ScenarioDeconEditsType[];
 
     let atLeastOneDeconTechSelection = false;
     scenarios.forEach((scenario) => {
@@ -1946,8 +1950,8 @@ export function useCalculateDeconPlan() {
 
       let cfuReductionBuildings = 0;
       const scenarios = edits.edits.filter(
-        (i) => i.type === 'scenario',
-      ) as ScenarioEditsType[];
+        (i) => i.type === 'scenario-decon',
+      ) as ScenarioDeconEditsType[];
       let newContamGraphics: __esri.Graphic[] = [];
       for (const scenario of scenarios) {
         // tie graphics and imageryGraphics to a scenario
@@ -2898,7 +2902,9 @@ export function use3dSketch(appType: AppType) {
       setEdits(editsCopy);
 
       const newScenario = editsCopy.edits.find(
-        (e) => e.type === 'scenario' && e.layerId === selectedScenario?.layerId,
+        (e) =>
+          ['scenario', 'scenario-decon'].includes(e.type) &&
+          e.layerId === selectedScenario?.layerId,
       ) as ScenarioEditsType;
       if (newScenario) setSelectedScenario(newScenario);
 

@@ -6,7 +6,6 @@ import { css } from '@emotion/react';
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import CustomSampleType from 'components/CustomSampleType';
 import InfoIcon from 'components/InfoIcon';
-import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 import Select from 'components/Select';
 // contexts
@@ -19,7 +18,7 @@ import {
   getDefaultSamplingMaskLayer,
 } from 'utils/sketchUtils';
 // types
-import { LayerEditsType, ScenarioEditsType } from 'types/Edits';
+import { ScenarioDeconEditsType, LayerEditsType } from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { ErrorType } from 'types/Misc';
 import { AppType } from 'types/Navigation';
@@ -168,8 +167,8 @@ function AdditionalSetup({ appType }: Props) {
 
   function assessAoi() {
     const scenarios = edits.edits.filter(
-      (i) => i.type === 'scenario',
-    ) as ScenarioEditsType[];
+      (i) => i.type === 'scenario-decon',
+    ) as ScenarioDeconEditsType[];
     const planGraphics: AoiGraphics = {};
     scenarios.forEach((scenario) => {
       if (!scenario.aoiLayerMode) return;
@@ -256,11 +255,6 @@ function AdditionalSetup({ appType }: Props) {
         <div css={sectionContainer}>
           <h2>Additional Setup</h2>
           <p>Placeholder text...</p>
-          <MessageBox
-            severity="warning"
-            title="Feature Not Yet Available"
-            message="This feature is not available yet."
-          />
         </div>
 
         <AccordionList>
@@ -301,12 +295,12 @@ function AdditionalSetup({ appType }: Props) {
                       setEdits((edits) => {
                         const index = edits.edits.findIndex(
                           (item) =>
-                            item.type === 'scenario' &&
+                            item.type === 'scenario-decon' &&
                             item.layerId === selectedScenario.layerId,
                         );
                         const editedScenario = edits.edits[
                           index
-                        ] as ScenarioEditsType;
+                        ] as ScenarioDeconEditsType;
 
                         editedScenario.aoiLayerMode = 'draw';
 
@@ -371,12 +365,12 @@ function AdditionalSetup({ appType }: Props) {
                       setEdits((edits) => {
                         const index = edits.edits.findIndex(
                           (item) =>
-                            item.type === 'scenario' &&
+                            item.type === 'scenario-decon' &&
                             item.layerId === selectedScenario.layerId,
                         );
                         const editedScenario = edits.edits[
                           index
-                        ] as ScenarioEditsType;
+                        ] as ScenarioDeconEditsType;
 
                         const importedAoi = edits.edits.find(
                           (l) =>
@@ -427,12 +421,12 @@ function AdditionalSetup({ appType }: Props) {
                           setEdits((edits) => {
                             const index = edits.edits.findIndex(
                               (item) =>
-                                item.type === 'scenario' &&
+                                item.type === 'scenario-decon' &&
                                 item.layerId === selectedScenario.layerId,
                             );
                             const editedScenario = edits.edits[
                               index
-                            ] as ScenarioEditsType;
+                            ] as ScenarioDeconEditsType;
 
                             const importedAoi = edits.edits.find(
                               (l) =>

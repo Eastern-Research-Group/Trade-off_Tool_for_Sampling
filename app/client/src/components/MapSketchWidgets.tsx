@@ -961,7 +961,9 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
     setEdits(editsCopy);
 
     const newScenario = editsCopy.edits.find(
-      (e) => e.type === 'scenario' && e.layerId === selectedScenario?.layerId,
+      (e) =>
+        ['scenario', 'scenario-decon'].includes(e.type) &&
+        e.layerId === selectedScenario?.layerId,
     ) as ScenarioEditsType;
     if (newScenario) setSelectedScenario(newScenario);
 

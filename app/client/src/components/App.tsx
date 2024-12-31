@@ -32,7 +32,7 @@ import { parseSmallFloat } from 'utils/utils';
 import { navPanelWidth } from 'config/appConfig';
 import { isDecon } from 'config/navigation';
 // types
-import { ScenarioEditsType } from 'types/Edits';
+import { ScenarioDeconEditsType } from 'types/Edits';
 import { AppType } from 'types/Navigation';
 
 const resizerHeight = 10;
@@ -297,8 +297,8 @@ function App({ appType }: Props) {
   const sampleData: any[] = [];
   if (isDecon()) {
     const scenarios = edits.edits.filter(
-      (e) => e.type === 'scenario',
-    ) as ScenarioEditsType[];
+      (e) => e.type === 'scenario-decon',
+    ) as ScenarioDeconEditsType[];
     scenarios.forEach((scenario) => {
       const aoiAssessed = scenario.layers.find(
         (l) => l.layerType === 'AOI Assessed',

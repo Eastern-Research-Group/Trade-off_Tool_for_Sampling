@@ -22,13 +22,13 @@ import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext, hazardousOptions, PlanSettings } from 'contexts/Sketch';
 // types
 import { LayerType } from 'types/Layer';
-import { EditsType, ScenarioEditsType } from 'types/Edits';
+import { EditsType, ScenarioDeconEditsType } from 'types/Edits';
 // utils
 import { useStartOver } from 'utils/hooks';
 import {
   generateUUID,
   getNextScenarioLayer,
-  getScenarios,
+  getScenariosDecon,
   getSketchableLayers,
   updateLayerEdits,
 } from 'utils/sketchUtils';
@@ -296,7 +296,7 @@ function CreateDeconPlan() {
     useState<PlanSettings>(planSettings);
 
   // get a list of scenarios from edits
-  const scenarios = getScenarios(edits);
+  const scenarios = getScenariosDecon(edits);
 
   // build the list of layers to be displayed in the sample layer dropdown
   const sampleLayers: { label: string; options: LayerType[] }[] = [];
@@ -568,7 +568,7 @@ function CreateDeconPlan() {
                           });
 
                           // select the next available scenario
-                          const scenarios = getScenarios(newEdits);
+                          const scenarios = getScenariosDecon(newEdits);
                           setSelectedScenario(
                             scenarios.length > 0 ? scenarios[0] : null,
                           );
@@ -643,7 +643,7 @@ function CreateDeconPlan() {
                 isDisabled={addScenarioVisible || editScenarioVisible}
                 value={selectedScenario}
                 onChange={(ev) => {
-                  const newScenario = ev as ScenarioEditsType;
+                  const newScenario = ev as ScenarioDeconEditsType;
                   setSelectedScenario(newScenario);
                 }}
                 options={scenarios}
@@ -784,11 +784,11 @@ function DeconSelectionTable({
       setEdits((edits) => {
         const index = edits.edits.findIndex(
           (item) =>
-            item.type === 'scenario' &&
+            item.type === 'scenario-decon' &&
             item.layerId === selectedScenario.layerId,
         );
 
-        const editedScenario = edits.edits[index] as ScenarioEditsType;
+        const editedScenario = edits.edits[index] as ScenarioDeconEditsType;
         editedScenario.deconTechSelections = [...defaultDeconSelections];
 
         return {
@@ -820,8 +820,9 @@ function DeconSelectionTable({
     setHasUpdatedSelections(true);
 
     const scenario = edits.edits.find(
-      (e) => e.type === 'scenario' && e.layerId === selectedScenario?.layerId,
-    ) as ScenarioEditsType;
+      (e) =>
+        e.type === 'scenario-decon' && e.layerId === selectedScenario?.layerId,
+    ) as ScenarioDeconEditsType;
 
     if (
       scenario?.deconTechSelections &&
@@ -845,10 +846,11 @@ function DeconSelectionTable({
 
       const index = edits.edits.findIndex(
         (item) =>
-          item.type === 'scenario' && item.layerId === selectedScenario.layerId,
+          item.type === 'scenario-decon' &&
+          item.layerId === selectedScenario.layerId,
       );
       setEdits((edits) => {
-        const editedScenario = edits.edits[index] as ScenarioEditsType;
+        const editedScenario = edits.edits[index] as ScenarioDeconEditsType;
         editedScenario.deconTechSelections = newTable ?? deconSelections;
 
         return {

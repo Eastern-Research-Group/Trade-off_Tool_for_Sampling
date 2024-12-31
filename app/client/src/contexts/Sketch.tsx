@@ -16,7 +16,11 @@ import { getEnvironmentStringParam } from 'utils/arcGisRestUtils';
 import { fetchCheck } from 'utils/fetchUtils';
 import { updatePointSymbol, updatePolygonSymbol } from 'utils/sketchUtils';
 // types
-import { EditsType, ScenarioEditsType } from 'types/Edits';
+import {
+  EditsType,
+  ScenarioDeconEditsType,
+  ScenarioEditsType,
+} from 'types/Edits';
 import { LayerType, PortalLayerType, UrlLayerType } from 'types/Layer';
 import {
   DefaultSymbolsType,
@@ -139,8 +143,10 @@ type SketchType = {
   setSceneViewForArea: Dispatch<SetStateAction<__esri.SceneView | null>>;
   selectedSampleIds: SelectedSampleType[];
   setSelectedSampleIds: Dispatch<SetStateAction<SelectedSampleType[]>>;
-  selectedScenario: ScenarioEditsType | null;
-  setSelectedScenario: Dispatch<SetStateAction<ScenarioEditsType | null>>;
+  selectedScenario: ScenarioEditsType | ScenarioDeconEditsType | null;
+  setSelectedScenario: Dispatch<
+    SetStateAction<ScenarioEditsType | ScenarioDeconEditsType | null>
+  >;
   sketchVM: SketchViewModelType | null;
   setSketchVM: Dispatch<SetStateAction<SketchViewModelType | null>>;
   aoiSketchVM: __esri.SketchViewModel | null;
@@ -347,7 +353,7 @@ export function SketchProvider({ children }: Props) {
   const [
     selectedScenario,
     setSelectedScenario, //
-  ] = useState<ScenarioEditsType | null>(null);
+  ] = useState<ScenarioEditsType | ScenarioDeconEditsType | null>(null);
   const [
     sketchVM,
     setSketchVM, //

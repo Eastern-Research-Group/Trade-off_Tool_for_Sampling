@@ -31,7 +31,11 @@ import {
   getNextScenarioLayer,
 } from 'utils/sketchUtils';
 // types
-import { ScenarioEditsType, LayerEditsType } from 'types/Edits';
+import {
+  LayerEditsType,
+  ScenarioDeconEditsType,
+  ScenarioEditsType,
+} from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { AppType } from 'types/Navigation';
 // styles
@@ -727,7 +731,11 @@ function Toolbar({ appType }: Props) {
       setEdits(newEdits);
 
       // find the layer
-      let totsLayerToRemove: ScenarioEditsType | LayerEditsType | null = null;
+      let totsLayerToRemove:
+        | ScenarioEditsType
+        | ScenarioDeconEditsType
+        | LayerEditsType
+        | null = null;
       const { editsScenario, editsLayer } = findLayerInEdits(
         edits.edits,
         layerToRemove.id,

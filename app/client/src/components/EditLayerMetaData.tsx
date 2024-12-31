@@ -24,7 +24,11 @@ import {
 } from 'utils/sketchUtils';
 import { createErrorObject } from 'utils/utils';
 // types
-import { LayerEditsType, ScenarioEditsType } from 'types/Edits';
+import {
+  LayerEditsType,
+  ScenarioDeconEditsType,
+  ScenarioEditsType,
+} from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { ErrorType } from 'types/Misc';
 import { AppType } from 'types/Navigation';
@@ -100,7 +104,7 @@ const saveButtonStyles = (status: string) => {
 // --- components (EditScenario) ---
 type Props = {
   appType: AppType;
-  initialScenario?: ScenarioEditsType | null;
+  initialScenario?: ScenarioEditsType | ScenarioDeconEditsType | null;
   buttonText?: string;
   initialStatus?: SaveStatusType;
   addDefaultSampleLayer?: boolean;
@@ -362,7 +366,8 @@ function EditScenario({
     if (initialScenario) {
       index = edits.edits.findIndex(
         (item) =>
-          item.type === 'scenario' && item.layerId === initialScenario.layerId,
+          item.type === 'scenario-decon' &&
+          item.layerId === initialScenario.layerId,
       );
     }
 
@@ -392,7 +397,7 @@ function EditScenario({
 
       // make a copy of the edits context variable
       setEdits((edits) => {
-        const editedScenario = edits.edits[index] as ScenarioEditsType;
+        const editedScenario = edits.edits[index] as ScenarioDeconEditsType;
         editedScenario.label = scenarioName;
         editedScenario.name = scenarioName;
         editedScenario.scenarioName = scenarioName;
@@ -525,10 +530,9 @@ function EditScenario({
       }
 
       // create the scenario to be added to edits
-      const newScenario: ScenarioEditsType = {
-        type: 'scenario',
+      const newScenario: ScenarioDeconEditsType = {
+        type: 'scenario-decon',
         id: -1,
-        pointsId: -1,
         layerId: groupLayer.id,
         portalId: '',
         name: scenarioName,
@@ -536,7 +540,6 @@ function EditScenario({
         value: groupLayer.id,
         layerType: 'Samples',
         addedFrom: 'sketch',
-        hasContaminationRan: false,
         status: 'added',
         editType: 'add',
         visible: true,
@@ -929,9 +932,9 @@ function EditLayer({
 
         const scenario = editsCopy.edits.find(
           (edit) =>
-            edit.type === 'scenario' &&
+            ['scenario', 'scenario-decon'].includes(edit.type) &&
             edit.layerId === selectedScenario.layerId,
-        ) as ScenarioEditsType;
+        ) as ScenarioEditsType | ScenarioDeconEditsType;
         const newLayer = scenario.layers.find(
           (layer) => layer.layerId === tempLayer.layerId,
         );

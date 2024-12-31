@@ -11,7 +11,8 @@ export type LayerTypeName =
   | 'Decon Results'
   | 'AOI Assessed'
   | 'Image Analysis'
-  | 'GSG';
+  | 'GSG'
+  | 'Decon';
 
 export type LayerTypeLabel =
   | 'Contamination Map'

@@ -29,7 +29,12 @@ import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext } from 'contexts/Publish';
 import { SketchContext } from 'contexts/Sketch';
 // types
-import { EditsType, ScenarioEditsType, ServiceMetaDataType } from 'types/Edits';
+import {
+  EditsType,
+  ScenarioDeconEditsType,
+  ScenarioEditsType,
+  ServiceMetaDataType,
+} from 'types/Edits';
 import { LayerType, PortalLayerType, UrlLayerType } from 'types/Layer';
 import { AppType, GoToOptions } from 'types/Navigation';
 import { SampleTypeOptions } from 'types/Publish';
@@ -259,7 +264,10 @@ function useEditsLayerStorage(appType: AppType) {
         );
       }
       // scenarios need to be added to a group layer first
-      if (editsLayer.type === 'scenario') {
+      if (
+        editsLayer.type === 'scenario' ||
+        editsLayer.type === 'scenario-decon'
+      ) {
         const groupLayer = new GroupLayer({
           id: editsLayer.layerId,
           title: editsLayer.scenarioName,
@@ -769,9 +777,14 @@ function useSamplesLayerStorage() {
     // set the selected scenario first
     const scenarioId = readFromStorage(key2);
     const scenario = edits.edits.find(
-      (item) => item.type === 'scenario' && item.layerId === scenarioId,
+      (item) =>
+        ['scenario', 'scenario-decon'].includes(item.type) &&
+        item.layerId === scenarioId,
     );
-    if (scenario) setSelectedScenario(scenario as ScenarioEditsType);
+    if (scenario)
+      setSelectedScenario(
+        scenario as ScenarioEditsType | ScenarioDeconEditsType,
+      );
 
     // then set the layer
     const layerId = readFromStorage(key);
