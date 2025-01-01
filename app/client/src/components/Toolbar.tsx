@@ -623,6 +623,7 @@ function Toolbar({ appType }: Props) {
     const newLayerList = new LayerList({
       view: mapView,
       container: 'legend-container',
+      dragEnabled: true,
       listItemCreatedFunction: (event) => {
         buildLegendListItem(event, mapView);
       },
