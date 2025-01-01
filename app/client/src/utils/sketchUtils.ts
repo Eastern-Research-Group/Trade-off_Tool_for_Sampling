@@ -6,6 +6,7 @@ import Collection from '@arcgis/core/core/Collection';
 import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import Graphic from '@arcgis/core/Graphic';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
+import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import Polygon from '@arcgis/core/geometry/Polygon';
 import * as projection from '@arcgis/core/geometry/projection';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
@@ -13,6 +14,7 @@ import SpatialReference from '@arcgis/core/geometry/SpatialReference';
 import * as webMercatorUtils from '@arcgis/core/geometry/support/webMercatorUtils';
 import { Dispatch, SetStateAction } from 'react';
 // contexts
+import { settingDefaults } from 'contexts/Calculate';
 import { SampleTypes } from 'contexts/LookupFiles';
 // types
 import { DefaultSymbolsType } from 'config/sampleAttributes';
@@ -24,10 +26,8 @@ import {
   ScenarioDeconEditsType,
   ScenarioEditsType,
 } from 'types/Edits';
-import { LayerType } from 'types/Layer';
+import { LayerType, LayerTypeName } from 'types/Layer';
 import { AppType } from 'types/Navigation';
-// config
-import { isDecon } from 'config/navigation';
 import {
   PolygonSymbol,
   SampleIssues,
@@ -460,11 +460,12 @@ export function createLayerEditTemplate(
  * @returns LayerType The default sample layer
  */
 export function createSampleLayer(
+  isDecon = false,
   name: string = 'Default Sample Layer',
   parentLayer: __esri.GroupLayer | null = null,
 ) {
   let layerType = 'Samples';
-  if (isDecon()) {
+  if (isDecon) {
     name = 'Area of Interest';
     layerType = 'Decon Mask';
   }
@@ -474,7 +475,7 @@ export function createSampleLayer(
     id: layerUuid,
     title: name,
   });
-  const pointsLayer = !isDecon()
+  const pointsLayer = !isDecon
     ? new GraphicsLayer({
         id: layerUuid + '-points',
         title: name,
@@ -482,7 +483,7 @@ export function createSampleLayer(
         listMode: 'hide',
       })
     : null;
-  const hybridLayer = !isDecon()
+  const hybridLayer = !isDecon
     ? new GraphicsLayer({
         id: layerUuid + '-hybrid',
         title: name,
@@ -2200,6 +2201,161 @@ export function updatePolygonSymbol(
       }
     });
   });
+}
+
+export function createScenarioDecon(
+  defaultDeconSelections: any[],
+  scenarioName: string = 'Default Decon Scenario',
+  scenarioDescription: string = '',
+) {
+  // create a new group layer for the scenario
+  const groupLayer = new GroupLayer({
+    title: scenarioName,
+  });
+
+  const layerUuidImageAnalysis = generateUUID();
+  const graphicsLayerImageAnalysis = new GraphicsLayer({
+    id: layerUuidImageAnalysis,
+    title: 'Imagery Analysis Results',
+    listMode: 'show',
+  });
+
+  const layerUuid = generateUUID();
+  const graphicsLayer = new GraphicsLayer({
+    id: layerUuid,
+    title: 'AOI Assessment',
+    listMode: 'show',
+  });
+
+  const newLayers: LayerEditsType[] = [];
+  let tempSketchLayer: LayerType | null = null;
+  let tempAssessedAoiLayer: LayerType | null = null;
+  let tempImageAnalysisLayer: LayerType | null = null;
+
+  tempAssessedAoiLayer = {
+    id: -1,
+    pointsId: -1,
+    uuid: layerUuid,
+    layerId: layerUuid,
+    portalId: '',
+    value: 'aoiAssessed',
+    name: 'AOI Assessment',
+    label: 'AOI Assessment',
+    layerType: 'AOI Assessed',
+    editType: 'add',
+    visible: true,
+    listMode: 'show',
+    sort: 0,
+    geometryType: 'esriGeometryPolygon',
+    addedFrom: 'sketch',
+    status: 'added',
+    sketchLayer: graphicsLayer,
+    pointsLayer: null,
+    hybridLayer: null,
+    parentLayer: groupLayer,
+  } as LayerType;
+
+  tempImageAnalysisLayer = {
+    id: -1,
+    pointsId: -1,
+    uuid: layerUuidImageAnalysis,
+    layerId: layerUuidImageAnalysis,
+    portalId: '',
+    value: 'aoiAssessed',
+    name: 'Imagery Analysis Results',
+    label: 'Imagery Analysis Results',
+    layerType: 'Image Analysis',
+    editType: 'add',
+    visible: true,
+    listMode: 'show',
+    sort: 0,
+    geometryType: 'esriGeometryPolygon',
+    addedFrom: 'sketch',
+    status: 'added',
+    sketchLayer: graphicsLayerImageAnalysis,
+    pointsLayer: null,
+    hybridLayer: null,
+    parentLayer: groupLayer,
+  } as LayerType;
+
+  if (newLayers.length === 0) {
+    // no sketchable layers were available, create one
+    tempSketchLayer = createSampleLayer(true, undefined, groupLayer);
+    newLayers.push(createLayerEditTemplate(tempImageAnalysisLayer, 'add'));
+    newLayers.push(createLayerEditTemplate(tempAssessedAoiLayer, 'add'));
+    newLayers.push(createLayerEditTemplate(tempSketchLayer, 'add'));
+  } else {
+    newLayers.push(createLayerEditTemplate(tempImageAnalysisLayer, 'add'));
+    newLayers.push(createLayerEditTemplate(tempAssessedAoiLayer, 'add'));
+  }
+
+  // create the scenario to be added to edits
+  return {
+    graphicsLayerImageAnalysis,
+    graphicsLayer,
+    groupLayer,
+    layers: newLayers,
+    sketchLayer: tempSketchLayer,
+    scenario: {
+      type: 'scenario-decon',
+      id: -1,
+      layerId: groupLayer.id,
+      portalId: '',
+      name: scenarioName,
+      label: scenarioName,
+      value: groupLayer.id,
+      layerType: 'Decon',
+      addedFrom: 'sketch',
+      status: 'added',
+      editType: 'add',
+      visible: true,
+      listMode: 'show',
+      scenarioName: scenarioName,
+      scenarioDescription: scenarioDescription,
+      layers: newLayers,
+      table: null,
+      referenceLayersTable: {
+        id: -1,
+        referenceLayers: [],
+      },
+      customAttributes: [],
+      deconTechSelections: defaultDeconSelections,
+      deconSummaryResults: {
+        summary: {
+          totalAoiSqM: 0,
+          totalBuildingFootprintSqM: 0,
+          totalBuildingFloorsSqM: 0,
+          totalBuildingSqM: 0,
+          totalBuildingExtWallsSqM: 0,
+          totalBuildingIntWallsSqM: 0,
+          totalBuildingRoofSqM: 0,
+        },
+        aoiPercentages: {
+          asphalt: 0,
+          concrete: 0,
+          soil: 0,
+        },
+        calculateResults: null,
+      },
+      aoiSummary: {
+        area: 0,
+        buildingFootprint: 0,
+      },
+      deconLayerResults: {
+        cost: 0,
+        time: 0,
+        wasteVolume: 0,
+        wasteMass: 0,
+        resultsTable: [],
+      },
+      calculateSettings: { current: settingDefaults },
+      importedAoiLayer: null,
+      aoiLayerMode: 'draw',
+      gsgFile: null,
+    } as ScenarioDeconEditsType,
+    tempAssessedAoiLayer,
+    tempImageAnalysisLayer,
+  };
 }
 
 /**

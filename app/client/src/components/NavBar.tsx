@@ -414,9 +414,8 @@ function NavBar({ appType, height }: Props) {
   }
 
   // run calculations to update the running tally
-  const useCalcPlan =
-    appType === 'decon' ? useCalculateDeconPlan : useCalculatePlan;
-  useCalcPlan();
+  if (appType === 'sampling') useCalculatePlan();
+  useCalculateDeconPlan();
 
   const pannelRef = useRef<HTMLDivElement>(null);
 

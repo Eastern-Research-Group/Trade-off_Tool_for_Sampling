@@ -519,9 +519,10 @@ function CreateDeconPlan() {
             </Fragment>
           )}
 
-          {scenarios.length === 0 || !planSettings.name ? (
+          {scenarios.length === 0 && (
             <EditScenario addDefaultSampleLayer={true} appType="decon" />
-          ) : (
+          )}
+          {scenarios.length > 0 && planSettings.name && (
             <Fragment>
               <div css={iconButtonContainerStyles}>
                 <div css={verticalCenterTextStyles}>

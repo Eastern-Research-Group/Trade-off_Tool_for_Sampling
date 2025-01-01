@@ -39,6 +39,8 @@ import {
   updateLayerEdits,
 } from 'utils/sketchUtils';
 import { getNewName, getScenarioName } from 'utils/utils';
+// styles
+import { isDecon } from 'styles';
 
 // --- styles (SketchButton) ---
 const buttonContainerStyles = css`
@@ -1163,6 +1165,7 @@ function LocateSamples() {
 
                           // create the layer
                           const tempLayer = createSampleLayer(
+                            isDecon(),
                             newLayerName,
                             sketchLayer.parentLayer,
                           );
@@ -1390,7 +1393,9 @@ function LocateSamples() {
                               key={index}
                               layers={layers}
                               value={sampleTypeUuid}
-                              selectedScenario={selectedScenario}
+                              selectedScenario={
+                                selectedScenario as ScenarioEditsType
+                              }
                               label={
                                 edited ? `${sampleType} (edited)` : sampleType
                               }
@@ -1423,7 +1428,9 @@ function LocateSamples() {
                               value={sampleTypeUuid}
                               label={option.label}
                               layers={layers}
-                              selectedScenario={selectedScenario}
+                              selectedScenario={
+                                selectedScenario as ScenarioEditsType
+                              }
                               iconClass={
                                 shapeType === 'point'
                                   ? 'fas fa-pen-fancy'
