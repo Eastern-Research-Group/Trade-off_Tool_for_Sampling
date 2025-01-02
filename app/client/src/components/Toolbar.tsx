@@ -51,6 +51,7 @@ const toolBarHeight = '40px';
 // Builds the legend item for a layer
 function buildLegendListItem(event: any, view: __esri.MapView) {
   const item = event.item;
+  item.childrenSortable = false;
 
   // create the slider
   const sliderContainer = document.createElement('div');

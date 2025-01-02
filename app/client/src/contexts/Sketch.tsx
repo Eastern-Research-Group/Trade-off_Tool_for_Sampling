@@ -589,6 +589,17 @@ export function SketchProvider({ children }: Props) {
     setDefaultSymbols(initialDefaultSymbols);
   }
 
+  useEffect(() => {
+    window.totsEditsLayers = edits.edits.map((e) => {
+      return {
+        id: e.id,
+        layerId: e.layerId,
+        name: e.name,
+        type: e.type,
+      };
+    });
+  }, [edits]);
+
   return (
     <SketchContext.Provider
       value={{

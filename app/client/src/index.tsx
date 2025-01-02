@@ -45,6 +45,7 @@ import { totsNotAvailableMessage } from 'config/errorMessages';
 import '@reach/dialog/styles.css';
 import '@arcgis/core/assets/esri/themes/light/main.css';
 // types
+import { EditsType } from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { DefaultSymbolsType, SampleSelectType } from 'config/sampleAttributes';
 
@@ -56,6 +57,12 @@ declare global {
     logToGa: Function;
     sampleSketchVmInternalLayerId: string;
     totsAllSampleOptions: SampleSelectType[];
+    totsEditsLayers: {
+      id: number;
+      layerId: string;
+      name: string;
+      type: EditsType['edits'][number]['type'];
+    }[];
     totsDeconAttributes: any;
     totsDefaultSymbols: DefaultSymbolsType;
     totsLayers: LayerType[];
