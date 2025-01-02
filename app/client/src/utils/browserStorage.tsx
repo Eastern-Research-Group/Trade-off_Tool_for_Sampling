@@ -1287,7 +1287,7 @@ function useUserDefinedSampleAttributesStorage() {
     // Update totsSampleAttributes variable on the window object. This is a workaround
     // to an issue where the sampleAttributes state variable is not available within esri
     // event handlers.
-    (window as any).totsSampleAttributes = newSampleAttributes;
+    window.totsSampleAttributes = newSampleAttributes;
 
     setSampleAttributes(newSampleAttributes);
   }, [
@@ -1311,7 +1311,7 @@ function useUserDefinedSampleAttributesStorage() {
     // Update totsDeconAttributes variable on the window object. This is a workaround
     // to an issue where the deconAttributes state variable is not available within esri
     // event handlers.
-    (window as any).totsDeconAttributes = newDeconAttributes;
+    window.totsDeconAttributes = newDeconAttributes;
 
     setSampleAttributesDecon(newDeconAttributes);
   }, [

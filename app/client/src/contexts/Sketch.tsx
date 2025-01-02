@@ -386,14 +386,14 @@ export function SketchProvider({ children }: Props) {
   // to an issue where the layers state variable is not available within esri
   // event handlers.
   useEffect(() => {
-    (window as any).totsLayers = layers;
+    window.totsLayers = layers;
   }, [layers]);
 
   // Update totsDefaultSymbols variable on the window object. This is a workaround
   // to an issue where the defaultSymbols state variable is not available within esri
   // event handlers.
   useEffect(() => {
-    (window as any).totsDefaultSymbols = defaultSymbols;
+    window.totsDefaultSymbols = defaultSymbols;
   }, [defaultSymbols]);
 
   // Keep the allSampleOptions array up to date
@@ -420,7 +420,7 @@ export function SketchProvider({ children }: Props) {
     // Update totsAllSampleOptions variable on the window object. This is a workaround
     // to an issue where the allSampleOptions state variable is not available within esri
     // event handlers.
-    (window as any).totsAllSampleOptions = allSampleOptions;
+    window.totsAllSampleOptions = allSampleOptions;
 
     setAllSampleOptions(allSampleOptions);
   }, [userDefinedOptions, userDefinedAttributes, sampleTypes]);

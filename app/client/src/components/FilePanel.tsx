@@ -739,9 +739,7 @@ function FilePanel({ appType }: Props) {
                     innerFeatures.push({
                       geometry: feature.geometry,
                       attributes: {
-                        ...(window as any).totsSampleAttributes[
-                          localSampleType.value
-                        ],
+                        ...window.totsSampleAttributes[localSampleType.value],
                         CREATEDDATE: timestamp,
                         OBJECTID: feature.attributes.OBJECTID,
                         GLOBALID: feature.attributes.GLOBALID,

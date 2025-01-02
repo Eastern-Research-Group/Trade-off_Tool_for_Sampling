@@ -660,7 +660,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
           const originalZ = requests[i].originalValuesZ[originalZIndex];
           const poly = new Graphic({
             attributes: {
-              ...(window as any).totsSampleAttributes[typeuuid],
+              ...window.totsSampleAttributes[typeuuid],
               CREATEDDATE: timestamp,
               DECISIONUNITUUID: sketchLayer.uuid,
               DECISIONUNIT: sketchLayer.label,

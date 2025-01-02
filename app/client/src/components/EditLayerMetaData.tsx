@@ -490,7 +490,7 @@ function EditScenario({
         if (tempAssessedAoiLayer) tLayers.push(tempAssessedAoiLayer);
 
         // update layers (set parent layer)
-        (window as any).totsLayers = tLayers;
+        window.totsLayers = tLayers;
         setLayers(tLayers);
 
         // update sketchLayer (clear parent layer)

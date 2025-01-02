@@ -85,9 +85,8 @@ function MapMouseEvents({ appType, mapView, sceneView }: Props) {
 
           // get all of the graphics within the click except for those associated
           // with the sketch tools
-          const tempWindow = window as any;
-          const sketchLayerId = tempWindow.sampleSketchVmInternalLayerId;
-          const aoiSketchLayerId = tempWindow.aoiSketchVmInternalLayerId;
+          const sketchLayerId = window.sampleSketchVmInternalLayerId;
+          const aoiSketchLayerId = window.aoiSketchVmInternalLayerId;
           const popupItems: __esri.Graphic[] = [];
           const newIds: string[] = [];
           res.results.forEach((item: any) => {

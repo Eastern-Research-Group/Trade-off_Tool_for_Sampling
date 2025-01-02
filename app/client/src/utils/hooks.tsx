@@ -2816,7 +2816,7 @@ export function use3dSketch(appType: AppType) {
         };
       } else {
         attributes = {
-          ...(window as any).totsSampleAttributes[id],
+          ...window.totsSampleAttributes[id],
           DECISIONUNITUUID: sketchLayer.sketchLayer.id,
           DECISIONUNIT: sketchLayer.sketchLayer.title,
           DECISIONUNITSORT: 0,

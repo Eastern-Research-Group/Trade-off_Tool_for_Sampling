@@ -148,9 +148,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
       svm: __esri.SketchViewModel,
     ) {
       const tempSvm = svm as any;
-      const tempWindow = window as any;
-      tempWindow.sampleSketchVmInternalLayerId =
-        tempSvm._internalGraphicsLayer.id;
+      window.sampleSketchVmInternalLayerId = tempSvm._internalGraphicsLayer.id;
 
       const widget = new Sketch({
         availableCreateTools: [],
@@ -370,8 +368,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
     });
 
     const tempSvm = svm as any;
-    const tempWindow = window as any;
-    tempWindow.aoiSketchVmInternalLayerId = tempSvm._internalGraphicsLayer.id;
+    window.aoiSketchVmInternalLayerId = tempSvm._internalGraphicsLayer.id;
 
     setAoiSketchVM(svm);
   }, [defaultSymbols, mapView, aoiSketchVM, setAoiSketchVM, aoiSketchLayer]);
@@ -578,7 +575,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
             };
           } else {
             graphic.attributes = {
-              ...(window as any).totsSampleAttributes[id],
+              ...window.totsSampleAttributes[id],
               DECISIONUNITUUID: graphic.layer.id,
               DECISIONUNIT: graphic.layer.title,
               DECISIONUNITSORT: 0,

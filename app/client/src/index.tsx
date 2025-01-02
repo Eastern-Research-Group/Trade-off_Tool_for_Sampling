@@ -44,12 +44,22 @@ import { totsNotAvailableMessage } from 'config/errorMessages';
 // styles
 import '@reach/dialog/styles.css';
 import '@arcgis/core/assets/esri/themes/light/main.css';
+// types
+import { LayerType } from 'types/Layer';
+import { DefaultSymbolsType, SampleSelectType } from 'config/sampleAttributes';
 
 declare global {
   interface Window {
+    aoiSketchVmInternalLayerId: string;
     googleAnalyticsMapping: any[];
     logErrorToGa: Function;
     logToGa: Function;
+    sampleSketchVmInternalLayerId: string;
+    totsAllSampleOptions: SampleSelectType[];
+    totsDeconAttributes: any;
+    totsDefaultSymbols: DefaultSymbolsType;
+    totsLayers: LayerType[];
+    totsSampleAttributes: any;
   }
 }
 

@@ -217,7 +217,7 @@ function AdditionalSetup({ appType }: Props) {
       if (tempAssessedAoiLayer) tLayers.push(tempAssessedAoiLayer);
 
       // update layers (set parent layer)
-      (window as any).totsLayers = tLayers;
+      window.totsLayers = tLayers;
       setLayers(tLayers);
 
       if (sketchLayer) groupLayer.layers.add(sketchLayer.sketchLayer);
