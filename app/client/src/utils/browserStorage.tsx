@@ -534,7 +534,7 @@ function usePortalLayerStorage() {
       });
       map.add(layer);
 
-      if (isDecon()) {
+      if (isDecon() && portalLayer.type === 'tots') {
         addTotsLayerForTods(layer);
       }
     });
