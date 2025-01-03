@@ -10,12 +10,19 @@ import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import Polygon from '@arcgis/core/geometry/Polygon';
 import * as projection from '@arcgis/core/geometry/projection';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
+import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import SpatialReference from '@arcgis/core/geometry/SpatialReference';
 import * as webMercatorUtils from '@arcgis/core/geometry/support/webMercatorUtils';
 import { Dispatch, SetStateAction } from 'react';
 // contexts
 import { settingDefaults } from 'contexts/Calculate';
 import { SampleTypes } from 'contexts/LookupFiles';
+// utils
+import {
+  backupImagerySymbol,
+  buildingColors,
+  imageAnalysisSymbols,
+} from 'utils/hooks';
 // types
 import { DefaultSymbolsType } from 'config/sampleAttributes';
 import {
@@ -26,7 +33,7 @@ import {
   ScenarioDeconEditsType,
   ScenarioEditsType,
 } from 'types/Edits';
-import { LayerType, LayerTypeName } from 'types/Layer';
+import { LayerType } from 'types/Layer';
 import { AppType } from 'types/Navigation';
 import {
   PolygonSymbol,
@@ -358,6 +365,24 @@ export function createLayer({
     let symbol = defaultSymbols.symbols[layerType] as any;
     if (defaultSymbols.symbols.hasOwnProperty(graphic.attributes.TYPEUUID)) {
       symbol = defaultSymbols.symbols[graphic.attributes.TYPEUUID];
+    }
+    if (layerType === 'AOI Assessed') {
+      const occCls = graphic.attributes.OCC_CLS;
+      symbol = new SimpleFillSymbol({
+        color: buildingColors.hasOwnProperty(occCls)
+          ? buildingColors[occCls]
+          : buildingColors['Other'],
+        outline: {
+          color: [153, 153, 153, 64],
+          width: 0.84,
+        },
+      });
+    }
+    if (layerType === 'Image Analysis') {
+      const category = graphic.attributes.category;
+      symbol = imageAnalysisSymbols.hasOwnProperty(category)
+        ? (imageAnalysisSymbols as any)[category]
+        : backupImagerySymbol;
     }
 
     const poly = new Graphic({
@@ -1942,7 +1967,7 @@ export function updateLayerEdits({
   scenario?: ScenarioEditsType | ScenarioDeconEditsType | null;
   layer: LayerType;
   type: EditType;
-  changes?: __esri.Collection<__esri.Graphic>;
+  changes?: __esri.Collection<__esri.Graphic> | __esri.Graphic[];
   hasContaminationRan?: boolean;
 }) {
   // make a copy of the edits context variable
@@ -1996,12 +2021,14 @@ export function updateLayerEdits({
   } else {
     // handle property changes
     if (editsScenario) {
-      editsScenario.visible = layer.visible;
-      if (appType === 'sampling') editsScenario.listMode = layer.listMode;
+      if (appType === 'sampling') {
+        editsScenario.visible = layer.visible;
+        editsScenario.listMode = layer.listMode;
+      }
       if (editsScenario.status === 'published') editsScenario.status = 'edited';
     }
 
-    editsLayer.visible = layer.visible;
+    editsLayer.visible = layer.sketchLayer.visible;
     editsLayer.listMode = layer.listMode;
     editsLayer.name = layer.name;
     editsLayer.label = layer.name;
@@ -2019,8 +2046,10 @@ export function updateLayerEdits({
   editsLayer.hasContaminationRan = hasContaminationRan;
 
   if (changes) {
+    if (type === 'replace') editsLayer.adds = [];
+
     // Add new graphics
-    if (type === 'add') {
+    if (['add', 'replace'].includes(type)) {
       changes.forEach((change) => {
         const formattedChange = convertToSimpleGraphic(change);
         editsLayer.adds.push(formattedChange);

@@ -147,7 +147,7 @@ const partitionFactors = {
   'Building Roofs': 1,
 } as any;
 
-const backupImagerySymbol = new SimpleFillSymbol({
+export const backupImagerySymbol = new SimpleFillSymbol({
   color: [0, 0, 0, 0],
   outline: {
     color: [0, 0, 0, 0],
@@ -1660,8 +1660,16 @@ export function useCalculateDeconPlan() {
             aoiAssessedLayer?.sketchLayer?.type === 'graphics' &&
             planData?.graphics
           ) {
-            aoiAssessedLayer?.sketchLayer.graphics.removeAll();
-            aoiAssessedLayer?.sketchLayer.graphics.addMany(planData.graphics);
+            aoiAssessedLayer.sketchLayer.graphics.removeAll();
+            aoiAssessedLayer.sketchLayer.graphics.addMany(planData.graphics);
+
+            editsCopy = updateLayerEdits({
+              appType: 'decon',
+              edits: editsCopy,
+              layer: aoiAssessedLayer,
+              type: 'replace',
+              changes: planData.graphics,
+            });
           }
           if (
             imageAnalysisLayer?.sketchLayer?.type === 'graphics' &&
@@ -1671,9 +1679,23 @@ export function useCalculateDeconPlan() {
             imageAnalysisLayer?.sketchLayer.graphics.addMany(
               planData.imageGraphics,
             );
+
+            editsCopy = updateLayerEdits({
+              appType: 'decon',
+              edits: editsCopy,
+              layer: imageAnalysisLayer,
+              type: 'replace',
+              changes: planData.imageGraphics,
+            });
           }
           if (deconAoiLayer) {
             deconAoiLayer.sketchLayer.visible = false;
+            editsCopy = updateLayerEdits({
+              appType: 'decon',
+              edits: editsCopy,
+              layer: deconAoiLayer,
+              type: 'properties',
+            });
           }
 
           scenario.deconTechSelections = newDeconTechSelections;
@@ -2412,6 +2434,30 @@ export function useDynamicPopup(appType: AppType) {
         content: (feature: any) =>
           getSampleTemplate(feature, fieldInfos, includeControls),
         actions,
+      };
+    }
+    if (type === 'AOI Assessed') {
+      const actions = new Collection<any>();
+      if (includeControls) {
+        actions.addMany([
+          {
+            title: 'View In Table',
+            id: 'table',
+            className: 'esri-icon-table',
+          },
+        ]);
+      }
+
+      return {
+        title: '',
+        content: buildingMapPopup,
+        actions,
+      };
+    }
+    if (type === 'Image Analysis') {
+      return {
+        title: '',
+        content: imageryAnalysisMapPopup,
       };
     }
 

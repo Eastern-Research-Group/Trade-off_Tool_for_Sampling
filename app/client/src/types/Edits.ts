@@ -13,7 +13,8 @@ export type EditType =
   | 'delete'
   | 'arcgis'
   | 'properties'
-  | 'move';
+  | 'move'
+  | 'replace';
 
 export type TableType = {
   id: number; // esri layer id

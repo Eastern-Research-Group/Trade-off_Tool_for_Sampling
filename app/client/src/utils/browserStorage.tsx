@@ -211,6 +211,7 @@ function useTrainingModeStorage() {
 // Uses browser storage for holding any editable layers.
 function useEditsLayerStorage(appType: AppType) {
   const key = 'edits';
+  const { setCalculateResultsDecon } = useContext(CalculateContext);
   const { setOptions } = useContext(DialogContext);
   const {
     defaultSymbols,
@@ -251,6 +252,8 @@ function useEditsLayerStorage(appType: AppType) {
 
     const newLayers: LayerType[] = [];
     const graphicsLayers: (__esri.GraphicsLayer | __esri.GroupLayer)[] = [];
+    let calculateResults: any | null = null;
+
     edits.edits.forEach((editsLayer) => {
       // add layer edits directly
       if (editsLayer.type === 'layer') {
@@ -291,8 +294,19 @@ function useEditsLayerStorage(appType: AppType) {
         groupLayer.addMany(scenarioLayers);
 
         graphicsLayers.push(groupLayer);
+
+        calculateResults =
+          editsLayer?.deconSummaryResults?.calculateResults ?? null;
       }
     });
+
+    if (calculateResults) {
+      setCalculateResultsDecon({
+        status: 'success',
+        panelOpen: false,
+        data: calculateResults,
+      });
+    }
 
     if (newLayers.length > 0) {
       setLayers([...layers, ...newLayers]);
