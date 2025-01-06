@@ -42,6 +42,8 @@ import { PublishContext } from 'contexts/Publish';
 import {
   AoiDataType,
   JsonDownloadType,
+  NsiData,
+  PlanGraphics,
   SketchContext,
   SketchViewModelType,
 } from 'contexts/Sketch';
@@ -91,35 +93,6 @@ import { isDecon } from 'config/navigation';
 // };
 
 type GsgParam = { itemID: string };
-
-type NsiData = {
-  status: 'none' | 'fetching' | 'success' | 'failure';
-  planGraphics: PlanGraphics;
-};
-
-type PlanGraphics = {
-  [planId: string]: {
-    graphics: __esri.Graphic[];
-    imageGraphics: __esri.Graphic[];
-    aoiArea: number;
-    buildingFootprint: number;
-    summary: {
-      totalAoiSqM: number;
-      totalBuildingFootprintSqM: number;
-      totalBuildingFloorsSqM: number;
-      totalBuildingSqM: number;
-      totalBuildingExtWallsSqM: number;
-      totalBuildingIntWallsSqM: number;
-      totalBuildingRoofSqM: number;
-    };
-    aoiPercentages: {
-      numAois: number;
-      asphalt: number;
-      concrete: number;
-      soil: number;
-    };
-  };
-};
 
 let view: __esri.MapView | __esri.SceneView | null = null;
 
@@ -1241,6 +1214,7 @@ export function useCalculateDeconPlan() {
     gsgFiles,
     layers,
     mapView,
+    nsiData,
     resultsOpen,
     sampleAttributesDecon,
     sceneView,
@@ -1249,6 +1223,7 @@ export function useCalculateDeconPlan() {
     setEdits,
     setEfficacyResults,
     setJsonDownload,
+    setNsiData,
   } = useContext(SketchContext);
   const { calculateResultsDecon, contaminationMap, setCalculateResultsDecon } =
     useContext(CalculateContext);
@@ -1302,11 +1277,6 @@ export function useCalculateDeconPlan() {
     ) as __esri.GraphicsLayer;
     if (contamMapUpdated) contamMapUpdated.removeAll();
   }, [aoiData, setCalculateResultsDecon, setEfficacyResults]);
-
-  const [nsiData, setNsiData] = useState<NsiData>({
-    status: 'none',
-    planGraphics: {},
-  });
 
   // fetch building data for AOI
   useEffect(() => {

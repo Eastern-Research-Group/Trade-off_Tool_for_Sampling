@@ -27,7 +27,7 @@ import { DialogContext, AlertDialogOptions } from 'contexts/Dialog';
 import { LookupFilesContext } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext } from 'contexts/Publish';
-import { SketchContext } from 'contexts/Sketch';
+import { NsiData, PlanGraphics, SketchContext } from 'contexts/Sketch';
 // types
 import {
   EditsType,
@@ -216,12 +216,13 @@ function useEditsLayerStorage(appType: AppType) {
   const {
     defaultSymbols,
     edits,
-    setEdits,
-    layersInitialized,
-    setLayersInitialized,
     layers,
-    setLayers,
+    layersInitialized,
     map,
+    setEdits,
+    setLayers,
+    setLayersInitialized,
+    setNsiData,
     symbolsInitialized,
   } = useContext(SketchContext);
   const getPopupTemplate = useDynamicPopup(appType);
@@ -253,6 +254,7 @@ function useEditsLayerStorage(appType: AppType) {
     const newLayers: LayerType[] = [];
     const graphicsLayers: (__esri.GraphicsLayer | __esri.GroupLayer)[] = [];
     let calculateResults: any | null = null;
+    const newNsiPlanGraphics: PlanGraphics = {};
 
     edits.edits.forEach((editsLayer) => {
       // add layer edits directly
@@ -279,19 +281,36 @@ function useEditsLayerStorage(appType: AppType) {
         });
 
         // create the layers and add them to the group layer
+        const buildingGraphics: __esri.Graphic[] = [];
+        const imageGraphics: __esri.Graphic[] = [];
         const scenarioLayers: __esri.GraphicsLayer[] = [];
         editsLayer.layers.forEach((layer) => {
-          scenarioLayers.push(
-            ...createLayer({
-              defaultSymbols,
-              editsLayer: layer,
-              getPopupTemplate,
-              newLayers,
-              parentLayer: groupLayer,
-            }),
-          );
+          const layers = createLayer({
+            defaultSymbols,
+            editsLayer: layer,
+            getPopupTemplate,
+            newLayers,
+            parentLayer: groupLayer,
+          });
+          scenarioLayers.push(...layers);
+
+          if (layer.layerType === 'AOI Assessed')
+            buildingGraphics.push(...layers[0].graphics);
+          if (layer.layerType === 'Image Analysis')
+            imageGraphics.push(...layers[0].graphics);
         });
         groupLayer.addMany(scenarioLayers);
+
+        if (editsLayer.type === 'scenario-decon') {
+          newNsiPlanGraphics[editsLayer.layerId] = {
+            aoiArea: editsLayer.aoiSummary.area,
+            aoiPercentages: editsLayer.deconSummaryResults.aoiPercentages,
+            buildingFootprint: editsLayer.aoiSummary.buildingFootprint,
+            graphics: buildingGraphics,
+            imageGraphics,
+            summary: editsLayer.deconSummaryResults.summary,
+          };
+        }
 
         graphicsLayers.push(groupLayer);
 
@@ -299,6 +318,13 @@ function useEditsLayerStorage(appType: AppType) {
           editsLayer?.deconSummaryResults?.calculateResults ?? null;
       }
     });
+
+    if (Object.keys(newNsiPlanGraphics).length > 0) {
+      setNsiData({
+        status: 'success',
+        planGraphics: newNsiPlanGraphics,
+      });
+    }
 
     if (calculateResults) {
       setCalculateResultsDecon({
@@ -774,8 +800,9 @@ function useSamplesLayerStorage() {
     edits,
     layers,
     selectedScenario,
-    setSelectedScenario,
     sketchLayer,
+    setJsonDownload,
+    setSelectedScenario,
     setSketchLayer,
   } = useContext(SketchContext);
 
@@ -795,10 +822,16 @@ function useSamplesLayerStorage() {
         ['scenario', 'scenario-decon'].includes(item.type) &&
         item.layerId === scenarioId,
     );
-    if (scenario)
+    if (scenario) {
       setSelectedScenario(
         scenario as ScenarioEditsType | ScenarioDeconEditsType,
       );
+      if (scenario.type === 'scenario-decon') {
+        setJsonDownload(
+          scenario.deconSummaryResults?.calculateResults?.resultsTable,
+        );
+      }
+    }
 
     // then set the layer
     const layerId = readFromStorage(key);

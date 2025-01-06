@@ -39,6 +39,7 @@ import {
   generalError,
   noContaminationGraphicsMessage,
   noContaminationMapMessage,
+  noFeaturesMessage,
   noSampleLayerMessage,
   noSamplesMessage,
   screenshotFailureMessage,
@@ -1019,7 +1020,8 @@ type DownloadStatus =
   | 'success'
   | 'screenshot-failure'
   | 'base64-failure'
-  | 'excel-failure';
+  | 'excel-failure'
+  | 'no-features';
 
 type CalculateResultsPopupProps = {
   isOpen: boolean;
@@ -2062,6 +2064,7 @@ function CalculateResultsPopup({
         {downloadStatus === 'screenshot-failure' && screenshotFailureMessage}
         {downloadStatus === 'base64-failure' && base64FailureMessage}
         {downloadStatus === 'excel-failure' && excelFailureMessage}
+        {downloadStatus === 'no-features' && noFeaturesMessage}
         {downloadStatus === 'success' && downloadSuccessMessage}
 
         <div css={buttonContainerStyles}>
@@ -2097,6 +2100,11 @@ function CalculateResultsPopup({
                     return g;
                   })
                   .toArray();
+
+                if (graphics.length === 0) {
+                  setDownloadStatus('no-features');
+                  return;
+                }
 
                 const contamMapSet = new FeatureSet({
                   displayFieldName: '',

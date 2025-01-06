@@ -68,6 +68,35 @@ export type JsonDownloadType = {
   aboveDetectionLimit: boolean;
 };
 
+export type NsiData = {
+  status: 'none' | 'fetching' | 'success' | 'failure';
+  planGraphics: PlanGraphics;
+};
+
+export type PlanGraphics = {
+  [planId: string]: {
+    graphics: __esri.Graphic[];
+    imageGraphics: __esri.Graphic[];
+    aoiArea: number;
+    buildingFootprint: number;
+    summary: {
+      totalAoiSqM: number;
+      totalBuildingFootprintSqM: number;
+      totalBuildingFloorsSqM: number;
+      totalBuildingSqM: number;
+      totalBuildingExtWallsSqM: number;
+      totalBuildingIntWallsSqM: number;
+      totalBuildingRoofSqM: number;
+    };
+    aoiPercentages: {
+      numAois: number;
+      asphalt: number;
+      concrete: number;
+      soil: number;
+    };
+  };
+};
+
 export type PlanSettings = {
   name: string;
   description: string;
@@ -104,12 +133,14 @@ type SketchType = {
 
   aoiData: AoiDataType;
   setAoiData: Dispatch<SetStateAction<AoiDataType>>;
-  jsonDownload: JsonDownloadType[];
-  setJsonDownload: Dispatch<SetStateAction<JsonDownloadType[]>>;
   defaultDeconSelections: any[];
   setDefaultDeconSelections: Dispatch<SetStateAction<any[]>>;
   deconSelections: any[];
   setDeconSelections: Dispatch<SetStateAction<any[]>>;
+  jsonDownload: JsonDownloadType[];
+  setJsonDownload: Dispatch<SetStateAction<JsonDownloadType[]>>;
+  nsiData: NsiData;
+  setNsiData: Dispatch<SetStateAction<NsiData>>;
   planSettings: PlanSettings;
   setPlanSettings: Dispatch<SetStateAction<PlanSettings>>;
 
@@ -198,12 +229,14 @@ export const SketchContext = createContext<SketchType>({
 
   aoiData: { count: 0, graphics: null },
   setAoiData: () => {},
-  jsonDownload: [],
-  setJsonDownload: () => {},
   defaultDeconSelections: [],
   setDefaultDeconSelections: () => {},
   deconSelections: [],
   setDeconSelections: () => {},
+  jsonDownload: [],
+  setJsonDownload: () => {},
+  nsiData: { status: 'none', planGraphics: {} },
+  setNsiData: () => {},
   planSettings: { name: '', description: '' },
   setPlanSettings: () => {},
 
@@ -319,11 +352,15 @@ export function SketchProvider({ children }: Props) {
     count: 0,
     graphics: null,
   });
-  const [jsonDownload, setJsonDownload] = useState<JsonDownloadType[]>([]);
   const [defaultDeconSelections, setDefaultDeconSelections] = useState<any[]>(
     [],
   );
   const [deconSelections, setDeconSelections] = useState<any[]>([]);
+  const [jsonDownload, setJsonDownload] = useState<JsonDownloadType[]>([]);
+  const [nsiData, setNsiData] = useState<NsiData>({
+    status: 'none',
+    planGraphics: {},
+  });
   const [planSettings, setPlanSettings] = useState<PlanSettings>({
     name: '',
     description: '',
@@ -616,12 +653,14 @@ export function SketchProvider({ children }: Props) {
 
         aoiData,
         setAoiData,
-        jsonDownload,
-        setJsonDownload,
         defaultDeconSelections,
         setDefaultDeconSelections,
         deconSelections,
         setDeconSelections,
+        jsonDownload,
+        setJsonDownload,
+        nsiData,
+        setNsiData,
         planSettings,
         setPlanSettings,
 

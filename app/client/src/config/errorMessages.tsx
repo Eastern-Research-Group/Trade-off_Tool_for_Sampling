@@ -278,7 +278,7 @@ export const noContaminationGraphicsMessage = (
   <MessageBox
     severity="error"
     title="No Features In Contamination Map"
-    message="There are no features in the contamination map to run calculations on"
+    message="There are no features in the contamination map to run calculations on."
   />
 );
 
@@ -334,6 +334,14 @@ export const downloadSuccessMessage = (
     severity="info"
     title="Success"
     message="The file was successfully downloaded."
+  />
+);
+
+export const noFeaturesMessage = (
+  <MessageBox
+    severity="warning"
+    title="No Features to Download"
+    message="There are no contamination map features to download."
   />
 );
 

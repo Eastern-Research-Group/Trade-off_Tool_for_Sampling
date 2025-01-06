@@ -2028,7 +2028,8 @@ export function updateLayerEdits({
       if (editsScenario.status === 'published') editsScenario.status = 'edited';
     }
 
-    editsLayer.visible = layer.sketchLayer.visible;
+    if (appType === 'sampling') editsLayer.visible = layer.visible;
+    else editsLayer.visible = layer.sketchLayer.visible;
     editsLayer.listMode = layer.listMode;
     editsLayer.name = layer.name;
     editsLayer.label = layer.name;
