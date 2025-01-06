@@ -40,9 +40,9 @@ import { useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext } from 'contexts/Publish';
 import {
+  AoiCharacterizationData,
   AoiDataType,
   JsonDownloadType,
-  NsiData,
   PlanGraphics,
   SketchContext,
   SketchViewModelType,
@@ -198,7 +198,7 @@ type PlanBuildingCfu = { [planId: string]: number };
 
 function processScenario(
   scenario: ScenarioDeconEditsType | string,
-  nsiData: NsiData,
+  aoiCharacterizationData: AoiCharacterizationData,
   contaminationPercentages: ContaminationPercentages,
   planBuildingCfu: PlanBuildingCfu,
   defaultDeconSelections: any[],
@@ -207,7 +207,7 @@ function processScenario(
   const scenarioId = isScenario ? scenario.layerId : scenario;
   const deconTechSelections = isScenario ? scenario.deconTechSelections : [];
 
-  const planGraphics = nsiData.planGraphics[scenarioId];
+  const planGraphics = aoiCharacterizationData.planGraphics[scenarioId];
   if (!planGraphics) return;
 
   const {
@@ -1207,6 +1207,7 @@ export function useCalculatePlan() {
 // change.
 export function useCalculateDeconPlan() {
   const {
+    aoiCharacterizationData,
     aoiData,
     defaultDeconSelections,
     displayDimensions,
@@ -1214,16 +1215,15 @@ export function useCalculateDeconPlan() {
     gsgFiles,
     layers,
     mapView,
-    nsiData,
     resultsOpen,
     sampleAttributesDecon,
     sceneView,
     sceneViewForArea,
     // selectedScenario,
+    setAoiCharacterizationData,
     setEdits,
     setEfficacyResults,
     setJsonDownload,
-    setNsiData,
   } = useContext(SketchContext);
   const { calculateResultsDecon, contaminationMap, setCalculateResultsDecon } =
     useContext(CalculateContext);
@@ -1267,7 +1267,7 @@ export function useCalculateDeconPlan() {
         data: null,
       };
     });
-    setNsiData({
+    setAoiCharacterizationData({
       status: 'none',
       planGraphics: {},
     });
@@ -1282,9 +1282,9 @@ export function useCalculateDeconPlan() {
   useEffect(() => {
     if (!hasGraphics(aoiData)) return;
     if (calculateResultsDecon.status !== 'fetching') return;
-    if (nsiData.status !== 'none') return;
+    if (aoiCharacterizationData.status !== 'none') return;
 
-    setNsiData({
+    setAoiCharacterizationData({
       status: 'fetching',
       planGraphics: {},
     });
@@ -1374,13 +1374,13 @@ export function useCalculateDeconPlan() {
           );
         }
 
-        setNsiData({
+        setAoiCharacterizationData({
           status: 'success',
           planGraphics,
         });
       } catch (ex: any) {
         console.error(ex);
-        setNsiData({
+        setAoiCharacterizationData({
           status: 'failure',
           planGraphics: {},
         });
@@ -1398,12 +1398,12 @@ export function useCalculateDeconPlan() {
 
     fetchAoiData();
   }, [
+    aoiCharacterizationData,
     aoiData,
     calculateResultsDecon,
     contaminationMap,
     gsgFiles,
     layers,
-    nsiData,
     sceneViewForArea,
     services,
     setCalculateResultsDecon,
@@ -1422,7 +1422,7 @@ export function useCalculateDeconPlan() {
   useEffect(() => {
     if (
       ['none', 'success'].includes(calculateResultsDecon.status) ||
-      nsiData.status !== 'success'
+      aoiCharacterizationData.status !== 'success'
     )
       return;
 
@@ -1432,7 +1432,7 @@ export function useCalculateDeconPlan() {
       ) as __esri.GraphicsLayer;
       if (contamMapUpdated) contamMapUpdated.removeAll();
 
-      console.log('nsiData: ', nsiData);
+      console.log('aoiCharacterizationData: ', aoiCharacterizationData);
 
       let editsCopy: EditsType = edits;
       const scenarios = editsCopy.edits.filter(
@@ -1440,9 +1440,11 @@ export function useCalculateDeconPlan() {
       ) as ScenarioDeconEditsType[];
 
       const graphics: __esri.Graphic[] = [];
-      Object.values(nsiData.planGraphics).forEach((planGraphics) => {
-        graphics.push(...planGraphics.graphics);
-      });
+      Object.values(aoiCharacterizationData.planGraphics).forEach(
+        (planGraphics) => {
+          graphics.push(...planGraphics.graphics);
+        },
+      );
 
       const contaminatedAoiAreas: ContaminatedAoiAreas = {};
       const contaminationPercentages: ContaminationPercentages = {};
@@ -1452,8 +1454,8 @@ export function useCalculateDeconPlan() {
         contaminationMap?.sketchLayer?.type === 'graphics'
       ) {
         // loop through structures
-        Object.keys(nsiData.planGraphics).forEach((planId) => {
-          const planGraphics = nsiData.planGraphics[planId];
+        Object.keys(aoiCharacterizationData.planGraphics).forEach((planId) => {
+          const planGraphics = aoiCharacterizationData.planGraphics[planId];
           planGraphics.graphics.forEach((graphic) => {
             // loop through contamination map features
             (
@@ -1581,7 +1583,8 @@ export function useCalculateDeconPlan() {
         }
 
         Object.keys(contaminatedAoiAreas).forEach((planId: any) => {
-          const totalAoiSqM = nsiData.planGraphics[planId].summary.totalAoiSqM;
+          const totalAoiSqM =
+            aoiCharacterizationData.planGraphics[planId].summary.totalAoiSqM;
           Object.keys(contaminatedAoiAreas[planId]).forEach((key: any) => {
             if (!contaminationPercentages.hasOwnProperty(planId)) {
               contaminationPercentages[planId] = {};
@@ -1596,7 +1599,7 @@ export function useCalculateDeconPlan() {
       scenarios.forEach((scenario) => {
         const newDeconTechSelections = processScenario(
           scenario,
-          nsiData,
+          aoiCharacterizationData,
           contaminationPercentages,
           planBuildingCfu,
           defaultDeconSelections,
@@ -1625,7 +1628,8 @@ export function useCalculateDeconPlan() {
           );
 
           // tie graphics and imageryGraphics to a scenario
-          const planData = nsiData.planGraphics[scenario.layerId];
+          const planData =
+            aoiCharacterizationData.planGraphics[scenario.layerId];
           if (
             aoiAssessedLayer?.sketchLayer?.type === 'graphics' &&
             planData?.graphics
@@ -1677,13 +1681,13 @@ export function useCalculateDeconPlan() {
 
     performAreaCalculations();
   }, [
+    aoiCharacterizationData,
     aoiData,
     calculateResultsDecon,
     contaminationMap,
     defaultDeconSelections,
     edits,
     layers,
-    nsiData,
     sampleAttributesDecon,
     sceneViewForArea,
     setEdits,
@@ -1694,7 +1698,7 @@ export function useCalculateDeconPlan() {
   useEffect(() => {
     if (
       ['none', 'success'].includes(calculateResultsDecon.status) ||
-      nsiData.status !== 'success'
+      aoiCharacterizationData.status !== 'success'
     )
       return;
 
@@ -1891,9 +1895,11 @@ export function useCalculateDeconPlan() {
 
     scenarios.forEach((scenario) => {
       scenario.deconSummaryResults = {
-        summary: nsiData.planGraphics?.[scenario.layerId]?.summary,
+        summary:
+          aoiCharacterizationData.planGraphics?.[scenario.layerId]?.summary,
         aoiPercentages:
-          nsiData.planGraphics?.[scenario.layerId]?.aoiPercentages,
+          aoiCharacterizationData.planGraphics?.[scenario.layerId]
+            ?.aoiPercentages,
         calculateResults: resultObject,
       };
     });
@@ -1911,13 +1917,13 @@ export function useCalculateDeconPlan() {
       };
     });
   }, [
+    aoiCharacterizationData,
     aoiData,
     calculateResultsDecon,
     contaminationMap,
     defaultDeconSelections,
     edits,
     layers,
-    nsiData,
     sampleAttributesDecon,
     // selectedScenario,
     setCalculateResultsDecon,
@@ -1947,7 +1953,7 @@ export function useCalculateDeconPlan() {
       let newContamGraphics: __esri.Graphic[] = [];
       for (const scenario of scenarios) {
         // tie graphics and imageryGraphics to a scenario
-        const planData = nsiData.planGraphics[scenario.layerId];
+        const planData = aoiCharacterizationData.planGraphics[scenario.layerId];
 
         const deconAoi = scenario?.layers.find(
           (l: any) => l.layerType === 'Decon Mask',
@@ -2217,6 +2223,7 @@ export function useCalculateDeconPlan() {
 
     performCalculations();
   }, [
+    aoiCharacterizationData,
     aoiData,
     aoiContamIntersect,
     calculateResultsDecon,
@@ -2224,7 +2231,6 @@ export function useCalculateDeconPlan() {
     defaultDeconSelections,
     edits,
     layers,
-    nsiData,
     resultsOpen,
     sampleAttributesDecon,
     sceneViewForArea,

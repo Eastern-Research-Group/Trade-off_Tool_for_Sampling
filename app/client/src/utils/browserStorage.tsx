@@ -27,7 +27,11 @@ import { DialogContext, AlertDialogOptions } from 'contexts/Dialog';
 import { LookupFilesContext } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext } from 'contexts/Publish';
-import { NsiData, PlanGraphics, SketchContext } from 'contexts/Sketch';
+import {
+  AoiCharacterizationData,
+  PlanGraphics,
+  SketchContext,
+} from 'contexts/Sketch';
 // types
 import {
   EditsType,
@@ -219,10 +223,10 @@ function useEditsLayerStorage(appType: AppType) {
     layers,
     layersInitialized,
     map,
+    setAoiCharacterizationData,
     setEdits,
     setLayers,
     setLayersInitialized,
-    setNsiData,
     symbolsInitialized,
   } = useContext(SketchContext);
   const getPopupTemplate = useDynamicPopup(appType);
@@ -254,7 +258,7 @@ function useEditsLayerStorage(appType: AppType) {
     const newLayers: LayerType[] = [];
     const graphicsLayers: (__esri.GraphicsLayer | __esri.GroupLayer)[] = [];
     let calculateResults: any | null = null;
-    const newNsiPlanGraphics: PlanGraphics = {};
+    const newAoiCharacterizationGraphics: PlanGraphics = {};
 
     edits.edits.forEach((editsLayer) => {
       // add layer edits directly
@@ -302,7 +306,7 @@ function useEditsLayerStorage(appType: AppType) {
         groupLayer.addMany(scenarioLayers);
 
         if (editsLayer.type === 'scenario-decon') {
-          newNsiPlanGraphics[editsLayer.layerId] = {
+          newAoiCharacterizationGraphics[editsLayer.layerId] = {
             aoiArea: editsLayer.aoiSummary.area,
             aoiPercentages: editsLayer.deconSummaryResults.aoiPercentages,
             buildingFootprint: editsLayer.aoiSummary.buildingFootprint,
@@ -319,10 +323,10 @@ function useEditsLayerStorage(appType: AppType) {
       }
     });
 
-    if (Object.keys(newNsiPlanGraphics).length > 0) {
-      setNsiData({
+    if (Object.keys(newAoiCharacterizationGraphics).length > 0) {
+      setAoiCharacterizationData({
         status: 'success',
-        planGraphics: newNsiPlanGraphics,
+        planGraphics: newAoiCharacterizationGraphics,
       });
     }
 

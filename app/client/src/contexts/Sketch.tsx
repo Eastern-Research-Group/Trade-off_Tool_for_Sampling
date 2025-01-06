@@ -68,7 +68,7 @@ export type JsonDownloadType = {
   aboveDetectionLimit: boolean;
 };
 
-export type NsiData = {
+export type AoiCharacterizationData = {
   status: 'none' | 'fetching' | 'success' | 'failure';
   planGraphics: PlanGraphics;
 };
@@ -131,6 +131,8 @@ type SketchType = {
   edits: EditsType;
   setEdits: Dispatch<SetStateAction<EditsType>>;
 
+  aoiCharacterizationData: AoiCharacterizationData;
+  setAoiCharacterizationData: Dispatch<SetStateAction<AoiCharacterizationData>>;
   aoiData: AoiDataType;
   setAoiData: Dispatch<SetStateAction<AoiDataType>>;
   defaultDeconSelections: any[];
@@ -139,8 +141,6 @@ type SketchType = {
   setDeconSelections: Dispatch<SetStateAction<any[]>>;
   jsonDownload: JsonDownloadType[];
   setJsonDownload: Dispatch<SetStateAction<JsonDownloadType[]>>;
-  nsiData: NsiData;
-  setNsiData: Dispatch<SetStateAction<NsiData>>;
   planSettings: PlanSettings;
   setPlanSettings: Dispatch<SetStateAction<PlanSettings>>;
 
@@ -227,6 +227,8 @@ export const SketchContext = createContext<SketchType>({
   edits: { count: 0, edits: [] },
   setEdits: () => {},
 
+  aoiCharacterizationData: { status: 'none', planGraphics: {} },
+  setAoiCharacterizationData: () => {},
   aoiData: { count: 0, graphics: null },
   setAoiData: () => {},
   defaultDeconSelections: [],
@@ -235,8 +237,6 @@ export const SketchContext = createContext<SketchType>({
   setDeconSelections: () => {},
   jsonDownload: [],
   setJsonDownload: () => {},
-  nsiData: { status: 'none', planGraphics: {} },
-  setNsiData: () => {},
   planSettings: { name: '', description: '' },
   setPlanSettings: () => {},
 
@@ -348,6 +348,11 @@ export function SketchProvider({ children }: Props) {
   );
   const [edits, setEdits] = useState<EditsType>({ count: 0, edits: [] });
 
+  const [aoiCharacterizationData, setAoiCharacterizationData] =
+    useState<AoiCharacterizationData>({
+      status: 'none',
+      planGraphics: {},
+    });
   const [aoiData, setAoiData] = useState<AoiDataType>({
     count: 0,
     graphics: null,
@@ -357,10 +362,6 @@ export function SketchProvider({ children }: Props) {
   );
   const [deconSelections, setDeconSelections] = useState<any[]>([]);
   const [jsonDownload, setJsonDownload] = useState<JsonDownloadType[]>([]);
-  const [nsiData, setNsiData] = useState<NsiData>({
-    status: 'none',
-    planGraphics: {},
-  });
   const [planSettings, setPlanSettings] = useState<PlanSettings>({
     name: '',
     description: '',
@@ -651,6 +652,8 @@ export function SketchProvider({ children }: Props) {
         edits,
         setEdits,
 
+        aoiCharacterizationData,
+        setAoiCharacterizationData,
         aoiData,
         setAoiData,
         defaultDeconSelections,
@@ -659,8 +662,6 @@ export function SketchProvider({ children }: Props) {
         setDeconSelections,
         jsonDownload,
         setJsonDownload,
-        nsiData,
-        setNsiData,
         planSettings,
         setPlanSettings,
 
