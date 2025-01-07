@@ -91,7 +91,11 @@ function MapMouseEvents({ appType, mapView, sceneView }: Props) {
           const newIds: string[] = [];
           res.results.forEach((item: any) => {
             const layerId = item.graphic?.layer?.id;
-            if (layerId === sketchLayerId || layerId === aoiSketchLayerId)
+            if (
+              !layerId ||
+              layerId === sketchLayerId ||
+              layerId === aoiSketchLayerId
+            )
               return;
 
             popupItems.push(item.graphic);
@@ -108,13 +112,14 @@ function MapMouseEvents({ appType, mapView, sceneView }: Props) {
           updateGraphics.forEach((g) => {
             const popup = popupFeatures?.find(
               (f) =>
+                f.layer &&
                 f.attributes.PERMANENT_IDENTIFIER ===
-                g.attributes.PERMANENT_IDENTIFIER,
+                  g.attributes.PERMANENT_IDENTIFIER,
             );
 
             if (!popup) popupFeatures.push(g);
           });
-          popupFeatures.forEach((feature: any) => {
+          popupFeatures?.forEach((feature: any) => {
             const permId = feature.attributes?.PERMANENT_IDENTIFIER;
             if (permId) {
               curIds.push(permId);
@@ -182,10 +187,18 @@ function MapMouseEvents({ appType, mapView, sceneView }: Props) {
             const id = button.id;
 
             // determine whether the sketch button draws points or polygons
-            const shapeType = id.includes('-sampling-mask')
-              ? 'polygon'
-              : sampleAttributesG[id as any].ShapeType;
+            const shapeType =
+              id.includes('-sampling-mask') || id.includes('decon-mask')
+                ? 'polygon'
+                : sampleAttributesG[id as any].ShapeType;
             startSketch(shapeType);
+          }
+        }
+        if (appType === 'decon') {
+          const button = document.querySelector('.sketch-button-selected');
+          if (button?.id && sketchVMG) {
+            // determine whether the sketch button draws points or polygons
+            startSketch('polygon');
           }
         }
       }

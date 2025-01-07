@@ -120,7 +120,6 @@ function AdditionalSetup({ appType }: Props) {
     setLayers,
     map,
     selectedScenario,
-    sketchLayer,
     aoiSketchLayer,
     setAoiSketchLayer,
     sketchVM,
@@ -146,6 +145,36 @@ function AdditionalSetup({ appType }: Props) {
     // set the active sketch layer
     setAoiSketchLayer(newAoiSketchLayer);
   }, [map, aoiSketchLayer, setAoiSketchLayer, layersInitialized, setLayers]);
+
+  const [lastAoiSketchLayer, setLastAoiSketchLayer] =
+    useState<__esri.GraphicsLayer | null>(null);
+  useEffect(() => {
+    if (!aoiSketchVM) return;
+
+    const scenario: ScenarioDeconEditsType | undefined = edits.edits.find(
+      (item) => item.type === 'scenario-decon',
+    );
+    if (!scenario) return;
+
+    const aoiEditsLayer = scenario.layers.find(
+      (l) => l.layerType === 'Decon Mask',
+    );
+    const sketchLayer = layers.find(
+      (l) =>
+        l.layerType === 'Decon Mask' && l.layerId === aoiEditsLayer?.layerId,
+    );
+    if (
+      sketchLayer &&
+      sketchLayer?.sketchLayer?.id !== aoiSketchVM?.layer?.id
+    ) {
+      setLastAoiSketchLayer(aoiSketchVM.layer);
+      aoiSketchVM.layer = sketchLayer.sketchLayer as __esri.GraphicsLayer;
+    }
+
+    return function cleanup() {
+      if (lastAoiSketchLayer) aoiSketchVM.layer = lastAoiSketchLayer;
+    };
+  }, [aoiSketchVM, edits, lastAoiSketchLayer]);
 
   // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
   // dropdown this will create an AOI layer. This also sets the sketchVM to use the
@@ -248,7 +277,7 @@ function AdditionalSetup({ appType }: Props) {
     if (sketchVM) sketchVM[displayDimensions].cancel();
 
     // make the style of the button active
-    const wasSet = activateSketchButton('sampling-mask');
+    const wasSet = activateSketchButton('decon-mask');
 
     if (wasSet) {
       // let the user draw/place the shape
@@ -378,8 +407,8 @@ function AdditionalSetup({ appType }: Props) {
                     if (!selectedScenario) return;
                     setGenerateRandomMode('draw');
 
-                    const maskLayers = layers.filter((layer) =>
-                      ['Sampling Mask', 'Decon Mask'].includes(layer.layerType),
+                    const maskLayers = layers.filter(
+                      (layer) => layer.layerType === 'Decon Mask',
                     );
                     setAoiSketchLayer(maskLayers[0]);
 
@@ -413,8 +442,8 @@ function AdditionalSetup({ appType }: Props) {
 
               {generateRandomMode === 'draw' && (
                 <button
-                  id="sampling-mask"
-                  title="Draw Sampling Mask"
+                  id="decon-mask"
+                  title="Draw Decon Mask"
                   className="sketch-button"
                   disabled={calculateResultsDecon.status === 'fetching'}
                   onClick={() => {

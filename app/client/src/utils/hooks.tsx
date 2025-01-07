@@ -2295,12 +2295,35 @@ export function useDynamicPopup(appType: AppType) {
     includeContaminationFields: boolean = false,
     includeControls: boolean = true,
   ) {
-    if (['Decon Mask', 'Sampling Mask'].includes(type)) {
+    if (type === 'Sampling Mask') {
       const actions = new Collection<any>();
       if (includeControls) {
         actions.addMany([
           {
-            title: isDecon() ? 'Delete Decon Technology' : 'Delete Sample',
+            title: 'Delete Sample',
+            id: 'delete',
+            className: 'esri-icon-trash',
+          },
+        ]);
+      }
+
+      return {
+        title: '',
+        content: [
+          {
+            type: 'fields',
+            fieldInfos: [{ fieldName: 'TYPE', label: 'Type' }],
+          },
+        ],
+        actions,
+      };
+    }
+    if (type === 'Decon Mask') {
+      const actions = new Collection<any>();
+      if (includeControls) {
+        actions.addMany([
+          {
+            title: 'Delete Decon Technology',
             id: 'delete',
             className: 'esri-icon-trash',
           },
@@ -2815,7 +2838,7 @@ export function use3dSketch(appType: AppType) {
       // get the button and it's id
       const button = document.querySelector('.sketch-button-selected');
       const id = button && button.id;
-      if (id?.includes('-sampling-mask')) {
+      if (id?.includes('-sampling-mask') || id?.includes('decon-mask')) {
         deactivateButtons();
       }
 
@@ -2827,6 +2850,17 @@ export function use3dSketch(appType: AppType) {
       let layerType: LayerTypeName = 'Samples';
       if (id.includes('-sampling-mask')) {
         layerType = 'Sampling Mask';
+        attributes = {
+          DECISIONUNITUUID: sketchLayer.sketchLayer.id,
+          DECISIONUNIT: sketchLayer.sketchLayer.title,
+          DECISIONUNITSORT: 0,
+          PERMANENT_IDENTIFIER: uuid,
+          GLOBALID: uuid,
+          OBJECTID: -1,
+          TYPE: layerType,
+        };
+      } else if (id.includes('decon-mask')) {
+        layerType = 'Decon Mask';
         attributes = {
           DECISIONUNITUUID: sketchLayer.sketchLayer.id,
           DECISIONUNIT: sketchLayer.sketchLayer.title,
@@ -2870,7 +2904,7 @@ export function use3dSketch(appType: AppType) {
         await createBuffer(graphic);
       }
 
-      if (!id.includes('-sampling-mask')) {
+      if (!id.includes('-sampling-mask') && !id.includes('decon-mask')) {
         // find the points version of the layer
         const layerId = graphic.layer.id;
         const pointLayer = (graphic.layer as any).parent.layers.find(
