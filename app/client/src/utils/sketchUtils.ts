@@ -6,14 +6,23 @@ import Collection from '@arcgis/core/core/Collection';
 import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import Graphic from '@arcgis/core/Graphic';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
+import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import Polygon from '@arcgis/core/geometry/Polygon';
 import * as projection from '@arcgis/core/geometry/projection';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
+import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import SpatialReference from '@arcgis/core/geometry/SpatialReference';
 import * as webMercatorUtils from '@arcgis/core/geometry/support/webMercatorUtils';
 import { Dispatch, SetStateAction } from 'react';
 // contexts
+import { settingDefaults } from 'contexts/Calculate';
 import { SampleTypes } from 'contexts/LookupFiles';
+// utils
+import {
+  backupImagerySymbol,
+  buildingColors,
+  imageAnalysisSymbols,
+} from 'utils/hooks';
 // types
 import { DefaultSymbolsType } from 'config/sampleAttributes';
 import {
@@ -21,12 +30,11 @@ import {
   EditType,
   FeatureEditsType,
   LayerEditsType,
+  ScenarioDeconEditsType,
   ScenarioEditsType,
 } from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { AppType } from 'types/Navigation';
-// config
-import { isDecon } from 'config/navigation';
 import {
   PolygonSymbol,
   SampleIssues,
@@ -358,6 +366,24 @@ export function createLayer({
     if (defaultSymbols.symbols.hasOwnProperty(graphic.attributes.TYPEUUID)) {
       symbol = defaultSymbols.symbols[graphic.attributes.TYPEUUID];
     }
+    if (layerType === 'AOI Assessed') {
+      const occCls = graphic.attributes.OCC_CLS;
+      symbol = new SimpleFillSymbol({
+        color: buildingColors.hasOwnProperty(occCls)
+          ? buildingColors[occCls]
+          : buildingColors['Other'],
+        outline: {
+          color: [153, 153, 153, 64],
+          width: 0.84,
+        },
+      });
+    }
+    if (layerType === 'Image Analysis') {
+      const category = graphic.attributes.category;
+      symbol = imageAnalysisSymbols.hasOwnProperty(category)
+        ? (imageAnalysisSymbols as any)[category]
+        : backupImagerySymbol;
+    }
 
     const poly = new Graphic({
       attributes: { ...graphic.attributes },
@@ -459,11 +485,12 @@ export function createLayerEditTemplate(
  * @returns LayerType The default sample layer
  */
 export function createSampleLayer(
+  isDecon = false,
   name: string = 'Default Sample Layer',
   parentLayer: __esri.GroupLayer | null = null,
 ) {
   let layerType = 'Samples';
-  if (isDecon()) {
+  if (isDecon) {
     name = 'Area of Interest';
     layerType = 'Decon Mask';
   }
@@ -473,7 +500,7 @@ export function createSampleLayer(
     id: layerUuid,
     title: name,
   });
-  const pointsLayer = !isDecon()
+  const pointsLayer = !isDecon
     ? new GraphicsLayer({
         id: layerUuid + '-points',
         title: name,
@@ -481,7 +508,7 @@ export function createSampleLayer(
         listMode: 'hide',
       })
     : null;
-  const hybridLayer = !isDecon()
+  const hybridLayer = !isDecon
     ? new GraphicsLayer({
         id: layerUuid + '-hybrid',
         title: name,
@@ -545,7 +572,7 @@ export function deepCopyObject(obj: any) {
  * @returns the layer that was found in the edits object
  */
 export function findLayerInEdits(
-  edits: (ScenarioEditsType | LayerEditsType)[],
+  edits: (ScenarioEditsType | ScenarioDeconEditsType | LayerEditsType)[],
   layerId: string,
 ) {
   // find the layer in the edits using it's id and name
@@ -555,10 +582,13 @@ export function findLayerInEdits(
     if (edit.type === 'layer' && edit.layerId === layerId) {
       // the desired item is a layer
       layerIndex = scenarioIdx;
-    } else if (edit.type === 'scenario' && edit.layerId === layerId) {
+    } else if (
+      ['scenario', 'scenario-decon'].includes(edit.type) &&
+      edit.layerId === layerId
+    ) {
       // the desired item is a scenario
       scenarioIndex = scenarioIdx;
-    } else if (edit.type === 'scenario') {
+    } else if (edit.type === 'scenario' || edit.type === 'scenario-decon') {
       // search for the layer in scenarios
       edit.layers.forEach((layer, layerIdx) => {
         if (layer.layerId === layerId) {
@@ -570,9 +600,11 @@ export function findLayerInEdits(
   });
 
   // get the scenario if the index was found
-  let editsScenario: ScenarioEditsType | null = null;
+  let editsScenario: ScenarioEditsType | ScenarioDeconEditsType | null = null;
   if (scenarioIndex > -1) {
-    editsScenario = edits[scenarioIndex] as ScenarioEditsType;
+    editsScenario = edits[scenarioIndex] as
+      | ScenarioEditsType
+      | ScenarioDeconEditsType;
   }
 
   // get the layer if the index was found
@@ -730,10 +762,10 @@ export function getGraphicsArray(layers: (LayerType | null)[]) {
 export function getNextScenarioLayer(
   edits: EditsType,
   layers: LayerType[],
-  selectedScenario: ScenarioEditsType | null,
+  selectedScenario: ScenarioEditsType | ScenarioDeconEditsType | null,
   sketchLayer: LayerType | null,
 ) {
-  let nextScenario: ScenarioEditsType | null = null;
+  let nextScenario: ScenarioEditsType | ScenarioDeconEditsType | null = null;
   let nextLayer: LayerType | null = null;
 
   // determine which scenario to get layers for and
@@ -1332,6 +1364,18 @@ export function getScenarios(edits: EditsType) {
 }
 
 /**
+ * Searches the edits storage variable to find all available
+ * scenarios.
+ *
+ * @param edits The edits context variable to search through.
+ */
+export function getScenariosDecon(edits: EditsType) {
+  return edits.edits.filter(
+    (item) => item.type === 'scenario-decon',
+  ) as ScenarioDeconEditsType[];
+}
+
+/**
  * Creates a simple popup that contains all of the attributes on the
  * graphic.
  *
@@ -1362,7 +1406,7 @@ export function getSimplePopupTemplate(attributes: any) {
  */
 export function getSketchableLayers(
   layers: LayerType[],
-  edits: (ScenarioEditsType | LayerEditsType)[],
+  edits: (ScenarioEditsType | ScenarioDeconEditsType | LayerEditsType)[],
 ) {
   return layers.filter(
     (layer) =>
@@ -1920,10 +1964,10 @@ export function updateLayerEdits({
 }: {
   appType: AppType;
   edits: EditsType;
-  scenario?: ScenarioEditsType | null;
+  scenario?: ScenarioEditsType | ScenarioDeconEditsType | null;
   layer: LayerType;
   type: EditType;
-  changes?: __esri.Collection<__esri.Graphic>;
+  changes?: __esri.Collection<__esri.Graphic> | __esri.Graphic[];
   hasContaminationRan?: boolean;
 }) {
   // make a copy of the edits context variable
@@ -1977,12 +2021,15 @@ export function updateLayerEdits({
   } else {
     // handle property changes
     if (editsScenario) {
-      editsScenario.visible = layer.visible;
-      if (appType === 'sampling') editsScenario.listMode = layer.listMode;
+      if (appType === 'sampling') {
+        editsScenario.visible = layer.visible;
+        editsScenario.listMode = layer.listMode;
+      }
       if (editsScenario.status === 'published') editsScenario.status = 'edited';
     }
 
-    editsLayer.visible = layer.visible;
+    if (appType === 'sampling') editsLayer.visible = layer.visible;
+    else editsLayer.visible = layer.sketchLayer.visible;
     editsLayer.listMode = layer.listMode;
     editsLayer.name = layer.name;
     editsLayer.label = layer.name;
@@ -1995,12 +2042,15 @@ export function updateLayerEdits({
   editsLayer.editType = type;
 
   // set the hasContaminationRan value (default is false)
-  if (editsScenario) editsScenario.hasContaminationRan = hasContaminationRan;
+  if (editsScenario?.type === 'scenario')
+    editsScenario.hasContaminationRan = hasContaminationRan;
   editsLayer.hasContaminationRan = hasContaminationRan;
 
   if (changes) {
+    if (type === 'replace') editsLayer.adds = [];
+
     // Add new graphics
-    if (type === 'add') {
+    if (['add', 'replace'].includes(type)) {
       changes.forEach((change) => {
         const formattedChange = convertToSimpleGraphic(change);
         editsLayer.adds.push(formattedChange);
@@ -2181,6 +2231,161 @@ export function updatePolygonSymbol(
       }
     });
   });
+}
+
+export function createScenarioDecon(
+  defaultDeconSelections: any[],
+  scenarioName: string = 'Default Decon Scenario',
+  scenarioDescription: string = '',
+) {
+  // create a new group layer for the scenario
+  const groupLayer = new GroupLayer({
+    title: scenarioName,
+  });
+
+  const layerUuidImageAnalysis = generateUUID();
+  const graphicsLayerImageAnalysis = new GraphicsLayer({
+    id: layerUuidImageAnalysis,
+    title: 'Imagery Analysis Results',
+    listMode: 'show',
+  });
+
+  const layerUuid = generateUUID();
+  const graphicsLayer = new GraphicsLayer({
+    id: layerUuid,
+    title: 'AOI Assessment',
+    listMode: 'show',
+  });
+
+  const newLayers: LayerEditsType[] = [];
+  let tempSketchLayer: LayerType | null = null;
+  let tempAssessedAoiLayer: LayerType | null = null;
+  let tempImageAnalysisLayer: LayerType | null = null;
+
+  tempAssessedAoiLayer = {
+    id: -1,
+    pointsId: -1,
+    uuid: layerUuid,
+    layerId: layerUuid,
+    portalId: '',
+    value: 'aoiAssessed',
+    name: 'AOI Assessment',
+    label: 'AOI Assessment',
+    layerType: 'AOI Assessed',
+    editType: 'add',
+    visible: true,
+    listMode: 'show',
+    sort: 0,
+    geometryType: 'esriGeometryPolygon',
+    addedFrom: 'sketch',
+    status: 'added',
+    sketchLayer: graphicsLayer,
+    pointsLayer: null,
+    hybridLayer: null,
+    parentLayer: groupLayer,
+  } as LayerType;
+
+  tempImageAnalysisLayer = {
+    id: -1,
+    pointsId: -1,
+    uuid: layerUuidImageAnalysis,
+    layerId: layerUuidImageAnalysis,
+    portalId: '',
+    value: 'aoiAssessed',
+    name: 'Imagery Analysis Results',
+    label: 'Imagery Analysis Results',
+    layerType: 'Image Analysis',
+    editType: 'add',
+    visible: true,
+    listMode: 'show',
+    sort: 0,
+    geometryType: 'esriGeometryPolygon',
+    addedFrom: 'sketch',
+    status: 'added',
+    sketchLayer: graphicsLayerImageAnalysis,
+    pointsLayer: null,
+    hybridLayer: null,
+    parentLayer: groupLayer,
+  } as LayerType;
+
+  if (newLayers.length === 0) {
+    // no sketchable layers were available, create one
+    tempSketchLayer = createSampleLayer(true, undefined, groupLayer);
+    newLayers.push(createLayerEditTemplate(tempImageAnalysisLayer, 'add'));
+    newLayers.push(createLayerEditTemplate(tempAssessedAoiLayer, 'add'));
+    newLayers.push(createLayerEditTemplate(tempSketchLayer, 'add'));
+  } else {
+    newLayers.push(createLayerEditTemplate(tempImageAnalysisLayer, 'add'));
+    newLayers.push(createLayerEditTemplate(tempAssessedAoiLayer, 'add'));
+  }
+
+  // create the scenario to be added to edits
+  return {
+    graphicsLayerImageAnalysis,
+    graphicsLayer,
+    groupLayer,
+    layers: newLayers,
+    sketchLayer: tempSketchLayer,
+    scenario: {
+      type: 'scenario-decon',
+      id: -1,
+      layerId: groupLayer.id,
+      portalId: '',
+      name: scenarioName,
+      label: scenarioName,
+      value: groupLayer.id,
+      layerType: 'Decon',
+      addedFrom: 'sketch',
+      status: 'added',
+      editType: 'add',
+      visible: true,
+      listMode: 'show',
+      scenarioName: scenarioName,
+      scenarioDescription: scenarioDescription,
+      layers: newLayers,
+      table: null,
+      referenceLayersTable: {
+        id: -1,
+        referenceLayers: [],
+      },
+      customAttributes: [],
+      deconTechSelections: defaultDeconSelections,
+      deconSummaryResults: {
+        summary: {
+          totalAoiSqM: 0,
+          totalBuildingFootprintSqM: 0,
+          totalBuildingFloorsSqM: 0,
+          totalBuildingSqM: 0,
+          totalBuildingExtWallsSqM: 0,
+          totalBuildingIntWallsSqM: 0,
+          totalBuildingRoofSqM: 0,
+        },
+        aoiPercentages: {
+          asphalt: 0,
+          concrete: 0,
+          soil: 0,
+        },
+        calculateResults: null,
+      },
+      aoiSummary: {
+        area: 0,
+        buildingFootprint: 0,
+      },
+      deconLayerResults: {
+        cost: 0,
+        time: 0,
+        wasteVolume: 0,
+        wasteMass: 0,
+        resultsTable: [],
+      },
+      calculateSettings: { current: settingDefaults },
+      importedAoiLayer: null,
+      aoiLayerMode: 'draw',
+      gsgFile: null,
+    } as ScenarioDeconEditsType,
+    tempAssessedAoiLayer,
+    tempImageAnalysisLayer,
+  };
 }
 
 /**

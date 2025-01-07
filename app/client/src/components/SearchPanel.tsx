@@ -49,6 +49,7 @@ import {
   CalculateSettingsBaseType,
   EditsType,
   ReferenceLayersTableType,
+  ScenarioDeconEditsType,
   ScenarioEditsType,
 } from 'types/Edits';
 import { LayerType, PortalLayerType, UrlLayerType } from 'types/Layer';
@@ -979,7 +980,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
         // find the layer in editsCopy and update the id
         const editsLayer = editsCopy.edits.find(
           (l) => l.portalId === layerDetails.serviceItemId,
-        );
+        ) as ScenarioEditsType;
         if (editsLayer) {
           editsLayer.pointsId = layerDetails.id;
 
@@ -2046,11 +2047,9 @@ function ResultCard({ appType, result }: ResultCardProps) {
         // find the layer in editsCopy and update the id
         const editsLayer = editsCopy.edits.find(
           (l) => l.portalId === layerDetails.serviceItemId,
-        );
+        ) as ScenarioDeconEditsType;
         if (editsLayer) {
-          editsLayer.pointsId = layerDetails.id;
-
-          const editsLayerTemp = editsLayer as ScenarioEditsType;
+          const editsLayerTemp = editsLayer as ScenarioDeconEditsType;
           if (editsLayerTemp?.layers) {
             const sublayer = editsLayerTemp.layers.find((s) => s.uuid === uuid);
             if (sublayer) sublayer.pointsId = layerDetails.id;
@@ -2469,10 +2468,9 @@ function ResultCard({ appType, result }: ResultCardProps) {
             newCustomAttributes.push(buildCustomAttributeFromField(field, id));
           });
 
-          const newScenario: ScenarioEditsType = {
-            type: 'scenario',
+          const newScenario: ScenarioDeconEditsType = {
+            type: 'scenario-decon',
             id: layerDetails.id,
-            pointsId: -1,
             layerId: groupLayer.id,
             portalId: result.id,
             name: scenarioName,
@@ -2480,7 +2478,6 @@ function ResultCard({ appType, result }: ResultCardProps) {
             value: groupLayer.id,
             layerType: isVspLayer ? 'VSP' : 'Samples',
             addedFrom: 'tots',
-            hasContaminationRan: false,
             status: 'published',
             editType: 'add',
             visible: true,

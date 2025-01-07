@@ -4,7 +4,7 @@ import { AttributesType } from 'types/Publish';
 
 export type EditsType = {
   count: number;
-  edits: (ScenarioEditsType | LayerEditsType)[];
+  edits: (ScenarioEditsType | ScenarioDeconEditsType | LayerEditsType)[];
 };
 
 export type EditType =
@@ -13,7 +13,8 @@ export type EditType =
   | 'delete'
   | 'arcgis'
   | 'properties'
-  | 'move';
+  | 'move'
+  | 'replace';
 
 export type TableType = {
   id: number; // esri layer id
@@ -54,6 +55,46 @@ export type CalculateSettingsBaseType = {
 export type CalculateSettingsType = {
   current: CalculateSettingsBaseType;
   published?: CalculateSettingsBaseType;
+};
+
+export type ScenarioDeconEditsType = {
+  type: 'scenario-decon';
+  id: number; // scenario layer id
+  layerId: string; // id from esri group layer
+  portalId: string; // id from portal layer
+  name: string; // layer/scenario name
+  label: string; // layer/scenario label
+  value: string; // layer/scenario value for React-Select
+  layerType: LayerTypeName; // type of tots layer (sample, contamination, etc.)
+  addedFrom: AddedFrom; // how the layer was added (file, url, etc.)
+  status: PublishStatus; // publish status
+  editType: EditType; // edit type
+  visible: boolean; // layer visibility on map
+  listMode: 'hide' | 'hide-children' | 'show'; // layer visiblity in legend widget
+  scenarioName: string; // user defined scenario name
+  scenarioDescription: string; // user defined scenario description  adds: FeatureEditsType[]; // features to add
+  layers: LayerEditsType[];
+  table: TableType | null;
+  referenceLayersTable: ReferenceLayersTableType;
+  customAttributes: AttributesType[];
+  deconTechSelections: any[];
+  deconSummaryResults: any;
+  aoiSummary: {
+    area: number;
+    buildingFootprint: number;
+  };
+  deconLayerResults: {
+    cost: number;
+    time: number;
+    wasteVolume: number;
+    wasteMass: number;
+    resultsTable: JsonDownloadType[];
+  };
+  calculateSettings: CalculateSettingsType;
+  importedAoiLayer?: LayerEditsType | null;
+  aoiLayerMode: '' | 'draw' | 'file';
+  gsgFile?: any;
+  // contaminationResults: LayerEditsType; // TODO add this in if time permits
 };
 
 export type ScenarioEditsType = {

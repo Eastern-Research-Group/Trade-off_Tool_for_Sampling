@@ -38,6 +38,12 @@ const reactSelectStyles = {
   },
 };
 
+const infoIconStyles = css`
+  margin-left: 10px;
+  color: #19a3dd;
+  pointer-events: all;
+`;
+
 const linkButtonStyles = css`
   display: inline;
   margin-bottom: 0;
@@ -58,4 +64,11 @@ const linkButtonStyles = css`
   }
 `;
 
-export { appTheme, colors, isDecon, linkButtonStyles, reactSelectStyles };
+export {
+  appTheme,
+  colors,
+  infoIconStyles,
+  isDecon,
+  linkButtonStyles,
+  reactSelectStyles,
+};

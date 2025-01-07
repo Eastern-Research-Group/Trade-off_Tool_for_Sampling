@@ -739,9 +739,7 @@ function FilePanel({ appType }: Props) {
                     innerFeatures.push({
                       geometry: feature.geometry,
                       attributes: {
-                        ...(window as any).totsSampleAttributes[
-                          localSampleType.value
-                        ],
+                        ...window.totsSampleAttributes[localSampleType.value],
                         CREATEDDATE: timestamp,
                         OBJECTID: feature.attributes.OBJECTID,
                         GLOBALID: feature.attributes.GLOBALID,
@@ -1185,7 +1183,7 @@ function FilePanel({ appType }: Props) {
 
           const scenario = editsCopy.edits.find(
             (edit) =>
-              edit.type === 'scenario' &&
+              ['scenario', 'scenario-decon'].includes(edit.type) &&
               edit.layerId === selectedScenario.layerId,
           ) as ScenarioEditsType;
           const newLayer = scenario.layers.find(
@@ -1450,9 +1448,6 @@ function FilePanel({ appType }: Props) {
     );
   }
   if (appType === 'sampling') {
-    selectLayerOptions = selectLayerOptions.filter(
-      (option) => option.value !== 'GSG',
-    );
     if (!trainingMode)
       selectLayerOptions = selectLayerOptions.filter(
         (option) => option.value !== 'Contamination Map',

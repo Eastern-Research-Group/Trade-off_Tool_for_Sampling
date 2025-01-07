@@ -40,8 +40,10 @@ import { useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext } from 'contexts/Publish';
 import {
+  AoiCharacterizationData,
   AoiDataType,
   JsonDownloadType,
+  PlanGraphics,
   SketchContext,
   SketchViewModelType,
 } from 'contexts/Sketch';
@@ -51,7 +53,11 @@ import {
   CalculateResultsDataType,
   CalculateResultsDeconDataType,
 } from 'types/CalculateResults';
-import { EditsType, ScenarioEditsType } from 'types/Edits';
+import {
+  EditsType,
+  ScenarioDeconEditsType,
+  ScenarioEditsType,
+} from 'types/Edits';
 import { FieldInfos, LayerType, LayerTypeName } from 'types/Layer';
 import { AppType } from 'types/Navigation';
 // utils
@@ -88,35 +94,6 @@ import { isDecon } from 'config/navigation';
 
 type GsgParam = { itemID: string };
 
-type NsiData = {
-  status: 'none' | 'fetching' | 'success' | 'failure';
-  planGraphics: PlanGraphics;
-};
-
-type PlanGraphics = {
-  [planId: string]: {
-    graphics: __esri.Graphic[];
-    imageGraphics: __esri.Graphic[];
-    aoiArea: number;
-    buildingFootprint: number;
-    summary: {
-      totalAoiSqM: number;
-      totalBuildingFootprintSqM: number;
-      totalBuildingFloorsSqM: number;
-      totalBuildingSqM: number;
-      totalBuildingExtWallsSqM: number;
-      totalBuildingIntWallsSqM: number;
-      totalBuildingRoofSqM: number;
-    };
-    aoiPercentages: {
-      numAois: number;
-      asphalt: number;
-      concrete: number;
-      soil: number;
-    };
-  };
-};
-
 let view: __esri.MapView | __esri.SceneView | null = null;
 
 export const detectionLimit = 100;
@@ -143,7 +120,7 @@ const partitionFactors = {
   'Building Roofs': 1,
 } as any;
 
-const backupImagerySymbol = new SimpleFillSymbol({
+export const backupImagerySymbol = new SimpleFillSymbol({
   color: [0, 0, 0, 0],
   outline: {
     color: [0, 0, 0, 0],
@@ -220,8 +197,8 @@ type ContaminationPercentages = {
 type PlanBuildingCfu = { [planId: string]: number };
 
 function processScenario(
-  scenario: ScenarioEditsType | string,
-  nsiData: NsiData,
+  scenario: ScenarioDeconEditsType | string,
+  aoiCharacterizationData: AoiCharacterizationData,
   contaminationPercentages: ContaminationPercentages,
   planBuildingCfu: PlanBuildingCfu,
   defaultDeconSelections: any[],
@@ -230,7 +207,7 @@ function processScenario(
   const scenarioId = isScenario ? scenario.layerId : scenario;
   const deconTechSelections = isScenario ? scenario.deconTechSelections : [];
 
-  const planGraphics = nsiData.planGraphics[scenarioId];
+  const planGraphics = aoiCharacterizationData.planGraphics[scenarioId];
   if (!planGraphics) return;
 
   const {
@@ -1230,6 +1207,7 @@ export function useCalculatePlan() {
 // change.
 export function useCalculateDeconPlan() {
   const {
+    aoiCharacterizationData,
     aoiData,
     defaultDeconSelections,
     displayDimensions,
@@ -1242,6 +1220,7 @@ export function useCalculateDeconPlan() {
     sceneView,
     sceneViewForArea,
     // selectedScenario,
+    setAoiCharacterizationData,
     setEdits,
     setEfficacyResults,
     setJsonDownload,
@@ -1288,7 +1267,7 @@ export function useCalculateDeconPlan() {
         data: null,
       };
     });
-    setNsiData({
+    setAoiCharacterizationData({
       status: 'none',
       planGraphics: {},
     });
@@ -1299,18 +1278,13 @@ export function useCalculateDeconPlan() {
     if (contamMapUpdated) contamMapUpdated.removeAll();
   }, [aoiData, setCalculateResultsDecon, setEfficacyResults]);
 
-  const [nsiData, setNsiData] = useState<NsiData>({
-    status: 'none',
-    planGraphics: {},
-  });
-
   // fetch building data for AOI
   useEffect(() => {
     if (!hasGraphics(aoiData)) return;
     if (calculateResultsDecon.status !== 'fetching') return;
-    if (nsiData.status !== 'none') return;
+    if (aoiCharacterizationData.status !== 'none') return;
 
-    setNsiData({
+    setAoiCharacterizationData({
       status: 'fetching',
       planGraphics: {},
     });
@@ -1400,13 +1374,13 @@ export function useCalculateDeconPlan() {
           );
         }
 
-        setNsiData({
+        setAoiCharacterizationData({
           status: 'success',
           planGraphics,
         });
       } catch (ex: any) {
         console.error(ex);
-        setNsiData({
+        setAoiCharacterizationData({
           status: 'failure',
           planGraphics: {},
         });
@@ -1424,12 +1398,12 @@ export function useCalculateDeconPlan() {
 
     fetchAoiData();
   }, [
+    aoiCharacterizationData,
     aoiData,
     calculateResultsDecon,
     contaminationMap,
     gsgFiles,
     layers,
-    nsiData,
     sceneViewForArea,
     services,
     setCalculateResultsDecon,
@@ -1448,7 +1422,7 @@ export function useCalculateDeconPlan() {
   useEffect(() => {
     if (
       ['none', 'success'].includes(calculateResultsDecon.status) ||
-      nsiData.status !== 'success'
+      aoiCharacterizationData.status !== 'success'
     )
       return;
 
@@ -1458,17 +1432,19 @@ export function useCalculateDeconPlan() {
       ) as __esri.GraphicsLayer;
       if (contamMapUpdated) contamMapUpdated.removeAll();
 
-      console.log('nsiData: ', nsiData);
+      console.log('aoiCharacterizationData: ', aoiCharacterizationData);
 
       let editsCopy: EditsType = edits;
       const scenarios = editsCopy.edits.filter(
-        (i) => i.type === 'scenario',
-      ) as ScenarioEditsType[];
+        (i) => i.type === 'scenario-decon',
+      ) as ScenarioDeconEditsType[];
 
       const graphics: __esri.Graphic[] = [];
-      Object.values(nsiData.planGraphics).forEach((planGraphics) => {
-        graphics.push(...planGraphics.graphics);
-      });
+      Object.values(aoiCharacterizationData.planGraphics).forEach(
+        (planGraphics) => {
+          graphics.push(...planGraphics.graphics);
+        },
+      );
 
       const contaminatedAoiAreas: ContaminatedAoiAreas = {};
       const contaminationPercentages: ContaminationPercentages = {};
@@ -1478,8 +1454,8 @@ export function useCalculateDeconPlan() {
         contaminationMap?.sketchLayer?.type === 'graphics'
       ) {
         // loop through structures
-        Object.keys(nsiData.planGraphics).forEach((planId) => {
-          const planGraphics = nsiData.planGraphics[planId];
+        Object.keys(aoiCharacterizationData.planGraphics).forEach((planId) => {
+          const planGraphics = aoiCharacterizationData.planGraphics[planId];
           planGraphics.graphics.forEach((graphic) => {
             // loop through contamination map features
             (
@@ -1607,7 +1583,8 @@ export function useCalculateDeconPlan() {
         }
 
         Object.keys(contaminatedAoiAreas).forEach((planId: any) => {
-          const totalAoiSqM = nsiData.planGraphics[planId].summary.totalAoiSqM;
+          const totalAoiSqM =
+            aoiCharacterizationData.planGraphics[planId].summary.totalAoiSqM;
           Object.keys(contaminatedAoiAreas[planId]).forEach((key: any) => {
             if (!contaminationPercentages.hasOwnProperty(planId)) {
               contaminationPercentages[planId] = {};
@@ -1622,7 +1599,7 @@ export function useCalculateDeconPlan() {
       scenarios.forEach((scenario) => {
         const newDeconTechSelections = processScenario(
           scenario,
-          nsiData,
+          aoiCharacterizationData,
           contaminationPercentages,
           planBuildingCfu,
           defaultDeconSelections,
@@ -1651,13 +1628,22 @@ export function useCalculateDeconPlan() {
           );
 
           // tie graphics and imageryGraphics to a scenario
-          const planData = nsiData.planGraphics[scenario.layerId];
+          const planData =
+            aoiCharacterizationData.planGraphics[scenario.layerId];
           if (
             aoiAssessedLayer?.sketchLayer?.type === 'graphics' &&
             planData?.graphics
           ) {
-            aoiAssessedLayer?.sketchLayer.graphics.removeAll();
-            aoiAssessedLayer?.sketchLayer.graphics.addMany(planData.graphics);
+            aoiAssessedLayer.sketchLayer.graphics.removeAll();
+            aoiAssessedLayer.sketchLayer.graphics.addMany(planData.graphics);
+
+            editsCopy = updateLayerEdits({
+              appType: 'decon',
+              edits: editsCopy,
+              layer: aoiAssessedLayer,
+              type: 'replace',
+              changes: planData.graphics,
+            });
           }
           if (
             imageAnalysisLayer?.sketchLayer?.type === 'graphics' &&
@@ -1667,9 +1653,23 @@ export function useCalculateDeconPlan() {
             imageAnalysisLayer?.sketchLayer.graphics.addMany(
               planData.imageGraphics,
             );
+
+            editsCopy = updateLayerEdits({
+              appType: 'decon',
+              edits: editsCopy,
+              layer: imageAnalysisLayer,
+              type: 'replace',
+              changes: planData.imageGraphics,
+            });
           }
           if (deconAoiLayer) {
             deconAoiLayer.sketchLayer.visible = false;
+            editsCopy = updateLayerEdits({
+              appType: 'decon',
+              edits: editsCopy,
+              layer: deconAoiLayer,
+              type: 'properties',
+            });
           }
 
           scenario.deconTechSelections = newDeconTechSelections;
@@ -1681,13 +1681,13 @@ export function useCalculateDeconPlan() {
 
     performAreaCalculations();
   }, [
+    aoiCharacterizationData,
     aoiData,
     calculateResultsDecon,
     contaminationMap,
     defaultDeconSelections,
     edits,
     layers,
-    nsiData,
     sampleAttributesDecon,
     sceneViewForArea,
     setEdits,
@@ -1698,14 +1698,14 @@ export function useCalculateDeconPlan() {
   useEffect(() => {
     if (
       ['none', 'success'].includes(calculateResultsDecon.status) ||
-      nsiData.status !== 'success'
+      aoiCharacterizationData.status !== 'success'
     )
       return;
 
     let editsCopy: EditsType = edits;
     const scenarios = editsCopy.edits.filter(
-      (i) => i.type === 'scenario',
-    ) as ScenarioEditsType[];
+      (i) => i.type === 'scenario-decon',
+    ) as ScenarioDeconEditsType[];
 
     let atLeastOneDeconTechSelection = false;
     scenarios.forEach((scenario) => {
@@ -1895,9 +1895,11 @@ export function useCalculateDeconPlan() {
 
     scenarios.forEach((scenario) => {
       scenario.deconSummaryResults = {
-        summary: nsiData.planGraphics?.[scenario.layerId]?.summary,
+        summary:
+          aoiCharacterizationData.planGraphics?.[scenario.layerId]?.summary,
         aoiPercentages:
-          nsiData.planGraphics?.[scenario.layerId]?.aoiPercentages,
+          aoiCharacterizationData.planGraphics?.[scenario.layerId]
+            ?.aoiPercentages,
         calculateResults: resultObject,
       };
     });
@@ -1915,13 +1917,13 @@ export function useCalculateDeconPlan() {
       };
     });
   }, [
+    aoiCharacterizationData,
     aoiData,
     calculateResultsDecon,
     contaminationMap,
     defaultDeconSelections,
     edits,
     layers,
-    nsiData,
     sampleAttributesDecon,
     // selectedScenario,
     setCalculateResultsDecon,
@@ -1946,12 +1948,12 @@ export function useCalculateDeconPlan() {
 
       let cfuReductionBuildings = 0;
       const scenarios = edits.edits.filter(
-        (i) => i.type === 'scenario',
-      ) as ScenarioEditsType[];
+        (i) => i.type === 'scenario-decon',
+      ) as ScenarioDeconEditsType[];
       let newContamGraphics: __esri.Graphic[] = [];
       for (const scenario of scenarios) {
         // tie graphics and imageryGraphics to a scenario
-        const planData = nsiData.planGraphics[scenario.layerId];
+        const planData = aoiCharacterizationData.planGraphics[scenario.layerId];
 
         const deconAoi = scenario?.layers.find(
           (l: any) => l.layerType === 'Decon Mask',
@@ -2221,6 +2223,7 @@ export function useCalculateDeconPlan() {
 
     performCalculations();
   }, [
+    aoiCharacterizationData,
     aoiData,
     aoiContamIntersect,
     calculateResultsDecon,
@@ -2228,7 +2231,6 @@ export function useCalculateDeconPlan() {
     defaultDeconSelections,
     edits,
     layers,
-    nsiData,
     resultsOpen,
     sampleAttributesDecon,
     sceneViewForArea,
@@ -2293,12 +2295,35 @@ export function useDynamicPopup(appType: AppType) {
     includeContaminationFields: boolean = false,
     includeControls: boolean = true,
   ) {
-    if (['Decon Mask', 'Sampling Mask'].includes(type)) {
+    if (type === 'Sampling Mask') {
       const actions = new Collection<any>();
       if (includeControls) {
         actions.addMany([
           {
-            title: isDecon() ? 'Delete Decon Technology' : 'Delete Sample',
+            title: 'Delete Sample',
+            id: 'delete',
+            className: 'esri-icon-trash',
+          },
+        ]);
+      }
+
+      return {
+        title: '',
+        content: [
+          {
+            type: 'fields',
+            fieldInfos: [{ fieldName: 'TYPE', label: 'Type' }],
+          },
+        ],
+        actions,
+      };
+    }
+    if (type === 'Decon Mask') {
+      const actions = new Collection<any>();
+      if (includeControls) {
+        actions.addMany([
+          {
+            title: 'Delete Decon Technology',
             id: 'delete',
             className: 'esri-icon-trash',
           },
@@ -2408,6 +2433,30 @@ export function useDynamicPopup(appType: AppType) {
         content: (feature: any) =>
           getSampleTemplate(feature, fieldInfos, includeControls),
         actions,
+      };
+    }
+    if (type === 'AOI Assessed') {
+      const actions = new Collection<any>();
+      if (includeControls) {
+        actions.addMany([
+          {
+            title: 'View In Table',
+            id: 'table',
+            className: 'esri-icon-table',
+          },
+        ]);
+      }
+
+      return {
+        title: '',
+        content: buildingMapPopup,
+        actions,
+      };
+    }
+    if (type === 'Image Analysis') {
+      return {
+        title: '',
+        content: imageryAnalysisMapPopup,
       };
     }
 
@@ -2789,7 +2838,7 @@ export function use3dSketch(appType: AppType) {
       // get the button and it's id
       const button = document.querySelector('.sketch-button-selected');
       const id = button && button.id;
-      if (id?.includes('-sampling-mask')) {
+      if (id?.includes('-sampling-mask') || id?.includes('decon-mask')) {
         deactivateButtons();
       }
 
@@ -2810,9 +2859,20 @@ export function use3dSketch(appType: AppType) {
           OBJECTID: -1,
           TYPE: layerType,
         };
+      } else if (id.includes('decon-mask')) {
+        layerType = 'Decon Mask';
+        attributes = {
+          DECISIONUNITUUID: sketchLayer.sketchLayer.id,
+          DECISIONUNIT: sketchLayer.sketchLayer.title,
+          DECISIONUNITSORT: 0,
+          PERMANENT_IDENTIFIER: uuid,
+          GLOBALID: uuid,
+          OBJECTID: -1,
+          TYPE: layerType,
+        };
       } else {
         attributes = {
-          ...(window as any).totsSampleAttributes[id],
+          ...window.totsSampleAttributes[id],
           DECISIONUNITUUID: sketchLayer.sketchLayer.id,
           DECISIONUNIT: sketchLayer.sketchLayer.title,
           DECISIONUNITSORT: 0,
@@ -2844,7 +2904,7 @@ export function use3dSketch(appType: AppType) {
         await createBuffer(graphic);
       }
 
-      if (!id.includes('-sampling-mask')) {
+      if (!id.includes('-sampling-mask') && !id.includes('decon-mask')) {
         // find the points version of the layer
         const layerId = graphic.layer.id;
         const pointLayer = (graphic.layer as any).parent.layers.find(
@@ -2898,7 +2958,9 @@ export function use3dSketch(appType: AppType) {
       setEdits(editsCopy);
 
       const newScenario = editsCopy.edits.find(
-        (e) => e.type === 'scenario' && e.layerId === selectedScenario?.layerId,
+        (e) =>
+          ['scenario', 'scenario-decon'].includes(e.type) &&
+          e.layerId === selectedScenario?.layerId,
       ) as ScenarioEditsType;
       if (newScenario) setSelectedScenario(newScenario);
 

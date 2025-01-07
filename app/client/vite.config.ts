@@ -66,7 +66,6 @@ export default ({ mode }) => {
       ...productionOnlyPlugins,
     ],
     server: {
-      open: true,
       port: 3000,
     },
   });

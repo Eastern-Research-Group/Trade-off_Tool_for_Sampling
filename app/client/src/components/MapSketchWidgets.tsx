@@ -148,9 +148,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
       svm: __esri.SketchViewModel,
     ) {
       const tempSvm = svm as any;
-      const tempWindow = window as any;
-      tempWindow.sampleSketchVmInternalLayerId =
-        tempSvm._internalGraphicsLayer.id;
+      window.sampleSketchVmInternalLayerId = tempSvm._internalGraphicsLayer.id;
 
       const widget = new Sketch({
         availableCreateTools: [],
@@ -370,8 +368,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
     });
 
     const tempSvm = svm as any;
-    const tempWindow = window as any;
-    tempWindow.aoiSketchVmInternalLayerId = tempSvm._internalGraphicsLayer.id;
+    window.aoiSketchVmInternalLayerId = tempSvm._internalGraphicsLayer.id;
 
     setAoiSketchVM(svm);
   }, [defaultSymbols, mapView, aoiSketchVM, setAoiSketchVM, aoiSketchLayer]);
@@ -381,7 +378,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
     if (!sketchVM) return;
 
     if (
-      ['locateSamples', 'decon'].includes(currentPanel?.value ?? '') &&
+      currentPanel?.value === 'locateSamples' &&
       sketchLayer?.sketchLayer?.type === 'graphics'
     ) {
       sketchVM['2d'].layer = sketchLayer.sketchLayer;
@@ -505,7 +502,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
           enableZ: true,
         };
       }
-    } else {
+    } else if (currentPanel?.value !== 'setup') {
       // disable the sketch vm for any panel other than locateSamples
       aoiSketchVM.layer = null as unknown as __esri.GraphicsLayer;
     }
@@ -553,7 +550,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
           // get the button and it's id
           const button = document.querySelector('.sketch-button-selected');
           const id = button && button.id;
-          if (id?.includes('-sampling-mask')) {
+          if (id?.includes('-sampling-mask') || id?.includes('decon-mask')) {
             deactivateButtons();
           }
 
@@ -565,8 +562,14 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
           // get the predefined attributes using the id of the clicked button
           const uuid = generateUUID();
           let layerType: LayerTypeName = 'Samples';
-          if (id === 'sampling-mask' || id.includes('-sampling-mask')) {
-            layerType = isDecon() ? 'Decon Mask' : 'Sampling Mask';
+          if (
+            ['sampling-mask', 'decon-mask'].includes(id) ||
+            id.includes('-sampling-mask') ||
+            id.includes('decon-mask')
+          ) {
+            layerType = id.includes('decon-mask')
+              ? 'Decon Mask'
+              : 'Sampling Mask';
             graphic.attributes = {
               DECISIONUNITUUID: graphic.layer.id,
               DECISIONUNIT: graphic.layer.title,
@@ -578,7 +581,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
             };
           } else {
             graphic.attributes = {
-              ...(window as any).totsSampleAttributes[id],
+              ...window.totsSampleAttributes[id],
               DECISIONUNITUUID: graphic.layer.id,
               DECISIONUNIT: graphic.layer.title,
               DECISIONUNITSORT: 0,
@@ -617,7 +620,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
 
           graphic.symbol = sketchViewModel.polygonSymbol;
 
-          if (!id.includes('-sampling-mask')) {
+          if (!id.includes('-sampling-mask') && !id.includes('decon-mask')) {
             // find the points version of the layer
             const layerId = graphic.layer.id;
             const pointLayer = (graphic.layer as any).parent.layers.find(
@@ -961,7 +964,9 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
     setEdits(editsCopy);
 
     const newScenario = editsCopy.edits.find(
-      (e) => e.type === 'scenario' && e.layerId === selectedScenario?.layerId,
+      (e) =>
+        ['scenario', 'scenario-decon'].includes(e.type) &&
+        e.layerId === selectedScenario?.layerId,
     ) as ScenarioEditsType;
     if (newScenario) setSelectedScenario(newScenario);
 

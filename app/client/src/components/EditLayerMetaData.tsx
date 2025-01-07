@@ -19,12 +19,17 @@ import { isServiceNameAvailable } from 'utils/arcGisRestUtils';
 import {
   createLayerEditTemplate,
   createSampleLayer,
+  createScenarioDecon,
   generateUUID,
   updateLayerEdits,
 } from 'utils/sketchUtils';
 import { createErrorObject } from 'utils/utils';
 // types
-import { LayerEditsType, ScenarioEditsType } from 'types/Edits';
+import {
+  LayerEditsType,
+  ScenarioDeconEditsType,
+  ScenarioEditsType,
+} from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { ErrorType } from 'types/Misc';
 import { AppType } from 'types/Navigation';
@@ -34,7 +39,7 @@ import {
   webServiceErrorMessage,
 } from 'config/errorMessages';
 // styles
-import { colors, linkButtonStyles } from 'styles';
+import { colors, isDecon, linkButtonStyles } from 'styles';
 
 export type SaveStatusType =
   | 'none'
@@ -100,7 +105,7 @@ const saveButtonStyles = (status: string) => {
 // --- components (EditScenario) ---
 type Props = {
   appType: AppType;
-  initialScenario?: ScenarioEditsType | null;
+  initialScenario?: ScenarioEditsType | ScenarioDeconEditsType | null;
   buttonText?: string;
   initialStatus?: SaveStatusType;
   addDefaultSampleLayer?: boolean;
@@ -214,6 +219,13 @@ function EditScenario({
 
       // hide all other plans from the map
       layers.forEach((layer) => {
+        if (
+          ['Decon Mask', 'Image Analysis', 'AOI Assessed'].includes(
+            layer.layerType,
+          )
+        )
+          return;
+
         if (layer.parentLayer) {
           layer.parentLayer.visible = false;
           return;
@@ -238,7 +250,7 @@ function EditScenario({
 
         if (newLayers.length === 0) {
           // no sketchable layers were available, create one
-          tempSketchLayer = createSampleLayer(undefined, groupLayer);
+          tempSketchLayer = createSampleLayer(false, undefined, groupLayer);
           newLayers.push(createLayerEditTemplate(tempSketchLayer, 'add'));
         } else {
           // update the parentLayer of layers being added to the group layer
@@ -362,7 +374,8 @@ function EditScenario({
     if (initialScenario) {
       index = edits.edits.findIndex(
         (item) =>
-          item.type === 'scenario' && item.layerId === initialScenario.layerId,
+          item.type === 'scenario-decon' &&
+          item.layerId === initialScenario.layerId,
       );
     }
 
@@ -392,7 +405,7 @@ function EditScenario({
 
       // make a copy of the edits context variable
       setEdits((edits) => {
-        const editedScenario = edits.edits[index] as ScenarioEditsType;
+        const editedScenario = edits.edits[index] as ScenarioDeconEditsType;
         editedScenario.label = scenarioName;
         editedScenario.name = scenarioName;
         editedScenario.scenarioName = scenarioName;
@@ -408,182 +421,42 @@ function EditScenario({
         };
       });
     } else {
-      // create a new group layer for the scenario
-      const groupLayer = new GroupLayer({
-        title: scenarioName,
-      });
+      const {
+        graphicsLayerImageAnalysis,
+        graphicsLayer,
+        groupLayer,
+        layers: newLayers,
+        scenario: newScenario,
+        sketchLayer: tempSketchLayer,
+        tempAssessedAoiLayer,
+        tempImageAnalysisLayer,
+      } = createScenarioDecon(
+        defaultDeconSelections,
+        scenarioName,
+        scenarioDescription,
+      );
 
-      const layerUuidImageAnalysis = generateUUID();
-      const graphicsLayerImageAnalysis = new GraphicsLayer({
-        id: layerUuidImageAnalysis,
-        title: 'Imagery Analysis Results',
-        listMode: 'show',
-      });
+      // update the parentLayer of layers being added to the group layer
+      setLayers((layers) => {
+        newLayers.forEach((newLayer) => {
+          const layer = layers.find((l) => l.layerId === newLayer.layerId);
+          if (!layer) return;
 
-      const layerUuid = generateUUID();
-      const graphicsLayer = new GraphicsLayer({
-        id: layerUuid,
-        title: 'AOI Assessment',
-        listMode: 'show',
-      });
-
-      const newLayers: LayerEditsType[] = [];
-      let tempSketchLayer: LayerType | null = null;
-      let tempAssessedAoiLayer: LayerType | null = null;
-      let tempImageAnalysisLayer: LayerType | null = null;
-      if (addDefaultSampleLayer) {
-        edits.edits.forEach((edit) => {
-          if (
-            edit.type === 'layer' &&
-            (edit.layerType === 'Samples' || edit.layerType === 'VSP')
-          ) {
-            newLayers.push(edit);
+          layer.parentLayer = groupLayer;
+          groupLayer.add(layer.sketchLayer);
+          map.layers.remove(layer.sketchLayer);
+          if (layer.pointsLayer) {
+            groupLayer.add(layer.pointsLayer);
+            map.layers.remove(layer.pointsLayer);
+          }
+          if (layer.hybridLayer) {
+            groupLayer.add(layer.hybridLayer);
+            map.layers.remove(layer.hybridLayer);
           }
         });
 
-        tempAssessedAoiLayer = {
-          id: -1,
-          pointsId: -1,
-          uuid: layerUuid,
-          layerId: layerUuid,
-          portalId: '',
-          value: 'aoiAssessed',
-          name: 'AOI Assessment',
-          label: 'AOI Assessment',
-          layerType: 'AOI Assessed',
-          editType: 'add',
-          visible: true,
-          listMode: 'show',
-          sort: 0,
-          geometryType: 'esriGeometryPolygon',
-          addedFrom: 'sketch',
-          status: 'added',
-          sketchLayer: graphicsLayer,
-          pointsLayer: null,
-          hybridLayer: null,
-          parentLayer: groupLayer,
-        } as LayerType;
-
-        tempImageAnalysisLayer = {
-          id: -1,
-          pointsId: -1,
-          uuid: layerUuidImageAnalysis,
-          layerId: layerUuidImageAnalysis,
-          portalId: '',
-          value: 'aoiAssessed',
-          name: 'Imagery Analysis Results',
-          label: 'Imagery Analysis Results',
-          layerType: 'Image Analysis',
-          editType: 'add',
-          visible: true,
-          listMode: 'show',
-          sort: 0,
-          geometryType: 'esriGeometryPolygon',
-          addedFrom: 'sketch',
-          status: 'added',
-          sketchLayer: graphicsLayerImageAnalysis,
-          pointsLayer: null,
-          hybridLayer: null,
-          parentLayer: groupLayer,
-        } as LayerType;
-
-        if (newLayers.length === 0) {
-          // no sketchable layers were available, create one
-          tempSketchLayer = createSampleLayer(undefined, groupLayer);
-          newLayers.push(
-            createLayerEditTemplate(tempImageAnalysisLayer, 'add'),
-          );
-          newLayers.push(createLayerEditTemplate(tempAssessedAoiLayer, 'add'));
-          newLayers.push(createLayerEditTemplate(tempSketchLayer, 'add'));
-        } else {
-          newLayers.push(
-            createLayerEditTemplate(tempImageAnalysisLayer, 'add'),
-          );
-          newLayers.push(createLayerEditTemplate(tempAssessedAoiLayer, 'add'));
-          // update the parentLayer of layers being added to the group layer
-          setLayers((layers) => {
-            newLayers.forEach((newLayer) => {
-              const layer = layers.find((l) => l.layerId === newLayer.layerId);
-              if (!layer) return;
-
-              layer.parentLayer = groupLayer;
-              groupLayer.add(layer.sketchLayer);
-              map.layers.remove(layer.sketchLayer);
-              if (layer.pointsLayer) {
-                groupLayer.add(layer.pointsLayer);
-                map.layers.remove(layer.pointsLayer);
-              }
-              if (layer.hybridLayer) {
-                groupLayer.add(layer.hybridLayer);
-                map.layers.remove(layer.hybridLayer);
-              }
-            });
-
-            return layers;
-          });
-        }
-      }
-
-      // create the scenario to be added to edits
-      const newScenario: ScenarioEditsType = {
-        type: 'scenario',
-        id: -1,
-        pointsId: -1,
-        layerId: groupLayer.id,
-        portalId: '',
-        name: scenarioName,
-        label: scenarioName,
-        value: groupLayer.id,
-        layerType: 'Samples',
-        addedFrom: 'sketch',
-        hasContaminationRan: false,
-        status: 'added',
-        editType: 'add',
-        visible: true,
-        listMode: 'show',
-        scenarioName: scenarioName,
-        scenarioDescription: scenarioDescription,
-        layers: newLayers,
-        table: null,
-        referenceLayersTable: {
-          id: -1,
-          referenceLayers: [],
-        },
-        customAttributes: [],
-        deconTechSelections: defaultDeconSelections,
-        deconSummaryResults: {
-          summary: {
-            totalAoiSqM: 0,
-            totalBuildingFootprintSqM: 0,
-            totalBuildingFloorsSqM: 0,
-            totalBuildingSqM: 0,
-            totalBuildingExtWallsSqM: 0,
-            totalBuildingIntWallsSqM: 0,
-            totalBuildingRoofSqM: 0,
-          },
-          aoiPercentages: {
-            asphalt: 0,
-            concrete: 0,
-            soil: 0,
-          },
-          calculateResults: null,
-        },
-        aoiSummary: {
-          area: 0,
-          buildingFootprint: 0,
-        },
-        deconLayerResults: {
-          cost: 0,
-          time: 0,
-          wasteVolume: 0,
-          wasteMass: 0,
-          resultsTable: [],
-        },
-        calculateSettings: { current: settingDefaults },
-        importedAoiLayer: null,
-        aoiLayerMode: 'draw',
-        gsgFile: null,
-      };
+        return layers;
+      });
 
       // make a copy of the edits context variable
       setEdits((edits) => {
@@ -617,7 +490,7 @@ function EditScenario({
         if (tempAssessedAoiLayer) tLayers.push(tempAssessedAoiLayer);
 
         // update layers (set parent layer)
-        (window as any).totsLayers = tLayers;
+        window.totsLayers = tLayers;
         setLayers(tLayers);
 
         // update sketchLayer (clear parent layer)
@@ -889,7 +762,7 @@ function EditLayer({
       setEdits(editsCopy);
     } else {
       // create the layer
-      const tempLayer = createSampleLayer(layerName, parentLayer);
+      const tempLayer = createSampleLayer(isDecon(), layerName, parentLayer);
 
       // add the new layer to layers
       setLayers((layers) => {
@@ -929,9 +802,9 @@ function EditLayer({
 
         const scenario = editsCopy.edits.find(
           (edit) =>
-            edit.type === 'scenario' &&
+            ['scenario', 'scenario-decon'].includes(edit.type) &&
             edit.layerId === selectedScenario.layerId,
-        ) as ScenarioEditsType;
+        ) as ScenarioEditsType | ScenarioDeconEditsType;
         const newLayer = scenario.layers.find(
           (layer) => layer.layerId === tempLayer.layerId,
         );

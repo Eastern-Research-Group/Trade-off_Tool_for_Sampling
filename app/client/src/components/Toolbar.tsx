@@ -31,7 +31,11 @@ import {
   getNextScenarioLayer,
 } from 'utils/sketchUtils';
 // types
-import { ScenarioEditsType, LayerEditsType } from 'types/Edits';
+import {
+  LayerEditsType,
+  ScenarioDeconEditsType,
+  ScenarioEditsType,
+} from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { AppType } from 'types/Navigation';
 // styles
@@ -47,6 +51,7 @@ const toolBarHeight = '40px';
 // Builds the legend item for a layer
 function buildLegendListItem(event: any, view: __esri.MapView) {
   const item = event.item;
+  item.childrenSortable = false;
 
   // create the slider
   const sliderContainer = document.createElement('div');
@@ -69,7 +74,7 @@ function buildLegendListItem(event: any, view: __esri.MapView) {
   // find the layer type (i.e., Samples, VSP, AOI, etc.)
   let subtitle = '';
   const legendItems: LegendRowType[] = [];
-  const layer = (window as any).totsLayers?.find(
+  const layer = window.totsLayers?.find(
     (layer: LayerType) =>
       layer.layerId === item?.layer?.id ||
       layer.pointsLayer?.id === item?.layer?.id ||
@@ -79,7 +84,7 @@ function buildLegendListItem(event: any, view: __esri.MapView) {
   const isPoints = item.layer.id?.toString().includes('-points');
   const isHybrid = item.layer.id?.toString().includes('-hybrid');
 
-  const defaultSymbols: DefaultSymbolsType = (window as any).totsDefaultSymbols;
+  const defaultSymbols: DefaultSymbolsType = window.totsDefaultSymbols;
 
   // build the data for building the legend
   if (
@@ -106,32 +111,30 @@ function buildLegendListItem(event: any, view: __esri.MapView) {
   if (layer?.layerType === 'Samples' || layer?.layerType === 'VSP') {
     subtitle = 'Sample Type';
 
-    (window as any).totsAllSampleOptions?.forEach(
-      (option: SampleSelectType) => {
-        const attributes = (window as any).totsSampleAttributes[option.value];
-        const style =
-          isPoints || (isHybrid && attributes.ShapeType === 'point')
-            ? attributes?.POINT_STYLE || null
-            : null;
-        if (defaultSymbols.symbols.hasOwnProperty(option.value)) {
-          legendItems.push({
-            value: option.value,
-            title: option.label,
-            symbol: defaultSymbols.symbols[option.value],
-            style,
-            type: 'polygon',
-          });
-        } else {
-          legendItems.push({
-            value: 'Samples',
-            title: option.label,
-            symbol: defaultSymbols.symbols['Samples'],
-            style,
-            type: 'polygon',
-          });
-        }
-      },
-    );
+    window.totsAllSampleOptions?.forEach((option: SampleSelectType) => {
+      const attributes = window.totsSampleAttributes[option.value];
+      const style =
+        isPoints || (isHybrid && attributes.ShapeType === 'point')
+          ? attributes?.POINT_STYLE || null
+          : null;
+      if (defaultSymbols.symbols.hasOwnProperty(option.value)) {
+        legendItems.push({
+          value: option.value,
+          title: option.label,
+          symbol: defaultSymbols.symbols[option.value],
+          style,
+          type: 'polygon',
+        });
+      } else {
+        legendItems.push({
+          value: 'Samples',
+          title: option.label,
+          symbol: defaultSymbols.symbols['Samples'],
+          style,
+          type: 'polygon',
+        });
+      }
+    });
   }
   if (layer?.layerType === 'Decon Mask') {
     legendItems.push({
@@ -619,6 +622,7 @@ function Toolbar({ appType }: Props) {
     const newLayerList = new LayerList({
       view: mapView,
       container: 'legend-container',
+      dragEnabled: true,
       listItemCreatedFunction: (event) => {
         buildLegendListItem(event, mapView);
       },
@@ -727,7 +731,11 @@ function Toolbar({ appType }: Props) {
       setEdits(newEdits);
 
       // find the layer
-      let totsLayerToRemove: ScenarioEditsType | LayerEditsType | null = null;
+      let totsLayerToRemove:
+        | ScenarioEditsType
+        | ScenarioDeconEditsType
+        | LayerEditsType
+        | null = null;
       const { editsScenario, editsLayer } = findLayerInEdits(
         edits.edits,
         layerToRemove.id,

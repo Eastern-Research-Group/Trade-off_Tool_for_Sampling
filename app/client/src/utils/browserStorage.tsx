@@ -27,9 +27,18 @@ import { DialogContext, AlertDialogOptions } from 'contexts/Dialog';
 import { LookupFilesContext } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext } from 'contexts/Publish';
-import { SketchContext } from 'contexts/Sketch';
+import {
+  AoiCharacterizationData,
+  PlanGraphics,
+  SketchContext,
+} from 'contexts/Sketch';
 // types
-import { EditsType, ScenarioEditsType, ServiceMetaDataType } from 'types/Edits';
+import {
+  EditsType,
+  ScenarioDeconEditsType,
+  ScenarioEditsType,
+  ServiceMetaDataType,
+} from 'types/Edits';
 import { LayerType, PortalLayerType, UrlLayerType } from 'types/Layer';
 import { AppType, GoToOptions } from 'types/Navigation';
 import { SampleTypeOptions } from 'types/Publish';
@@ -206,16 +215,18 @@ function useTrainingModeStorage() {
 // Uses browser storage for holding any editable layers.
 function useEditsLayerStorage(appType: AppType) {
   const key = 'edits';
+  const { setCalculateResultsDecon } = useContext(CalculateContext);
   const { setOptions } = useContext(DialogContext);
   const {
     defaultSymbols,
     edits,
-    setEdits,
-    layersInitialized,
-    setLayersInitialized,
     layers,
-    setLayers,
+    layersInitialized,
     map,
+    setAoiCharacterizationData,
+    setEdits,
+    setLayers,
+    setLayersInitialized,
     symbolsInitialized,
   } = useContext(SketchContext);
   const getPopupTemplate = useDynamicPopup(appType);
@@ -246,6 +257,9 @@ function useEditsLayerStorage(appType: AppType) {
 
     const newLayers: LayerType[] = [];
     const graphicsLayers: (__esri.GraphicsLayer | __esri.GroupLayer)[] = [];
+    let calculateResults: any | null = null;
+    const newAoiCharacterizationGraphics: PlanGraphics = {};
+
     edits.edits.forEach((editsLayer) => {
       // add layer edits directly
       if (editsLayer.type === 'layer') {
@@ -259,7 +273,10 @@ function useEditsLayerStorage(appType: AppType) {
         );
       }
       // scenarios need to be added to a group layer first
-      if (editsLayer.type === 'scenario') {
+      if (
+        editsLayer.type === 'scenario' ||
+        editsLayer.type === 'scenario-decon'
+      ) {
         const groupLayer = new GroupLayer({
           id: editsLayer.layerId,
           title: editsLayer.scenarioName,
@@ -268,23 +285,58 @@ function useEditsLayerStorage(appType: AppType) {
         });
 
         // create the layers and add them to the group layer
+        const buildingGraphics: __esri.Graphic[] = [];
+        const imageGraphics: __esri.Graphic[] = [];
         const scenarioLayers: __esri.GraphicsLayer[] = [];
         editsLayer.layers.forEach((layer) => {
-          scenarioLayers.push(
-            ...createLayer({
-              defaultSymbols,
-              editsLayer: layer,
-              getPopupTemplate,
-              newLayers,
-              parentLayer: groupLayer,
-            }),
-          );
+          const layers = createLayer({
+            defaultSymbols,
+            editsLayer: layer,
+            getPopupTemplate,
+            newLayers,
+            parentLayer: groupLayer,
+          });
+          scenarioLayers.push(...layers);
+
+          if (layer.layerType === 'AOI Assessed')
+            buildingGraphics.push(...layers[0].graphics);
+          if (layer.layerType === 'Image Analysis')
+            imageGraphics.push(...layers[0].graphics);
         });
         groupLayer.addMany(scenarioLayers);
 
+        if (editsLayer.type === 'scenario-decon') {
+          newAoiCharacterizationGraphics[editsLayer.layerId] = {
+            aoiArea: editsLayer.aoiSummary.area,
+            aoiPercentages: editsLayer.deconSummaryResults.aoiPercentages,
+            buildingFootprint: editsLayer.aoiSummary.buildingFootprint,
+            graphics: buildingGraphics,
+            imageGraphics,
+            summary: editsLayer.deconSummaryResults.summary,
+          };
+        }
+
         graphicsLayers.push(groupLayer);
+
+        calculateResults =
+          editsLayer?.deconSummaryResults?.calculateResults ?? null;
       }
     });
+
+    if (Object.keys(newAoiCharacterizationGraphics).length > 0) {
+      setAoiCharacterizationData({
+        status: 'success',
+        planGraphics: newAoiCharacterizationGraphics,
+      });
+    }
+
+    if (calculateResults) {
+      setCalculateResultsDecon({
+        status: 'success',
+        panelOpen: false,
+        data: calculateResults,
+      });
+    }
 
     if (newLayers.length > 0) {
       setLayers([...layers, ...newLayers]);
@@ -526,7 +578,7 @@ function usePortalLayerStorage() {
       });
       map.add(layer);
 
-      if (isDecon()) {
+      if (isDecon() && portalLayer.type === 'tots') {
         addTotsLayerForTods(layer);
       }
     });
@@ -752,8 +804,9 @@ function useSamplesLayerStorage() {
     edits,
     layers,
     selectedScenario,
-    setSelectedScenario,
     sketchLayer,
+    setJsonDownload,
+    setSelectedScenario,
     setSketchLayer,
   } = useContext(SketchContext);
 
@@ -769,9 +822,20 @@ function useSamplesLayerStorage() {
     // set the selected scenario first
     const scenarioId = readFromStorage(key2);
     const scenario = edits.edits.find(
-      (item) => item.type === 'scenario' && item.layerId === scenarioId,
+      (item) =>
+        ['scenario', 'scenario-decon'].includes(item.type) &&
+        item.layerId === scenarioId,
     );
-    if (scenario) setSelectedScenario(scenario as ScenarioEditsType);
+    if (scenario) {
+      setSelectedScenario(
+        scenario as ScenarioEditsType | ScenarioDeconEditsType,
+      );
+      if (scenario.type === 'scenario-decon') {
+        setJsonDownload(
+          scenario.deconSummaryResults?.calculateResults?.resultsTable,
+        );
+      }
+    }
 
     // then set the layer
     const layerId = readFromStorage(key);
@@ -1274,7 +1338,7 @@ function useUserDefinedSampleAttributesStorage() {
     // Update totsSampleAttributes variable on the window object. This is a workaround
     // to an issue where the sampleAttributes state variable is not available within esri
     // event handlers.
-    (window as any).totsSampleAttributes = newSampleAttributes;
+    window.totsSampleAttributes = newSampleAttributes;
 
     setSampleAttributes(newSampleAttributes);
   }, [
@@ -1298,7 +1362,7 @@ function useUserDefinedSampleAttributesStorage() {
     // Update totsDeconAttributes variable on the window object. This is a workaround
     // to an issue where the deconAttributes state variable is not available within esri
     // event handlers.
-    (window as any).totsDeconAttributes = newDeconAttributes;
+    window.totsDeconAttributes = newDeconAttributes;
 
     setSampleAttributesDecon(newDeconAttributes);
   }, [

@@ -12,6 +12,7 @@ import React, {
 import { css } from '@emotion/react';
 // components
 import AddData from 'components/AddData';
+import AdditionalSetup from 'components/AdditionalSetup';
 import Calculate from 'components/Calculate';
 import CalculateResults from 'components/CalculateResults';
 import ConfigureOutput from 'components/ConfigureOutput';
@@ -413,9 +414,8 @@ function NavBar({ appType, height }: Props) {
   }
 
   // run calculations to update the running tally
-  const useCalcPlan =
-    appType === 'decon' ? useCalculateDeconPlan : useCalculatePlan;
-  useCalcPlan();
+  if (appType === 'sampling') useCalculatePlan();
+  useCalculateDeconPlan();
 
   const pannelRef = useRef<HTMLDivElement>(null);
 
@@ -599,6 +599,9 @@ function NavBar({ appType, height }: Props) {
             >
               {currentPanel.value === 'addData' && (
                 <AddData appType={appType} />
+              )}
+              {currentPanel.value === 'setup' && (
+                <AdditionalSetup appType={appType} />
               )}
               {currentPanel.value === 'locateSamples' && <LocateSamples />}
               {currentPanel.value === 'decon' && <CreateDeconPlan />}

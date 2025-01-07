@@ -660,7 +660,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
           const originalZ = requests[i].originalValuesZ[originalZIndex];
           const poly = new Graphic({
             attributes: {
-              ...(window as any).totsSampleAttributes[typeuuid],
+              ...window.totsSampleAttributes[typeuuid],
               CREATEDDATE: timestamp,
               DECISIONUNITUUID: sketchLayer.uuid,
               DECISIONUNIT: sketchLayer.label,
@@ -1280,7 +1280,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                   <MessageBox
                     severity="warning"
                     title=""
-                    message={`Due to limited sample overlap and/or sample areas partially outside of the specified AOI, the current sampling plan reflects ${percentX.toLocaleString()}% rather than the goal of ${percentY.toLocaleString()}% of the AOI sampled.`}
+                    message={`Due to limited sample overlap and/or sample areas partially outside of the specified AOI, the current sampling plan reflects ${percentX?.toLocaleString()}% rather than the goal of ${percentY?.toLocaleString()}% of the AOI sampled.`}
                   />
                 )}
               {generateRandomResponse.status === 'failure' &&

@@ -8,7 +8,6 @@ import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import ColorPicker from 'components/ColorPicker';
-import CustomSampleType from 'components/CustomSampleType';
 import { EditScenario, EditLayer } from 'components/EditLayerMetaData';
 import GenerateSamples from 'components/GenerateSamples';
 import MessageBox from 'components/MessageBox';
@@ -40,6 +39,8 @@ import {
   updateLayerEdits,
 } from 'utils/sketchUtils';
 import { getNewName, getScenarioName } from 'utils/utils';
+// styles
+import { isDecon } from 'styles';
 
 // --- styles (SketchButton) ---
 const buttonContainerStyles = css`
@@ -1164,6 +1165,7 @@ function LocateSamples() {
 
                           // create the layer
                           const tempLayer = createSampleLayer(
+                            isDecon(),
                             newLayerName,
                             sketchLayer.parentLayer,
                           );
@@ -1391,7 +1393,9 @@ function LocateSamples() {
                               key={index}
                               layers={layers}
                               value={sampleTypeUuid}
-                              selectedScenario={selectedScenario}
+                              selectedScenario={
+                                selectedScenario as ScenarioEditsType
+                              }
                               label={
                                 edited ? `${sampleType} (edited)` : sampleType
                               }
@@ -1424,7 +1428,9 @@ function LocateSamples() {
                               value={sampleTypeUuid}
                               label={option.label}
                               layers={layers}
-                              selectedScenario={selectedScenario}
+                              selectedScenario={
+                                selectedScenario as ScenarioEditsType
+                              }
                               iconClass={
                                 shapeType === 'point'
                                   ? 'fas fa-pen-fancy'
@@ -1454,14 +1460,6 @@ function LocateSamples() {
                     id="gen-statistic"
                     title="Add Statistical Sampling Approach"
                     type="statistic"
-                  />
-                </div>
-              </AccordionItem>
-              <AccordionItem title={'Create Custom Sample Types'}>
-                <div css={sectionContainer}>
-                  <CustomSampleType
-                    appType="sampling"
-                    id="plan-custom-sample-types"
                   />
                 </div>
               </AccordionItem>

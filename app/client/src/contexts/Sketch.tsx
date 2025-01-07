@@ -16,7 +16,11 @@ import { getEnvironmentStringParam } from 'utils/arcGisRestUtils';
 import { fetchCheck } from 'utils/fetchUtils';
 import { updatePointSymbol, updatePolygonSymbol } from 'utils/sketchUtils';
 // types
-import { EditsType, ScenarioEditsType } from 'types/Edits';
+import {
+  EditsType,
+  ScenarioDeconEditsType,
+  ScenarioEditsType,
+} from 'types/Edits';
 import { LayerType, PortalLayerType, UrlLayerType } from 'types/Layer';
 import {
   DefaultSymbolsType,
@@ -64,6 +68,35 @@ export type JsonDownloadType = {
   aboveDetectionLimit: boolean;
 };
 
+export type AoiCharacterizationData = {
+  status: 'none' | 'fetching' | 'success' | 'failure';
+  planGraphics: PlanGraphics;
+};
+
+export type PlanGraphics = {
+  [planId: string]: {
+    graphics: __esri.Graphic[];
+    imageGraphics: __esri.Graphic[];
+    aoiArea: number;
+    buildingFootprint: number;
+    summary: {
+      totalAoiSqM: number;
+      totalBuildingFootprintSqM: number;
+      totalBuildingFloorsSqM: number;
+      totalBuildingSqM: number;
+      totalBuildingExtWallsSqM: number;
+      totalBuildingIntWallsSqM: number;
+      totalBuildingRoofSqM: number;
+    };
+    aoiPercentages: {
+      numAois: number;
+      asphalt: number;
+      concrete: number;
+      soil: number;
+    };
+  };
+};
+
 export type PlanSettings = {
   name: string;
   description: string;
@@ -98,14 +131,16 @@ type SketchType = {
   edits: EditsType;
   setEdits: Dispatch<SetStateAction<EditsType>>;
 
+  aoiCharacterizationData: AoiCharacterizationData;
+  setAoiCharacterizationData: Dispatch<SetStateAction<AoiCharacterizationData>>;
   aoiData: AoiDataType;
   setAoiData: Dispatch<SetStateAction<AoiDataType>>;
-  jsonDownload: JsonDownloadType[];
-  setJsonDownload: Dispatch<SetStateAction<JsonDownloadType[]>>;
   defaultDeconSelections: any[];
   setDefaultDeconSelections: Dispatch<SetStateAction<any[]>>;
   deconSelections: any[];
   setDeconSelections: Dispatch<SetStateAction<any[]>>;
+  jsonDownload: JsonDownloadType[];
+  setJsonDownload: Dispatch<SetStateAction<JsonDownloadType[]>>;
   planSettings: PlanSettings;
   setPlanSettings: Dispatch<SetStateAction<PlanSettings>>;
 
@@ -139,8 +174,10 @@ type SketchType = {
   setSceneViewForArea: Dispatch<SetStateAction<__esri.SceneView | null>>;
   selectedSampleIds: SelectedSampleType[];
   setSelectedSampleIds: Dispatch<SetStateAction<SelectedSampleType[]>>;
-  selectedScenario: ScenarioEditsType | null;
-  setSelectedScenario: Dispatch<SetStateAction<ScenarioEditsType | null>>;
+  selectedScenario: ScenarioEditsType | ScenarioDeconEditsType | null;
+  setSelectedScenario: Dispatch<
+    SetStateAction<ScenarioEditsType | ScenarioDeconEditsType | null>
+  >;
   sketchVM: SketchViewModelType | null;
   setSketchVM: Dispatch<SetStateAction<SketchViewModelType | null>>;
   aoiSketchVM: __esri.SketchViewModel | null;
@@ -190,14 +227,16 @@ export const SketchContext = createContext<SketchType>({
   edits: { count: 0, edits: [] },
   setEdits: () => {},
 
+  aoiCharacterizationData: { status: 'none', planGraphics: {} },
+  setAoiCharacterizationData: () => {},
   aoiData: { count: 0, graphics: null },
   setAoiData: () => {},
-  jsonDownload: [],
-  setJsonDownload: () => {},
   defaultDeconSelections: [],
   setDefaultDeconSelections: () => {},
   deconSelections: [],
   setDeconSelections: () => {},
+  jsonDownload: [],
+  setJsonDownload: () => {},
   planSettings: { name: '', description: '' },
   setPlanSettings: () => {},
 
@@ -309,15 +348,20 @@ export function SketchProvider({ children }: Props) {
   );
   const [edits, setEdits] = useState<EditsType>({ count: 0, edits: [] });
 
+  const [aoiCharacterizationData, setAoiCharacterizationData] =
+    useState<AoiCharacterizationData>({
+      status: 'none',
+      planGraphics: {},
+    });
   const [aoiData, setAoiData] = useState<AoiDataType>({
     count: 0,
     graphics: null,
   });
-  const [jsonDownload, setJsonDownload] = useState<JsonDownloadType[]>([]);
   const [defaultDeconSelections, setDefaultDeconSelections] = useState<any[]>(
     [],
   );
   const [deconSelections, setDeconSelections] = useState<any[]>([]);
+  const [jsonDownload, setJsonDownload] = useState<JsonDownloadType[]>([]);
   const [planSettings, setPlanSettings] = useState<PlanSettings>({
     name: '',
     description: '',
@@ -347,7 +391,7 @@ export function SketchProvider({ children }: Props) {
   const [
     selectedScenario,
     setSelectedScenario, //
-  ] = useState<ScenarioEditsType | null>(null);
+  ] = useState<ScenarioEditsType | ScenarioDeconEditsType | null>(null);
   const [
     sketchVM,
     setSketchVM, //
@@ -380,14 +424,14 @@ export function SketchProvider({ children }: Props) {
   // to an issue where the layers state variable is not available within esri
   // event handlers.
   useEffect(() => {
-    (window as any).totsLayers = layers;
+    window.totsLayers = layers;
   }, [layers]);
 
   // Update totsDefaultSymbols variable on the window object. This is a workaround
   // to an issue where the defaultSymbols state variable is not available within esri
   // event handlers.
   useEffect(() => {
-    (window as any).totsDefaultSymbols = defaultSymbols;
+    window.totsDefaultSymbols = defaultSymbols;
   }, [defaultSymbols]);
 
   // Keep the allSampleOptions array up to date
@@ -414,7 +458,7 @@ export function SketchProvider({ children }: Props) {
     // Update totsAllSampleOptions variable on the window object. This is a workaround
     // to an issue where the allSampleOptions state variable is not available within esri
     // event handlers.
-    (window as any).totsAllSampleOptions = allSampleOptions;
+    window.totsAllSampleOptions = allSampleOptions;
 
     setAllSampleOptions(allSampleOptions);
   }, [userDefinedOptions, userDefinedAttributes, sampleTypes]);
@@ -583,6 +627,17 @@ export function SketchProvider({ children }: Props) {
     setDefaultSymbols(initialDefaultSymbols);
   }
 
+  useEffect(() => {
+    window.totsEditsLayers = edits.edits.map((e) => {
+      return {
+        id: e.id,
+        layerId: e.layerId,
+        name: e.name,
+        type: e.type,
+      };
+    });
+  }, [edits]);
+
   return (
     <SketchContext.Provider
       value={{
@@ -597,14 +652,16 @@ export function SketchProvider({ children }: Props) {
         edits,
         setEdits,
 
+        aoiCharacterizationData,
+        setAoiCharacterizationData,
         aoiData,
         setAoiData,
-        jsonDownload,
-        setJsonDownload,
         defaultDeconSelections,
         setDefaultDeconSelections,
         deconSelections,
         setDeconSelections,
+        jsonDownload,
+        setJsonDownload,
         planSettings,
         setPlanSettings,
 

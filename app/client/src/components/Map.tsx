@@ -189,6 +189,12 @@ function Map({ appType, height }: Props) {
           type = 'sketchedMask';
         } else if (layer.type === 'graphics' || groupType === 'graphics') {
           type = 'graphics';
+
+          const out = window.totsEditsLayers.find(
+            (e) => e.layerId === layer.id,
+          );
+          if (out && ['scenario', 'scenario-decon'].includes(out?.type ?? ''))
+            type = out.type as string;
         } else if (layer.type === 'feature' || groupType === 'feature') {
           type = 'feature';
         } else if (layer.type === 'map-image') {
@@ -219,6 +225,8 @@ function Map({ appType, height }: Props) {
         'contaminationMapUpdated',
         'deconResults',
         'sketchedMask',
+        'scenario-decon',
+        'scenario',
         'graphics',
       ];
       map.layers.sort((a: __esri.Layer, b: __esri.Layer) => {
