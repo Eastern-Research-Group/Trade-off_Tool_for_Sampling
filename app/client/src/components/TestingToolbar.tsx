@@ -20,8 +20,15 @@ const buttonStyles = css`
 `;
 
 function TestingToolbar() {
-  const { layers, map, mapView, sceneView, selectedScenario, sketchVM } =
-    useContext(SketchContext);
+  const {
+    aoiSketchVM,
+    layers,
+    map,
+    mapView,
+    sceneView,
+    selectedScenario,
+    sketchVM,
+  } = useContext(SketchContext);
 
   return (
     <div css={toolbarStyles}>
@@ -53,9 +60,12 @@ function TestingToolbar() {
       </button>
       <button
         css={buttonStyles}
-        onClick={() => console.log('sketchVM: ', sketchVM)}
+        onClick={() => {
+          console.log('sketchVM: ', sketchVM);
+          console.log('aoiSketchVM: ', aoiSketchVM);
+        }}
       >
-        Log SketchVM
+        Log SketchVMs
       </button>
       <button
         css={buttonStyles}
