@@ -62,6 +62,7 @@ import { FieldInfos, LayerType, LayerTypeName } from 'types/Layer';
 import { AppType } from 'types/Navigation';
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
+import { writeToStorage } from 'utils/browserStorage';
 import { fetchPost, fetchPostFile, geoprocessorFetch } from 'utils/fetchUtils';
 import {
   calculateArea,
@@ -560,41 +561,6 @@ async function fetchBuildingData(
 
     console.log('planGraphics: ', planGraphics);
   }
-}
-
-// Saves data to session storage
-export async function writeToStorage(
-  key: string,
-  data: string | boolean | object,
-  setOptions: Dispatch<SetStateAction<AlertDialogOptions | null>>,
-) {
-  const itemSize = Math.round(JSON.stringify(data).length / 1024);
-
-  try {
-    if (typeof data === 'string') sessionStorage.setItem(key, data);
-    else sessionStorage.setItem(key, JSON.stringify(data));
-  } catch (e) {
-    const storageSize = Math.round(
-      JSON.stringify(sessionStorage).length / 1024,
-    );
-    const message = `New storage size would be ${
-      storageSize + itemSize
-    }K up from ${storageSize}K already in storage`;
-    console.error(e);
-
-    setOptions({
-      title: 'Session Storage Limit Reached',
-      ariaLabel: 'Session Storage Limit Reached',
-      description: message,
-    });
-
-    window.logErrorToGa(`${key}:${message}`);
-  }
-}
-
-// Reads data from session storage
-export function readFromStorage(key: string) {
-  return sessionStorage.getItem(key);
 }
 
 // Hook that allows the user to easily start over without

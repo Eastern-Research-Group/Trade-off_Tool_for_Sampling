@@ -2166,7 +2166,8 @@ export function updatePointSymbol(
       return;
 
     layer.pointsLayer.graphics.forEach((graphic) => {
-      if (graphic.geometry.type !== 'point') return;
+      if (graphic?.geometry?.type && graphic?.geometry?.type !== 'point')
+        return;
 
       let layerType = layer.layerType;
       if (layerType === 'VSP') layerType = 'Samples';
@@ -2183,7 +2184,8 @@ export function updatePointSymbol(
     });
 
     layer.hybridLayer.graphics.forEach((graphic) => {
-      if (graphic.geometry.type !== 'point') return;
+      if (graphic?.geometry?.type && graphic?.geometry?.type !== 'point')
+        return;
 
       let layerType = layer.layerType;
       if (layerType === 'VSP') layerType = 'Samples';
