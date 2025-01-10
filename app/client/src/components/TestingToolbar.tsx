@@ -4,6 +4,8 @@ import React, { useContext } from 'react';
 import { css } from '@emotion/react';
 // contexts
 import { SketchContext } from 'contexts/Sketch';
+// utils
+import { clearDB } from 'utils/browserStorage';
 
 const toolbarStyles = css`
   padding: 8px;
@@ -67,12 +69,7 @@ function TestingToolbar() {
       >
         Log SketchVMs
       </button>
-      <button
-        css={buttonStyles}
-        onClick={() => {
-          sessionStorage.clear();
-        }}
-      >
+      <button css={buttonStyles} onClick={clearDB}>
         Clear Session Data
       </button>
     </div>

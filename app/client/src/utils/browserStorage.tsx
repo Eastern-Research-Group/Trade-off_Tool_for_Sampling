@@ -64,6 +64,13 @@ const metadataTableName = 'tots-metadata';
 const sessionId = getOrCreateTabId();
 const db = new Dexie('tots-sessions-cache');
 
+export async function clearDB() {
+  // Remove the session from indexeddb and session storage
+  await db.table('tots-data').where('key').startsWith(sessionId).delete();
+  await db.table(metadataTableName).delete(sessionId);
+  sessionStorage.clear();
+}
+
 async function initializeDB() {
   // Dynamically create the table for this tab
   db.version(1).stores({
@@ -1556,7 +1563,7 @@ function usePublishStorage(dbInitialized: boolean) {
       setReadDone(true);
 
       // set the selected scenario first
-      if (records.length > 0) {
+      if (records.length > 0 && records[0]) {
         setSampleTypeSelections(records[0] as SampleTypeOptions);
       }
 
@@ -1572,12 +1579,12 @@ function usePublishStorage(dbInitialized: boolean) {
       }
 
       // set the selected scenario first
-      if (records.length > 2 && records[2] !== null) {
+      if (records.length > 2 && records[2]) {
         setPublishSamplesMode(records[2] as any);
       }
 
       // set the publish output settings
-      if (records.length > 3 && records[3] !== null) {
+      if (records.length > 3 && records[3]) {
         const outputSettings: OutputSettingsType = records[3];
         setIncludePartialPlan(outputSettings.includePartialPlan);
         setIncludePartialPlanWebMap(outputSettings.includePartialPlanWebMap);
