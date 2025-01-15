@@ -177,12 +177,12 @@ export function convertToPoint(polygon: __esri.Graphic) {
  * @returns simple graphic object with just attributes and geometry
  */
 export function convertToSimpleGraphic(graphic: __esri.Graphic) {
-  let geometry: __esri.Polygon | object = {};
+  let geometry: any = {};
   if (graphic?.geometry?.type === 'polygon') {
-    geometry = graphic.geometry as __esri.Polygon;
+    geometry = graphic.geometry.toJSON();
   }
   if (graphic?.geometry?.type === 'point') {
-    geometry = graphic.geometry as __esri.Point;
+    geometry = graphic.geometry.toJSON();
   }
 
   // currently we only have polygons
@@ -2166,7 +2166,8 @@ export function updatePointSymbol(
       return;
 
     layer.pointsLayer.graphics.forEach((graphic) => {
-      if (graphic.geometry.type !== 'point') return;
+      if (graphic?.geometry?.type && graphic?.geometry?.type !== 'point')
+        return;
 
       let layerType = layer.layerType;
       if (layerType === 'VSP') layerType = 'Samples';
@@ -2183,7 +2184,8 @@ export function updatePointSymbol(
     });
 
     layer.hybridLayer.graphics.forEach((graphic) => {
-      if (graphic.geometry.type !== 'point') return;
+      if (graphic?.geometry?.type && graphic?.geometry?.type !== 'point')
+        return;
 
       let layerType = layer.layerType;
       if (layerType === 'VSP') layerType = 'Samples';
@@ -2217,6 +2219,12 @@ export function updatePolygonSymbol(
 
     layer.sketchLayer.graphics.forEach((graphic) => {
       if (graphic.geometry.type !== 'polygon') return;
+      if (
+        ['AOI Assessed', 'Decon Mask', 'Image Analysis'].includes(
+          layer.layerType,
+        )
+      )
+        return;
 
       let layerType = layer.layerType;
       if (layerType === 'VSP') layerType = 'Samples';

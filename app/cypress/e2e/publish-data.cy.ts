@@ -1,3 +1,5 @@
+import { readFromStorage, setIndexedDbValue } from 'cypress/support/utilities';
+
 describe('Add data from file uploads', function () {
   beforeEach(function () {
     cy.loadPage(true);
@@ -37,6 +39,9 @@ describe('Add data from file uploads', function () {
     cy.findByRole('button', { name: 'Next' })
       .should('exist')
       .click({ force: true });
+    cy.findByRole('button', { name: 'Next' })
+      .should('exist')
+      .click({ force: true });
 
     cy.get('#scenario-name-input').type(planName);
     cy.findByRole('button', { name: 'Save' }).click({ force: true });
@@ -48,8 +53,11 @@ describe('Add data from file uploads', function () {
       .click({ force: true });
 
     cy.fixture('2.5-week-swab.json').then((file) => {
-      sessionStorage.setItem('tots_edits', JSON.stringify(file));
+      setIndexedDbValue('edits', file);
     });
+    cy.findByRole('button', { name: 'Next' })
+      .should('exist')
+      .click({ force: true });
     cy.findByRole('button', { name: 'Next' })
       .should('exist')
       .click({ force: true });
@@ -177,6 +185,10 @@ describe('Add data from file uploads', function () {
     cy.findByRole('button', { name: 'Save' })
       .should('exist')
       .click({ force: true });
+
+    cy.findByRole('button', { name: 'Additional Setup' })
+      .should('exist')
+      .click({ force: true });
     cy.findByText('Create Custom Sample Types')
       .should('exist')
       .click({ force: true });
@@ -200,7 +212,7 @@ describe('Add data from file uploads', function () {
     cy.findByRole('button', { name: 'Save' }).click({ force: true });
 
     cy.fixture('custom-sample-type.json').then((file) => {
-      sessionStorage.setItem('tots_edits', JSON.stringify(file));
+      setIndexedDbValue('edits', file);
     });
 
     cy.login();
@@ -208,27 +220,23 @@ describe('Add data from file uploads', function () {
     cy.findByRole('button', { name: 'OK' })
       .should('exist')
       .click({ force: true });
-    cy.findByRole('button', { name: 'Next' }).click({ force: true });
-    cy.findByRole('button', { name: 'Next' }).click({ force: true });
+    cy.findByRole('button', { name: 'Configure Output' }).click({
+      force: true,
+    });
     cy.findByText('Include Custom Sample Types')
       .should('exist')
       .click({ force: true })
       .then(() => {
-        const sampleOptions = sessionStorage.getItem(
-          'tots_user_defined_sample_options',
-        );
-        const sampleOption = JSON.parse(sampleOptions)[0];
-        sessionStorage.setItem(
-          'tots_sample_type_selections',
-          JSON.stringify([
+        readFromStorage('user_defined_sample_options').then((sampleOptions) => {
+          setIndexedDbValue('sample_type_selections', [
             {
               label: 'xyz_sample_name',
-              value: `${sampleOption?.value}`,
+              value: `${sampleOptions[0]?.value}`,
               serviceId: '',
               status: 'add',
             },
-          ]),
-        );
+          ]);
+        });
       });
 
     cy.findByRole('radio', { name: 'Publish to new Feature Service' }).click({
@@ -255,6 +263,12 @@ describe('Add data from file uploads', function () {
       .should('exist')
       .click({ force: true });
     //publishSamplesMode = new
+    cy.findByRole('button', { name: 'Create Plan' }).click({
+      force: true,
+    });
+    cy.findByRole('button', { name: 'Publish Output' }).click({
+      force: true,
+    });
     cy.findByRole('button', { name: 'Publish' })
       .should('exist')
       .click({ force: true });

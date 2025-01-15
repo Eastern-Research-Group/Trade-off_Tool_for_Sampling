@@ -22,10 +22,10 @@ describe('Testing Tools', function () {
     cy.findByRole('button', { name: 'Log Layers' })
       .should('exist')
       .click({ force: true });
-    cy.findByRole('button', { name: 'Log SketchVM' })
+    cy.findByRole('button', { name: 'Log SketchVMs' })
       .should('exist')
       .click({ force: true });
-    cy.findByRole('button', { name: 'Clear Session Data' })
+    cy.findByRole('button', { name: 'Clear IndexedDB Data' })
       .should('exist')
       .click({ force: true });
   });

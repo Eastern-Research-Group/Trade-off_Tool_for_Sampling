@@ -1,8 +1,10 @@
-describe('Calculate results tests', () => {
-  beforeEach(() => {
-    sessionStorage.clear();
-  });
+import {
+  initializeDb,
+  setDisplayMode,
+  setIndexedDbValue,
+} from 'cypress/support/utilities';
 
+describe('Calculate results tests', () => {
   const loadingSpinnerId = 'tots-loading-spinner';
   const planName = 'Test Plan';
   const planDescription = 'test description';
@@ -25,9 +27,9 @@ describe('Calculate results tests', () => {
 
   it('Calculate wet-vac samples', () => {
     cy.fixture('wet-vac.json').then((file) => {
-      sessionStorage.setItem('tots_edits', JSON.stringify(file));
+      setIndexedDbValue('edits', file);
     });
-    cy.displayMode('2d', 'polygons');
+    setDisplayMode('2d', 'polygons');
     cy.loadPage();
     cy.findByRole('button', { name: 'OK' }).click({ force: true });
     cy.findByRole('button', { name: 'Create Plan' }).click({ force: true });
@@ -86,8 +88,9 @@ describe('Calculate results tests', () => {
   });
 
   it('Calculate wet-vac download file', () => {
+    initializeDb();
     cy.fixture('wet-vac.json').then((file) => {
-      sessionStorage.setItem('tots_edits', JSON.stringify(file));
+      setIndexedDbValue('edits', file);
     });
     cy.loadPage();
     cy.findByRole('button', { name: 'OK' }).click({ force: true });
@@ -127,7 +130,8 @@ describe('Calculate results tests', () => {
   });
 
   it('Verify traning-mode View Contamination Hits without file', () => {
-    sessionStorage.setItem('tots_training_mode', 'true');
+    initializeDb();
+    setIndexedDbValue('training_mode', true);
 
     cy.loadPage();
     cy.findByRole('button', { name: 'OK' })
@@ -152,9 +156,9 @@ describe('Calculate results tests', () => {
   });
 
   it('Verify traning-mode View Contamination Hits with file', () => {
-    sessionStorage.setItem('tots_training_mode', 'true');
+    setIndexedDbValue('training_mode', true);
     cy.fixture('wet-vac.json').then((file) => {
-      sessionStorage.setItem('tots_edits', JSON.stringify(file));
+      setIndexedDbValue('edits', file);
     });
 
     cy.loadPage();
@@ -175,6 +179,7 @@ describe('Calculate results tests', () => {
 
     cy.findByRole('button', { name: 'Next' }).should('exist').click();
     cy.findByRole('button', { name: 'Next' }).click({ force: true });
+    cy.findByRole('button', { name: 'Next' }).click({ force: true });
     cy.findByText('Include Contamination Map (Optional)')
       .should('exist')
       .click({ force: true });
@@ -190,9 +195,9 @@ describe('Calculate results tests', () => {
 
   it('Verify Calculate Resources', () => {
     cy.fixture('wet-vac.json').then((file) => {
-      sessionStorage.setItem('tots_edits', JSON.stringify(file));
+      setIndexedDbValue('edits', file);
     });
-    cy.displayMode('2d', 'polygons');
+    setDisplayMode('2d', 'polygons');
     cy.loadPage();
     cy.findByRole('button', { name: 'OK' }).click({ force: true });
     cy.findByRole('button', { name: 'Create Plan' }).click({ force: true });

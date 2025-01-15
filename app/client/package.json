@@ -34,6 +34,7 @@
     "@emotion/styled": "11.14.0",
     "@reach/dialog": "0.18.0",
     "@reach/window-size": "0.18.0",
+    "dexie": "4.0.10",
     "exceljs": "4.4.0",
     "file-saver": "2.0.5",
     "react": "19.0.0",
