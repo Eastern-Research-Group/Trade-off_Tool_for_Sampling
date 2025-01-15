@@ -52,13 +52,17 @@ import {
   createLayer,
   generateUUID,
 } from 'utils/sketchUtils';
+import { getEnvironment } from 'utils/utils';
 
 let appKey = 'tots';
 
+const environment = getEnvironment();
 const dataTableName = 'tots-data';
 const metadataTableName = 'tots-metadata';
 const sessionId = getOrCreateTabId();
-const db = new Dexie('tots-sessions-cache');
+const db = new Dexie(
+  `tots-sessions-cache${environment !== 'production' ? `-${environment}` : ''}`,
+);
 
 export async function clearDB() {
   // Remove the session from indexeddb and session storage

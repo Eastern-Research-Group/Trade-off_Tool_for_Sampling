@@ -3,7 +3,7 @@ import Dexie from 'dexie';
 const sessionId = 'tots-cypress-testing';
 const dataTableName = 'tots-data';
 const metadataTableName = 'tots-metadata';
-const db = new Dexie('tots-sessions-cache');
+const db = new Dexie('tots-sessions-cache-local');
 db.version(1).stores({
   [metadataTableName]: 'id, timestamp, timestampstr',
   [dataTableName]: 'key',
