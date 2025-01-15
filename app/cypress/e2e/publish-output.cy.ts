@@ -1,6 +1,8 @@
+import { initializeDb } from 'cypress/support/utilities';
+
 describe('Publish output tests', () => {
   beforeEach(() => {
-    sessionStorage.clear();
+    initializeDb();
   });
 
   const planName = 'Test Plan';
@@ -57,7 +59,7 @@ describe('Publish output tests', () => {
       'https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/EPA_Regions/FeatureServer{enter}',
     );
     cy.findByText('The layer was successfully added to the map');
-    cy.findByRole('button', { name: 'Next' }).click({ force: true });
+    cy.findByRole('button', { name: 'Create Plan' }).click({ force: true });
 
     cy.findByPlaceholderText('Enter Plan Name').type(planName);
     cy.get('#scenario-description-input').type(planDescription);

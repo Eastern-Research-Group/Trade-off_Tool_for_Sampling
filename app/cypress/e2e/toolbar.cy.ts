@@ -1,3 +1,5 @@
+import { setIndexedDbValue } from 'cypress/support/utilities';
+
 Cypress.on('uncaught:exception', (err, runnable) => {
   // returning false here prevents Cypress from
   // failing the test
@@ -35,29 +37,29 @@ describe('Toolbar tests', () => {
     //Dimension
     cy.findByText('Dimension').should('exist');
     cy.get('#dimension-3d').click({ force: true });
-    cy.validateSession('tots_display_mode', 'dimensions', '3d');
+    cy.validateSession('display_mode', 'dimensions', '3d');
     cy.get('#dimension-2d').click({ force: true });
-    cy.validateSession('tots_display_mode', 'dimensions', '2d');
+    cy.validateSession('display_mode', 'dimensions', '2d');
 
     //Shape
     cy.get('#shape-polygons').click({ force: true });
-    cy.validateSession('tots_display_mode', 'geometryType', 'polygons');
+    cy.validateSession('display_mode', 'geometryType', 'polygons');
     cy.get('#shape-points').check({ force: true });
-    cy.validateSession('tots_display_mode', 'geometryType', 'points');
+    cy.validateSession('display_mode', 'geometryType', 'points');
 
     //Training Mode
     cy.get(`[aria-label="Training Mode"]`).check({ force: true });
-    cy.validateSession('tots_training_mode', false, true);
+    cy.validateSession('training_mode', false, true);
     cy.findByText('Trade-off Tool for Sampling (TOTS) - TRAINING MODE').should(
       'exist',
     );
     cy.get(`[aria-label="Training Mode"]`).click({ force: true });
-    cy.validateSession('tots_training_mode', false, false);
+    cy.validateSession('training_mode', false, false);
   });
 
   it('Verify Legend', () => {
     cy.fixture('micro-vac.json').then((file) => {
-      sessionStorage.setItem('tots_edits', JSON.stringify(file));
+      setIndexedDbValue('edits', file);
     });
     cy.mapLoadDelay();
 

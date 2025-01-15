@@ -1,5 +1,9 @@
+import { initializeDb } from 'cypress/support/utilities';
+
 describe('Alert message tests', () => {
-  beforeEach(() => {});
+  beforeEach(() => {
+    initializeDb();
+  });
 
   const notificationMessage =
     'There will be scheduled maintenance on the geopub.epa.gov services on Thursday, July 16th starting at 8am and ending at 11am.';

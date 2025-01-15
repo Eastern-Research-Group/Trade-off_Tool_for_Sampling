@@ -28,11 +28,7 @@ import { DialogContext, AlertDialogOptions } from 'contexts/Dialog';
 import { LookupFilesContext } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext } from 'contexts/Publish';
-import {
-  AoiCharacterizationData,
-  PlanGraphics,
-  SketchContext,
-} from 'contexts/Sketch';
+import { PlanGraphics, SketchContext } from 'contexts/Sketch';
 // types
 import {
   EditsType,

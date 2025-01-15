@@ -1,13 +1,13 @@
-describe('Homepage', function () {
-  beforeEach(function () {
-    cy.loadPage(true);
-  });
+import { setIndexedDbValue } from 'cypress/support/utilities';
 
+describe('Homepage', function () {
   it('contains placeholder text', function () {
+    cy.loadPage(true);
     cy.findByText('Trade-off Tool for Sampling (TOTS)').should('be.visible');
   });
 
   it('verify help', function () {
+    cy.loadPage(true);
     cy.findByRole('button', { name: 'OK' }).should('exist').click();
     cy.findByRole('button', { name: 'Help' }).should('exist').click();
     cy.findByRole('dialog').should('be.visible');
@@ -21,6 +21,7 @@ describe('Homepage', function () {
   });
 
   it('verify splash screen cookies', function () {
+    cy.loadPage(true);
     cy.findByRole('dialog').should('be.visible');
     cy.get('#splash-screen-toggle').click();
     cy.findByRole('button', { name: 'OK' }).click();
@@ -30,17 +31,14 @@ describe('Homepage', function () {
 
   it('Verify Expand Table Panel', function () {
     cy.fixture('swab.json').then((file) => {
-      sessionStorage.setItem('tots_edits', JSON.stringify(file));
+      setIndexedDbValue('edits', file);
     });
-    sessionStorage.setItem(
-      'tots_table_panel',
-      JSON.stringify({
-        expanded: true,
-        height: 200,
-      }),
-    );
-    cy.loadPage();
+    setIndexedDbValue('table_panel', {
+      expanded: true,
+      height: 200,
+    });
 
+    cy.loadPage();
     cy.findByRole('button', { name: 'OK' }).should('exist').click();
     cy.findByRole('button', { name: 'Create Plan' }).should('exist').click();
     cy.get('#tots-table-div').children('div').children('div').first().click();
@@ -48,6 +46,7 @@ describe('Homepage', function () {
   });
 
   it('Verify Accordion toggle', function () {
+    cy.loadPage(true);
     cy.findByRole('button', { name: 'OK' }).should('exist').click();
     cy.findByRole('button', { name: 'Create Plan' }).should('exist').click();
     cy.get('#scenario-name-input').type('TOTS-CYPRESS-TEST-PLAN');

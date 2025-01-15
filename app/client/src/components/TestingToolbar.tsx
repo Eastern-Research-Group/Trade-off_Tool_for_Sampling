@@ -70,7 +70,7 @@ function TestingToolbar() {
         Log SketchVMs
       </button>
       <button css={buttonStyles} onClick={clearDB}>
-        Clear Session Data
+        Clear IndexedDB Data
       </button>
     </div>
   );

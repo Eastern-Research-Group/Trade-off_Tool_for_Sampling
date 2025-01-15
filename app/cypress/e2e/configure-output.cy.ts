@@ -1,6 +1,8 @@
+import { initializeDb } from 'cypress/support/utilities';
+
 describe('Configure output tests', () => {
   beforeEach(() => {
-    sessionStorage.clear();
+    initializeDb();
   });
 
   const planName = 'Test Plan';

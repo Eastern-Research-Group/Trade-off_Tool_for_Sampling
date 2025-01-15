@@ -41,6 +41,7 @@
     "concurrently": "9.1.0",
     "cypress": "13.16.1",
     "cypress-image-snapshot": "4.0.1",
+    "dexie": "4.0.10",
     "eslint-plugin-cypress": "4.1.0",
     "istanbul-lib-coverage": "3.2.2",
     "nyc": "17.1.0",
