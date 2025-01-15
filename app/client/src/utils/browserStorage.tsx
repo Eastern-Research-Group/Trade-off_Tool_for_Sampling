@@ -686,11 +686,11 @@ function useMapExtentStorage(dbInitialized: boolean) {
 
     Promise.all([readFromStorage(key2d), readFromStorage(key3d)])
       .then((extents) => {
-        if (extents.length > 0) {
+        if (extents.length > 0 && extents[0]) {
           mapView.extent = Extent.fromJSON(extents[0]);
         }
 
-        if (extents.length > 1) {
+        if (extents.length > 1 && extents[1]) {
           sceneView.extent = Extent.fromJSON(extents[1]);
         }
 
