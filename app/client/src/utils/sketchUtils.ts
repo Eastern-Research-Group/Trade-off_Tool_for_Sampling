@@ -460,7 +460,7 @@ export function createLayerEditTemplate(
     id: layerToEdit.id,
     pointsId: layerToEdit.pointsId,
     uuid: layerToEdit.uuid,
-    layerId: layerToEdit.sketchLayer.id,
+    layerId: layerToEdit.sketchLayer?.id ?? '',
     portalId: layerToEdit.portalId,
     name: layerToEdit.name,
     label: layerToEdit.label,
@@ -798,7 +798,7 @@ export function getNextScenarioLayer(
   // select a scenario if necessary
   const scenarios = getScenarios(edits);
   let layerEdits = edits.edits;
-  if (selectedScenario) {
+  if (selectedScenario && selectedScenario.type === 'scenario') {
     // get the layers for the selected scenario
     layerEdits = selectedScenario.layers;
   }
@@ -1437,6 +1437,7 @@ export function getSketchableLayers(
   edits: (
     | ScenarioEditsType
     | ScenarioDeconEditsType
+    | LayerDeconEditsType
     | LayerEditsType
     | LayerAoiAnalysisEditsType
   )[],
@@ -1546,7 +1547,7 @@ export function handlePopupClick(
         layer.layerId ===
         tempLayer.id.replace('-points', '').replace('-hybrid', ''),
     );
-    if (!tempSketchLayer || tempSketchLayer.sketchLayer.type !== 'graphics') {
+    if (!tempSketchLayer || tempSketchLayer.sketchLayer?.type !== 'graphics') {
       return;
     }
 
@@ -2280,7 +2281,7 @@ export function updatePolygonSymbol(
   defaultSymbols: DefaultSymbolsType,
 ) {
   layers.forEach((layer) => {
-    if (layer.sketchLayer.type !== 'graphics') return;
+    if (layer.sketchLayer?.type !== 'graphics') return;
 
     layer.sketchLayer.graphics.forEach((graphic) => {
       if (graphic.geometry.type !== 'polygon') return;

@@ -842,16 +842,6 @@ function CharacterizeAOI({
                       };
                       setEdits(newEdits);
 
-                      setAoiData((aoiData) => {
-                        const graphicsCopy = { ...aoiData.graphics };
-                        delete graphicsCopy[deconSketchLayer.layerId];
-
-                        return {
-                          count: aoiData.count + 1,
-                          graphics: graphicsCopy,
-                        };
-                      });
-
                       // select the next available scenario
                       const scenarios = getScenariosDecon(newEdits);
                       setSelectedScenario(

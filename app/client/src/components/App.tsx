@@ -417,7 +417,7 @@ function App({ appType }: Props) {
     }
   } else {
     layers.forEach((layer) => {
-      if (!layer.sketchLayer || layer.sketchLayer.type === 'feature') return;
+      if (!layer.sketchLayer || layer.sketchLayer.type !== 'graphics') return;
       if (layer?.parentLayer?.id !== selectedScenario?.layerId) return;
       if (layer.layerType === 'Samples' || layer.layerType === 'VSP') {
         const graphics = layer.sketchLayer.graphics.toArray();

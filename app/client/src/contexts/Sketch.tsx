@@ -129,8 +129,6 @@ type SketchType = {
 
   aoiCharacterizationData: AoiCharacterizationData;
   setAoiCharacterizationData: Dispatch<SetStateAction<AoiCharacterizationData>>;
-  aoiData: AoiDataType;
-  setAoiData: Dispatch<SetStateAction<AoiDataType>>;
   defaultDeconSelections: any[];
   setDefaultDeconSelections: Dispatch<SetStateAction<any[]>>;
   deconSelections: any[];
@@ -230,8 +228,6 @@ export const SketchContext = createContext<SketchType>({
 
   aoiCharacterizationData: { status: 'none', planGraphics: {} },
   setAoiCharacterizationData: () => {},
-  aoiData: { count: 0, graphics: null },
-  setAoiData: () => {},
   defaultDeconSelections: [],
   setDefaultDeconSelections: () => {},
   deconSelections: [],
@@ -357,10 +353,6 @@ export function SketchProvider({ children }: Props) {
       status: 'none',
       planGraphics: {},
     });
-  const [aoiData, setAoiData] = useState<AoiDataType>({
-    count: 0,
-    graphics: null,
-  });
   const [defaultDeconSelections, setDefaultDeconSelections] = useState<any[]>(
     [],
   );
@@ -657,8 +649,6 @@ export function SketchProvider({ children }: Props) {
 
         aoiCharacterizationData,
         setAoiCharacterizationData,
-        aoiData,
-        setAoiData,
         defaultDeconSelections,
         setDefaultDeconSelections,
         deconSelections,

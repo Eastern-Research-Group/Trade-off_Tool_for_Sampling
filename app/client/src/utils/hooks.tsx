@@ -816,10 +816,14 @@ export function useCalculatePlan() {
   useEffect(() => {
     // Get the number of graphics for the selected scenario
     let numGraphics = 0;
-    if (selectedScenario && selectedScenario.layers.length > 0) {
+    if (
+      selectedScenario &&
+      selectedScenario.type === 'scenario' &&
+      selectedScenario.layers.length > 0
+    ) {
       layers.forEach((layer) => {
         if (layer.parentLayer?.id !== selectedScenario.layerId) return;
-        if (layer.sketchLayer.type !== 'graphics') return;
+        if (layer.sketchLayer?.type !== 'graphics') return;
 
         numGraphics += layer.sketchLayer.graphics.length;
       });
@@ -873,6 +877,7 @@ export function useCalculatePlan() {
     // exit early checks
     if (
       !selectedScenario ||
+      selectedScenario.type !== 'scenario' ||
       selectedScenario.layers.length === 0 ||
       edits.count === 0
     ) {
@@ -911,7 +916,7 @@ export function useCalculatePlan() {
         if (
           !selectedScenario ||
           layer.parentLayer?.id !== selectedScenario.layerId ||
-          layer.sketchLayer.type !== 'graphics'
+          layer.sketchLayer?.type !== 'graphics'
         ) {
           continue;
         }
@@ -2632,7 +2637,7 @@ export function use3dSketch(appType: AppType) {
   useEffect(() => {
     async function processItem() {
       if (!geometry || !tempSketchLayer || !sketchLayer) return;
-      if (sketchLayer.sketchLayer.type === 'feature') return;
+      if (sketchLayer.sketchLayer?.type === 'feature') return;
 
       // get the button and it's id
       const button = document.querySelector('.sketch-button-selected');
@@ -2650,8 +2655,8 @@ export function use3dSketch(appType: AppType) {
       if (id.includes('-sampling-mask')) {
         layerType = 'Sampling Mask';
         attributes = {
-          DECISIONUNITUUID: sketchLayer.sketchLayer.id,
-          DECISIONUNIT: sketchLayer.sketchLayer.title,
+          DECISIONUNITUUID: sketchLayer.sketchLayer?.id ?? '',
+          DECISIONUNIT: sketchLayer.sketchLayer?.title ?? '',
           DECISIONUNITSORT: 0,
           PERMANENT_IDENTIFIER: uuid,
           GLOBALID: uuid,
@@ -2661,8 +2666,8 @@ export function use3dSketch(appType: AppType) {
       } else if (id.includes('decon-mask')) {
         layerType = 'Decon Mask';
         attributes = {
-          DECISIONUNITUUID: sketchLayer.sketchLayer.id,
-          DECISIONUNIT: sketchLayer.sketchLayer.title,
+          DECISIONUNITUUID: sketchLayer.sketchLayer?.id ?? '',
+          DECISIONUNIT: sketchLayer.sketchLayer?.title ?? '',
           DECISIONUNITSORT: 0,
           PERMANENT_IDENTIFIER: uuid,
           GLOBALID: uuid,
@@ -2672,8 +2677,8 @@ export function use3dSketch(appType: AppType) {
       } else {
         attributes = {
           ...window.totsSampleAttributes[id],
-          DECISIONUNITUUID: sketchLayer.sketchLayer.id,
-          DECISIONUNIT: sketchLayer.sketchLayer.title,
+          DECISIONUNITUUID: sketchLayer.sketchLayer?.id ?? '',
+          DECISIONUNIT: sketchLayer.sketchLayer?.title ?? '',
           DECISIONUNITSORT: 0,
           PERMANENT_IDENTIFIER: uuid,
           GLOBALID: uuid,
@@ -2695,7 +2700,8 @@ export function use3dSketch(appType: AppType) {
         symbol: sketchVM?.[displayDimensions].polygonSymbol,
       });
 
-      sketchLayer.sketchLayer.graphics.add(graphic);
+      if (sketchLayer.sketchLayer?.type === 'graphics')
+        sketchLayer.sketchLayer.graphics.add(graphic);
 
       // predefined boxes (sponge, micro vac and swab) need to be
       // converted to a box of a specific size.
@@ -2729,7 +2735,7 @@ export function use3dSketch(appType: AppType) {
       for (let i = 0; i < layers.length; i++) {
         const layer = layers[i];
         if (
-          (sketchLayer && layer.layerId === sketchLayer.sketchLayer.id) ||
+          (sketchLayer && layer.layerId === sketchLayer.sketchLayer?.id) ||
           (!sketchLayer &&
             layer.layerId === graphic.attributes?.DECISIONUNITUUID)
         ) {

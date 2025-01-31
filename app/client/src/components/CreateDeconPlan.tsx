@@ -38,7 +38,6 @@ import {
   generateUUID,
   getNextScenarioLayer,
   getScenariosDecon,
-  updateLayerEdits,
 } from 'utils/sketchUtils';
 import { formatNumber, getNewName, getScenarioName } from 'utils/utils';
 // styles
@@ -236,8 +235,6 @@ function CreateDeconPlan({ appType }: Props) {
     setSelectedScenario,
     sketchLayer,
     setSketchLayer,
-    sketchVM,
-    setAoiData,
   } = useContext(SketchContext);
   const startOver = useStartOver();
 
@@ -417,95 +414,6 @@ function CreateDeconPlan({ appType }: Props) {
               <i className="fas fa-redo-alt" />
               <br />
               Start Over
-            </button>
-            <button
-              css={deleteButtonStyles}
-              onClick={() => {
-                if (!sketchVM || !sketchLayer) return;
-
-                let editsCopy: EditsType = edits;
-
-                // TODO fix this and make sure it does everything it should
-
-                // Figure out what to add graphics to
-                const aoiAssessed = selectedScenario?.layers.find(
-                  (l) => l.layerType === 'AOI Assessed',
-                );
-                if (aoiAssessed) {
-                  const aoiAssessedLayer = layers.find(
-                    (l) => l.layerId === aoiAssessed.layerId,
-                  );
-                  if (aoiAssessedLayer?.sketchLayer?.type === 'graphics') {
-                    editsCopy = updateLayerEdits({
-                      appType: 'decon',
-                      edits,
-                      scenario: selectedScenario,
-                      layer: aoiAssessedLayer,
-                      type: 'delete',
-                      changes: aoiAssessedLayer.sketchLayer.graphics,
-                    });
-
-                    aoiAssessedLayer.sketchLayer.graphics.removeAll();
-                  }
-                }
-
-                // Figure out what to add graphics to
-                const imageAnalysis = selectedScenario?.layers.find(
-                  (l) => l.layerType === 'Image Analysis',
-                );
-                if (imageAnalysis) {
-                  const imageAnalysisLayer = layers.find(
-                    (l) => l.layerId === imageAnalysis.layerId,
-                  );
-                  if (imageAnalysisLayer?.sketchLayer?.type === 'graphics') {
-                    editsCopy = updateLayerEdits({
-                      appType: 'decon',
-                      edits,
-                      scenario: selectedScenario,
-                      layer: imageAnalysisLayer,
-                      type: 'delete',
-                      changes: imageAnalysisLayer.sketchLayer.graphics,
-                    });
-
-                    imageAnalysisLayer.sketchLayer.graphics.removeAll();
-                  }
-                }
-
-                // Figure out what to add graphics to
-                const aoi = selectedScenario?.layers.find(
-                  (l) => l.layerType === 'Samples',
-                );
-                if (aoi) {
-                  const aoiLayer = layers.find(
-                    (l) => l.layerId === aoi.layerId,
-                  );
-                  if (aoiLayer?.sketchLayer?.type === 'graphics') {
-                    editsCopy = updateLayerEdits({
-                      appType: 'decon',
-                      edits,
-                      scenario: selectedScenario,
-                      layer: aoiLayer,
-                      type: 'delete',
-                      changes: aoiLayer.sketchLayer.graphics,
-                    });
-
-                    aoiLayer.sketchLayer.graphics.removeAll();
-                    aoiLayer.sketchLayer.visible = true;
-                  }
-                }
-
-                setEdits(editsCopy);
-                setAoiData((aoiData) => {
-                  return {
-                    count: aoiData.count + 1,
-                    graphics: {},
-                  };
-                });
-              }}
-            >
-              <i className="fas fa-trash-alt" />
-              <br />
-              Delete All Results
             </button>
           </div>
         </div>
