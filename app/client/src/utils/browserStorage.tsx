@@ -32,6 +32,7 @@ import { PlanGraphics, SketchContext } from 'contexts/Sketch';
 // types
 import {
   EditsType,
+  LayerDeconEditsType,
   ScenarioDeconEditsType,
   ScenarioEditsType,
   ServiceMetaDataType,
@@ -947,9 +948,16 @@ function useLayerSelectionsStorage(dbInitialized: boolean) {
               scenario as ScenarioEditsType | ScenarioDeconEditsType,
             );
             if (scenario.type === 'scenario-decon') {
-              setJsonDownload(
-                scenario.deconSummaryResults?.calculateResults?.resultsTable,
-              );
+              const deconOp = edits.edits.find(
+                (e) =>
+                  e.type === 'layer-decon' &&
+                  scenario.linkedLayerIds.includes(e.layerId),
+              ) as LayerDeconEditsType | undefined;
+              if (deconOp) {
+                setJsonDownload(
+                  deconOp.deconSummaryResults.calculateResults.resultsTable,
+                );
+              }
             }
           }
         }

@@ -78,6 +78,7 @@ export type LayerAoiAnalysisEditsType = {
   listMode: 'hide' | 'hide-children' | 'show'; // layer visiblity in legend widget
   layers: LayerEditsType[];
   importedAoiLayer?: LayerEditsType | null;
+  addedFrom: AddedFrom; // how the layer was added (file, url, etc.)
   aoiLayerMode: '' | 'draw' | 'file';
   aoiPercentages: {
     asphalt: number;

@@ -32,6 +32,7 @@ import {
 } from 'utils/sketchUtils';
 // types
 import {
+  LayerAoiAnalysisEditsType,
   LayerEditsType,
   ScenarioDeconEditsType,
   ScenarioEditsType,
@@ -735,6 +736,7 @@ function Toolbar({ appType }: Props) {
         | ScenarioEditsType
         | ScenarioDeconEditsType
         | LayerEditsType
+        | LayerAoiAnalysisEditsType
         | null = null;
       const { editsScenario, editsLayer } = findLayerInEdits(
         edits.edits,
@@ -859,7 +861,7 @@ function Toolbar({ appType }: Props) {
         layer.hybridLayer
       ) {
         // make points layers visible
-        if (layer.sketchLayer.listMode === 'show') {
+        if (layer.sketchLayer?.listMode === 'show') {
           layer.pointsLayer.listMode = layer.sketchLayer.listMode;
           layer.pointsLayer.visible = layer.sketchLayer.visible;
         }
@@ -867,8 +869,10 @@ function Toolbar({ appType }: Props) {
           layer.pointsLayer.listMode = layer.hybridLayer.listMode;
           layer.pointsLayer.visible = layer.hybridLayer.visible;
         }
-        layer.sketchLayer.listMode = 'hide';
-        layer.sketchLayer.visible = false;
+        if (layer.sketchLayer) {
+          layer.sketchLayer.listMode = 'hide';
+          layer.sketchLayer.visible = false;
+        }
         layer.hybridLayer.listMode = 'hide';
         layer.hybridLayer.visible = false;
       } else if (
@@ -877,11 +881,11 @@ function Toolbar({ appType }: Props) {
         layer.hybridLayer
       ) {
         // make polygons layer visible
-        if (layer.pointsLayer.listMode === 'show') {
+        if (layer.pointsLayer.listMode === 'show' && layer.sketchLayer) {
           layer.sketchLayer.listMode = layer.pointsLayer.listMode;
           layer.sketchLayer.visible = layer.pointsLayer.visible;
         }
-        if (layer.hybridLayer.listMode === 'show') {
+        if (layer.hybridLayer.listMode === 'show' && layer.sketchLayer) {
           layer.sketchLayer.listMode = layer.hybridLayer.listMode;
           layer.sketchLayer.visible = layer.hybridLayer.visible;
         }
@@ -895,7 +899,7 @@ function Toolbar({ appType }: Props) {
         layer.hybridLayer
       ) {
         // make points layers visible
-        if (layer.sketchLayer.listMode === 'show') {
+        if (layer.sketchLayer?.listMode === 'show' && layer.sketchLayer) {
           layer.hybridLayer.listMode = layer.sketchLayer.listMode;
           layer.hybridLayer.visible = layer.sketchLayer.visible;
         }
@@ -903,8 +907,10 @@ function Toolbar({ appType }: Props) {
           layer.hybridLayer.listMode = layer.pointsLayer.listMode;
           layer.hybridLayer.visible = layer.pointsLayer.visible;
         }
-        layer.sketchLayer.listMode = 'hide';
-        layer.sketchLayer.visible = false;
+        if (layer.sketchLayer) {
+          layer.sketchLayer.listMode = 'hide';
+          layer.sketchLayer.visible = false;
+        }
         layer.pointsLayer.listMode = 'hide';
         layer.pointsLayer.visible = false;
       }
