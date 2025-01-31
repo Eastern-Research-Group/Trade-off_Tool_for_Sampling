@@ -1320,6 +1320,7 @@ function DeconSelectionTable({
 }: DeconSelectionProps) {
   const { calculateResultsDecon, setCalculateResultsDecon } =
     useContext(CalculateContext);
+  const { trainingMode } = useContext(NavigationContext);
   const {
     allSampleOptions,
     deconOperation,
@@ -1525,7 +1526,7 @@ function DeconSelectionTable({
             Header: 'Average Initial Contamination (CFUs/m²)',
             accessor: 'avgCfu',
             width: 97,
-            show: devMode,
+            show: devMode && trainingMode,
           },
           {
             Header: 'Biological Decon Technology',
@@ -1558,13 +1559,13 @@ function DeconSelectionTable({
             Header: 'Average Final Contamination (CFUs/m²)',
             accessor: 'avgFinalContamination',
             width: 97,
-            show: devMode, // TODO add training mode here
+            show: devMode && trainingMode,
           },
           {
             Header: 'Above/Below Detection Limit',
             accessor: 'aboveDetectionLimit',
             width: 97,
-            show: devMode, // TODO add training mode here
+            show: devMode && trainingMode,
           },
           {
             Header: 'Is Hazardous',

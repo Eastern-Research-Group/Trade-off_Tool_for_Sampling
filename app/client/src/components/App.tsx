@@ -712,7 +712,10 @@ function App({ appType }: Props) {
                       getColumns={(tableWidth: any) => {
                         const tableColumns =
                           appType === 'decon'
-                            ? getBuildingTableColumns({ tableWidth })
+                            ? getBuildingTableColumns({
+                                tableWidth,
+                                trainingMode,
+                              })
                             : getSampleTableColumns({
                                 tableWidth,
                                 includeContaminationFields: trainingMode,

@@ -1962,19 +1962,19 @@ function CalculateResultsPopup({
                 Header: 'Average Initial Contamination (CFUs/m²)',
                 accessor: 'averageInitialContamination',
                 width: 110,
-                show: devMode,
+                show: devMode && trainingMode,
               },
               {
                 Header: 'Average Final Contamination (CFUs/m²)',
                 accessor: 'averageFinalContamination',
                 width: 110,
-                show: devMode,
+                show: devMode && trainingMode,
               },
               {
                 Header: 'Above/Below Detection Limit',
                 accessor: 'aboveDetectionLimit',
                 width: 110,
-                show: devMode,
+                show: devMode && trainingMode,
               },
             ];
           }}
@@ -2090,19 +2090,19 @@ function CalculateResultsPopup({
                       Header: 'Average Initial Contamination (CFUs/m²)',
                       accessor: 'averageInitialContamination',
                       width: 110,
-                      show: devMode,
+                      show: devMode && trainingMode,
                     },
                     {
                       Header: 'Average Final Contamination (CFUs/m²)',
                       accessor: 'averageFinalContamination',
                       width: 110,
-                      show: devMode,
+                      show: devMode && trainingMode,
                     },
                     {
                       Header: 'Above/Below Detection Limit',
                       accessor: 'aboveDetectionLimit',
                       width: 110,
-                      show: devMode,
+                      show: devMode && trainingMode,
                     },
                   ];
                 }}

@@ -1122,9 +1122,11 @@ export function getSampleTableColumns({
 export function getBuildingTableColumns({
   tableWidth,
   useEqualWidth = false,
+  trainingMode = false,
 }: {
   tableWidth: number;
   useEqualWidth?: boolean;
+  trainingMode?: boolean;
 }) {
   const baseColumnWidth = 100;
   const mediumColumnWidth = 140;
@@ -1342,7 +1344,7 @@ export function getBuildingTableColumns({
     },
   ];
 
-  if (window.location.search.includes('devMode=true')) {
+  if (window.location.search.includes('devMode=true') && trainingMode) {
     columns.push({
       Header: 'Contamination Type',
       accessor: 'CONTAMTYPE',
