@@ -2,7 +2,6 @@
 
 import React, { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
-import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import Portal from '@arcgis/core/portal/Portal';
 // components
@@ -20,7 +19,6 @@ import {
   createLayerEditTemplate,
   createSampleLayer,
   createScenarioDecon,
-  generateUUID,
   updateLayerEdits,
 } from 'utils/sketchUtils';
 import { createErrorObject } from 'utils/utils';
@@ -120,16 +118,13 @@ function EditScenario({
   addDefaultSampleLayer = false,
   onSave,
 }: Props) {
+  const { portal, signedIn } = useContext(AuthenticationContext);
   const {
-    portal,
-    signedIn, //
-  } = useContext(AuthenticationContext);
-  const {
-    defaultDeconSelections,
     edits,
     setEdits,
     map,
     layers,
+    setDeconOperation,
     setLayers,
     setSelectedScenario,
     setSketchLayer,
@@ -140,10 +135,9 @@ function EditScenario({
     document.getElementById('scenario-name-input')?.focus();
   }, []);
 
-  const [
-    saveStatus,
-    setSaveStatus, //
-  ] = useState<SaveResultsType>({ status: initialStatus });
+  const [saveStatus, setSaveStatus] = useState<SaveResultsType>({
+    status: initialStatus,
+  });
 
   const [scenarioName, setScenarioName] = useState(
     initialScenario ? initialScenario.scenarioName : '',
@@ -405,7 +399,9 @@ function EditScenario({
 
       // make a copy of the edits context variable
       setEdits((edits) => {
-        const editedScenario = edits.edits[index] as ScenarioDeconEditsType;
+        const editedScenario = {
+          ...edits.edits[index],
+        } as ScenarioDeconEditsType;
         editedScenario.label = scenarioName;
         editedScenario.name = scenarioName;
         editedScenario.scenarioName = scenarioName;
@@ -421,87 +417,55 @@ function EditScenario({
         };
       });
     } else {
-      const {
-        graphicsLayerImageAnalysis,
-        graphicsLayer,
-        groupLayer,
-        layers: newLayers,
-        scenario: newScenario,
-        sketchLayer: tempSketchLayer,
-        tempAssessedAoiLayer,
-        tempImageAnalysisLayer,
-      } = createScenarioDecon(
-        defaultDeconSelections,
+      const { scenario: newScenario } = createScenarioDecon(
         scenarioName,
         scenarioDescription,
       );
 
-      // update the parentLayer of layers being added to the group layer
-      setLayers((layers) => {
-        newLayers.forEach((newLayer) => {
-          const layer = layers.find((l) => l.layerId === newLayer.layerId);
-          if (!layer) return;
+      const deconLayerEdits = edits.edits.find((e) => e.type === 'layer-decon');
+      const aoiLayer = edits.edits.find((e) => e.type === 'layer-aoi-analysis');
+      if (deconLayerEdits) {
+        newScenario.linkedLayerIds = [deconLayerEdits.layerId];
+        const deconLayer = layers.find(
+          (l) =>
+            l.layerType === 'Decon' && l.layerId === deconLayerEdits.layerId,
+        );
+        if (deconLayer) setDeconOperation(deconLayer);
 
-          layer.parentLayer = groupLayer;
-          groupLayer.add(layer.sketchLayer);
-          map.layers.remove(layer.sketchLayer);
-          if (layer.pointsLayer) {
-            groupLayer.add(layer.pointsLayer);
-            map.layers.remove(layer.pointsLayer);
-          }
-          if (layer.hybridLayer) {
-            groupLayer.add(layer.hybridLayer);
-            map.layers.remove(layer.hybridLayer);
-          }
-        });
+        if (aoiLayer) {
+          deconLayerEdits.analysisLayerId = aoiLayer.layerId;
+          deconLayerEdits.deconTechSelections =
+            deconLayerEdits.deconTechSelections.map((tech) => {
+              const media = aoiLayer.aoiSummary.areaByMedia.find(
+                (a) => a.media === tech.media,
+              );
 
-        return layers;
-      });
+              let pctAoi = tech.pctAoi;
+              let surfaceArea = tech.surfaceArea;
+              if (media) {
+                pctAoi = media.pctAoi;
+                surfaceArea = media.surfaceArea;
+              }
+
+              return {
+                ...tech,
+                pctAoi,
+                surfaceArea,
+              };
+            });
+        }
+      }
 
       // make a copy of the edits context variable
       setEdits((edits) => {
-        const newEdits = edits.edits.filter((edit) => {
-          const idx = newLayers.findIndex((l) => l.layerId === edit.layerId);
-
-          return idx === -1;
-        });
-
         return {
           count: edits.count + 1,
-          edits: [...newEdits, newScenario],
+          edits: [...edits.edits, newScenario],
         };
       });
 
       // select the new scenario
       setSelectedScenario(newScenario);
-
-      if (addDefaultSampleLayer && tempSketchLayer) {
-        groupLayer.add(tempSketchLayer.sketchLayer);
-        if (tempSketchLayer.pointsLayer) {
-          groupLayer.add(tempSketchLayer.pointsLayer);
-        }
-        if (tempSketchLayer.hybridLayer) {
-          groupLayer.add(tempSketchLayer.hybridLayer);
-        }
-
-        const tLayers = [...layers];
-        if (tempSketchLayer) tLayers.push(tempSketchLayer);
-        if (tempImageAnalysisLayer) tLayers.push(tempImageAnalysisLayer);
-        if (tempAssessedAoiLayer) tLayers.push(tempAssessedAoiLayer);
-
-        // update layers (set parent layer)
-        window.totsLayers = tLayers;
-        setLayers(tLayers);
-
-        // update sketchLayer (clear parent layer)
-        setSketchLayer(tempSketchLayer);
-      }
-
-      groupLayer.layers.add(graphicsLayerImageAnalysis);
-      groupLayer.layers.add(graphicsLayer);
-
-      // add the scenario group layer to the map
-      map.add(groupLayer);
     }
 
     const saveStatus: SaveResultsType = { status: 'success' };
@@ -564,9 +528,7 @@ function EditScenario({
         ev.preventDefault();
       }}
     >
-      <label htmlFor="scenario-name-input">
-        {appType === 'decon' ? 'Decon Layer' : 'Plan'} Name
-      </label>
+      <label htmlFor="scenario-name-input">Plan Name</label>
       <input
         id="scenario-name-input"
         disabled={
@@ -581,27 +543,21 @@ function EditScenario({
           setSaveStatus({ status: 'changes' });
         }}
       />
-      {appType === 'sampling' && (
-        <Fragment>
-          <label htmlFor="scenario-description-input">Plan Description</label>
-          <input
-            id="scenario-description-input"
-            disabled={
-              initialScenario && initialScenario.status !== 'added'
-                ? true
-                : false
-            }
-            css={inputStyles}
-            maxLength={2048}
-            placeholder="Enter Plan Description (2048 characters)"
-            value={scenarioDescription}
-            onChange={(ev) => {
-              setScenarioDescription(ev.target.value);
-              setSaveStatus({ status: 'changes' });
-            }}
-          />
-        </Fragment>
-      )}
+      <label htmlFor="scenario-description-input">Plan Description</label>
+      <input
+        id="scenario-description-input"
+        disabled={
+          initialScenario && initialScenario.status !== 'added' ? true : false
+        }
+        css={inputStyles}
+        maxLength={2048}
+        placeholder="Enter Plan Description (2048 characters)"
+        value={scenarioDescription}
+        onChange={(ev) => {
+          setScenarioDescription(ev.target.value);
+          setSaveStatus({ status: 'changes' });
+        }}
+      />
 
       {saveStatus.status === 'fetching' && <LoadingSpinner />}
       {saveStatus.status === 'failure' &&
@@ -671,7 +627,6 @@ function EditLayer({
     layers,
     setLayers,
     selectedScenario,
-    setSelectedScenario,
     setSketchLayer,
     map,
   } = useContext(SketchContext);
@@ -716,7 +671,7 @@ function EditLayer({
 
       // update the title of the layer on the map
       const mapLayer = layers.find((layer) => layer.layerId === layerId);
-      if (mapLayer) mapLayer.sketchLayer.title = layerName;
+      if (mapLayer?.sketchLayer) mapLayer.sketchLayer.title = layerName;
       if (mapLayer?.pointsLayer) mapLayer.pointsLayer.title = layerName;
       if (mapLayer?.hybridLayer) mapLayer.hybridLayer.title = layerName;
 
@@ -785,7 +740,7 @@ function EditLayer({
       );
       if (groupLayer && groupLayer.type === 'group') {
         const tempGroupLayer = groupLayer as __esri.GroupLayer;
-        tempGroupLayer.add(tempLayer.sketchLayer);
+        if (tempLayer.sketchLayer) tempGroupLayer.add(tempLayer.sketchLayer);
         if (tempLayer.pointsLayer) {
           tempGroupLayer.add(tempLayer.pointsLayer);
         }
@@ -797,25 +752,27 @@ function EditLayer({
       // make the new layer the active sketch layer
       setSketchLayer(tempLayer);
 
-      setSelectedScenario((selectedScenario) => {
-        if (!selectedScenario) return selectedScenario;
+      // TODO see if we need to bring this back
+      // setSelectedScenario((selectedScenario) => {
+      //   if (!selectedScenario) return selectedScenario;
 
-        const scenario = editsCopy.edits.find(
-          (edit) =>
-            ['scenario', 'scenario-decon'].includes(edit.type) &&
-            edit.layerId === selectedScenario.layerId,
-        ) as ScenarioEditsType | ScenarioDeconEditsType;
-        const newLayer = scenario.layers.find(
-          (layer) => layer.layerId === tempLayer.layerId,
-        );
+      //   // TODO get this working for decon
+      //   const scenario = editsCopy.edits.find(
+      //     (edit) =>
+      //       ['scenario', 'scenario-decon'].includes(edit.type) &&
+      //       edit.layerId === selectedScenario.layerId,
+      //   ) as ScenarioEditsType | ScenarioDeconEditsType;
+      //   const newLayer = scenario.layers.find(
+      //     (layer) => layer.layerId === tempLayer.layerId,
+      //   );
 
-        if (!newLayer) return selectedScenario;
+      //   if (!newLayer) return selectedScenario;
 
-        return {
-          ...selectedScenario,
-          layers: [...selectedScenario.layers, newLayer],
-        };
-      });
+      //   return {
+      //     ...selectedScenario,
+      //     layers: [...selectedScenario.layers, newLayer],
+      //   };
+      // });
     }
 
     setSaveStatus('success');

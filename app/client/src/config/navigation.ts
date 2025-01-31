@@ -41,7 +41,7 @@ export const deconPanels: PanelType[] = [
   },
   {
     value: 'setup',
-    label: 'Additional Setup',
+    label: 'AOI Setup',
     iconClass: 'fas fa-wrench',
   },
   {

@@ -222,7 +222,12 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
   // Gets the graphics to be highlighted and highlights them
   const [handles] = useState(new Handles());
   useEffect(() => {
-    if (!map || !selectedScenario || selectedScenario.layers.length === 0) {
+    if (
+      !map ||
+      !selectedScenario ||
+      selectedScenario.type !== 'scenario' ||
+      selectedScenario.layers.length === 0
+    ) {
       return;
     }
 

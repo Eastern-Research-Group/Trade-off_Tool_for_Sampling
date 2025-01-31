@@ -29,6 +29,8 @@ import {
   EditsType,
   EditType,
   FeatureEditsType,
+  LayerAoiAnalysisEditsType,
+  LayerDeconEditsType,
   LayerEditsType,
   ScenarioDeconEditsType,
   ScenarioEditsType,
@@ -572,23 +574,41 @@ export function deepCopyObject(obj: any) {
  * @returns the layer that was found in the edits object
  */
 export function findLayerInEdits(
-  edits: (ScenarioEditsType | ScenarioDeconEditsType | LayerEditsType)[],
+  edits: (
+    | ScenarioEditsType
+    | ScenarioDeconEditsType
+    | LayerDeconEditsType
+    | LayerEditsType
+    | LayerAoiAnalysisEditsType
+  )[],
   layerId: string,
 ) {
   // find the layer in the edits using it's id and name
   let scenarioIndex = -1;
   let layerIndex = -1;
+  let sublayerIndex = -1;
   edits.forEach((edit, scenarioIdx) => {
     if (edit.type === 'layer' && edit.layerId === layerId) {
       // the desired item is a layer
       layerIndex = scenarioIdx;
+    } else if (edit.type === 'layer-aoi-analysis') {
+      // TODO check if this is correct
+      if (edit.layerId === layerId) layerIndex = scenarioIdx;
+      else {
+        edit.layers.forEach((sublayer, sublayerIdx) => {
+          if (sublayer.layerId === layerId) {
+            layerIndex = scenarioIdx;
+            sublayerIndex = sublayerIdx;
+          }
+        });
+      }
     } else if (
       ['scenario', 'scenario-decon'].includes(edit.type) &&
       edit.layerId === layerId
     ) {
       // the desired item is a scenario
       scenarioIndex = scenarioIdx;
-    } else if (edit.type === 'scenario' || edit.type === 'scenario-decon') {
+    } else if (edit.type === 'scenario') {
       // search for the layer in scenarios
       edit.layers.forEach((layer, layerIdx) => {
         if (layer.layerId === layerId) {
@@ -608,13 +628,19 @@ export function findLayerInEdits(
   }
 
   // get the layer if the index was found
-  let editsLayer: LayerEditsType | null = null;
-  if (editsScenario && layerIndex > -1) {
+  let editsLayer: LayerEditsType | LayerAoiAnalysisEditsType | null = null;
+  if (editsScenario && editsScenario.type === 'scenario' && layerIndex > -1) {
     // the layer is nested in a scenario
     editsLayer = editsScenario.layers[layerIndex];
   } else {
     // the layer is unlinked and at the root
-    editsLayer = edits[layerIndex] as LayerEditsType;
+    editsLayer = edits[layerIndex] as
+      | LayerEditsType
+      | LayerAoiAnalysisEditsType;
+  }
+
+  if (editsLayer?.type === 'layer-aoi-analysis' && sublayerIndex > -1) {
+    editsLayer = editsLayer.layers[sublayerIndex];
   }
 
   return {
@@ -1406,7 +1432,12 @@ export function getSimplePopupTemplate(attributes: any) {
  */
 export function getSketchableLayers(
   layers: LayerType[],
-  edits: (ScenarioEditsType | ScenarioDeconEditsType | LayerEditsType)[],
+  edits: (
+    | ScenarioEditsType
+    | ScenarioDeconEditsType
+    | LayerEditsType
+    | LayerAoiAnalysisEditsType
+  )[],
 ) {
   return layers.filter(
     (layer) =>
@@ -1416,6 +1447,37 @@ export function getSketchableLayers(
         (editsLayer) =>
           editsLayer.type === 'layer' && editsLayer.layerId === layer.layerId,
       ) > -1,
+  ) as LayerType[];
+}
+
+/**
+ * Gets an array of layers, included in the provided edits parameter,
+ * that can be used with the sketch widget. The search will look in
+ * child layers of scenarios as well.
+ *
+ * @param layers - The layers to search in.
+ * @param edits - The edits to search in.
+ */
+export function getAnalysisLayers(layers: LayerType[], linkedLayers: string[]) {
+  return layers.filter(
+    (layer) =>
+      layer.layerType === 'AOI Analysis' &&
+      linkedLayers.includes(layer.layerId),
+  ) as LayerType[];
+}
+
+/**
+ * Gets an array of layers, included in the provided edits parameter,
+ * that can be used with the sketch widget. The search will look in
+ * child layers of scenarios as well.
+ *
+ * @param layers - The layers to search in.
+ * @param edits - The edits to search in.
+ */
+export function getDeconLayers(layers: LayerType[], linkedLayers: string[]) {
+  return layers.filter(
+    (layer) =>
+      layer.layerType === 'Decon' && linkedLayers.includes(layer.layerId),
   ) as LayerType[];
 }
 
@@ -1986,6 +2048,7 @@ export function updateLayerEdits({
     ).editsScenario;
   }
 
+  // TODO fix typescript issues here
   // if it was not found create the edit template for this layer and
   // add it to the copy of edits
   if (!editsLayer) {
@@ -2241,15 +2304,39 @@ export function updatePolygonSymbol(
   });
 }
 
-export function createScenarioDecon(
+export function createScenarioDeconLayer(
   defaultDeconSelections: any[],
-  scenarioName: string = 'Default Decon Scenario',
-  scenarioDescription: string = '',
+  layerName: string = 'Default AOI Layer',
 ) {
   // create a new group layer for the scenario
+  const groupLayerUuid = generateUUID();
   const groupLayer = new GroupLayer({
-    title: scenarioName,
+    id: groupLayerUuid,
+    title: layerName,
   });
+
+  const tempCharacterizeAoiLayer: LayerType = {
+    id: -1,
+    pointsId: -1,
+    uuid: groupLayerUuid,
+    layerId: groupLayerUuid,
+    portalId: '',
+    value: groupLayerUuid,
+    name: layerName,
+    label: layerName,
+    layerType: 'AOI Analysis',
+    editType: 'add',
+    visible: true,
+    listMode: 'show',
+    sort: 0,
+    geometryType: 'esriGeometryPolygon',
+    addedFrom: 'sketch',
+    status: 'added',
+    sketchLayer: groupLayer,
+    pointsLayer: null,
+    hybridLayer: null,
+    parentLayer: null,
+  } as LayerType;
 
   const layerUuidImageAnalysis = generateUUID();
   const graphicsLayerImageAnalysis = new GraphicsLayer({
@@ -2327,36 +2414,56 @@ export function createScenarioDecon(
     newLayers.push(createLayerEditTemplate(tempAssessedAoiLayer, 'add'));
   }
 
+  if (tempSketchLayer?.sketchLayer) groupLayer.add(tempSketchLayer.sketchLayer);
+  groupLayer.addMany([graphicsLayerImageAnalysis, graphicsLayer]);
+
+  const deconUuid = generateUUID();
+  const deconLayerName = 'Default Decon Operation';
+
   // create the scenario to be added to edits
   return {
-    graphicsLayerImageAnalysis,
-    graphicsLayer,
-    groupLayer,
     layers: newLayers,
     sketchLayer: tempSketchLayer,
-    scenario: {
-      type: 'scenario-decon',
+    groupLayer,
+    layerAoiAnalysis: {
+      type: 'layer-aoi-analysis',
       id: -1,
       layerId: groupLayer.id,
       portalId: '',
-      name: scenarioName,
-      label: scenarioName,
+      name: layerName,
+      label: layerName,
       value: groupLayer.id,
-      layerType: 'Decon',
-      addedFrom: 'sketch',
+      layerType: 'AOI Analysis',
       status: 'added',
       editType: 'add',
       visible: true,
       listMode: 'show',
-      scenarioName: scenarioName,
-      scenarioDescription: scenarioDescription,
       layers: newLayers,
-      table: null,
-      referenceLayersTable: {
-        id: -1,
-        referenceLayers: [],
+      importedAoiLayer: null,
+      aoiLayerMode: 'draw',
+      aoiPercentages: {
+        asphalt: 0,
+        concrete: 0,
+        numAois: 0,
+        soil: 0,
       },
-      customAttributes: [],
+      aoiSummary: {
+        areaByMedia: [],
+        totalAoiSqM: 0,
+        totalBuildingExtWallsSqM: 0,
+        totalBuildingFloorsSqM: 0,
+        totalBuildingFootprintSqM: 0,
+        totalBuildingIntWallsSqM: 0,
+        totalBuildingRoofSqM: 0,
+        totalBuildingSqM: 0,
+      },
+      deconLayerResults: {
+        cost: 0,
+        time: 0,
+        wasteVolume: 0,
+        wasteMass: 0,
+        resultsTable: [],
+      },
       deconTechSelections: defaultDeconSelections,
       deconSummaryResults: {
         summary: {
@@ -2375,10 +2482,22 @@ export function createScenarioDecon(
         },
         calculateResults: null,
       },
-      aoiSummary: {
-        area: 0,
-        buildingFootprint: 0,
-      },
+      gsgFile: null,
+    } as LayerAoiAnalysisEditsType,
+    layerDecon: {
+      type: 'layer-decon',
+      id: -1,
+      layerId: deconUuid,
+      portalId: '',
+      name: deconLayerName,
+      label: deconLayerName,
+      value: deconUuid,
+      layerType: 'Decon',
+      status: 'added',
+      editType: 'add',
+      visible: true,
+      listMode: 'show',
+      analysisLayerId: '',
       deconLayerResults: {
         cost: 0,
         time: 0,
@@ -2386,13 +2505,70 @@ export function createScenarioDecon(
         wasteMass: 0,
         resultsTable: [],
       },
-      calculateSettings: { current: settingDefaults },
-      importedAoiLayer: null,
-      aoiLayerMode: 'draw',
-      gsgFile: null,
-    } as ScenarioDeconEditsType,
+      deconSummaryResults: {},
+      deconTechSelections: defaultDeconSelections,
+    } as LayerDeconEditsType,
+    tempDeconLayer: {
+      id: -1,
+      pointsId: -1,
+      uuid: deconUuid,
+      layerId: deconUuid,
+      portalId: '',
+      value: deconUuid,
+      name: deconLayerName,
+      label: deconLayerName,
+      layerType: 'Decon',
+      editType: 'add',
+      visible: true,
+      listMode: 'show',
+      sort: 0,
+      geometryType: 'esriGeometryPolygon',
+      addedFrom: 'sketch',
+      status: 'added',
+      sketchLayer: null,
+      pointsLayer: null,
+      hybridLayer: null,
+      parentLayer: null,
+    } as LayerType,
     tempAssessedAoiLayer,
     tempImageAnalysisLayer,
+    tempCharacterizeAoiLayer,
+  };
+}
+
+export function createScenarioDecon(
+  scenarioName: string = 'Default Decon Scenario',
+  scenarioDescription: string = '',
+) {
+  const uuid = generateUUID();
+
+  // create the scenario to be added to edits
+  return {
+    scenario: {
+      type: 'scenario-decon',
+      id: -1,
+      layerId: uuid,
+      portalId: '',
+      name: scenarioName,
+      label: scenarioName,
+      value: uuid,
+      layerType: 'Decon Scenario',
+      addedFrom: 'sketch',
+      status: 'added',
+      editType: 'add',
+      visible: true,
+      listMode: 'show',
+      scenarioName: scenarioName,
+      scenarioDescription: scenarioDescription,
+      linkedLayerIds: [], // [layerDecon],
+      table: null,
+      referenceLayersTable: {
+        id: -1,
+        referenceLayers: [],
+      },
+      customAttributes: [],
+      calculateSettings: { current: settingDefaults },
+    } as ScenarioDeconEditsType,
   };
 }
 

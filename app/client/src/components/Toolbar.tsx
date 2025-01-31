@@ -1125,18 +1125,16 @@ function Toolbar({ appType }: Props) {
               </Fragment>
             )}
 
-            {appType === 'sampling' && (
-              <label css={switchLabelContainer}>
-                <span css={switchLabel}>Training Mode</span>
-                <Switch
-                  checked={trainingMode}
-                  onChange={(checked) => setTrainingMode(checked)}
-                  ariaLabel="Training Mode"
-                  onColor="#90ee90"
-                  onHandleColor="#129c12"
-                />
-              </label>
-            )}
+            <label css={switchLabelContainer}>
+              <span css={switchLabel}>Training Mode</span>
+              <Switch
+                checked={trainingMode}
+                onChange={(checked) => setTrainingMode(checked)}
+                ariaLabel="Training Mode"
+                onColor="#90ee90"
+                onHandleColor="#129c12"
+              />
+            </label>
 
             <label css={switchLabelContainer}>
               <span css={switchLabel}>Auto Zoom</span>

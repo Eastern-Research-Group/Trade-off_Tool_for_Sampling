@@ -1179,11 +1179,12 @@ function FilePanel({ appType }: Props) {
         map.add(hybridLayer);
 
         setSelectedScenario((selectedScenario) => {
-          if (!selectedScenario) return selectedScenario;
+          if (!selectedScenario || selectedScenario.type !== 'scenario')
+            return selectedScenario;
 
           const scenario = editsCopy.edits.find(
             (edit) =>
-              ['scenario', 'scenario-decon'].includes(edit.type) &&
+              edit.type === 'scenario' &&
               edit.layerId === selectedScenario.layerId,
           ) as ScenarioEditsType;
           const newLayer = scenario.layers.find(
@@ -1208,7 +1209,7 @@ function FilePanel({ appType }: Props) {
       // zoom to the layer unless it is a contamination map
       if (graphics.length > 0 && layerType.value !== 'Contamination Map') {
         if (selectedScenario && groupLayer && isSamplesOrVsp) {
-          groupLayer.add(layerToAdd.sketchLayer);
+          if (layerToAdd.sketchLayer) groupLayer.add(layerToAdd.sketchLayer);
           if (layerToAdd.pointsLayer) {
             groupLayer.add(layerToAdd.pointsLayer);
           }
@@ -1447,12 +1448,10 @@ function FilePanel({ appType }: Props) {
       (option) => option.value !== 'Samples',
     );
   }
-  if (appType === 'sampling') {
-    if (!trainingMode)
-      selectLayerOptions = selectLayerOptions.filter(
-        (option) => option.value !== 'Contamination Map',
-      );
-  }
+  if (!trainingMode)
+    selectLayerOptions = selectLayerOptions.filter(
+      (option) => option.value !== 'Contamination Map',
+    );
 
   return (
     <div css={searchContainerStyles}>

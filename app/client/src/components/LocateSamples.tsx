@@ -1468,7 +1468,7 @@ function LocateSamples() {
         )}
       </div>
       <div css={sectionContainer}>
-        <NavigationButton goToPanel="calculate" />
+        <NavigationButton currentPanel="locateSamples" />
       </div>
     </div>
   );

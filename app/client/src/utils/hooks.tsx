@@ -35,7 +35,7 @@ import MapPopup, {
 // contexts
 import { AuthenticationContext } from 'contexts/Authentication';
 import { CalculateContext } from 'contexts/Calculate';
-import { DialogContext, AlertDialogOptions } from 'contexts/Dialog';
+import { DialogContext } from 'contexts/Dialog';
 import { useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext } from 'contexts/Publish';
@@ -55,7 +55,8 @@ import {
 } from 'types/CalculateResults';
 import {
   EditsType,
-  ScenarioDeconEditsType,
+  LayerAoiAnalysisEditsType,
+  LayerDeconEditsType,
   ScenarioEditsType,
 } from 'types/Edits';
 import { FieldInfos, LayerType, LayerTypeName } from 'types/Layer';
@@ -63,7 +64,7 @@ import { AppType } from 'types/Navigation';
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
 import { writeToStorage } from 'utils/browserStorage';
-import { fetchPost, fetchPostFile, geoprocessorFetch } from 'utils/fetchUtils';
+import { geoprocessorFetch } from 'utils/fetchUtils';
 import {
   calculateArea,
   convertToPoint,
@@ -76,24 +77,11 @@ import {
   removeZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import {
-  convertBase64ToFile,
-  createErrorObject,
-  parseSmallFloat,
-} from 'utils/utils';
+import { parseSmallFloat } from 'utils/utils';
 // config
 import { isDecon } from 'config/navigation';
 
-// type AoiPercentages = {
-//   numAois: number;
-//   asphalt: number;
-//   concrete: number;
-//   soil: number;
-//   // zone: number;
-//   // aoiId: string;
-// };
-
-type GsgParam = { itemID: string };
+export type GsgParam = { itemID: string };
 
 let view: __esri.MapView | __esri.SceneView | null = null;
 
@@ -180,33 +168,21 @@ export const imageAnalysisSymbols = {
   }),
 };
 
-function hasGraphics(aoiData: AoiDataType) {
-  if (!aoiData.graphics || Object.keys(aoiData.graphics).length === 0)
-    return false;
-
-  for (let g of Object.values(aoiData.graphics)) {
-    if (typeof g === 'number') continue;
-    if (g.length > 0) return true;
-  }
-
-  return false;
-}
-
 type ContaminationPercentages = {
   [planId: string]: { [key: number]: number };
 };
 type PlanBuildingCfu = { [planId: string]: number };
 
-function processScenario(
-  scenario: ScenarioDeconEditsType | string,
+export function processScenario(
+  layer: LayerAoiAnalysisEditsType | string,
   aoiCharacterizationData: AoiCharacterizationData,
   contaminationPercentages: ContaminationPercentages,
   planBuildingCfu: PlanBuildingCfu,
   defaultDeconSelections: any[],
 ) {
-  const isScenario = typeof scenario !== 'string';
-  const scenarioId = isScenario ? scenario.layerId : scenario;
-  const deconTechSelections = isScenario ? scenario.deconTechSelections : [];
+  const isScenario = typeof layer !== 'string';
+  const scenarioId = isScenario ? layer.layerId : layer;
+  const deconTechSelections = isScenario ? layer.deconTechSelections : [];
 
   const planGraphics = aoiCharacterizationData.planGraphics[scenarioId];
   if (!planGraphics) return;
@@ -220,9 +196,9 @@ function processScenario(
     totalBuildingRoofSqM,
   } = planGraphics.summary;
 
-  if (isScenario && scenario.aoiSummary) {
-    scenario.aoiSummary.area = planGraphics.aoiArea;
-    scenario.aoiSummary.buildingFootprint = totalBuildingFootprintSqM;
+  if (isScenario && layer.aoiSummary) {
+    layer.aoiSummary.totalAoiSqM = planGraphics.aoiArea;
+    layer.aoiSummary.totalBuildingFootprintSqM = totalBuildingFootprintSqM;
   }
 
   const curDeconTechSelections =
@@ -291,7 +267,85 @@ function processScenario(
   return newDeconTechSelections;
 }
 
-async function fetchBuildingData(
+function processScenarioTest(
+  layer: LayerAoiAnalysisEditsType,
+  contaminationPercentages: ContaminationPercentages,
+  planBuildingCfu: PlanBuildingCfu,
+  defaultDeconSelections: any[],
+) {
+  const {
+    totalAoiSqM,
+    totalBuildingFloorsSqM,
+    totalBuildingExtWallsSqM,
+    totalBuildingIntWallsSqM,
+    totalBuildingRoofSqM,
+  } = layer.aoiSummary;
+
+  const curDeconTechSelections =
+    layer.deconTechSelections && layer.deconTechSelections.length > 0
+      ? layer.deconTechSelections
+      : defaultDeconSelections;
+  const newDeconTechSelections: any = [];
+  curDeconTechSelections.forEach((sel) => {
+    // find decon settings
+    const media = sel.media;
+
+    let surfaceArea = 0;
+    let avgCfu = 0;
+    let pctAoi = 0;
+    if (media.includes('Building ')) {
+      avgCfu =
+        (planBuildingCfu[layer.layerId] ?? 0) * (partitionFactors[media] ?? 1);
+
+      if (media === 'Building Exterior Walls')
+        surfaceArea = totalBuildingExtWallsSqM;
+      if (media === 'Building Interior Walls')
+        surfaceArea = totalBuildingIntWallsSqM;
+      if (media === 'Building Interior Floors')
+        surfaceArea = totalBuildingFloorsSqM;
+      if (media === 'Building Roofs') surfaceArea = totalBuildingRoofSqM;
+    } else {
+      pctAoi = (layer.aoiPercentages as any)[
+        (mediaToBeepEnum as any)[sel.media]
+      ] as number;
+      const pctFactor = pctAoi * 0.01;
+
+      // get surface area of soil, asphalt or concrete
+      //             60 =             100 * 0.6 surface area of concrete
+      surfaceArea = totalAoiSqM * pctFactor;
+
+      // get total CFU for media
+      let totalArea = 0;
+      let totalCfu = 0;
+      if (contaminationPercentages.hasOwnProperty(layer.layerId)) {
+        Object.keys(contaminationPercentages[layer.layerId]).forEach(
+          (key: any) => {
+            // area of media and cfu level
+            const pctCfu = contaminationPercentages[layer.layerId][key];
+            //                34.2 =   0.57 * 60
+            const surfaceAreaSfCfu = pctCfu * surfaceArea;
+            totalArea += surfaceAreaSfCfu;
+
+            // 34.2M  =             34.2 * 1M;
+            // SUM    = 35.916M CFU
+            totalCfu += surfaceAreaSfCfu * key;
+          },
+        );
+      }
+
+      avgCfu = !totalCfu && !totalArea ? 0 : totalCfu / totalArea;
+    }
+
+    newDeconTechSelections.push({
+      ...sel,
+      avgCfu,
+    });
+  });
+
+  return newDeconTechSelections;
+}
+
+export async function fetchBuildingData(
   aoiGraphics: __esri.Graphic[],
   services: any,
   planGraphics: PlanGraphics,
@@ -1174,206 +1228,36 @@ export function useCalculatePlan() {
 export function useCalculateDeconPlan() {
   const {
     aoiCharacterizationData,
-    aoiData,
     defaultDeconSelections,
     displayDimensions,
     edits,
-    gsgFiles,
     layers,
     mapView,
     resultsOpen,
     sampleAttributesDecon,
     sceneView,
     sceneViewForArea,
-    // selectedScenario,
-    setAoiCharacterizationData,
+    selectedScenario,
     setEdits,
     setEfficacyResults,
     setJsonDownload,
   } = useContext(SketchContext);
   const { calculateResultsDecon, contaminationMap, setCalculateResultsDecon } =
     useContext(CalculateContext);
-  const { services } = useLookupFiles().data;
-
-  useEffect(() => {
-    console.log('aoiData: ', aoiData);
-  }, [aoiData]);
 
   useEffect(() => {
     view = displayDimensions === '2d' ? mapView : sceneView;
   }, [displayDimensions, mapView, sceneView]);
 
-  // Reset the calculateResultsDecon context variable, whenever anything
-  // changes that will cause a re-calculation.
   useEffect(() => {
-    // exit early
-    if (!hasGraphics(aoiData)) {
-      setCalculateResultsDecon({
-        status: 'none',
-        panelOpen: false,
-        data: null,
-      });
-      return;
-    }
-    // if (selectedScenario.editType === 'properties') return;
-
-    // // to improve performance, do not perform calculations if
-    // // only the scenario name/description changed
-    // const { editsScenario } = findLayerInEdits(
-    //   edits.edits,
-    //   selectedScenario.layerId,
-    // );
-    // if (!editsScenario || editsScenario.editType === 'properties') return;
-
-    setEfficacyResults(null);
     setCalculateResultsDecon((calculateResultsDecon) => {
       return {
-        status: 'fetching',
+        status: selectedScenario ? 'fetching' : 'none',
         panelOpen: calculateResultsDecon.panelOpen,
         data: null,
       };
     });
-    setAoiCharacterizationData({
-      status: 'none',
-      planGraphics: {},
-    });
-
-    const contamMapUpdated = view?.map.layers.find(
-      (l) => l.id === 'contaminationMapUpdated',
-    ) as __esri.GraphicsLayer;
-    if (contamMapUpdated) contamMapUpdated.removeAll();
-  }, [aoiData, setCalculateResultsDecon, setEfficacyResults]);
-
-  // fetch building data for AOI
-  useEffect(() => {
-    if (!hasGraphics(aoiData)) return;
-    if (calculateResultsDecon.status !== 'fetching') return;
-    if (aoiCharacterizationData.status !== 'none') return;
-
-    setAoiCharacterizationData({
-      status: 'fetching',
-      planGraphics: {},
-    });
-
-    async function fetchAoiData() {
-      if (!aoiData.graphics) return;
-      let responseIndexes: string[] = [];
-      let planGraphics: PlanGraphics = {};
-      const aoiGraphics: __esri.Graphic[] = [];
-      for (const planId of Object.keys(aoiData.graphics)) {
-        if (!aoiData.graphics?.[planId]) continue;
-
-        aoiGraphics.push(...aoiData.graphics[planId]);
-        let planAoiArea = 0;
-        for (const graphic of aoiData.graphics[planId]) {
-          const areaSM = await calculateArea(graphic, sceneViewForArea);
-          if (typeof areaSM === 'number') {
-            planAoiArea += areaSM;
-            graphic.attributes.AREA = areaSM;
-          }
-
-          responseIndexes.push(planId);
-        }
-
-        if (!planGraphics.hasOwnProperty(planId)) {
-          planGraphics[planId] = {
-            graphics: [],
-            imageGraphics: [],
-            aoiArea: planAoiArea,
-            buildingFootprint: 0,
-            summary: {
-              totalAoiSqM: planAoiArea,
-              totalBuildingFootprintSqM: 0,
-              totalBuildingFloorsSqM: 0,
-              totalBuildingSqM: 0,
-              totalBuildingExtWallsSqM: 0,
-              totalBuildingIntWallsSqM: 0,
-              totalBuildingRoofSqM: 0,
-            },
-            aoiPercentages: {
-              numAois: 0,
-              asphalt: 0,
-              concrete: 0,
-              soil: 0,
-            },
-          };
-        } else {
-          planGraphics[planId].aoiArea = planAoiArea;
-          planGraphics[planId].summary.totalAoiSqM = planAoiArea;
-        }
-      }
-
-      try {
-        let gsgParam: GsgParam | undefined;
-        if (gsgFiles && gsgFiles.selectedIndex !== null) {
-          const file = gsgFiles.files[gsgFiles.selectedIndex];
-          const gsgFile = await convertBase64ToFile(file.file, file.path);
-          const gsgFileUploaded: any = await fetchPostFile(
-            `${services.shippTestGPServer}/uploads/upload`,
-            {
-              f: 'json',
-            },
-            gsgFile,
-          );
-          gsgParam = {
-            itemID: gsgFileUploaded.item.itemID,
-          };
-        }
-
-        // TODO - look into adding more queries here
-        await fetchBuildingData(
-          aoiGraphics,
-          services,
-          planGraphics,
-          responseIndexes,
-          gsgParam,
-          sceneViewForArea,
-          true,
-        );
-
-        if (gsgParam) {
-          await fetchPost(
-            `${services.shippTestGPServer}/uploads/${gsgParam.itemID}/delete`,
-            {
-              f: 'json',
-            },
-          );
-        }
-
-        setAoiCharacterizationData({
-          status: 'success',
-          planGraphics,
-        });
-      } catch (ex: any) {
-        console.error(ex);
-        setAoiCharacterizationData({
-          status: 'failure',
-          planGraphics: {},
-        });
-        setCalculateResultsDecon({
-          status: 'failure',
-          data: null,
-          panelOpen: false,
-          error: {
-            error: createErrorObject(ex),
-            message: ex?.message ?? '',
-          },
-        });
-      }
-    }
-
-    fetchAoiData();
-  }, [
-    aoiCharacterizationData,
-    aoiData,
-    calculateResultsDecon,
-    contaminationMap,
-    gsgFiles,
-    layers,
-    sceneViewForArea,
-    services,
-    setCalculateResultsDecon,
-  ]);
+  }, [selectedScenario]);
 
   type ContaminatedAoiAreas = { [planId: string]: { [key: number]: number } };
   const [aoiContamIntersect, setAoiContamIntersect] = useState<{
@@ -1384,33 +1268,46 @@ export function useCalculateDeconPlan() {
     graphics: [],
   });
 
-  // do calculations for decon tech selection table
   useEffect(() => {
     if (
       ['none', 'success'].includes(calculateResultsDecon.status) ||
-      aoiCharacterizationData.status !== 'success'
+      !selectedScenario ||
+      selectedScenario.type !== 'scenario-decon'
     )
       return;
 
-    async function performAreaCalculations() {
-      const contamMapUpdated = view?.map.layers.find(
-        (l) => l.id === 'contaminationMapUpdated',
-      ) as __esri.GraphicsLayer;
-      if (contamMapUpdated) contamMapUpdated.removeAll();
+    // reset the contamination map
+    const contamMapUpdated = view?.map.layers.find(
+      (l) => l.id === 'contaminationMapUpdated',
+    ) as __esri.GraphicsLayer;
+    if (contamMapUpdated) contamMapUpdated.removeAll();
 
-      console.log('aoiCharacterizationData: ', aoiCharacterizationData);
+    async function performCalculations() {
+      if (selectedScenario?.type !== 'scenario-decon') return;
 
+      const linkedDeconOperations: LayerDeconEditsType[] = [];
+      const linkedAoiCharacterizationIds: string[] = [];
+      const linkedAoiCharacterizations: LayerAoiAnalysisEditsType[] = [];
       let editsCopy: EditsType = edits;
-      const scenarios = editsCopy.edits.filter(
-        (i) => i.type === 'scenario-decon',
-      ) as ScenarioDeconEditsType[];
+      editsCopy.edits.forEach((edit) => {
+        if (
+          edit.type !== 'layer-decon' ||
+          !selectedScenario.linkedLayerIds.includes(edit.layerId)
+        )
+          return;
 
-      const graphics: __esri.Graphic[] = [];
-      Object.values(aoiCharacterizationData.planGraphics).forEach(
-        (planGraphics) => {
-          graphics.push(...planGraphics.graphics);
-        },
-      );
+        linkedDeconOperations.push(edit);
+
+        const aoi = editsCopy.edits.find(
+          (e) =>
+            e.type === 'layer-aoi-analysis' &&
+            e.layerId === edit.analysisLayerId,
+        ) as LayerAoiAnalysisEditsType | undefined;
+        if (aoi) {
+          linkedAoiCharacterizations.push(aoi);
+          linkedAoiCharacterizationIds.push(edit.analysisLayerId);
+        }
+      });
 
       const contaminatedAoiAreas: ContaminatedAoiAreas = {};
       const contaminationPercentages: ContaminationPercentages = {};
@@ -1420,9 +1317,17 @@ export function useCalculateDeconPlan() {
         contaminationMap?.sketchLayer?.type === 'graphics'
       ) {
         // loop through structures
-        Object.keys(aoiCharacterizationData.planGraphics).forEach((planId) => {
-          const planGraphics = aoiCharacterizationData.planGraphics[planId];
-          planGraphics.graphics.forEach((graphic) => {
+        linkedAoiCharacterizations.forEach((characterizationLayer) => {
+          const buildingLayerEdits = characterizationLayer.layers.find(
+            (l) => l.layerType === 'AOI Assessed',
+          );
+          const buildingLayer = layers.find(
+            (l) => l.layerId === buildingLayerEdits?.layerId,
+          );
+          if (!buildingLayer || buildingLayer.sketchLayer?.type !== 'graphics')
+            return;
+
+          buildingLayer.sketchLayer.graphics.forEach((graphic) => {
             // loop through contamination map features
             (
               contaminationMap.sketchLayer as __esri.GraphicsLayer
@@ -1447,10 +1352,12 @@ export function useCalculateDeconPlan() {
               // lookup decon selection
               let originalCfu = 0;
               let newCfu = 0;
-              const scenario = scenarios.find((s) => s.layerId === planId);
-              if (scenario) {
+              const deconOp = linkedDeconOperations.find(
+                (op) => op.analysisLayerId === characterizationLayer.layerId,
+              ) as LayerDeconEditsType | undefined;
+              if (deconOp) {
                 // find decon tech selections
-                const buildingTech = scenario.deconTechSelections?.filter((t) =>
+                const buildingTech = deconOp.deconTechSelections?.filter((t) =>
                   t.media.includes('Building '),
                 );
                 buildingTech?.forEach((tech) => {
@@ -1491,421 +1398,322 @@ export function useCalculateDeconPlan() {
               graphic.attributes.CONTAMTYPE =
                 contamGraphic.attributes.CONTAMTYPE;
 
-              if (planBuildingCfu.hasOwnProperty(planId)) {
-                planBuildingCfu[planId] += plumeCfu;
+              const opId =
+                linkedDeconOperations.find(
+                  (op) => op.analysisLayerId === characterizationLayer.layerId,
+                )?.layerId ?? '';
+              if (planBuildingCfu.hasOwnProperty(opId)) {
+                planBuildingCfu[opId] += plumeCfu;
               } else {
-                planBuildingCfu[planId] = plumeCfu;
+                planBuildingCfu[opId] = plumeCfu;
               }
             });
           });
         });
 
-        if (aoiData.graphics) {
-          const aoiContamIntersectGraphics: __esri.Graphic[] = [];
-          // partition AOI to determine where contamination is
-          for (const key of Object.keys(aoiData.graphics)) {
-            const planGraphics = aoiData.graphics?.[key] ?? [];
-            for (const graphic of planGraphics) {
-              for (const contamGraphic of (
-                contaminationMap.sketchLayer as __esri.GraphicsLayer
-              ).graphics) {
-                const contamValue = contamGraphic.attributes
-                  .CONTAMVAL as number;
-                const outGeometry = geometryEngine.intersect(
-                  graphic.geometry,
-                  contamGraphic.geometry,
-                ) as __esri.Geometry;
-                if (!outGeometry) continue;
+        // loop through aoi mask layers
+        const aoiContamIntersectGraphics: __esri.Graphic[] = [];
+        for (const characterization of linkedAoiCharacterizations) {
+          const aoiEdits = characterization.layers.find(
+            (l) => l.layerType === 'AOI Assessed',
+          );
+          const aoiLayer = layers.find((l) => l.layerId === aoiEdits?.layerId);
+          if (!aoiLayer || aoiLayer.sketchLayer?.type !== 'graphics') return;
 
-                const clippedAreaM2 = await calculateArea(
-                  new Graphic({ geometry: outGeometry }),
-                  sceneViewForArea,
-                );
+          for (const graphic of aoiLayer.sketchLayer.graphics) {
+            for (const contamGraphic of (
+              contaminationMap.sketchLayer as __esri.GraphicsLayer
+            ).graphics) {
+              const contamValue = contamGraphic.attributes.CONTAMVAL as number;
+              const outGeometry = geometryEngine.intersect(
+                graphic.geometry,
+                contamGraphic.geometry,
+              ) as __esri.Geometry;
+              if (!outGeometry) continue;
 
-                const currArea = contaminatedAoiAreas?.[key]?.[contamValue];
-                if (typeof clippedAreaM2 === 'number') {
-                  if (!contaminatedAoiAreas.hasOwnProperty(key)) {
-                    contaminatedAoiAreas[key] = {};
-                  }
-                  contaminatedAoiAreas[key][contamValue] = currArea
-                    ? currArea + clippedAreaM2
-                    : clippedAreaM2;
+              const clippedAreaM2 = await calculateArea(
+                new Graphic({ geometry: outGeometry }),
+                sceneViewForArea,
+              );
+
+              const currArea =
+                contaminatedAoiAreas?.[characterization.layerId]?.[contamValue];
+              if (typeof clippedAreaM2 === 'number') {
+                if (
+                  !contaminatedAoiAreas.hasOwnProperty(characterization.layerId)
+                ) {
+                  contaminatedAoiAreas[characterization.layerId] = {};
                 }
-
-                aoiContamIntersectGraphics.push(
-                  new Graphic({
-                    attributes: contamGraphic.attributes,
-                    geometry: outGeometry,
-                  }),
-                );
+                contaminatedAoiAreas[characterization.layerId][contamValue] =
+                  currArea ? currArea + clippedAreaM2 : clippedAreaM2;
               }
+
+              aoiContamIntersectGraphics.push(
+                new Graphic({
+                  attributes: contamGraphic.attributes,
+                  geometry: outGeometry,
+                }),
+              );
             }
           }
-
-          setAoiContamIntersect({
-            contaminatedAoiAreas,
-            graphics: aoiContamIntersectGraphics,
-          });
         }
 
-        Object.keys(contaminatedAoiAreas).forEach((planId: any) => {
-          const totalAoiSqM =
-            aoiCharacterizationData.planGraphics[planId].summary.totalAoiSqM;
-          Object.keys(contaminatedAoiAreas[planId]).forEach((key: any) => {
-            if (!contaminationPercentages.hasOwnProperty(planId)) {
-              contaminationPercentages[planId] = {};
-            }
-            contaminationPercentages[planId][key] =
-              contaminatedAoiAreas[planId][key] / totalAoiSqM;
-          });
+        setAoiContamIntersect({
+          contaminatedAoiAreas,
+          graphics: aoiContamIntersectGraphics,
+        });
+
+        Object.keys(contaminatedAoiAreas).forEach((characterizationId: any) => {
+          const characterization = linkedAoiCharacterizations.find(
+            (c) => c.layerId === characterizationId,
+          );
+          if (!characterization) return;
+
+          const totalAoiSqM = characterization.aoiSummary.totalAoiSqM;
+          Object.keys(contaminatedAoiAreas[characterizationId]).forEach(
+            (key: any) => {
+              if (
+                !contaminationPercentages.hasOwnProperty(characterizationId)
+              ) {
+                contaminationPercentages[characterizationId] = {};
+              }
+              contaminationPercentages[characterizationId][key] =
+                contaminatedAoiAreas[characterizationId][key] / totalAoiSqM;
+            },
+          );
         });
       }
 
+      let atLeastOneDeconTechSelection = false;
+      linkedDeconOperations.forEach((deconOp) => {
+        deconOp.deconTechSelections?.forEach((tech) => {
+          if (tech.deconTech) atLeastOneDeconTechSelection = true;
+        });
+      });
+      if (!atLeastOneDeconTechSelection) {
+        setCalculateResultsDecon({
+          status: 'none',
+          panelOpen: false,
+          data: null,
+        });
+        return;
+      }
+
+      const jsonDownload: JsonDownloadType[] = [];
+
       // perform calculations off percentAOI stuff
-      scenarios.forEach((scenario) => {
-        const newDeconTechSelections = processScenario(
-          scenario,
-          aoiCharacterizationData,
-          contaminationPercentages,
-          planBuildingCfu,
-          defaultDeconSelections,
-        );
-
-        // Figure out what to add graphics to
-        const aoiAssessed = scenario?.layers.find(
-          (l) => l.layerType === 'AOI Assessed',
-        );
-        const imageAnalysis = scenario?.layers.find(
-          (l: any) => l.layerType === 'Image Analysis',
-        );
-        const deconAoi = scenario?.layers.find(
-          (l: any) => l.layerType === 'Decon Mask',
-        );
-
-        if (aoiAssessed && imageAnalysis && deconAoi) {
-          const aoiAssessedLayer = layers.find(
-            (l) => l.layerId === aoiAssessed.layerId,
-          );
-          const imageAnalysisLayer = layers.find(
-            (l: any) => l.layerId === imageAnalysis.layerId,
-          );
-          const deconAoiLayer = layers.find(
-            (l: any) => l.layerId === deconAoi.layerId,
-          );
-
-          // tie graphics and imageryGraphics to a scenario
-          const planData =
-            aoiCharacterizationData.planGraphics[scenario.layerId];
-          if (
-            aoiAssessedLayer?.sketchLayer?.type === 'graphics' &&
-            planData?.graphics
-          ) {
-            aoiAssessedLayer.sketchLayer.graphics.removeAll();
-            aoiAssessedLayer.sketchLayer.graphics.addMany(planData.graphics);
-
-            editsCopy = updateLayerEdits({
-              appType: 'decon',
-              edits: editsCopy,
-              layer: aoiAssessedLayer,
-              type: 'replace',
-              changes: planData.graphics,
-            });
-          }
-          if (
-            imageAnalysisLayer?.sketchLayer?.type === 'graphics' &&
-            planData?.imageGraphics
-          ) {
-            imageAnalysisLayer?.sketchLayer.graphics.removeAll();
-            imageAnalysisLayer?.sketchLayer.graphics.addMany(
-              planData.imageGraphics,
-            );
-
-            editsCopy = updateLayerEdits({
-              appType: 'decon',
-              edits: editsCopy,
-              layer: imageAnalysisLayer,
-              type: 'replace',
-              changes: planData.imageGraphics,
-            });
-          }
-          if (deconAoiLayer) {
-            deconAoiLayer.sketchLayer.visible = false;
-            editsCopy = updateLayerEdits({
-              appType: 'decon',
-              edits: editsCopy,
-              layer: deconAoiLayer,
-              type: 'properties',
-            });
+      let totalSolidWasteM3 = 0;
+      let totalLiquidWasteM3 = 0;
+      let totalSolidWasteMass = 0;
+      let totalLiquidWasteMass = 0;
+      let totalDeconCost = 0;
+      let totalApplicationTime = 0;
+      let totalResidenceTime = 0;
+      let totalDeconTime = 0;
+      linkedDeconOperations.forEach((deconOp) => {
+        if (!deconOp.deconLayerResults) return;
+        deconOp.deconLayerResults.resultsTable = [];
+        deconOp.deconLayerResults.cost = 0;
+        deconOp.deconLayerResults.time = 0;
+        deconOp.deconLayerResults.wasteMass = 0;
+        deconOp.deconLayerResults.wasteVolume = 0;
+        const curDeconTechSelections =
+          deconOp.deconTechSelections && deconOp.deconTechSelections?.length > 0
+            ? deconOp.deconTechSelections
+            : defaultDeconSelections;
+        curDeconTechSelections.forEach((sel) => {
+          // find decon settings
+          const deconTech = sel.deconTech?.value;
+          const media = sel.media;
+          if (!deconTech) {
+            sel.avgFinalContamination = sel.avgCfu;
+            sel.aboveDetectionLimit = sel.avgCfu >= detectionLimit;
+            return;
           }
 
-          scenario.deconTechSelections = newDeconTechSelections;
-        }
+          // need to lookup stuff from sampleAttributesDecon
+          const {
+            LOD_NON: contaminationRemovalFactor,
+            MCPS: setupCost,
+            TCPS: costM2,
+            WVPS: solidWasteVolume,
+            WWPS: solidWasteM,
+            ALC: liquidWasteVolume,
+            AMC: liquidWasteM,
+            TTC: applicationTimeHrs,
+            TTA: residenceTimeHrs,
+          } = sampleAttributesDecon[deconTech as any];
+
+          // calculate final contamination
+          const contamLeftFactor = 1 - contaminationRemovalFactor;
+          const avgFinalContam =
+            sel.avgCfu * Math.pow(contamLeftFactor, sel.numApplications);
+          sel.avgFinalContamination = avgFinalContam;
+          sel.aboveDetectionLimit = avgFinalContam >= detectionLimit;
+
+          const areaDeconApplied =
+            sel.surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications;
+          const solidWasteM3 = areaDeconApplied * solidWasteVolume;
+          const solidWasteMass = areaDeconApplied * solidWasteM;
+          const liquidWasteM3 = areaDeconApplied * liquidWasteVolume;
+          const liquidWasteMass = areaDeconApplied * liquidWasteM;
+
+          const deconCost =
+            setupCost * sel.numApplications + areaDeconApplied * costM2;
+          const sumApplicationTime =
+            (areaDeconApplied * applicationTimeHrs) /
+            24 /
+            sel.numConcurrentApplications;
+          const sumResidenceTime =
+            (residenceTimeHrs * sel.numApplications) /
+            24 /
+            sel.numConcurrentApplications;
+          const deconTime = sumApplicationTime + sumResidenceTime;
+
+          const jsonItem = {
+            contaminationScenario: media,
+            decontaminationTechnology: deconTech,
+            solidWasteVolumeM3: solidWasteM3,
+            liquidWasteVolumeM3: liquidWasteM3,
+            decontaminationCost: deconCost,
+            decontaminationTimeDays: deconTime,
+            averageInitialContamination: sel.avgCfu,
+            averageFinalContamination: sel.avgFinalContamination,
+            aboveDetectionLimit: sel.aboveDetectionLimit,
+          };
+
+          jsonDownload.push(jsonItem);
+
+          if (deconOp.deconLayerResults) {
+            deconOp.deconLayerResults.cost += deconCost;
+            deconOp.deconLayerResults.time += deconTime;
+            deconOp.deconLayerResults.wasteVolume +=
+              solidWasteM3 + liquidWasteM3;
+            deconOp.deconLayerResults.wasteMass +=
+              solidWasteMass + liquidWasteMass;
+            deconOp.deconLayerResults.resultsTable.push(jsonItem);
+          }
+
+          totalSolidWasteM3 += solidWasteM3;
+          totalSolidWasteMass += solidWasteMass;
+          totalLiquidWasteM3 += liquidWasteM3;
+          totalLiquidWasteMass += liquidWasteMass;
+          totalDeconCost += deconCost;
+          totalApplicationTime += sumApplicationTime;
+          totalResidenceTime += sumResidenceTime;
+          totalDeconTime += deconTime;
+        });
+      });
+
+      const jsonDownloadSummarized: JsonDownloadType[] = [];
+      const scenariosIncluded: string[] = [];
+      jsonDownload.forEach((item) => {
+        if (scenariosIncluded.includes(item.contaminationScenario)) return;
+        scenariosIncluded.push(item.contaminationScenario);
+      });
+      scenariosIncluded.forEach((scenario) => {
+        const scenarioItems = jsonDownload.filter(
+          (j) => j.contaminationScenario === scenario,
+        );
+
+        const tech: { [deconTech: string]: JsonDownloadType } = {};
+        scenarioItems.forEach((item) => {
+          const deconTech = item.decontaminationTechnology;
+          if (tech.hasOwnProperty(deconTech)) {
+            tech[deconTech].decontaminationCost += item.decontaminationCost;
+            tech[deconTech].decontaminationTimeDays +=
+              item.decontaminationTimeDays;
+            tech[deconTech].solidWasteVolumeM3 += item.solidWasteVolumeM3;
+            tech[deconTech].liquidWasteVolumeM3 += item.liquidWasteVolumeM3;
+          } else {
+            tech[deconTech] = {
+              ...item,
+            };
+          }
+        });
+
+        Object.values(tech).forEach((deconTech) => {
+          jsonDownloadSummarized.push(deconTech);
+        });
+      });
+
+      const resultObject: CalculateResultsDeconDataType = {
+        // assign input parameters
+        'Total Number of User-Defined Decon Technologies': 0,
+        'User Specified Number of Concurrent Applications': 0,
+
+        // assign counts
+        'Total Number of Decon Applications': 0,
+        'Total Decontamination Area': 0,
+        'Total Setup Time': 0,
+        'Total Application Time': totalApplicationTime,
+        'Total Residence Time': totalResidenceTime,
+        'Average Contamination Removal': 0,
+        'Total Setup Cost': 0,
+        'Total Application Cost': 0,
+        'Solid Waste Volume': totalSolidWasteM3,
+        'Solid Waste Mass': totalSolidWasteMass,
+        'Liquid Waste Volume': totalLiquidWasteM3,
+        'Liquid Waste Mass': totalLiquidWasteMass,
+        'Total Waste Volume': totalSolidWasteM3 + totalLiquidWasteM3,
+        'Total Waste Mass': totalSolidWasteMass + totalLiquidWasteMass,
+
+        //totals
+        'Total Cost': totalDeconCost,
+        'Total Time': Math.round(totalDeconTime * 10) / 10,
+        'Total Contaminated Area': 0,
+        'Total Reduction Area': 0,
+        'Total Remaining Contaminated Area': 0,
+        'Total Decontaminated Area': 0,
+        'Percent Contaminated Remaining': 0,
+        'Contamination Type': '',
+        resultsTable: jsonDownloadSummarized,
+      };
+
+      linkedDeconOperations.forEach((deconOp) => {
+        deconOp.deconSummaryResults = {
+          ...deconOp.deconSummaryResults,
+          calculateResults: resultObject,
+        };
       });
 
       setEdits(editsCopy);
-    }
 
-    performAreaCalculations();
-  }, [
-    aoiCharacterizationData,
-    aoiData,
-    calculateResultsDecon,
-    contaminationMap,
-    defaultDeconSelections,
-    edits,
-    layers,
-    sampleAttributesDecon,
-    sceneViewForArea,
-    setEdits,
-    setJsonDownload,
-  ]);
+      setJsonDownload(jsonDownloadSummarized);
 
-  // perform final calcs
-  useEffect(() => {
-    if (
-      ['none', 'success'].includes(calculateResultsDecon.status) ||
-      aoiCharacterizationData.status !== 'success'
-    )
-      return;
-
-    let editsCopy: EditsType = edits;
-    const scenarios = editsCopy.edits.filter(
-      (i) => i.type === 'scenario-decon',
-    ) as ScenarioDeconEditsType[];
-
-    let atLeastOneDeconTechSelection = false;
-    scenarios.forEach((scenario) => {
-      scenario.deconTechSelections?.forEach((tech) => {
-        if (tech.deconTech) atLeastOneDeconTechSelection = true;
-      });
-    });
-    if (!atLeastOneDeconTechSelection) {
-      setCalculateResultsDecon({
-        status: 'none',
-        panelOpen: false,
-        data: null,
-      });
-      return;
-    }
-
-    const jsonDownload: JsonDownloadType[] = [];
-
-    // perform calculations off percentAOI stuff
-    let totalSolidWasteM3 = 0;
-    let totalLiquidWasteM3 = 0;
-    let totalSolidWasteMass = 0;
-    let totalLiquidWasteMass = 0;
-    let totalDeconCost = 0;
-    let totalApplicationTime = 0;
-    let totalResidenceTime = 0;
-    let totalDeconTime = 0;
-    scenarios.forEach((scenario) => {
-      if (!scenario.deconLayerResults) return;
-      scenario.deconLayerResults.resultsTable = [];
-      scenario.deconLayerResults.cost = 0;
-      scenario.deconLayerResults.time = 0;
-      scenario.deconLayerResults.wasteMass = 0;
-      scenario.deconLayerResults.wasteVolume = 0;
-      const curDeconTechSelections =
-        scenario.deconTechSelections && scenario.deconTechSelections?.length > 0
-          ? scenario.deconTechSelections
-          : defaultDeconSelections;
-      curDeconTechSelections.forEach((sel) => {
-        // find decon settings
-        const deconTech = sel.deconTech?.value;
-        const media = sel.media;
-        if (!deconTech) {
-          sel.avgFinalContamination = sel.avgCfu;
-          sel.aboveDetectionLimit = sel.avgCfu >= detectionLimit;
-          return;
-        }
-
-        // need to lookup stuff from sampleAttributesDecon
-        const {
-          LOD_NON: contaminationRemovalFactor,
-          MCPS: setupCost,
-          TCPS: costM2,
-          WVPS: solidWasteVolume,
-          WWPS: solidWasteM,
-          ALC: liquidWasteVolume,
-          AMC: liquidWasteM,
-          TTC: applicationTimeHrs,
-          TTA: residenceTimeHrs,
-        } = sampleAttributesDecon[deconTech as any];
-
-        // calculate final contamination
-        const contamLeftFactor = 1 - contaminationRemovalFactor;
-        const avgFinalContam =
-          sel.avgCfu * Math.pow(contamLeftFactor, sel.numApplications);
-        sel.avgFinalContamination = avgFinalContam;
-        sel.aboveDetectionLimit = avgFinalContam >= detectionLimit;
-
-        const areaDeconApplied =
-          sel.surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications;
-        const solidWasteM3 = areaDeconApplied * solidWasteVolume;
-        const solidWasteMass = areaDeconApplied * solidWasteM;
-        const liquidWasteM3 = areaDeconApplied * liquidWasteVolume;
-        const liquidWasteMass = areaDeconApplied * liquidWasteM;
-
-        const deconCost =
-          setupCost * sel.numApplications + areaDeconApplied * costM2;
-        const sumApplicationTime =
-          (areaDeconApplied * applicationTimeHrs) /
-          24 /
-          sel.numConcurrentApplications;
-        const sumResidenceTime =
-          (residenceTimeHrs * sel.numApplications) /
-          24 /
-          sel.numConcurrentApplications;
-        const deconTime = sumApplicationTime + sumResidenceTime;
-
-        const jsonItem = {
-          contaminationScenario: media,
-          decontaminationTechnology: deconTech,
-          solidWasteVolumeM3: solidWasteM3,
-          liquidWasteVolumeM3: liquidWasteM3,
-          decontaminationCost: deconCost,
-          decontaminationTimeDays: deconTime,
-          averageInitialContamination: sel.avgCfu,
-          averageFinalContamination: sel.avgFinalContamination,
-          aboveDetectionLimit: sel.aboveDetectionLimit,
+      // display loading spinner for 1 second
+      setCalculateResultsDecon((calculateResultsDecon) => {
+        return {
+          status: 'success',
+          panelOpen: calculateResultsDecon.panelOpen,
+          data: resultObject,
         };
-
-        jsonDownload.push(jsonItem);
-
-        if (scenario.deconLayerResults) {
-          scenario.deconLayerResults.cost += deconCost;
-          scenario.deconLayerResults.time += deconTime;
-          scenario.deconLayerResults.wasteVolume +=
-            solidWasteM3 + liquidWasteM3;
-          scenario.deconLayerResults.wasteMass +=
-            solidWasteMass + liquidWasteMass;
-          scenario.deconLayerResults.resultsTable.push(jsonItem);
-        }
-
-        totalSolidWasteM3 += solidWasteM3;
-        totalSolidWasteMass += solidWasteMass;
-        totalLiquidWasteM3 += liquidWasteM3;
-        totalLiquidWasteMass += liquidWasteMass;
-        totalDeconCost += deconCost;
-        totalApplicationTime += sumApplicationTime;
-        totalResidenceTime += sumResidenceTime;
-        totalDeconTime += deconTime;
       });
-    });
-
-    const jsonDownloadSummarized: JsonDownloadType[] = [];
-    const scenariosIncluded: string[] = [];
-    jsonDownload.forEach((item) => {
-      if (scenariosIncluded.includes(item.contaminationScenario)) return;
-      scenariosIncluded.push(item.contaminationScenario);
-    });
-    scenariosIncluded.forEach((scenario) => {
-      const scenarioItems = jsonDownload.filter(
-        (j) => j.contaminationScenario === scenario,
-      );
-
-      const tech: { [deconTech: string]: JsonDownloadType } = {};
-      scenarioItems.forEach((item) => {
-        const deconTech = item.decontaminationTechnology;
-        if (tech.hasOwnProperty(deconTech)) {
-          tech[deconTech].decontaminationCost += item.decontaminationCost;
-          tech[deconTech].decontaminationTimeDays +=
-            item.decontaminationTimeDays;
-          tech[deconTech].solidWasteVolumeM3 += item.solidWasteVolumeM3;
-          tech[deconTech].liquidWasteVolumeM3 += item.liquidWasteVolumeM3;
-        } else {
-          tech[deconTech] = {
-            ...item,
-          };
-        }
-      });
-
-      Object.values(tech).forEach((deconTech) => {
-        jsonDownloadSummarized.push(deconTech);
-      });
-    });
-
-    const resultObject: CalculateResultsDeconDataType = {
-      // assign input parameters
-      'Total Number of User-Defined Decon Technologies': 0,
-      'User Specified Number of Concurrent Applications': 0,
-
-      // assign counts
-      'Total Number of Decon Applications': 0,
-      'Total Decontamination Area': 0,
-      'Total Setup Time': 0,
-      'Total Application Time': totalApplicationTime,
-      'Total Residence Time': totalResidenceTime,
-      'Average Contamination Removal': 0,
-      'Total Setup Cost': 0,
-      'Total Application Cost': 0,
-      'Solid Waste Volume': totalSolidWasteM3,
-      'Solid Waste Mass': totalSolidWasteMass,
-      'Liquid Waste Volume': totalLiquidWasteM3,
-      'Liquid Waste Mass': totalLiquidWasteMass,
-      'Total Waste Volume': totalSolidWasteM3 + totalLiquidWasteM3,
-      'Total Waste Mass': totalSolidWasteMass + totalLiquidWasteMass,
-
-      //totals
-      'Total Cost': totalDeconCost,
-      'Total Time': Math.round(totalDeconTime * 10) / 10,
-      'Total Contaminated Area': 0,
-      'Total Reduction Area': 0,
-      'Total Remaining Contaminated Area': 0,
-      'Total Decontaminated Area': 0,
-      'Percent Contaminated Remaining': 0,
-      'Contamination Type': '',
-      resultsTable: jsonDownloadSummarized,
-    };
-
-    scenarios.forEach((scenario) => {
-      scenario.deconSummaryResults = {
-        summary:
-          aoiCharacterizationData.planGraphics?.[scenario.layerId]?.summary,
-        aoiPercentages:
-          aoiCharacterizationData.planGraphics?.[scenario.layerId]
-            ?.aoiPercentages,
-        calculateResults: resultObject,
-      };
-    });
-
-    setEdits(editsCopy);
-
-    setJsonDownload(jsonDownloadSummarized);
-
-    // display loading spinner for 1 second
-    setCalculateResultsDecon((calculateResultsDecon) => {
-      return {
-        status: 'success',
-        panelOpen: calculateResultsDecon.panelOpen,
-        data: resultObject,
-      };
-    });
+    }
+    performCalculations();
   }, [
-    aoiCharacterizationData,
-    aoiData,
     calculateResultsDecon,
     contaminationMap,
-    defaultDeconSelections,
     edits,
     layers,
     sampleAttributesDecon,
-    // selectedScenario,
-    setCalculateResultsDecon,
-    setEdits,
-    setJsonDownload,
+    selectedScenario,
+    view,
   ]);
 
   useEffect(() => {
     if (!resultsOpen) return;
     if (calculateResultsDecon.status === 'failure') return;
+    if (!selectedScenario || selectedScenario.type !== 'scenario-decon') return;
 
     async function performCalculations() {
+      if (!selectedScenario || selectedScenario.type !== 'scenario-decon')
+        return;
+
       const contaminationGraphicsClone: __esri.Graphic[] = [];
       if (
         contaminationMap &&
-        contaminationMap.sketchLayer.type === 'graphics'
+        contaminationMap.sketchLayer?.type === 'graphics'
       ) {
         contaminationGraphicsClone.push(
           ...contaminationMap.sketchLayer.graphics.clone().toArray(),
@@ -1913,30 +1721,53 @@ export function useCalculateDeconPlan() {
       }
 
       let cfuReductionBuildings = 0;
-      const scenarios = edits.edits.filter(
-        (i) => i.type === 'scenario-decon',
-      ) as ScenarioDeconEditsType[];
-      let newContamGraphics: __esri.Graphic[] = [];
-      for (const scenario of scenarios) {
-        // tie graphics and imageryGraphics to a scenario
-        const planData = aoiCharacterizationData.planGraphics[scenario.layerId];
 
-        const deconAoi = scenario?.layers.find(
-          (l: any) => l.layerType === 'Decon Mask',
+      const linkedDeconOperations: LayerDeconEditsType[] = [];
+      const linkedAoiCharacterizationIds: string[] = [];
+      const linkedAoiCharacterizations: LayerAoiAnalysisEditsType[] = [];
+      edits.edits.forEach((edit) => {
+        if (
+          edit.type !== 'layer-decon' ||
+          !selectedScenario.linkedLayerIds.includes(edit.layerId)
+        )
+          return;
+
+        linkedDeconOperations.push(edit);
+
+        const aoi = edits.edits.find(
+          (e) =>
+            e.type === 'layer-aoi-analysis' &&
+            e.layerId === edit.analysisLayerId,
+        ) as LayerAoiAnalysisEditsType | undefined;
+        if (aoi) {
+          linkedAoiCharacterizations.push(aoi);
+          linkedAoiCharacterizationIds.push(edit.analysisLayerId);
+        }
+      });
+
+      let newContamGraphics: __esri.Graphic[] = [];
+      for (const deconOp of linkedDeconOperations) {
+        // tie graphics and imageryGraphics to a scenario
+        const planData = aoiCharacterizationData.planGraphics[deconOp.layerId];
+
+        const aoiLayerEdits = linkedAoiCharacterizations.find(
+          (c) => c.layerId === deconOp.analysisLayerId,
         );
-        const deconAoiLayer = deconAoi
-          ? layers.find((l: any) => l.layerId === deconAoi.layerId)
-          : null;
+        const deconAoiLayer =
+          layers.find(
+            (l) =>
+              l.layerType === 'Decon Mask' &&
+              l.layerId === aoiLayerEdits?.layerId,
+          ) ?? null;
 
         const curDeconTechSelections =
-          scenario.deconTechSelections &&
-          scenario.deconTechSelections?.length > 0
-            ? scenario.deconTechSelections
+          deconOp.deconTechSelections && deconOp.deconTechSelections?.length > 0
+            ? deconOp.deconTechSelections
             : defaultDeconSelections;
         let hasDeconTech = false;
 
         const aoiLayerGraphics =
-          deconAoiLayer && deconAoiLayer.sketchLayer.type === 'graphics'
+          deconAoiLayer && deconAoiLayer.sketchLayer?.type === 'graphics'
             ? deconAoiLayer.sketchLayer.graphics.toArray()
             : [];
         for (const graphic of aoiLayerGraphics) {
@@ -2144,10 +1975,12 @@ export function useCalculateDeconPlan() {
           }
         }
 
-        const aoiAssessed = scenario?.layers.find(
-          (l) => l.layerType === 'AOI Assessed',
-        );
-
+        const aoiAssessed =
+          layers.find(
+            (l) =>
+              l.layerType === 'AOI Assessed' &&
+              l.layerId === aoiLayerEdits?.layerId,
+          ) ?? null;
         if (aoiAssessed) {
           const aoiAssessedLayer = layers.find(
             (l) => l.layerId === aoiAssessed.layerId,
@@ -2190,7 +2023,6 @@ export function useCalculateDeconPlan() {
     performCalculations();
   }, [
     aoiCharacterizationData,
-    aoiData,
     aoiContamIntersect,
     calculateResultsDecon,
     contaminationMap,
@@ -2204,7 +2036,8 @@ export function useCalculateDeconPlan() {
   ]);
 
   useEffect(() => {
-    if (!resultsOpen || !contaminationMap) return;
+    if (!resultsOpen || !contaminationMap || !contaminationMap.sketchLayer)
+      return;
     if (window.location.search.includes('devMode=true'))
       contaminationMap.sketchLayer.listMode = 'show';
   }, [contaminationMap, resultsOpen]);

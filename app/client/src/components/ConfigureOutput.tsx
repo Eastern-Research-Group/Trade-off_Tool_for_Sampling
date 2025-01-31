@@ -814,7 +814,7 @@ function ConfigureOutput({ appType }: Props) {
           Click <strong>Next</strong> to continue.
         </p>
 
-        <NavigationButton goToPanel="publish" />
+        <NavigationButton currentPanel="configureOutput" />
       </div>
     </div>
   );

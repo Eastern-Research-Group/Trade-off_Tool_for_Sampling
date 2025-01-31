@@ -2484,46 +2484,14 @@ function ResultCard({ appType, result }: ResultCardProps) {
             listMode: 'show',
             scenarioName: scenarioName,
             scenarioDescription: layerDetails.description,
-            layers: [],
+            linkedLayerIds: [],
             table,
             referenceLayersTable,
             customAttributes: newCustomAttributes,
-            deconTechSelections: defaultDeconSelections,
-            deconSummaryResults: {
-              summary: {
-                totalAoiSqM: 0,
-                totalBuildingFootprintSqM: 0,
-                totalBuildingFloorsSqM: 0,
-                totalBuildingSqM: 0,
-                totalBuildingExtWallsSqM: 0,
-                totalBuildingIntWallsSqM: 0,
-                totalBuildingRoofSqM: 0,
-              },
-              aoiPercentages: {
-                asphalt: 0,
-                concrete: 0,
-                soil: 0,
-              },
-              calculateResults: null,
-            },
-            aoiSummary: {
-              area: 0,
-              buildingFootprint: 0,
-            },
-            deconLayerResults: {
-              cost: 0,
-              time: 0,
-              wasteVolume: 0,
-              wasteMass: 0,
-              resultsTable: [],
-            },
             calculateSettings: {
               current: calcSettings || settingDefaults,
               published: calcSettings || undefined,
             },
-            importedAoiLayer: null,
-            aoiLayerMode: 'draw',
-            gsgFile: null,
           };
 
           // make a copy of the edits context variable

@@ -18,6 +18,7 @@ import { updatePointSymbol, updatePolygonSymbol } from 'utils/sketchUtils';
 // types
 import {
   EditsType,
+  LayerAoiAnalysisEditsType,
   ScenarioDeconEditsType,
   ScenarioEditsType,
 } from 'types/Edits';
@@ -97,11 +98,6 @@ export type PlanGraphics = {
   };
 };
 
-export type PlanSettings = {
-  name: string;
-  description: string;
-};
-
 export type GsgFile = {
   esriFileType: 'gsg';
   file: string;
@@ -141,8 +137,6 @@ type SketchType = {
   setDeconSelections: Dispatch<SetStateAction<any[]>>;
   jsonDownload: JsonDownloadType[];
   setJsonDownload: Dispatch<SetStateAction<JsonDownloadType[]>>;
-  planSettings: PlanSettings;
-  setPlanSettings: Dispatch<SetStateAction<PlanSettings>>;
 
   homeWidget: HomeWidgetType | null;
   setHomeWidget: Dispatch<SetStateAction<HomeWidgetType | null>>;
@@ -164,6 +158,13 @@ type SketchType = {
   setSketchLayer: Dispatch<SetStateAction<LayerType | null>>;
   aoiSketchLayer: LayerType | null;
   setAoiSketchLayer: Dispatch<SetStateAction<LayerType | null>>;
+  deconSketchLayer: LayerAoiAnalysisEditsType | null;
+  setDeconSketchLayer: Dispatch<
+    SetStateAction<LayerAoiAnalysisEditsType | null>
+  >;
+  deconOperation: LayerType | null;
+  setDeconOperation: Dispatch<SetStateAction<LayerType | null>>;
+
   map: __esri.Map | null;
   setMap: Dispatch<SetStateAction<__esri.Map | null>>;
   mapView: __esri.MapView | null;
@@ -237,8 +238,6 @@ export const SketchContext = createContext<SketchType>({
   setDeconSelections: () => {},
   jsonDownload: [],
   setJsonDownload: () => {},
-  planSettings: { name: '', description: '' },
-  setPlanSettings: () => {},
 
   homeWidget: null,
   setHomeWidget: () => {},
@@ -264,6 +263,11 @@ export const SketchContext = createContext<SketchType>({
   setSketchLayer: () => {},
   aoiSketchLayer: null,
   setAoiSketchLayer: () => {},
+  deconSketchLayer: null,
+  setDeconSketchLayer: () => {},
+  deconOperation: null,
+  setDeconOperation: () => {},
+
   map: null,
   setMap: () => {},
   mapView: null,
@@ -362,10 +366,6 @@ export function SketchProvider({ children }: Props) {
   );
   const [deconSelections, setDeconSelections] = useState<any[]>([]);
   const [jsonDownload, setJsonDownload] = useState<JsonDownloadType[]>([]);
-  const [planSettings, setPlanSettings] = useState<PlanSettings>({
-    name: '',
-    description: '',
-  });
 
   const [layersInitialized, setLayersInitialized] = useState(false);
   const [layers, setLayers] = useState<LayerType[]>([]);
@@ -378,6 +378,9 @@ export function SketchProvider({ children }: Props) {
   const [urlLayers, setUrlLayers] = useState<UrlLayerType[]>([]);
   const [sketchLayer, setSketchLayer] = useState<LayerType | null>(null);
   const [aoiSketchLayer, setAoiSketchLayer] = useState<LayerType | null>(null);
+  const [deconSketchLayer, setDeconSketchLayer] =
+    useState<LayerAoiAnalysisEditsType | null>(null);
+  const [deconOperation, setDeconOperation] = useState<LayerType | null>(null);
   const [homeWidget, setHomeWidget] = useState<HomeWidgetType | null>(null);
   const [symbolsInitialized, setSymbolsInitialized] = useState(false);
   const [map, setMap] = useState<__esri.Map | null>(null);
@@ -662,8 +665,6 @@ export function SketchProvider({ children }: Props) {
         setDeconSelections,
         jsonDownload,
         setJsonDownload,
-        planSettings,
-        setPlanSettings,
 
         homeWidget,
         setHomeWidget,
@@ -689,6 +690,11 @@ export function SketchProvider({ children }: Props) {
         setSketchLayer,
         aoiSketchLayer,
         setAoiSketchLayer,
+        deconSketchLayer,
+        setDeconSketchLayer,
+        deconOperation,
+        setDeconOperation,
+
         map,
         setMap,
         mapView,
