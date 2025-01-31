@@ -149,7 +149,7 @@ function SketchButton({
 
   layers.forEach((layer) => {
     if (layer.layerType !== 'Samples' && layer.layerType !== 'VSP') return;
-    if (layer.sketchLayer.type === 'feature') return;
+    if (layer.sketchLayer?.type !== 'graphics') return;
     if (layer?.parentLayer?.id !== selectedScenario?.layerId) return;
 
     layer.sketchLayer.graphics.forEach((graphic) => {
@@ -343,7 +343,11 @@ function LocateSamples() {
     const layerIndex = map.layers.findIndex(
       (layer) => layer.id === sketchLayer.layerId,
     );
-    if (layerIndex === -1 && !sketchLayer.parentLayer) {
+    if (
+      layerIndex === -1 &&
+      !sketchLayer.parentLayer &&
+      sketchLayer.sketchLayer
+    ) {
       map.add(sketchLayer.sketchLayer);
     }
 
@@ -386,7 +390,7 @@ function LocateSamples() {
   // available layer in the scenario will be chosen. If the scenario
   // has no layers, then the first availble unlinked layer is chosen.
   useEffect(() => {
-    if (!selectedScenario) return;
+    if (!selectedScenario || selectedScenario.type !== 'scenario') return;
     if (
       sketchLayer &&
       (!sketchLayer.parentLayer ||
@@ -427,7 +431,11 @@ function LocateSamples() {
 
   // build the list of layers to be displayed in the sample layer dropdown
   const sampleLayers: { label: string; options: LayerType[] }[] = [];
-  if (selectedScenario && selectedScenario.layers.length > 0) {
+  if (
+    selectedScenario &&
+    selectedScenario.type === 'scenario' &&
+    selectedScenario.layers.length > 0
+  ) {
     // get layers for the selected scenario
     sampleLayers.push({
       label: selectedScenario.label,
@@ -531,7 +539,7 @@ function LocateSamples() {
                   <label htmlFor="scenario-select-input">Specify Plan</label>
                 </div>
                 <div>
-                  {selectedScenario && (
+                  {selectedScenario && selectedScenario.type === 'scenario' && (
                     <Fragment>
                       <button
                         css={iconButtonStyles}
@@ -778,7 +786,7 @@ function LocateSamples() {
                       layer.layerType === 'Samples' ||
                       layer.layerType === 'VSP'
                     ) {
-                      layer.sketchLayer.visible = false;
+                      if (layer.sketchLayer) layer.sketchLayer.visible = false;
                     }
                   });
 
@@ -857,7 +865,10 @@ function LocateSamples() {
                                 sketchLayer.layerId,
                               );
 
-                              if (editsScenario) {
+                              if (
+                                editsScenario &&
+                                editsScenario.type === 'scenario'
+                              ) {
                                 editsScenario.layers = [
                                   ...editsScenario.layers.slice(0, layerIndex),
                                   ...editsScenario.layers.slice(layerIndex + 1),
@@ -887,11 +898,13 @@ function LocateSamples() {
                             });
 
                             // remove the layer from the parent group layer and add to map
-                            sketchLayer.sketchLayer.visible = false;
-                            sketchLayer.parentLayer?.remove(
-                              sketchLayer.sketchLayer,
-                            );
-                            map.add(sketchLayer.sketchLayer);
+                            if (sketchLayer.sketchLayer) {
+                              sketchLayer.sketchLayer.visible = false;
+                              sketchLayer.parentLayer?.remove(
+                                sketchLayer.sketchLayer,
+                              );
+                              map.add(sketchLayer.sketchLayer);
+                            }
                             if (sketchLayer.pointsLayer) {
                               sketchLayer.pointsLayer.visible = false;
                               sketchLayer.parentLayer?.remove(
@@ -938,7 +951,11 @@ function LocateSamples() {
 
                             // update the selected scenario
                             setSelectedScenario((selectedScenario) => {
-                              if (!selectedScenario) return selectedScenario;
+                              if (
+                                !selectedScenario ||
+                                selectedScenario.type !== 'scenario'
+                              )
+                                return selectedScenario;
 
                               return {
                                 ...selectedScenario,
@@ -977,7 +994,8 @@ function LocateSamples() {
                             if (!groupLayer) return;
 
                             // add the layer to the parent group layer
-                            groupLayer.add(sketchLayer.sketchLayer);
+                            if (sketchLayer.sketchLayer)
+                              groupLayer.add(sketchLayer.sketchLayer);
                             if (sketchLayer.pointsLayer) {
                               groupLayer.add(sketchLayer.pointsLayer);
                             }
@@ -996,7 +1014,7 @@ function LocateSamples() {
                               sketchLayer.hybridLayer
                             ) {
                               sketchLayer.hybridLayer.visible = true;
-                            } else {
+                            } else if (sketchLayer.sketchLayer) {
                               sketchLayer.sketchLayer.visible = true;
                             }
 
@@ -1107,7 +1125,10 @@ function LocateSamples() {
                           let newSketchLayerIndex: number = -1;
 
                           // check in the selected scenario first, then in the root of edits
-                          if (selectedScenario) {
+                          if (
+                            selectedScenario &&
+                            selectedScenario.type === 'scenario'
+                          ) {
                             const index = selectedScenario.layers.findIndex(
                               (layer) => layer.layerId !== sketchLayer.layerId,
                             );
@@ -1147,7 +1168,8 @@ function LocateSamples() {
                             : map
                               ? map
                               : null;
-                          if (parent) parent.remove(sketchLayer.sketchLayer);
+                          if (parent && sketchLayer.sketchLayer)
+                            parent.remove(sketchLayer.sketchLayer);
                         }}
                       >
                         <i className="fas fa-trash-alt" />
@@ -1171,8 +1193,8 @@ function LocateSamples() {
                           );
                           if (
                             !map ||
-                            sketchLayer.sketchLayer.type !== 'graphics' ||
-                            tempLayer.sketchLayer.type !== 'graphics' ||
+                            sketchLayer.sketchLayer?.type !== 'graphics' ||
+                            tempLayer.sketchLayer?.type !== 'graphics' ||
                             !tempLayer.pointsLayer ||
                             tempLayer.pointsLayer.type !== 'graphics' ||
                             !tempLayer.hybridLayer ||
@@ -1252,7 +1274,11 @@ function LocateSamples() {
                           setSketchLayer(tempLayer);
 
                           setSelectedScenario((selectedScenario) => {
-                            if (!selectedScenario) return selectedScenario;
+                            if (
+                              !selectedScenario ||
+                              selectedScenario.type !== 'scenario'
+                            )
+                              return selectedScenario;
 
                             const scenario = editsCopy.edits.find(
                               (edit) =>

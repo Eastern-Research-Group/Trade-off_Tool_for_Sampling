@@ -238,7 +238,8 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     const layerIndex = map.layers.findIndex(
       (layer) => layer.id === aoiSketchLayer.layerId,
     );
-    if (layerIndex === -1) map.add(aoiSketchLayer.sketchLayer);
+    if (layerIndex === -1 && aoiSketchLayer.sketchLayer)
+      map.add(aoiSketchLayer.sketchLayer);
 
     // save changes from other sketchVM and disable to prevent
     // interference
@@ -571,7 +572,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
     setGenerateRandomResponse({ status: 'fetching', data: [] });
 
-    if (aoiMaskLayer.sketchLayer.type === 'feature') return;
+    if (aoiMaskLayer.sketchLayer?.type !== 'graphics') return;
 
     try {
       const numSamplesToGenerate = parseInt(numberRandomSamples);
@@ -780,7 +781,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
           // remove the graphics from the generate random mask
           if (
             aoiSketchLayer &&
-            aoiSketchLayer.sketchLayer.type === 'graphics'
+            aoiSketchLayer.sketchLayer?.type === 'graphics'
           ) {
             editsCopy = updateLayerEdits({
               appType: 'sampling',
@@ -814,7 +815,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       });
 
       if (generateRandomMode === 'draw') {
-        if (aoiSketchLayer && aoiSketchLayer.sketchLayer.type === 'graphics') {
+        if (aoiSketchLayer && aoiSketchLayer.sketchLayer?.type === 'graphics') {
           aoiSketchLayer.sketchLayer.removeAll();
         }
       }
@@ -851,7 +852,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
   useEffect(() => {
     if (!aoiSketchLayer || watcher) return;
 
-    if (aoiSketchLayer.sketchLayer.type === 'graphics') {
+    if (aoiSketchLayer.sketchLayer?.type === 'graphics') {
       setAoisDrawn(aoiSketchLayer.sketchLayer.graphics.toArray());
     }
 
@@ -860,7 +861,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
         () =>
           (aoiSketchLayer.sketchLayer as __esri.GraphicsLayer).graphics.length,
         () => {
-          if (aoiSketchLayer.sketchLayer.type !== 'graphics') return;
+          if (aoiSketchLayer.sketchLayer?.type !== 'graphics') return;
           setAoisDrawn(aoiSketchLayer.sketchLayer.graphics.toArray());
         },
       ),
@@ -875,7 +876,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       return;
     }
 
-    if (selectedAoiFile.sketchLayer.type !== 'graphics') return;
+    if (selectedAoiFile.sketchLayer?.type !== 'graphics') return;
     setAoisSelected(selectedAoiFile.sketchLayer.graphics.toArray());
   }, [selectedAoiFile]);
 
@@ -1290,10 +1291,10 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
               {((generateRandomMode === 'draw' &&
                 numberRandomSamples &&
-                aoiSketchLayer?.sketchLayer.type === 'graphics' &&
+                aoiSketchLayer?.sketchLayer?.type === 'graphics' &&
                 aoiSketchLayer.sketchLayer.graphics.length > 0) ||
                 (generateRandomMode === 'file' &&
-                  selectedAoiFile?.sketchLayer.type === 'graphics' &&
+                  selectedAoiFile?.sketchLayer?.type === 'graphics' &&
                   selectedAoiFile.sketchLayer.graphics.length > 0)) && (
                 <button
                   css={submitButtonStyles}

@@ -226,7 +226,7 @@ function EditScenario({
         }
 
         if (layer.layerType === 'Samples' || layer.layerType === 'VSP') {
-          layer.sketchLayer.visible = false;
+          if (layer.sketchLayer) layer.sketchLayer.visible = false;
         }
       });
 
@@ -254,8 +254,10 @@ function EditScenario({
               if (!layer) return;
 
               layer.parentLayer = groupLayer;
-              groupLayer.add(layer.sketchLayer);
-              map.layers.remove(layer.sketchLayer);
+              if (layer.sketchLayer) {
+                groupLayer.add(layer.sketchLayer);
+                map.layers.remove(layer.sketchLayer);
+              }
               if (layer.pointsLayer) {
                 groupLayer.add(layer.pointsLayer);
                 map.layers.remove(layer.pointsLayer);
@@ -332,7 +334,8 @@ function EditScenario({
       setSelectedScenario(newScenario);
 
       if (addDefaultSampleLayer && tempSketchLayer) {
-        groupLayer.add(tempSketchLayer.sketchLayer);
+        if (tempSketchLayer.sketchLayer)
+          groupLayer.add(tempSketchLayer.sketchLayer);
         if (tempSketchLayer.pointsLayer) {
           groupLayer.add(tempSketchLayer.pointsLayer);
         }

@@ -331,7 +331,8 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
 
       if (!layer) return;
 
-      highlightGraphics(layer.sketchLayer, sampleUuids);
+      if (layer.sketchLayer?.type !== 'group')
+        highlightGraphics(layer.sketchLayer, sampleUuids);
       highlightGraphics(layer.pointsLayer, sampleUuids);
       highlightGraphics(layer.hybridLayer, sampleUuids);
     });

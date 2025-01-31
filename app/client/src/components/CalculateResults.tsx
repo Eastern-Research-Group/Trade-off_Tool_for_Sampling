@@ -157,7 +157,7 @@ function CalculateResults() {
         return;
       }
 
-      layer.sketchLayer.visible = false;
+      if (layer.sketchLayer) layer.sketchLayer.visible = false;
     });
 
     // get the sample layers for the selected scenario
@@ -717,7 +717,12 @@ function CalculateResults() {
 
     function addSampleSheet() {
       // only here to satisfy typescript
-      if (!map || !selectedScenario || selectedScenario.layers.length === 0) {
+      if (
+        !map ||
+        !selectedScenario ||
+        selectedScenario.type !== 'scenario' ||
+        selectedScenario.layers.length === 0
+      ) {
         return;
       }
 

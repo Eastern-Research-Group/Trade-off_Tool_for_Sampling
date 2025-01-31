@@ -221,7 +221,6 @@ function CharacterizeAOI({
     sceneView,
     sceneViewForArea,
     setAoiCharacterizationData,
-    setAoiData,
     setAoiSketchLayer,
     setDeconSketchLayer,
     setEdits,

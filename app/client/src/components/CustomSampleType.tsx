@@ -482,7 +482,7 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
                         layers.forEach((layer) => {
                           if (
                             !['Samples', 'VSP'].includes(layer.layerType) ||
-                            layer.sketchLayer.type !== 'graphics'
+                            layer.sketchLayer?.type !== 'graphics'
                           ) {
                             return;
                           }
@@ -993,7 +993,7 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
                       for (const layer of layers) {
                         if (
                           !['Samples', 'VSP'].includes(layer.layerType) ||
-                          layer.sketchLayer.type !== 'graphics'
+                          layer.sketchLayer?.type !== 'graphics'
                         ) {
                           continue;
                         }
