@@ -589,24 +589,26 @@ function CreateDeconPlan({ appType }: Props) {
                   const newScenario = ev as ScenarioDeconEditsType;
                   setSelectedScenario(newScenario);
 
-                  // TODO look into bringing this back
-                  // // update the visiblity of layers
-                  // layers.forEach((layer) => {
-                  //   if (layer.parentLayer) {
-                  //     layer.parentLayer.visible =
-                  //       layer.parentLayer.id === newScenario.layerId
-                  //         ? true
-                  //         : false;
-                  //     return;
-                  //   }
+                  // get list of aoi analysis layers to make visible
+                  const idsToMakeVisible: string[] = [];
+                  edits.edits.forEach((edit) => {
+                    if (!newScenario.linkedLayerIds.includes(edit.layerId))
+                      return;
+                    if (edit.type !== 'layer-decon') return;
+                    idsToMakeVisible.push(edit.analysisLayerId);
+                  });
 
-                  //   if (
-                  //     layer.layerType === 'Samples' ||
-                  //     layer.layerType === 'VSP'
-                  //   ) {
-                  //     layer.sketchLayer.visible = false;
-                  //   }
-                  // });
+                  // update the visiblity of layers
+                  layers.forEach((layer) => {
+                    if (!layer.sketchLayer) return;
+                    if (!idsToMakeVisible.includes(layer.layerId)) {
+                      if (layer.layerType === 'AOI Analysis')
+                        layer.sketchLayer.visible = false;
+                      return;
+                    }
+
+                    layer.sketchLayer.visible = true;
+                  });
 
                   setEdits((edits) => ({
                     count: edits.count + 1,
@@ -618,7 +620,9 @@ function CreateDeconPlan({ appType }: Props) {
                           edit.layerId === newScenario.layerId ? true : false;
                       }
                       if (edit.type === 'layer-aoi-analysis') {
-                        visible = false;
+                        visible = idsToMakeVisible.includes(edit.layerId)
+                          ? true
+                          : false;
                       }
 
                       return {
