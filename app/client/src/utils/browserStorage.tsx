@@ -448,7 +448,8 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
       }
 
       if (newLayers.length > 0) {
-        setLayers([...layers, ...newLayers]);
+        window.totsLayers = [...layers, ...newLayers];
+        setLayers(window.totsLayers);
         map.addMany(graphicsLayers);
       }
 
