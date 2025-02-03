@@ -248,7 +248,11 @@ function CreateDeconPlan({ appType }: Props) {
 
     const firstId = selectedScenario.linkedLayerIds[0] ?? null;
     const firstLayer = layers.find((l) => l.layerId === firstId);
-    setDeconOperation(firstLayer ?? null);
+    setDeconOperation((deconOp) => {
+      if (deconOp && selectedScenario.linkedLayerIds.includes(deconOp.layerId))
+        return deconOp;
+      return firstLayer ?? null;
+    });
   }, [selectedScenario]);
 
   // Sets the sketchLayer to the first layer in the layer selection drop down,
