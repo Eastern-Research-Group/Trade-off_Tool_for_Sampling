@@ -310,7 +310,7 @@ function CreateDeconPlan({ appType }: Props) {
         edit.layerId === deconLayer.analysisLayerId,
     ) as LayerAoiAnalysisEditsType;
     setDeconSketchLayer(layer ?? null);
-  }, [deconOperation]);
+  }, [deconOperation, edits, setDeconSketchLayer]);
 
   // TODO - see if this should be brought back
   // // Changes the selected layer if the scenario is changed. The first

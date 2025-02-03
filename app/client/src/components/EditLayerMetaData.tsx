@@ -425,7 +425,15 @@ function EditScenario({
         scenarioDescription,
       );
 
-      const deconLayerEdits = edits.edits.find((e) => e.type === 'layer-decon');
+      const deconOpsLinked: string[] = [];
+      edits.edits.forEach((edit) => {
+        if (edit.type !== 'scenario-decon') return;
+        deconOpsLinked.push(...edit.linkedLayerIds);
+      });
+
+      const deconLayerEdits = edits.edits.find(
+        (e) => !deconOpsLinked.includes(e.layerId) && e.type === 'layer-decon',
+      );
       const aoiLayer = edits.edits.find((e) => e.type === 'layer-aoi-analysis');
       if (deconLayerEdits) {
         newScenario.linkedLayerIds = [deconLayerEdits.layerId];
