@@ -25,6 +25,7 @@ import {
   LayerEditsType,
   EditsType,
   LayerAoiAnalysisEditsType,
+  LayerDeconEditsType,
 } from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { ErrorType } from 'types/Misc';
@@ -202,7 +203,8 @@ function CharacterizeAOI({
   showHelpText = true,
   showOnEdit = false,
 }: Props) {
-  const { calculateResultsDecon } = useContext(CalculateContext);
+  const { calculateResultsDecon, setCalculateResultsDecon } =
+    useContext(CalculateContext);
   const { setGoTo, setGoToOptions } = useContext(NavigationContext);
   const {
     aoiCharacterizationData,
@@ -220,6 +222,7 @@ function CharacterizeAOI({
     mapView,
     sceneView,
     sceneViewForArea,
+    selectedScenario,
     setAoiCharacterizationData,
     setAoiSketchLayer,
     setDeconSketchLayer,
@@ -543,6 +546,33 @@ function CharacterizeAOI({
               };
             }),
           };
+
+          editsCopy.edits.forEach((edit) => {
+            if (
+              edit.type !== 'layer-decon' ||
+              edit.analysisLayerId !== aoiAnalysis?.layerId
+            )
+              return;
+
+            edit.deconTechSelections = edit.deconTechSelections.map((tech) => {
+              const media = newDeconTechSelections.find(
+                (a) => a.media === tech.media,
+              );
+
+              let pctAoi = tech.pctAoi;
+              let surfaceArea = tech.surfaceArea;
+              if (media) {
+                pctAoi = media.pctAoi;
+                surfaceArea = media.surfaceArea;
+              }
+
+              return {
+                ...tech,
+                pctAoi,
+                surfaceArea,
+              };
+            });
+          });
         }
       }
 
@@ -552,6 +582,16 @@ function CharacterizeAOI({
         status: 'success',
         planGraphics,
       });
+
+      if (selectedScenario?.type === 'scenario-decon') {
+        setCalculateResultsDecon((calculateResultsDecon) => {
+          return {
+            status: 'fetching',
+            panelOpen: calculateResultsDecon.panelOpen,
+            data: null,
+          };
+        });
+      }
     } catch (ex: any) {
       console.error(ex);
       setAoiCharacterizationData({
@@ -758,6 +798,24 @@ function CharacterizeAOI({
           return idx === -1;
         });
 
+        const selectedOp = edits.edits.find(
+          (edit) =>
+            edit.type === 'layer-decon' &&
+            edit.layerId === deconOperation?.layerId,
+        ) as LayerDeconEditsType | undefined;
+        if (selectedOp) {
+          selectedOp.analysisLayerId = layerAoiAnalysis.layerId;
+          selectedOp.deconTechSelections = selectedOp.deconTechSelections.map(
+            (tech) => {
+              return {
+                ...tech,
+                pctAoi: 0,
+                surfaceArea: 0,
+              };
+            },
+          );
+        }
+
         return {
           count: edits.count + 1,
           edits: [...newEdits, layerAoiAnalysis],
@@ -775,6 +833,14 @@ function CharacterizeAOI({
       // update layers (set parent layer)
       window.totsLayers = tLayers;
       setLayers(tLayers);
+
+      setCalculateResultsDecon((calculateResultsDecon) => {
+        return {
+          status: 'fetching',
+          panelOpen: calculateResultsDecon.panelOpen,
+          data: null,
+        };
+      });
 
       // add the scenario group layer to the map
       map.add(groupLayer);
@@ -915,6 +981,7 @@ function CharacterizeAOI({
           inputId="characterize-aoi-select-input"
           css={layerSelectStyles}
           isDisabled={addScenarioVisible || editScenarioVisible}
+          options={deconLayers}
           value={deconSketchLayer}
           onChange={(ev) => {
             const newLayer = ev as LayerAoiAnalysisEditsType;
@@ -933,18 +1000,12 @@ function CharacterizeAOI({
                       analysisLayerId: newLayer.layerId,
                       deconTechSelections: edit.deconTechSelections.map(
                         (tech) => {
-                          console.log('tech: ', tech);
-                          console.log('aoiSummary: ', newLayer.aoiSummary);
                           const media = newLayer.aoiSummary.areaByMedia.find(
                             (a) => a.media === tech.media,
                           );
 
-                          let pctAoi = tech.pctAoi;
-                          let surfaceArea = tech.surfaceArea;
-                          if (media) {
-                            pctAoi = media.pctAoi;
-                            surfaceArea = media.surfaceArea;
-                          }
+                          let pctAoi = media?.pctAoi ?? 0;
+                          let surfaceArea = media?.surfaceArea ?? 0;
 
                           return {
                             ...tech,
@@ -960,8 +1021,15 @@ function CharacterizeAOI({
                 }),
               };
             });
+
+            setCalculateResultsDecon((calculateResultsDecon) => {
+              return {
+                status: 'fetching',
+                panelOpen: calculateResultsDecon.panelOpen,
+                data: null,
+              };
+            });
           }}
-          options={deconLayers}
         />
       </div>
 

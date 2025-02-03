@@ -2049,11 +2049,11 @@ function ResultCard({ appType, result }: ResultCardProps) {
           (l) => l.portalId === layerDetails.serviceItemId,
         ) as ScenarioDeconEditsType;
         if (editsLayer) {
-          const editsLayerTemp = editsLayer as ScenarioDeconEditsType;
-          if (editsLayerTemp?.layers) {
-            const sublayer = editsLayerTemp.layers.find((s) => s.uuid === uuid);
-            if (sublayer) sublayer.pointsId = layerDetails.id;
-          }
+          // const editsLayerTemp = editsLayer as ScenarioDeconEditsType;
+          // if (editsLayerTemp?.layers) {
+          //   const sublayer = editsLayerTemp.layers.find((s) => s.uuid === uuid);
+          //   if (sublayer) sublayer.pointsId = layerDetails.id;
+          // }
         }
       });
     }
@@ -3013,12 +3013,16 @@ function ResultCard({ appType, result }: ResultCardProps) {
       const parentLayerIds: string[] = [];
       layers.forEach((layer) => {
         if (layer.portalId === result.id) {
-          if (!layer.parentLayer) {
+          if (!layer.parentLayer && layer.sketchLayer) {
             mapLayersToRemove.push(layer.sketchLayer);
             return;
           }
 
-          if (parentLayerIds.includes(layer.parentLayer.id)) return;
+          if (
+            !layer.parentLayer ||
+            parentLayerIds.includes(layer.parentLayer.id)
+          )
+            return;
 
           mapLayersToRemove.push(layer.parentLayer);
           parentLayerIds.push(layer.parentLayer.id);
@@ -3128,6 +3132,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
     layers.forEach((layer) => {
       if (
         !['Samples', 'VSP'].includes(layer.layerType) ||
+        !layer.sketchLayer ||
         layer.sketchLayer.type !== 'graphics'
       ) {
         return;
@@ -3211,7 +3216,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
         // Update the attributes of the graphics on the map on edits
         let editsCopy: EditsType = edits;
         removalObject.forEach((object) => {
-          if (object.layer.sketchLayer.type === 'graphics') {
+          if (object.layer.sketchLayer?.type === 'graphics') {
             object.layer.sketchLayer.removeMany(object.graphics);
             if (object.layer.pointsLayer)
               object.layer.pointsLayer.removeMany(object.pointsGraphics);
@@ -3255,12 +3260,16 @@ function ResultCard({ appType, result }: ResultCardProps) {
       const parentLayerIds: string[] = [];
       layers.forEach((layer) => {
         if (layer.portalId === result.id) {
-          if (!layer.parentLayer) {
+          if (!layer.parentLayer && layer.sketchLayer) {
             mapLayersToRemove.push(layer.sketchLayer);
             return;
           }
 
-          if (parentLayerIds.includes(layer.parentLayer.id)) return;
+          if (
+            !layer.parentLayer ||
+            parentLayerIds.includes(layer.parentLayer.id)
+          )
+            return;
 
           mapLayersToRemove.push(layer.parentLayer);
           parentLayerIds.push(layer.parentLayer.id);
@@ -3348,7 +3357,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
     layers.forEach((layer) => {
       if (
         !['Samples', 'VSP'].includes(layer.layerType) ||
-        layer.sketchLayer.type !== 'graphics'
+        layer.sketchLayer?.type !== 'graphics'
       ) {
         return;
       }
@@ -3431,7 +3440,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
         // Update the attributes of the graphics on the map on edits
         let editsCopy: EditsType = edits;
         removalObject.forEach((object) => {
-          if (object.layer.sketchLayer.type === 'graphics') {
+          if (object.layer.sketchLayer?.type === 'graphics') {
             object.layer.sketchLayer.removeMany(object.graphics);
             if (object.layer.pointsLayer)
               object.layer.pointsLayer.removeMany(object.pointsGraphics);

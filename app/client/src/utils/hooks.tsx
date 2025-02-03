@@ -185,7 +185,7 @@ export function processScenario(
   const deconTechSelections = isScenario ? layer.deconTechSelections : [];
 
   const planGraphics = aoiCharacterizationData.planGraphics[scenarioId];
-  if (!planGraphics) return;
+  if (!planGraphics) return [];
 
   const {
     totalAoiSqM,
@@ -205,7 +205,7 @@ export function processScenario(
     deconTechSelections && deconTechSelections.length > 0
       ? deconTechSelections
       : defaultDeconSelections;
-  const newDeconTechSelections: any = [];
+  const newDeconTechSelections: any[] = [];
   curDeconTechSelections.forEach((sel) => {
     // find decon settings
     const media = sel.media;

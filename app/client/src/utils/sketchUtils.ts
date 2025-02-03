@@ -2060,30 +2060,35 @@ export function updateLayerEdits({
     // add the layer to a scenario if a scenario was found,
     // otherwise add the layer to the root of edits.
     if (editsScenario) {
-      editsScenario.layers.push(editsLayer);
+      if (editsScenario.type === 'scenario')
+        editsScenario.layers.push(editsLayer);
       if (editsScenario.status === 'published') editsScenario.status = 'edited';
     } else {
       editsCopy.edits.push(editsLayer);
     }
   } else if (scenario && editsScenario && type === 'move') {
     editsLayer.visible = true;
-    editsLayer.adds = [...editsLayer.adds, ...editsLayer.updates];
-    editsLayer.updates = [];
-    editsLayer.published.forEach((edit) => {
-      const indx = editsLayer.adds.findIndex(
-        (x) =>
-          x.attributes.PERMANENT_IDENTIFIER ===
-          edit.attributes.PERMANENT_IDENTIFIER,
-      );
-      if (indx === -1) editsLayer.adds.push(edit);
-    });
-    editsLayer.published = [];
-    editsLayer.deletes = [];
-    editsScenario.layers.push(editsLayer);
     if (editsScenario.status === 'published') editsScenario.status = 'edited';
     editsCopy.edits = editsCopy.edits.filter(
       (edit) => edit.layerId !== editsLayer.layerId,
     );
+
+    if (editsScenario.type === 'scenario' && editsLayer.type === 'layer') {
+      editsLayer.adds = [...editsLayer.adds, ...editsLayer.updates];
+      editsLayer.updates = [];
+      editsLayer.published.forEach((edit) => {
+        if (editsLayer.type !== 'layer') return;
+        const indx = editsLayer.adds.findIndex(
+          (x) =>
+            x.attributes.PERMANENT_IDENTIFIER ===
+            edit.attributes.PERMANENT_IDENTIFIER,
+        );
+        if (indx === -1) editsLayer.adds.push(edit);
+      });
+      editsLayer.published = [];
+      editsLayer.deletes = [];
+      editsScenario.layers.push(editsLayer);
+    }
   } else {
     // handle property changes
     if (editsScenario) {
@@ -2095,7 +2100,7 @@ export function updateLayerEdits({
     }
 
     if (appType === 'sampling') editsLayer.visible = layer.visible;
-    else editsLayer.visible = layer.sketchLayer.visible;
+    else editsLayer.visible = layer.sketchLayer?.visible ?? layer.visible;
     editsLayer.listMode = layer.listMode;
     editsLayer.name = layer.name;
     editsLayer.label = layer.name;
@@ -2110,9 +2115,8 @@ export function updateLayerEdits({
   // set the hasContaminationRan value (default is false)
   if (editsScenario?.type === 'scenario')
     editsScenario.hasContaminationRan = hasContaminationRan;
-  editsLayer.hasContaminationRan = hasContaminationRan;
 
-  if (changes) {
+  if (changes && editsLayer.type === 'layer') {
     if (type === 'replace') editsLayer.adds = [];
 
     // Add new graphics
@@ -2437,6 +2441,7 @@ export function createScenarioDeconLayer(
       label: layerName,
       value: groupLayer.id,
       layerType: 'AOI Analysis',
+      addedFrom: 'sketch',
       status: 'added',
       editType: 'add',
       visible: true,

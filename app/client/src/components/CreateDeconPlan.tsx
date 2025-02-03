@@ -215,7 +215,7 @@ type Props = {
 };
 
 function CreateDeconPlan({ appType }: Props) {
-  const { contaminationMap, setContaminationMap } =
+  const { contaminationMap, setCalculateResultsDecon, setContaminationMap } =
     useContext(CalculateContext);
   const { setGoTo, setGoToOptions, trainingMode } =
     useContext(NavigationContext);
@@ -363,10 +363,7 @@ function CreateDeconPlan({ appType }: Props) {
 
   // build the list of layers to be displayed in the sample layer dropdown
   const deconLayers: { label: string; options: LayerType[] }[] = [];
-  if (
-    selectedScenario?.type === 'scenario-decon' &&
-    selectedScenario?.linkedLayerIds?.length > 0
-  ) {
+  if (selectedScenario?.type === 'scenario-decon') {
     const linkedDeconLayers = deconLayersAll.filter((d) =>
       selectedScenario.linkedLayerIds.includes(d.layerId),
     );
@@ -802,6 +799,16 @@ function CreateDeconPlan({ appType }: Props) {
                                   ),
                                 };
                               });
+
+                              setCalculateResultsDecon(
+                                (calculateResultsDecon) => {
+                                  return {
+                                    status: 'fetching',
+                                    panelOpen: calculateResultsDecon.panelOpen,
+                                    data: null,
+                                  };
+                                },
+                              );
                             }}
                           >
                             <i className="fas fa-trash-alt" />
@@ -966,12 +973,12 @@ function CreateDeconPlan({ appType }: Props) {
                   inputId="decon-operation-select-input"
                   css={layerSelectStyles}
                   isDisabled={addOperationVisible || editOperationVisible}
+                  options={deconLayers}
                   value={deconOperation}
                   onChange={(ev) => {
                     const newLayer = ev as LayerType;
                     setDeconOperation(newLayer);
                   }}
-                  options={deconLayers}
                 />
               </div>
 
