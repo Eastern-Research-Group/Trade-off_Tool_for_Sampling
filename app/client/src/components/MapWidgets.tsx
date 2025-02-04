@@ -222,14 +222,21 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
   // Gets the graphics to be highlighted and highlights them
   const [handles] = useState(new Handles());
   useEffect(() => {
-    if (!map || !selectedScenario || selectedScenario.layers.length === 0) {
+    if (
+      !map ||
+      !selectedScenario ||
+      selectedScenario.type !== 'scenario' ||
+      selectedScenario.layers.length === 0
+    ) {
       return;
     }
 
     const group = 'contamination-highlights-group';
     try {
       handles.remove(group);
-    } catch (e) {}
+    } catch (e) {
+      console.error(e);
+    }
 
     // find the group layer
     const groupLayer = map.findLayerById(
@@ -278,7 +285,9 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
     const group = 'highlights-group';
     try {
       handles.remove(group);
-    } catch (e) {}
+    } catch (e) {
+      console.error(e);
+    }
 
     // Highlights graphics on the provided layer that matches the provided
     // list of uuids.
@@ -312,7 +321,7 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
     const samples: any = {};
     selectedSampleIds.forEach((sample) => {
       const key = isDecon() ? 'aoi-assessed' : sample.DECISIONUNITUUID;
-      if (!samples.hasOwnProperty(key)) {
+      if (!Object.prototype.hasOwnProperty.call(samples, key)) {
         samples[key] = [sample.PERMANENT_IDENTIFIER];
       } else {
         samples[key].push(sample.PERMANENT_IDENTIFIER);
@@ -326,7 +335,8 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
 
       if (!layer) return;
 
-      highlightGraphics(layer.sketchLayer, sampleUuids);
+      if (layer.sketchLayer?.type !== 'group')
+        highlightGraphics(layer.sketchLayer, sampleUuids);
       highlightGraphics(layer.pointsLayer, sampleUuids);
       highlightGraphics(layer.hybridLayer, sampleUuids);
     });

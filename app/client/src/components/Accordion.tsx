@@ -84,7 +84,7 @@ function AccordionItem({
       <header
         tabIndex={0}
         css={headerStyles}
-        onClick={(ev) => {
+        onClick={(_ev) => {
           const newIsOpen = !isOpen;
           setIsOpen(newIsOpen);
           onChange(newIsOpen);

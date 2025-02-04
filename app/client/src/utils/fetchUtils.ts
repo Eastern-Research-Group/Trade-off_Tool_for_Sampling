@@ -61,7 +61,7 @@ export function fetchPost(
 
   // build the url search params
   const body = new URLSearchParams();
-  for (let [key, value] of Object.entries(data)) {
+  for (const [key, value] of Object.entries(data)) {
     // get the value convert JSON to strings where necessary
     let valueToAdd = value;
     if (typeof value === 'object') {
@@ -100,7 +100,7 @@ export function fetchPostFile(url: string, data: object, file: any) {
 
   // build the url search params
   const body = new FormData();
-  for (let [key, value] of Object.entries(data)) {
+  for (const [key, value] of Object.entries(data)) {
     // get the value convert JSON to strings where necessary
     let valueToAdd = value;
     if (typeof value === 'object') {
@@ -196,7 +196,7 @@ export function logCallToGoogleAnalytics(
   const duration = performance.now() - startTime;
 
   // combine the web service and map service mappings
-  let mapping = window.googleAnalyticsMapping;
+  const mapping = window.googleAnalyticsMapping;
 
   // get the short name from the url
   let eventAction = 'UNKNOWN';

@@ -5,7 +5,12 @@ import { css } from '@emotion/react';
 // contexts
 import { NavigationContext } from 'contexts/Navigation';
 // types
-import { PanelValueType } from 'config/navigation';
+import {
+  deconPanels,
+  isDecon,
+  PanelValueType,
+  samplingPanels,
+} from 'config/navigation';
 
 // --- styles (NavigationButton) ---
 const containerStyles = css`
@@ -19,18 +24,25 @@ const nextButtonStyles = css`
 
 // --- components (NavigationButton) ---
 type Props = {
-  goToPanel: PanelValueType;
+  currentPanel: PanelValueType;
 };
 
-function NavigationButton({ goToPanel }: Props) {
+function NavigationButton({ currentPanel }: Props) {
   const { setGoTo } = useContext(NavigationContext);
 
+  const panelConfig = isDecon() ? deconPanels : samplingPanels;
+  const currentIndex = panelConfig.findIndex(
+    (panel) => panel.value === currentPanel,
+  );
+  const nextPanel = panelConfig[currentIndex + 1]?.value;
+
+  if (!nextPanel) return null;
   return (
     <div css={containerStyles}>
       <button
         css={nextButtonStyles}
-        onClick={(ev) => {
-          setGoTo(goToPanel);
+        onClick={(_ev) => {
+          setGoTo(nextPanel);
         }}
       >
         Next

@@ -149,7 +149,7 @@ function SketchButton({
 
   layers.forEach((layer) => {
     if (layer.layerType !== 'Samples' && layer.layerType !== 'VSP') return;
-    if (layer.sketchLayer.type === 'feature') return;
+    if (layer.sketchLayer?.type !== 'graphics') return;
     if (layer?.parentLayer?.id !== selectedScenario?.layerId) return;
 
     layer.sketchLayer.graphics.forEach((graphic) => {
@@ -343,7 +343,11 @@ function LocateSamples() {
     const layerIndex = map.layers.findIndex(
       (layer) => layer.id === sketchLayer.layerId,
     );
-    if (layerIndex === -1 && !sketchLayer.parentLayer) {
+    if (
+      layerIndex === -1 &&
+      !sketchLayer.parentLayer &&
+      sketchLayer.sketchLayer
+    ) {
       map.add(sketchLayer.sketchLayer);
     }
 
@@ -355,14 +359,15 @@ function LocateSamples() {
 
     // determine whether the sketch button draws points or polygons
     const attributes = sampleAttributes[label as any];
-    let shapeType = attributes.ShapeType;
+    const shapeType = attributes.ShapeType;
 
     // make the style of the button active
     const wasSet = activateSketchButton(label);
 
     // update the sketchVM symbol
     let symbolType = 'Samples';
-    if (defaultSymbols.symbols.hasOwnProperty(label)) symbolType = label;
+    if (Object.prototype.hasOwnProperty.call(defaultSymbols.symbols, label))
+      symbolType = label;
 
     const isPath = attributes.POINT_STYLE.includes('path|');
     const pointProps = {
@@ -386,7 +391,7 @@ function LocateSamples() {
   // available layer in the scenario will be chosen. If the scenario
   // has no layers, then the first availble unlinked layer is chosen.
   useEffect(() => {
-    if (!selectedScenario) return;
+    if (!selectedScenario || selectedScenario.type !== 'scenario') return;
     if (
       sketchLayer &&
       (!sketchLayer.parentLayer ||
@@ -427,7 +432,11 @@ function LocateSamples() {
 
   // build the list of layers to be displayed in the sample layer dropdown
   const sampleLayers: { label: string; options: LayerType[] }[] = [];
-  if (selectedScenario && selectedScenario.layers.length > 0) {
+  if (
+    selectedScenario &&
+    selectedScenario.type === 'scenario' &&
+    selectedScenario.layers.length > 0
+  ) {
     // get layers for the selected scenario
     sampleLayers.push({
       label: selectedScenario.label,
@@ -531,7 +540,7 @@ function LocateSamples() {
                   <label htmlFor="scenario-select-input">Specify Plan</label>
                 </div>
                 <div>
-                  {selectedScenario && (
+                  {selectedScenario && selectedScenario.type === 'scenario' && (
                     <Fragment>
                       <button
                         css={iconButtonStyles}
@@ -587,7 +596,7 @@ function LocateSamples() {
                       <button
                         css={iconButtonStyles}
                         title="Clone Scenario"
-                        onClick={(ev) => {
+                        onClick={(_ev) => {
                           if (!map) return;
 
                           // get the name for the new layer
@@ -766,6 +775,14 @@ function LocateSamples() {
 
                   // update the visiblity of layers
                   layers.forEach((layer) => {
+                    const layersToIgnore = [
+                      'AOI Analysis',
+                      'AOI Assessed',
+                      'Decon Mask',
+                      'Image Analysis',
+                    ];
+                    if (layersToIgnore.includes(layer.layerType)) return;
+
                     if (layer.parentLayer) {
                       layer.parentLayer.visible =
                         layer.parentLayer.id === newScenario.layerId
@@ -778,15 +795,16 @@ function LocateSamples() {
                       layer.layerType === 'Samples' ||
                       layer.layerType === 'VSP'
                     ) {
-                      layer.sketchLayer.visible = false;
+                      if (layer.sketchLayer) layer.sketchLayer.visible = false;
                     }
                   });
 
                   setEdits((edits) => ({
                     count: edits.count + 1,
                     edits: edits.edits.map((edit) => {
-                      let visible = edit.visible;
+                      if (edit.type === 'layer-aoi-analysis') return edit;
 
+                      let visible = edit.visible;
                       if (edit.type === 'scenario') {
                         visible =
                           edit.layerId === newScenario.layerId ? true : false;
@@ -857,7 +875,10 @@ function LocateSamples() {
                                 sketchLayer.layerId,
                               );
 
-                              if (editsScenario) {
+                              if (
+                                editsScenario &&
+                                editsScenario.type === 'scenario'
+                              ) {
                                 editsScenario.layers = [
                                   ...editsScenario.layers.slice(0, layerIndex),
                                   ...editsScenario.layers.slice(layerIndex + 1),
@@ -887,11 +908,13 @@ function LocateSamples() {
                             });
 
                             // remove the layer from the parent group layer and add to map
-                            sketchLayer.sketchLayer.visible = false;
-                            sketchLayer.parentLayer?.remove(
-                              sketchLayer.sketchLayer,
-                            );
-                            map.add(sketchLayer.sketchLayer);
+                            if (sketchLayer.sketchLayer) {
+                              sketchLayer.sketchLayer.visible = false;
+                              sketchLayer.parentLayer?.remove(
+                                sketchLayer.sketchLayer,
+                              );
+                              map.add(sketchLayer.sketchLayer);
+                            }
                             if (sketchLayer.pointsLayer) {
                               sketchLayer.pointsLayer.visible = false;
                               sketchLayer.parentLayer?.remove(
@@ -938,7 +961,11 @@ function LocateSamples() {
 
                             // update the selected scenario
                             setSelectedScenario((selectedScenario) => {
-                              if (!selectedScenario) return selectedScenario;
+                              if (
+                                !selectedScenario ||
+                                selectedScenario.type !== 'scenario'
+                              )
+                                return selectedScenario;
 
                               return {
                                 ...selectedScenario,
@@ -977,7 +1004,8 @@ function LocateSamples() {
                             if (!groupLayer) return;
 
                             // add the layer to the parent group layer
-                            groupLayer.add(sketchLayer.sketchLayer);
+                            if (sketchLayer.sketchLayer)
+                              groupLayer.add(sketchLayer.sketchLayer);
                             if (sketchLayer.pointsLayer) {
                               groupLayer.add(sketchLayer.pointsLayer);
                             }
@@ -996,7 +1024,7 @@ function LocateSamples() {
                               sketchLayer.hybridLayer
                             ) {
                               sketchLayer.hybridLayer.visible = true;
-                            } else {
+                            } else if (sketchLayer.sketchLayer) {
                               sketchLayer.sketchLayer.visible = true;
                             }
 
@@ -1107,7 +1135,10 @@ function LocateSamples() {
                           let newSketchLayerIndex: number = -1;
 
                           // check in the selected scenario first, then in the root of edits
-                          if (selectedScenario) {
+                          if (
+                            selectedScenario &&
+                            selectedScenario.type === 'scenario'
+                          ) {
                             const index = selectedScenario.layers.findIndex(
                               (layer) => layer.layerId !== sketchLayer.layerId,
                             );
@@ -1147,7 +1178,8 @@ function LocateSamples() {
                             : map
                               ? map
                               : null;
-                          if (parent) parent.remove(sketchLayer.sketchLayer);
+                          if (parent && sketchLayer.sketchLayer)
+                            parent.remove(sketchLayer.sketchLayer);
                         }}
                       >
                         <i className="fas fa-trash-alt" />
@@ -1156,7 +1188,7 @@ function LocateSamples() {
                       <button
                         css={iconButtonStyles}
                         title="Clone Layer"
-                        onClick={(ev) => {
+                        onClick={(_ev) => {
                           // get the name for the new layer
                           const newLayerName = getNewName(
                             layers.map((layer) => layer.label),
@@ -1171,8 +1203,8 @@ function LocateSamples() {
                           );
                           if (
                             !map ||
-                            sketchLayer.sketchLayer.type !== 'graphics' ||
-                            tempLayer.sketchLayer.type !== 'graphics' ||
+                            sketchLayer.sketchLayer?.type !== 'graphics' ||
+                            tempLayer.sketchLayer?.type !== 'graphics' ||
                             !tempLayer.pointsLayer ||
                             tempLayer.pointsLayer.type !== 'graphics' ||
                             !tempLayer.hybridLayer ||
@@ -1222,7 +1254,7 @@ function LocateSamples() {
 
                           // clone the active layer in edits
                           // make a copy of the edits context variable
-                          let editsCopy = updateLayerEdits({
+                          const editsCopy = updateLayerEdits({
                             appType: 'sampling',
                             changes: tempLayer.sketchLayer.graphics,
                             edits,
@@ -1252,7 +1284,11 @@ function LocateSamples() {
                           setSketchLayer(tempLayer);
 
                           setSelectedScenario((selectedScenario) => {
-                            if (!selectedScenario) return selectedScenario;
+                            if (
+                              !selectedScenario ||
+                              selectedScenario.type !== 'scenario'
+                            )
+                              return selectedScenario;
 
                             const scenario = editsCopy.edits.find(
                               (edit) =>
@@ -1377,17 +1413,20 @@ function LocateSamples() {
                           const sampleType = option.label;
 
                           if (
-                            !sampleAttributes.hasOwnProperty(sampleTypeUuid)
+                            !Object.prototype.hasOwnProperty.call(
+                              sampleAttributes,
+                              sampleTypeUuid,
+                            )
                           ) {
                             return null;
                           }
 
                           const shapeType =
                             sampleAttributes[sampleTypeUuid].ShapeType;
-                          const edited =
-                            userDefinedAttributes.sampleTypes.hasOwnProperty(
-                              sampleTypeUuid,
-                            );
+                          const edited = Object.prototype.hasOwnProperty.call(
+                            userDefinedAttributes.sampleTypes,
+                            sampleTypeUuid,
+                          );
                           return (
                             <SketchButton
                               key={index}
@@ -1447,20 +1486,12 @@ function LocateSamples() {
               </AccordionItem>
               <AccordionItem title="Add Multiple Random Samples">
                 <div css={sectionContainer}>
-                  <GenerateSamples
-                    id="gen-random"
-                    title="Add Multiple Random Samples"
-                    type="random"
-                  />
+                  <GenerateSamples id="gen-random" type="random" />
                 </div>
               </AccordionItem>
               <AccordionItem title="Add Statistical Sampling Approach">
                 <div css={sectionContainer}>
-                  <GenerateSamples
-                    id="gen-statistic"
-                    title="Add Statistical Sampling Approach"
-                    type="statistic"
-                  />
+                  <GenerateSamples id="gen-statistic" type="statistic" />
                 </div>
               </AccordionItem>
             </AccordionList>
@@ -1468,7 +1499,7 @@ function LocateSamples() {
         )}
       </div>
       <div css={sectionContainer}>
-        <NavigationButton goToPanel="calculate" />
+        <NavigationButton currentPanel="locateSamples" />
       </div>
     </div>
   );

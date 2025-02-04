@@ -4,7 +4,13 @@ import { AttributesType } from 'types/Publish';
 
 export type EditsType = {
   count: number;
-  edits: (ScenarioEditsType | ScenarioDeconEditsType | LayerEditsType)[];
+  edits: (
+    | ScenarioEditsType
+    | ScenarioDeconEditsType
+    | LayerEditsType
+    | LayerAoiAnalysisEditsType
+    | LayerDeconEditsType
+  )[];
 };
 
 export type EditType =
@@ -57,6 +63,73 @@ export type CalculateSettingsType = {
   published?: CalculateSettingsBaseType;
 };
 
+export type LayerAoiAnalysisEditsType = {
+  type: 'layer-aoi-analysis';
+  id: number; // scenario layer id
+  layerId: string; // id from esri group layer
+  portalId: string; // id from portal layer
+  name: string; // layer/scenario name
+  label: string; // layer/scenario label
+  value: string; // layer/scenario value for React-Select
+  layerType: LayerTypeName; // type of tots layer (sample, contamination, etc.)
+  status: PublishStatus; // publish status
+  editType: EditType; // edit type
+  visible: boolean; // layer visibility on map
+  listMode: 'hide' | 'hide-children' | 'show'; // layer visiblity in legend widget
+  layers: LayerEditsType[];
+  importedAoiLayer?: LayerEditsType | null;
+  addedFrom: AddedFrom; // how the layer was added (file, url, etc.)
+  aoiLayerMode: '' | 'draw' | 'file';
+  aoiPercentages: {
+    asphalt: number;
+    concrete: number;
+    numAois: number;
+    soil: number;
+  };
+  aoiSummary: {
+    totalAoiSqM: number;
+    totalBuildingExtWallsSqM: number;
+    totalBuildingFloorsSqM: number;
+    totalBuildingFootprintSqM: number;
+    totalBuildingIntWallsSqM: number;
+    totalBuildingRoofSqM: number;
+    totalBuildingSqM: number;
+    areaByMedia: {
+      id: number;
+      media: string;
+      pctAoi: number;
+      surfaceArea: number;
+    }[];
+  };
+  deconTechSelections: any[];
+  gsgFile?: any;
+};
+
+export type LayerDeconEditsType = {
+  type: 'layer-decon';
+  id: number; // scenario layer id
+  layerId: string; // id from esri group layer
+  portalId: string; // id from portal layer
+  name: string; // layer/scenario name
+  label: string; // layer/scenario label
+  value: string; // layer/scenario value for React-Select
+  layerType: LayerTypeName; // type of tots layer (sample, contamination, etc.)
+  status: PublishStatus; // publish status
+  editType: EditType; // edit type
+  visible: boolean; // layer visibility on map
+  listMode: 'hide' | 'hide-children' | 'show'; // layer visiblity in legend widget
+  analysisLayerId: string;
+  deconSummaryResults: any;
+  deconTechSelections: any[];
+  deconLayerResults: {
+    cost: number;
+    time: number;
+    wasteVolume: number;
+    wasteMass: number;
+    resultsTable: JsonDownloadType[];
+  };
+};
+
 export type ScenarioDeconEditsType = {
   type: 'scenario-decon';
   id: number; // scenario layer id
@@ -73,28 +146,9 @@ export type ScenarioDeconEditsType = {
   listMode: 'hide' | 'hide-children' | 'show'; // layer visiblity in legend widget
   scenarioName: string; // user defined scenario name
   scenarioDescription: string; // user defined scenario description  adds: FeatureEditsType[]; // features to add
-  layers: LayerEditsType[];
+  linkedLayerIds: string[];
   table: TableType | null;
   referenceLayersTable: ReferenceLayersTableType;
-  customAttributes: AttributesType[];
-  deconTechSelections: any[];
-  deconSummaryResults: any;
-  aoiSummary: {
-    area: number;
-    buildingFootprint: number;
-  };
-  deconLayerResults: {
-    cost: number;
-    time: number;
-    wasteVolume: number;
-    wasteMass: number;
-    resultsTable: JsonDownloadType[];
-  };
-  calculateSettings: CalculateSettingsType;
-  importedAoiLayer?: LayerEditsType | null;
-  aoiLayerMode: '' | 'draw' | 'file';
-  gsgFile?: any;
-  // contaminationResults: LayerEditsType; // TODO add this in if time permits
 };
 
 export type ScenarioEditsType = {
@@ -136,7 +190,6 @@ export type ScenarioEditsType = {
   importedAoiLayer?: LayerEditsType | null;
   aoiLayerMode?: '' | 'draw' | 'file';
   gsgFile?: any;
-  // contaminationResults: LayerEditsType; // TODO add this in if time permits
 };
 
 export type LayerEditsType = {

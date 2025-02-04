@@ -26,7 +26,7 @@ import { CalculateContext } from 'contexts/Calculate';
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // types
-import { ScenarioDeconEditsType } from 'types/Edits';
+import { LayerDeconEditsType } from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { ErrorType } from 'types/Misc';
 import { AppType } from 'types/Navigation';
@@ -209,7 +209,7 @@ function Calculate({ appType }: Props) {
   // sync the inputs with settings pulled from AGO
   const [pageInitialized, setPageInitialized] = useState(false);
   useEffect(() => {
-    if (!selectedScenario || pageInitialized) return;
+    if (selectedScenario?.type !== 'scenario' || pageInitialized) return;
     setPageInitialized(true);
 
     const {
@@ -302,7 +302,7 @@ function Calculate({ appType }: Props) {
       appType === 'decon' ? setCalculateResultsDecon : setCalculateResults;
 
     // set no scenario status
-    if (!selectedScenario) {
+    if (!selectedScenario || selectedScenario.type !== 'scenario') {
       setter({
         status: 'no-scenario',
         panelOpen: true,
@@ -405,7 +405,7 @@ function Calculate({ appType }: Props) {
       appType === 'decon' ? setCalculateResultsDecon : setCalculateResults;
 
     // set no scenario status
-    if (!selectedScenario) {
+    if (!selectedScenario || selectedScenario.type !== 'scenario') {
       setter({
         status: 'no-scenario',
         panelOpen: true,
@@ -536,7 +536,8 @@ function Calculate({ appType }: Props) {
     // make the contamination map visible in the legend
     if (window.location.search.includes('devMode=true')) {
       contaminationMap.listMode = 'show';
-      contaminationMap.sketchLayer.listMode = 'show';
+      if (contaminationMap.sketchLayer)
+        contaminationMap.sketchLayer.listMode = 'show';
       setContaminationMap((layer) => {
         return {
           ...layer,
@@ -900,7 +901,7 @@ function Calculate({ appType }: Props) {
                     />
                     <button
                       css={addButtonStyles}
-                      onClick={(ev) => {
+                      onClick={(_ev) => {
                         setGoTo('addData');
                         setGoToOptions({
                           from: 'file',
@@ -946,7 +947,7 @@ function Calculate({ appType }: Props) {
         )}
       </div>
       <div css={sectionContainer}>
-        <NavigationButton goToPanel="configureOutput" />
+        <NavigationButton currentPanel="calculate" />
       </div>
     </div>
   );
@@ -1025,25 +1026,31 @@ type DownloadStatus =
 
 type CalculateResultsPopupProps = {
   isOpen: boolean;
-  onClose: Function;
+  onClose: () => void;
 };
 
 function CalculateResultsPopup({
   isOpen,
   onClose,
 }: CalculateResultsPopupProps) {
-  const { edits, jsonDownload, planSettings } = useContext(SketchContext);
+  const { calculateResultsDecon, contaminationMap } =
+    useContext(CalculateContext);
+  const { trainingMode } = useContext(NavigationContext);
+  const {
+    aoiSketchLayer,
+    displayDimensions,
+    edits,
+    jsonDownload,
+    layers,
+    map,
+    mapView,
+    sceneView,
+    selectedScenario,
+  } = useContext(SketchContext);
+
   const [tableId] = useState(
     `tots-decon-results-selectionstable-${generateUUID()}`,
   );
-
-  const {
-    calculateResultsDecon,
-    contaminationMap, //
-  } = useContext(CalculateContext);
-  const { aoiSketchLayer, displayDimensions, layers, map, mapView, sceneView } =
-    useContext(SketchContext);
-
   const devMode = window.location.search.includes('devMode=true');
 
   const [
@@ -1063,6 +1070,7 @@ function CalculateResultsPopup({
   useEffect(() => {
     if (screenshotInitialized) return;
     if (!map || !mapView || !sceneView || downloadStatus !== 'fetching') return;
+    if (!selectedScenario || selectedScenario.type !== 'scenario-decon') return;
 
     const view = displayDimensions === '3d' ? sceneView : mapView;
 
@@ -1092,24 +1100,34 @@ function CalculateResultsPopup({
         return;
       }
 
-      layer.sketchLayer.visible = false;
+      if (layer.sketchLayer) layer.sketchLayer.visible = false;
     });
 
-    const scenarioIds: string[] = [];
-    edits.edits.forEach((e) => {
-      if (!['scenario', 'scenario-decon'].includes(e.type)) return;
-      scenarioIds.push(e.layerId);
+    const linkedAoiCharacterizationIds: string[] = [];
+    selectedScenario.linkedLayerIds.forEach((deconId) => {
+      const linkedDecon = edits.edits.find(
+        (e) => e.type === 'layer-decon' && e.layerId === deconId,
+      ) as LayerDeconEditsType | undefined;
+      const linkedAoi = edits.edits.find(
+        (e) =>
+          e.type === 'layer-aoi-analysis' &&
+          e.layerId === linkedDecon?.analysisLayerId,
+      );
+      if (!linkedAoi) return;
+
+      linkedAoiCharacterizationIds.push(linkedAoi.layerId);
     });
 
     // get the sample layers for the selected scenario
-    const sampleLayers = layers.filter(
+    const aoiLayers = layers.filter(
       (layer) =>
-        layer.parentLayer && scenarioIds.includes(layer.parentLayer.id),
+        layer.parentLayer &&
+        linkedAoiCharacterizationIds.includes(layer.parentLayer?.id),
     );
 
     // zoom to the graphics for the active layers
     const zoomGraphics = getGraphicsArray([
-      ...sampleLayers,
+      ...aoiLayers,
       contaminationMap?.visible ? contaminationMap : null,
     ]);
     if (zoomGraphics.length > 0) {
@@ -1159,6 +1177,7 @@ function CalculateResultsPopup({
     mapView,
     sceneView,
     screenshotInitialized,
+    selectedScenario,
   ]);
 
   // convert the screenshot to base64
@@ -1190,13 +1209,15 @@ function CalculateResultsPopup({
 
       // get the data url
       const url = canvas.toDataURL('image/jpeg');
-      url
-        ? setBase64Screenshot({
-            image: url,
-            height: img.height,
-            width: img.width,
-          })
-        : setDownloadStatus('base64-failure');
+      if (url) {
+        setBase64Screenshot({
+          image: url,
+          height: img.height,
+          width: img.width,
+        });
+      } else {
+        setDownloadStatus('base64-failure');
+      }
 
       // Clean up
       canvas = null;
@@ -1212,7 +1233,9 @@ function CalculateResultsPopup({
       downloadStatus !== 'fetching' ||
       !base64Screenshot.image ||
       calculateResultsDecon.status !== 'success' ||
-      !calculateResultsDecon.data
+      !calculateResultsDecon.data ||
+      !selectedScenario ||
+      selectedScenario.type !== 'scenario-decon'
     ) {
       return;
     }
@@ -1242,7 +1265,10 @@ function CalculateResultsPopup({
     workbook.xlsx
       .writeBuffer()
       .then((buffer: any) => {
-        saveAs(new Blob([buffer]), `tods_${planSettings.name}.xlsx`);
+        saveAs(
+          new Blob([buffer]),
+          `tods_${selectedScenario.scenarioName}.xlsx`,
+        );
         setDownloadStatus('success');
       })
       .catch((err: any) => {
@@ -1256,6 +1282,7 @@ function CalculateResultsPopup({
 
     function addSummarySheet() {
       // only here to satisfy typescript
+      if (!selectedScenario) return;
       if (!calculateResultsDecon.data) return;
 
       // add the sheet
@@ -1282,11 +1309,11 @@ function CalculateResultsPopup({
       summarySheet.getCell(4, 1).font = underlinedLabelFont;
       summarySheet.getCell(4, 1).value = 'Plan Name';
       summarySheet.getCell(4, 2).font = defaultFont;
-      summarySheet.getCell(4, 2).value = planSettings.name;
+      summarySheet.getCell(4, 2).value = selectedScenario.scenarioName;
       summarySheet.getCell(5, 1).font = underlinedLabelFont;
       summarySheet.getCell(5, 1).value = 'Plan Description';
       summarySheet.getCell(5, 2).font = defaultFont;
-      summarySheet.getCell(5, 2).value = planSettings.description;
+      summarySheet.getCell(5, 2).value = selectedScenario.scenarioDescription;
 
       summarySheet.mergeCells(7, 1, 7, 2);
       summarySheet.getCell(7, 1).alignment = columnTitleAlignment;
@@ -1353,7 +1380,7 @@ function CalculateResultsPopup({
         },
       ];
 
-      if (devMode) {
+      if (devMode && trainingMode) {
         cols.push({
           label: 'Average Initial Contamination (CFUs/m²)',
           fieldName: 'averageInitialContamination',
@@ -1428,7 +1455,12 @@ function CalculateResultsPopup({
 
     function addLayerSummarySheet() {
       // only here to satisfy typescript
-      if (!calculateResultsDecon.data) return;
+      if (
+        !calculateResultsDecon.data ||
+        !selectedScenario ||
+        selectedScenario.type !== 'scenario-decon'
+      )
+        return;
 
       // add the sheet
       const summarySheet = workbook.addWorksheet('Layer Summaries');
@@ -1477,7 +1509,7 @@ function CalculateResultsPopup({
         },
       ];
 
-      if (devMode) {
+      if (devMode && trainingMode) {
         cols.push({
           label: 'Average Initial Contamination (CFUs/m²)',
           fieldName: 'averageInitialContamination',
@@ -1495,14 +1527,16 @@ function CalculateResultsPopup({
       }
 
       let curRow = 3;
-      const scenarios = edits.edits.filter(
-        (e) => e.type === 'scenario-decon',
-      ) as ScenarioDeconEditsType[];
-      scenarios.forEach((scenario) => {
+      selectedScenario.linkedLayerIds.forEach((deconOpId) => {
+        const deconOp = edits.edits.find(
+          (e) => e.type === 'layer-decon' && e.layerId === deconOpId,
+        );
+        if (!deconOp || deconOp.type !== 'layer-decon') return;
+
         summarySheet.getCell(curRow, 1).value = {
           richText: [
-            { text: 'Layer:', font: underlinedLabelFont },
-            { text: ` ${scenario.label}`, font: defaultFont },
+            { text: 'Decon Operation:', font: underlinedLabelFont },
+            { text: ` ${deconOp.label}`, font: defaultFont },
           ],
         };
         curRow += 1;
@@ -1523,7 +1557,7 @@ function CalculateResultsPopup({
         });
 
         const rows: Row[] = [];
-        scenario.deconLayerResults?.resultsTable.forEach((item) => {
+        deconOp.deconLayerResults?.resultsTable.forEach((item) => {
           rows.push(
             cols.map((col) => {
               const fieldValue = (item as any)[col.fieldName];
@@ -1556,6 +1590,9 @@ function CalculateResultsPopup({
     }
 
     function addSampleSheet() {
+      if (!selectedScenario || selectedScenario.type !== 'scenario-decon')
+        return;
+
       // add the sheet
       const summarySheet = workbook.addWorksheet('Building Data');
 
@@ -1666,7 +1703,7 @@ function CalculateResultsPopup({
         },
       ];
 
-      if (devMode) {
+      if (devMode && trainingMode) {
         cols.push({ label: 'Contamination Type', fieldName: 'CONTAMTYPE' });
         cols.push({
           label: 'Activity (Initial)',
@@ -1693,11 +1730,18 @@ function CalculateResultsPopup({
       });
 
       const graphics: __esri.Graphic[] = [];
-      const scenarios = edits.edits.filter(
-        (e) => e.type === 'scenario-decon',
-      ) as ScenarioDeconEditsType[];
-      scenarios.forEach((scenario) => {
-        const aoiAssessed = scenario.layers.find(
+      selectedScenario.linkedLayerIds.forEach((deconOpId) => {
+        const deconOp = edits.edits.find(
+          (e) => e.type === 'layer-decon' && e.layerId === deconOpId,
+        ) as LayerDeconEditsType | undefined;
+        const layer = edits.edits.find(
+          (e) =>
+            e.type === 'layer-aoi-analysis' &&
+            e.layerId === deconOp?.analysisLayerId,
+        );
+        if (!layer || layer.type !== 'layer-aoi-analysis') return;
+
+        const aoiAssessed = layer.layers.find(
           (l) => l.layerType === 'AOI Assessed',
         );
         const aoiAssessedLayer = layers.find(
@@ -1774,7 +1818,8 @@ function CalculateResultsPopup({
     jsonDownload,
     layers,
     map,
-    planSettings,
+    selectedScenario,
+    trainingMode,
   ]);
 
   let totalSolidWasteVolume = 0;
@@ -1783,27 +1828,33 @@ function CalculateResultsPopup({
   let totalDeconTime = 0;
   let totalInitialContamination = 0;
   let totalFinalContamination = 0;
-  const tableData = jsonDownload.map((d) => {
-    totalSolidWasteVolume += parseSmallFloat(d.solidWasteVolumeM3, 0);
-    totalLiquidWasteVolume += parseSmallFloat(d.liquidWasteVolumeM3, 0);
-    totalDeconCost += parseSmallFloat(d.decontaminationCost, 2);
-    totalDeconTime += parseSmallFloat(d.decontaminationTimeDays, 1);
-    totalInitialContamination += parseSmallFloat(
-      d.averageInitialContamination,
-      0,
-    );
-    totalFinalContamination += parseSmallFloat(d.averageFinalContamination, 2);
-    return {
-      ...d,
-      solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3),
-      liquidWasteVolumeM3: formatNumber(d.liquidWasteVolumeM3),
-      decontaminationCost: formatNumber(d.decontaminationCost, 2),
-      decontaminationTimeDays: formatNumber(d.decontaminationTimeDays, 1),
-      averageInitialContamination: formatNumber(d.averageInitialContamination),
-      averageFinalContamination: formatNumber(d.averageFinalContamination, 2),
-      aboveDetectionLimit: d.aboveDetectionLimit ? 'Above' : 'Below',
-    };
-  });
+  const tableData =
+    jsonDownload?.map((d) => {
+      totalSolidWasteVolume += parseSmallFloat(d.solidWasteVolumeM3, 0);
+      totalLiquidWasteVolume += parseSmallFloat(d.liquidWasteVolumeM3, 0);
+      totalDeconCost += parseSmallFloat(d.decontaminationCost, 2);
+      totalDeconTime += parseSmallFloat(d.decontaminationTimeDays, 1);
+      totalInitialContamination += parseSmallFloat(
+        d.averageInitialContamination,
+        0,
+      );
+      totalFinalContamination += parseSmallFloat(
+        d.averageFinalContamination,
+        2,
+      );
+      return {
+        ...d,
+        solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3),
+        liquidWasteVolumeM3: formatNumber(d.liquidWasteVolumeM3),
+        decontaminationCost: formatNumber(d.decontaminationCost, 2),
+        decontaminationTimeDays: formatNumber(d.decontaminationTimeDays, 1),
+        averageInitialContamination: formatNumber(
+          d.averageInitialContamination,
+        ),
+        averageFinalContamination: formatNumber(d.averageFinalContamination, 2),
+        aboveDetectionLimit: d.aboveDetectionLimit ? 'Above' : 'Below',
+      };
+    }) ?? [];
   tableData.push({
     contaminationScenario: 'TOTALS',
     decontaminationTechnology: '',
@@ -1816,13 +1867,18 @@ function CalculateResultsPopup({
     aboveDetectionLimit: '',
   });
 
-  const scenarios = edits.edits.filter(
-    (e) => e.type === 'scenario-decon',
-  ) as ScenarioDeconEditsType[];
-
   const contamMapUpdated = map?.layers.find(
     (l) => l.id === 'contaminationMapUpdated',
   );
+
+  let linkedDeconOps: LayerDeconEditsType[] = [];
+  if (selectedScenario?.type === 'scenario-decon') {
+    linkedDeconOps = edits.edits.filter(
+      (e) =>
+        e.type === 'layer-decon' &&
+        selectedScenario.linkedLayerIds.includes(e.layerId),
+    ) as LayerDeconEditsType[];
+  }
 
   return (
     <DialogOverlay
@@ -1867,14 +1923,14 @@ function CalculateResultsPopup({
           )}
         <br />
 
-        <h2>Overall Summary</h2>
+        <h2>{selectedScenario?.scenarioName} Overall Summary</h2>
         <ReactTableEditable
           id={tableId}
           data={tableData}
           idColumn={'contaminationScenario'}
           striped={true}
           height={-1}
-          getColumns={(tableWidth: any) => {
+          getColumns={(_tableWidth: any) => {
             return [
               {
                 Header: 'Contamination Scenario',
@@ -1911,25 +1967,25 @@ function CalculateResultsPopup({
                 Header: 'Average Initial Contamination (CFUs/m²)',
                 accessor: 'averageInitialContamination',
                 width: 110,
-                show: devMode,
+                show: devMode && trainingMode,
               },
               {
                 Header: 'Average Final Contamination (CFUs/m²)',
                 accessor: 'averageFinalContamination',
                 width: 110,
-                show: devMode,
+                show: devMode && trainingMode,
               },
               {
                 Header: 'Above/Below Detection Limit',
                 accessor: 'aboveDetectionLimit',
                 width: 110,
-                show: devMode,
+                show: devMode && trainingMode,
               },
             ];
           }}
         />
 
-        {scenarios.map((scenario, index) => {
+        {linkedDeconOps.map((layer, index) => {
           let totalSolidWasteVolume = 0;
           let totalLiquidWasteVolume = 0;
           let totalDeconCost = 0;
@@ -1938,7 +1994,7 @@ function CalculateResultsPopup({
           let totalFinalContamination = 0;
 
           const tableData =
-            scenario.deconLayerResults?.resultsTable.map((d) => {
+            layer.deconLayerResults?.resultsTable.map((d) => {
               totalSolidWasteVolume += parseSmallFloat(d.solidWasteVolumeM3, 0);
               totalLiquidWasteVolume += parseSmallFloat(
                 d.liquidWasteVolumeM3,
@@ -1993,7 +2049,7 @@ function CalculateResultsPopup({
 
           return (
             <Fragment key={index}>
-              <h2>{scenario.label} Summary</h2>
+              <h2>{layer.label} Summary</h2>
 
               <ReactTableEditable
                 id={tableId + index}
@@ -2001,7 +2057,7 @@ function CalculateResultsPopup({
                 idColumn={'contaminationScenario'}
                 striped={true}
                 height={-1}
-                getColumns={(tableWidth: any) => {
+                getColumns={(_tableWidth: any) => {
                   return [
                     {
                       Header: 'Contamination Scenario',
@@ -2039,19 +2095,19 @@ function CalculateResultsPopup({
                       Header: 'Average Initial Contamination (CFUs/m²)',
                       accessor: 'averageInitialContamination',
                       width: 110,
-                      show: devMode,
+                      show: devMode && trainingMode,
                     },
                     {
                       Header: 'Average Final Contamination (CFUs/m²)',
                       accessor: 'averageFinalContamination',
                       width: 110,
-                      show: devMode,
+                      show: devMode && trainingMode,
                     },
                     {
                       Header: 'Above/Below Detection Limit',
                       accessor: 'aboveDetectionLimit',
                       width: 110,
-                      show: devMode,
+                      show: devMode && trainingMode,
                     },
                   ];
                 }}
@@ -2086,7 +2142,7 @@ function CalculateResultsPopup({
             Download Summary Data
           </button>
           <DownloadIWasteData />
-          {contamMapUpdated && (
+          {trainingMode && contamMapUpdated && (
             <button
               css={saveAttributesButtonStyles}
               onClick={async () => {
@@ -2186,7 +2242,7 @@ function CalculateResultsPopup({
 
                 saveAs(
                   response.results[0].value.url,
-                  `tods_${planSettings.name}_updated_contamination.zip`,
+                  `tods_${selectedScenario?.scenarioName}_updated_contamination.zip`,
                 );
 
                 setDownloadStatus('success');
@@ -2214,13 +2270,13 @@ type DownloadIWasteProps = {
 };
 
 function DownloadIWasteData({ isSubmitStyle = false }: DownloadIWasteProps) {
-  const { jsonDownload, planSettings } = useContext(SketchContext);
+  const { jsonDownload, selectedScenario } = useContext(SketchContext);
   return (
     <button
       css={isSubmitStyle ? submitButtonStyles : saveAttributesButtonStyles}
       onClick={() => {
-        if (!planSettings.name) return;
-        const fileName = `tods_${planSettings.name}.json`;
+        if (!selectedScenario) return;
+        const fileName = `tods_${selectedScenario.scenarioName}.json`;
 
         const newJsonDownload = jsonDownload.map((j) => {
           const newJ = { ...j } as any;

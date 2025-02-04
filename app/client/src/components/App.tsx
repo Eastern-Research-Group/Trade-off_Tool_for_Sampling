@@ -32,7 +32,7 @@ import { parseSmallFloat } from 'utils/utils';
 import { navPanelWidth } from 'config/appConfig';
 import { isDecon } from 'config/navigation';
 // types
-import { ScenarioDeconEditsType } from 'types/Edits';
+import { LayerAoiAnalysisEditsType, LayerDeconEditsType } from 'types/Edits';
 import { AppType } from 'types/Navigation';
 
 const resizerHeight = 10;
@@ -296,112 +296,128 @@ function App({ appType }: Props) {
   // count the number of samples
   const sampleData: any[] = [];
   if (isDecon()) {
-    const scenarios = edits.edits.filter(
-      (e) => e.type === 'scenario-decon',
-    ) as ScenarioDeconEditsType[];
-    scenarios.forEach((scenario) => {
-      const aoiAssessed = scenario.layers.find(
-        (l) => l.layerType === 'AOI Assessed',
-      );
-      const aoiAssessedLayer = layers.find(
-        (l) =>
-          l.layerType === 'AOI Assessed' && l.layerId === aoiAssessed?.layerId,
-      );
-      if (!aoiAssessedLayer) return;
+    if (selectedScenario && selectedScenario.type === 'scenario-decon') {
+      selectedScenario.linkedLayerIds.forEach((layerId) => {
+        const deconLayer = edits.edits.find(
+          (l) => l.type === 'layer-decon' && l.layerId === layerId,
+        ) as LayerDeconEditsType | undefined;
+        const layer = edits.edits.find(
+          (l) =>
+            l.type === 'layer-aoi-analysis' &&
+            l.layerId === deconLayer?.analysisLayerId,
+        ) as LayerAoiAnalysisEditsType | undefined;
+        if (!layer) return;
 
-      (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
-        (sample) => {
-          sampleData.push({
-            graphic: sample,
-            ...sample.attributes,
-            layerName:
-              aoiAssessedLayer.parentLayer?.title ?? aoiAssessedLayer.label,
-            H_ADJ_ELEV:
-              parseSmallFloat(
-                sample.attributes.H_ADJ_ELEV,
-                2,
-              )?.toLocaleString() ?? '',
-            L_ADJ_ELEV:
-              parseSmallFloat(
-                sample.attributes.L_ADJ_ELEV,
-                2,
-              )?.toLocaleString() ?? '',
-            HEIGHT:
-              parseSmallFloat(sample.attributes.HEIGHT, 2)?.toLocaleString() ??
-              '',
-            SQMETERS:
-              parseSmallFloat(
-                sample.attributes.SQMETERS,
-                2,
-              )?.toLocaleString() ?? '',
-            footprintSqM:
-              parseSmallFloat(
-                sample.attributes.footprintSqM,
-                2,
-              )?.toLocaleString() ?? '',
-            floorsSqM:
-              parseSmallFloat(
-                sample.attributes.floorsSqM,
-                2,
-              )?.toLocaleString() ?? '',
-            totalSqM:
-              parseSmallFloat(
-                sample.attributes.totalSqM,
-                2,
-              )?.toLocaleString() ?? '',
-            extWallsSqM:
-              parseSmallFloat(
-                sample.attributes.extWallsSqM,
-                2,
-              )?.toLocaleString() ?? '',
-            intWallsSqM:
-              parseSmallFloat(
-                sample.attributes.intWallsSqM,
-                2,
-              )?.toLocaleString() ?? '',
-            roofSqM:
-              parseSmallFloat(sample.attributes.roofSqM, 2)?.toLocaleString() ??
-              '',
-            footprintSqFt:
-              parseSmallFloat(
-                sample.attributes.footprintSqFt,
-                2,
-              )?.toLocaleString() ?? '',
-            SQFEET:
-              parseSmallFloat(sample.attributes.SQFEET, 2)?.toLocaleString() ??
-              '',
-            floorsSqFt:
-              parseSmallFloat(
-                sample.attributes.floorsSqFt,
-                2,
-              )?.toLocaleString() ?? '',
-            totalSqFt:
-              parseSmallFloat(
-                sample.attributes.totalSqFt,
-                2,
-              )?.toLocaleString() ?? '',
-            extWallsSqFt:
-              parseSmallFloat(
-                sample.attributes.extWallsSqFt,
-                2,
-              )?.toLocaleString() ?? '',
-            intWallsSqFt:
-              parseSmallFloat(
-                sample.attributes.intWallsSqFt,
-                2,
-              )?.toLocaleString() ?? '',
-            roofSqFt:
-              parseSmallFloat(
-                sample.attributes.roofSqFt,
-                2,
-              )?.toLocaleString() ?? '',
-          });
-        },
-      );
-    });
+        const aoiAssessed = layer.layers.find(
+          (l) => l.layerType === 'AOI Assessed',
+        );
+        const aoiAssessedLayer = layers.find(
+          (l) =>
+            l.layerType === 'AOI Assessed' &&
+            l.layerId === aoiAssessed?.layerId,
+        );
+        if (!aoiAssessedLayer) return;
+
+        (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
+          (sample) => {
+            sampleData.push({
+              graphic: sample,
+              ...sample.attributes,
+              layerName:
+                aoiAssessedLayer.parentLayer?.title ?? aoiAssessedLayer.label,
+              H_ADJ_ELEV:
+                parseSmallFloat(
+                  sample.attributes.H_ADJ_ELEV,
+                  2,
+                )?.toLocaleString() ?? '',
+              L_ADJ_ELEV:
+                parseSmallFloat(
+                  sample.attributes.L_ADJ_ELEV,
+                  2,
+                )?.toLocaleString() ?? '',
+              HEIGHT:
+                parseSmallFloat(
+                  sample.attributes.HEIGHT,
+                  2,
+                )?.toLocaleString() ?? '',
+              SQMETERS:
+                parseSmallFloat(
+                  sample.attributes.SQMETERS,
+                  2,
+                )?.toLocaleString() ?? '',
+              footprintSqM:
+                parseSmallFloat(
+                  sample.attributes.footprintSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              floorsSqM:
+                parseSmallFloat(
+                  sample.attributes.floorsSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              totalSqM:
+                parseSmallFloat(
+                  sample.attributes.totalSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              extWallsSqM:
+                parseSmallFloat(
+                  sample.attributes.extWallsSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intWallsSqM:
+                parseSmallFloat(
+                  sample.attributes.intWallsSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              roofSqM:
+                parseSmallFloat(
+                  sample.attributes.roofSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              footprintSqFt:
+                parseSmallFloat(
+                  sample.attributes.footprintSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              SQFEET:
+                parseSmallFloat(
+                  sample.attributes.SQFEET,
+                  2,
+                )?.toLocaleString() ?? '',
+              floorsSqFt:
+                parseSmallFloat(
+                  sample.attributes.floorsSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              totalSqFt:
+                parseSmallFloat(
+                  sample.attributes.totalSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              extWallsSqFt:
+                parseSmallFloat(
+                  sample.attributes.extWallsSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intWallsSqFt:
+                parseSmallFloat(
+                  sample.attributes.intWallsSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              roofSqFt:
+                parseSmallFloat(
+                  sample.attributes.roofSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+            });
+          },
+        );
+      });
+    }
   } else {
     layers.forEach((layer) => {
-      if (!layer.sketchLayer || layer.sketchLayer.type === 'feature') return;
+      if (!layer.sketchLayer || layer.sketchLayer.type !== 'graphics') return;
       if (layer?.parentLayer?.id !== selectedScenario?.layerId) return;
       if (layer.layerType === 'Samples' || layer.layerType === 'VSP') {
         const graphics = layer.sketchLayer.graphics.toArray();
@@ -696,7 +712,10 @@ function App({ appType }: Props) {
                       getColumns={(tableWidth: any) => {
                         const tableColumns =
                           appType === 'decon'
-                            ? getBuildingTableColumns({ tableWidth })
+                            ? getBuildingTableColumns({
+                                tableWidth,
+                                trainingMode,
+                              })
                             : getSampleTableColumns({
                                 tableWidth,
                                 includeContaminationFields: trainingMode,

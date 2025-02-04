@@ -1,28 +1,30 @@
 import { EditType } from 'types/Edits';
 
 export type LayerTypeName =
-  | 'Contamination Map'
-  | 'Samples'
-  | 'Reference Layer'
+  | 'AOI Analysis'
+  | 'AOI Assessed'
   | 'Area of Interest'
-  | 'VSP'
-  | 'Sampling Mask'
+  | 'Contamination Map'
+  | 'Decon'
   | 'Decon Mask'
   | 'Decon Results'
-  | 'AOI Assessed'
-  | 'Image Analysis'
+  | 'Decon Scenario'
   | 'GSG'
-  | 'Decon';
-
-export type LayerTypeLabel =
-  | 'Contamination Map'
-  | 'Decon Applications'
+  | 'Image Analysis'
   | 'Reference Layer'
-  | 'Area of Interest'
-  | 'VSP'
   | 'Samples'
   | 'Sampling Mask'
-  | 'GSG';
+  | 'VSP';
+
+export type LayerTypeLabel =
+  | 'Area of Interest'
+  | 'Contamination Map'
+  | 'Decon Applications'
+  | 'GSG'
+  | 'Reference Layer'
+  | 'Samples'
+  | 'Sampling Mask'
+  | 'VSP';
 
 export type LayerSelectType = {
   value: LayerTypeName;
@@ -50,7 +52,11 @@ export type LayerType = {
   geometryType: string;
   addedFrom: AddedFrom;
   status: PublishStatus;
-  sketchLayer: __esri.GraphicsLayer | __esri.FeatureLayer;
+  sketchLayer:
+    | __esri.GraphicsLayer
+    | __esri.FeatureLayer
+    | __esri.GroupLayer
+    | null;
   hybridLayer: __esri.GraphicsLayer | null;
   pointsLayer: __esri.GraphicsLayer | null;
   parentLayer: __esri.GroupLayer | null;

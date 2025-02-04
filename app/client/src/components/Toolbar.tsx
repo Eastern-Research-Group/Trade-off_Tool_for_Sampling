@@ -32,6 +32,7 @@ import {
 } from 'utils/sketchUtils';
 // types
 import {
+  LayerAoiAnalysisEditsType,
   LayerEditsType,
   ScenarioDeconEditsType,
   ScenarioEditsType,
@@ -117,7 +118,12 @@ function buildLegendListItem(event: any, view: __esri.MapView) {
         isPoints || (isHybrid && attributes.ShapeType === 'point')
           ? attributes?.POINT_STYLE || null
           : null;
-      if (defaultSymbols.symbols.hasOwnProperty(option.value)) {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          defaultSymbols.symbols,
+          option.value,
+        )
+      ) {
         legendItems.push({
           value: option.value,
           title: option.label,
@@ -735,6 +741,7 @@ function Toolbar({ appType }: Props) {
         | ScenarioEditsType
         | ScenarioDeconEditsType
         | LayerEditsType
+        | LayerAoiAnalysisEditsType
         | null = null;
       const { editsScenario, editsLayer } = findLayerInEdits(
         edits.edits,
@@ -859,7 +866,7 @@ function Toolbar({ appType }: Props) {
         layer.hybridLayer
       ) {
         // make points layers visible
-        if (layer.sketchLayer.listMode === 'show') {
+        if (layer.sketchLayer?.listMode === 'show') {
           layer.pointsLayer.listMode = layer.sketchLayer.listMode;
           layer.pointsLayer.visible = layer.sketchLayer.visible;
         }
@@ -867,8 +874,10 @@ function Toolbar({ appType }: Props) {
           layer.pointsLayer.listMode = layer.hybridLayer.listMode;
           layer.pointsLayer.visible = layer.hybridLayer.visible;
         }
-        layer.sketchLayer.listMode = 'hide';
-        layer.sketchLayer.visible = false;
+        if (layer.sketchLayer) {
+          layer.sketchLayer.listMode = 'hide';
+          layer.sketchLayer.visible = false;
+        }
         layer.hybridLayer.listMode = 'hide';
         layer.hybridLayer.visible = false;
       } else if (
@@ -877,11 +886,11 @@ function Toolbar({ appType }: Props) {
         layer.hybridLayer
       ) {
         // make polygons layer visible
-        if (layer.pointsLayer.listMode === 'show') {
+        if (layer.pointsLayer.listMode === 'show' && layer.sketchLayer) {
           layer.sketchLayer.listMode = layer.pointsLayer.listMode;
           layer.sketchLayer.visible = layer.pointsLayer.visible;
         }
-        if (layer.hybridLayer.listMode === 'show') {
+        if (layer.hybridLayer.listMode === 'show' && layer.sketchLayer) {
           layer.sketchLayer.listMode = layer.hybridLayer.listMode;
           layer.sketchLayer.visible = layer.hybridLayer.visible;
         }
@@ -895,7 +904,7 @@ function Toolbar({ appType }: Props) {
         layer.hybridLayer
       ) {
         // make points layers visible
-        if (layer.sketchLayer.listMode === 'show') {
+        if (layer.sketchLayer?.listMode === 'show' && layer.sketchLayer) {
           layer.hybridLayer.listMode = layer.sketchLayer.listMode;
           layer.hybridLayer.visible = layer.sketchLayer.visible;
         }
@@ -903,8 +912,10 @@ function Toolbar({ appType }: Props) {
           layer.hybridLayer.listMode = layer.pointsLayer.listMode;
           layer.hybridLayer.visible = layer.pointsLayer.visible;
         }
-        layer.sketchLayer.listMode = 'hide';
-        layer.sketchLayer.visible = false;
+        if (layer.sketchLayer) {
+          layer.sketchLayer.listMode = 'hide';
+          layer.sketchLayer.visible = false;
+        }
         layer.pointsLayer.listMode = 'hide';
         layer.pointsLayer.visible = false;
       }
@@ -993,7 +1004,7 @@ function Toolbar({ appType }: Props) {
           <button
             css={toolBarButtonStyles()}
             className={settingsVisible ? buttonSelectedClass : ''}
-            onClick={(ev) => {
+            onClick={(_ev) => {
               setSettingsVisible(!settingsVisible);
               setBasemapVisible(false);
               setLegendVisible(false);
@@ -1019,7 +1030,7 @@ function Toolbar({ appType }: Props) {
                 name="dimension"
                 value="2d"
                 checked={displayDimensions === '2d'}
-                onChange={(ev) => setDisplayDimensions('2d')}
+                onChange={(_ev) => setDisplayDimensions('2d')}
               />
               <label htmlFor="dimension-2d">2D</label>
               <br />
@@ -1030,7 +1041,7 @@ function Toolbar({ appType }: Props) {
                 name="dimension"
                 value="3d"
                 checked={displayDimensions === '3d'}
-                onChange={(ev) => {
+                onChange={(_ev) => {
                   setDisplayDimensions('3d');
                   setDisplayGeometryType('points');
                 }}
@@ -1055,7 +1066,7 @@ function Toolbar({ appType }: Props) {
                   name="shape"
                   value="points"
                   checked={displayGeometryType === 'points'}
-                  onChange={(ev) => setDisplayGeometryType('points')}
+                  onChange={(_ev) => setDisplayGeometryType('points')}
                 />
                 <label htmlFor="shape-points">Points</label>
                 <br />
@@ -1066,7 +1077,7 @@ function Toolbar({ appType }: Props) {
                   name="shape"
                   value="polygons"
                   checked={displayGeometryType === 'polygons'}
-                  onChange={(ev) => setDisplayGeometryType('polygons')}
+                  onChange={(_ev) => setDisplayGeometryType('polygons')}
                 />
                 <label htmlFor="shape-polygons">Polygons</label>
                 <br />
@@ -1078,7 +1089,7 @@ function Toolbar({ appType }: Props) {
                       name="shape"
                       value="hybrid"
                       checked={displayGeometryType === 'hybrid'}
-                      onChange={(ev) => setDisplayGeometryType('hybrid')}
+                      onChange={(_ev) => setDisplayGeometryType('hybrid')}
                     />
                     <span>Hybrid</span>
                   </label>
@@ -1125,18 +1136,16 @@ function Toolbar({ appType }: Props) {
               </Fragment>
             )}
 
-            {appType === 'sampling' && (
-              <label css={switchLabelContainer}>
-                <span css={switchLabel}>Training Mode</span>
-                <Switch
-                  checked={trainingMode}
-                  onChange={(checked) => setTrainingMode(checked)}
-                  ariaLabel="Training Mode"
-                  onColor="#90ee90"
-                  onHandleColor="#129c12"
-                />
-              </label>
-            )}
+            <label css={switchLabelContainer}>
+              <span css={switchLabel}>Training Mode</span>
+              <Switch
+                checked={trainingMode}
+                onChange={(checked) => setTrainingMode(checked)}
+                ariaLabel="Training Mode"
+                onColor="#90ee90"
+                onHandleColor="#129c12"
+              />
+            </label>
 
             <label css={switchLabelContainer}>
               <span css={switchLabel}>Auto Zoom</span>
@@ -1154,7 +1163,7 @@ function Toolbar({ appType }: Props) {
           <button
             css={toolBarButtonStyles()}
             className={basemapVisible ? buttonSelectedClass : ''}
-            onClick={(ev) => {
+            onClick={(_ev) => {
               setBasemapVisible(!basemapVisible);
               setLegendVisible(false);
               setSettingsVisible(false);
@@ -1178,7 +1187,7 @@ function Toolbar({ appType }: Props) {
           <button
             css={toolBarButtonStyles()}
             className={legendVisible ? buttonSelectedClass : ''}
-            onClick={(ev) => {
+            onClick={(_ev) => {
               setLegendVisible(!legendVisible);
               setBasemapVisible(false);
               setSettingsVisible(false);
@@ -1196,7 +1205,7 @@ function Toolbar({ appType }: Props) {
         {oAuthInfo && (
           <button
             css={toolBarButtonStyles('105px')}
-            onClick={(ev) => {
+            onClick={(_ev) => {
               if (signedIn) {
                 IdentityManager.destroyCredentials();
                 setSignedIn(false);

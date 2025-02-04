@@ -166,7 +166,7 @@ function MapPopup({
       setLayerInitialized(true);
     } else if (features.length > 1) {
       let allSameLayer = true;
-      let firstLayerId = features[0].graphic.layer.id
+      const firstLayerId = features[0].graphic.layer.id
         .replace('-points', '')
         .replace('-hybrid', '');
       features.forEach((feature) => {
@@ -208,7 +208,7 @@ function MapPopup({
   useEffect(() => {
     // Get the note from the graphics attributes
     let allSameZ = true;
-    let firstZ = getZValue(features?.[0]?.graphic);
+    const firstZ = getZValue(features?.[0]?.graphic);
     features.forEach((feature) => {
       const tempZ = getZValue(feature?.graphic);
       if (firstZ !== tempZ) allSameZ = false;
@@ -239,7 +239,7 @@ function MapPopup({
   // get the layers the graphic can be moved to
   const layerOptions: { label: string; options: LayerType[] }[] = [];
   edits.edits.forEach((edit) => {
-    if (edit.type === 'layer') return;
+    if (edit.type !== 'scenario') return;
     if (edit.layerType !== 'Samples' && edit.layerType !== 'VSP') return;
 
     layerOptions.push({
@@ -268,7 +268,7 @@ function MapPopup({
 
   let allNotesEmpty = true;
   let allNotesSame = true;
-  let firstNote = features?.[0]?.graphic?.attributes?.Notes;
+  const firstNote = features?.[0]?.graphic?.attributes?.Notes;
   features.forEach((feature) => {
     const tempNote = feature?.graphic?.attributes?.Notes;
     if (tempNote) allNotesEmpty = false;
@@ -383,7 +383,7 @@ function MapPopup({
                 activeLayerId === selectedLayer?.layerId &&
                 graphicElevation === elevation
               }
-              onClick={async (ev) => {
+              onClick={async (_ev) => {
                 // set the notes
                 try {
                   if (graphicNote !== note) {

@@ -15,7 +15,6 @@ import SpatialReference from '@arcgis/core/geometry/SpatialReference';
 import * as webMercatorUtils from '@arcgis/core/geometry/support/webMercatorUtils';
 import { Dispatch, SetStateAction } from 'react';
 // contexts
-import { settingDefaults } from 'contexts/Calculate';
 import { SampleTypes } from 'contexts/LookupFiles';
 // utils
 import {
@@ -29,6 +28,8 @@ import {
   EditsType,
   EditType,
   FeatureEditsType,
+  LayerAoiAnalysisEditsType,
+  LayerDeconEditsType,
   LayerEditsType,
   ScenarioDeconEditsType,
   ScenarioEditsType,
@@ -124,7 +125,7 @@ export async function calculateArea(
     if (!wgsGeometry) return 'ERROR - WGS Geometry is null';
 
     // get the center
-    let center: __esri.Point | null = getCenterOfGeometry(wgsGeometry);
+    const center: __esri.Point | null = getCenterOfGeometry(wgsGeometry);
     if (!center) return;
 
     // get the spatial reference from the centroid
@@ -363,13 +364,18 @@ export function createLayer({
 
     // set the symbol styles based on sample/layer type
     let symbol = defaultSymbols.symbols[layerType] as any;
-    if (defaultSymbols.symbols.hasOwnProperty(graphic.attributes.TYPEUUID)) {
+    if (
+      Object.prototype.hasOwnProperty.call(
+        defaultSymbols.symbols,
+        graphic.attributes.TYPEUUID,
+      )
+    ) {
       symbol = defaultSymbols.symbols[graphic.attributes.TYPEUUID];
     }
     if (layerType === 'AOI Assessed') {
       const occCls = graphic.attributes.OCC_CLS;
       symbol = new SimpleFillSymbol({
-        color: buildingColors.hasOwnProperty(occCls)
+        color: Object.prototype.hasOwnProperty.call(buildingColors, occCls)
           ? buildingColors[occCls]
           : buildingColors['Other'],
         outline: {
@@ -380,7 +386,10 @@ export function createLayer({
     }
     if (layerType === 'Image Analysis') {
       const category = graphic.attributes.category;
-      symbol = imageAnalysisSymbols.hasOwnProperty(category)
+      symbol = Object.prototype.hasOwnProperty.call(
+        imageAnalysisSymbols,
+        category,
+      )
         ? (imageAnalysisSymbols as any)[category]
         : backupImagerySymbol;
     }
@@ -458,7 +467,7 @@ export function createLayerEditTemplate(
     id: layerToEdit.id,
     pointsId: layerToEdit.pointsId,
     uuid: layerToEdit.uuid,
-    layerId: layerToEdit.sketchLayer.id,
+    layerId: layerToEdit.sketchLayer?.id ?? '',
     portalId: layerToEdit.portalId,
     name: layerToEdit.name,
     label: layerToEdit.label,
@@ -572,23 +581,40 @@ export function deepCopyObject(obj: any) {
  * @returns the layer that was found in the edits object
  */
 export function findLayerInEdits(
-  edits: (ScenarioEditsType | ScenarioDeconEditsType | LayerEditsType)[],
+  edits: (
+    | ScenarioEditsType
+    | ScenarioDeconEditsType
+    | LayerDeconEditsType
+    | LayerEditsType
+    | LayerAoiAnalysisEditsType
+  )[],
   layerId: string,
 ) {
   // find the layer in the edits using it's id and name
   let scenarioIndex = -1;
   let layerIndex = -1;
+  let sublayerIndex = -1;
   edits.forEach((edit, scenarioIdx) => {
     if (edit.type === 'layer' && edit.layerId === layerId) {
       // the desired item is a layer
       layerIndex = scenarioIdx;
+    } else if (edit.type === 'layer-aoi-analysis') {
+      if (edit.layerId === layerId) layerIndex = scenarioIdx;
+      else {
+        edit.layers.forEach((sublayer, sublayerIdx) => {
+          if (sublayer.layerId === layerId) {
+            layerIndex = scenarioIdx;
+            sublayerIndex = sublayerIdx;
+          }
+        });
+      }
     } else if (
       ['scenario', 'scenario-decon'].includes(edit.type) &&
       edit.layerId === layerId
     ) {
       // the desired item is a scenario
       scenarioIndex = scenarioIdx;
-    } else if (edit.type === 'scenario' || edit.type === 'scenario-decon') {
+    } else if (edit.type === 'scenario') {
       // search for the layer in scenarios
       edit.layers.forEach((layer, layerIdx) => {
         if (layer.layerId === layerId) {
@@ -608,13 +634,19 @@ export function findLayerInEdits(
   }
 
   // get the layer if the index was found
-  let editsLayer: LayerEditsType | null = null;
-  if (editsScenario && layerIndex > -1) {
+  let editsLayer: LayerEditsType | LayerAoiAnalysisEditsType | null = null;
+  if (editsScenario && editsScenario.type === 'scenario' && layerIndex > -1) {
     // the layer is nested in a scenario
     editsLayer = editsScenario.layers[layerIndex];
   } else {
     // the layer is unlinked and at the root
-    editsLayer = edits[layerIndex] as LayerEditsType;
+    editsLayer = edits[layerIndex] as
+      | LayerEditsType
+      | LayerAoiAnalysisEditsType;
+  }
+
+  if (editsLayer?.type === 'layer-aoi-analysis' && sublayerIndex > -1) {
+    editsLayer = editsLayer.layers[sublayerIndex];
   }
 
   return {
@@ -772,7 +804,7 @@ export function getNextScenarioLayer(
   // select a scenario if necessary
   const scenarios = getScenarios(edits);
   let layerEdits = edits.edits;
-  if (selectedScenario) {
+  if (selectedScenario && selectedScenario.type === 'scenario') {
     // get the layers for the selected scenario
     layerEdits = selectedScenario.layers;
   }
@@ -886,8 +918,6 @@ function getPointSymbol3d(
     // custom shape type
     if (polygon.attributes.POINT_STYLE.includes('path|')) {
       style = 'path';
-
-      // TODO need to figure out how to handle this
       path = polygon.attributes.POINT_STYLE.split('|')[1];
     } else {
       style = shapeMapping[polygon.attributes.POINT_STYLE];
@@ -1096,9 +1126,11 @@ export function getSampleTableColumns({
 export function getBuildingTableColumns({
   tableWidth,
   useEqualWidth = false,
+  trainingMode = false,
 }: {
   tableWidth: number;
   useEqualWidth?: boolean;
+  trainingMode?: boolean;
 }) {
   const baseColumnWidth = 100;
   const mediumColumnWidth = 140;
@@ -1316,7 +1348,7 @@ export function getBuildingTableColumns({
     },
   ];
 
-  if (window.location.search.includes('devMode=true')) {
+  if (window.location.search.includes('devMode=true') && trainingMode) {
     columns.push({
       Header: 'Contamination Type',
       accessor: 'CONTAMTYPE',
@@ -1406,7 +1438,13 @@ export function getSimplePopupTemplate(attributes: any) {
  */
 export function getSketchableLayers(
   layers: LayerType[],
-  edits: (ScenarioEditsType | ScenarioDeconEditsType | LayerEditsType)[],
+  edits: (
+    | ScenarioEditsType
+    | ScenarioDeconEditsType
+    | LayerDeconEditsType
+    | LayerEditsType
+    | LayerAoiAnalysisEditsType
+  )[],
 ) {
   return layers.filter(
     (layer) =>
@@ -1416,6 +1454,37 @@ export function getSketchableLayers(
         (editsLayer) =>
           editsLayer.type === 'layer' && editsLayer.layerId === layer.layerId,
       ) > -1,
+  ) as LayerType[];
+}
+
+/**
+ * Gets an array of layers, included in the provided edits parameter,
+ * that can be used with the sketch widget. The search will look in
+ * child layers of scenarios as well.
+ *
+ * @param layers - The layers to search in.
+ * @param edits - The edits to search in.
+ */
+export function getAnalysisLayers(layers: LayerType[], linkedLayers: string[]) {
+  return layers.filter(
+    (layer) =>
+      layer.layerType === 'AOI Analysis' &&
+      linkedLayers.includes(layer.layerId),
+  ) as LayerType[];
+}
+
+/**
+ * Gets an array of layers, included in the provided edits parameter,
+ * that can be used with the sketch widget. The search will look in
+ * child layers of scenarios as well.
+ *
+ * @param layers - The layers to search in.
+ * @param edits - The edits to search in.
+ */
+export function getDeconLayers(layers: LayerType[], linkedLayers: string[]) {
+  return layers.filter(
+    (layer) =>
+      layer.layerType === 'Decon' && linkedLayers.includes(layer.layerId),
   ) as LayerType[];
 }
 
@@ -1482,7 +1551,7 @@ export function handlePopupClick(
         layer.layerId ===
         tempLayer.id.replace('-points', '').replace('-hybrid', ''),
     );
-    if (!tempSketchLayer || tempSketchLayer.sketchLayer.type !== 'graphics') {
+    if (!tempSketchLayer || tempSketchLayer.sketchLayer?.type !== 'graphics') {
       return;
     }
 
@@ -1683,6 +1752,8 @@ async function loadProjection() {
  * @returns z value of the graphic that was removed
  */
 export function removeZValues(graphic: __esri.Graphic) {
+  if (!graphic?.geometry) return;
+
   let z: number = 0;
 
   // update the z value of the point if necessary
@@ -1786,7 +1857,11 @@ export async function sampleValidation(
 
     // Check if the sample is a predefined type or not
     if (
-      sampleTypes?.sampleAttributes.hasOwnProperty(graphic.attributes.TYPEUUID)
+      sampleTypes &&
+      Object.prototype.hasOwnProperty.call(
+        sampleTypes.sampleAttributes,
+        graphic.attributes.TYPEUUID,
+      )
     ) {
       await performAreaToleranceCheck(graphic);
 
@@ -1795,10 +1870,13 @@ export async function sampleValidation(
         sampleTypes.sampleAttributes[graphic.attributes.TYPEUUID];
       for (const key in predefinedAttributes) {
         if (!sampleTypes.attributesToCheck.includes(key)) continue;
-        if (!hasAllAttributes && !graphic.attributes.hasOwnProperty(key))
+        if (
+          !hasAllAttributes &&
+          !Object.prototype.hasOwnProperty.call(graphic.attributes, key)
+        )
           continue;
         if (
-          graphic.attributes.hasOwnProperty(key) &&
+          Object.prototype.hasOwnProperty.call(graphic.attributes, key) &&
           predefinedAttributes[key] === graphic.attributes[key]
         ) {
           continue;
@@ -1994,30 +2072,35 @@ export function updateLayerEdits({
     // add the layer to a scenario if a scenario was found,
     // otherwise add the layer to the root of edits.
     if (editsScenario) {
-      editsScenario.layers.push(editsLayer);
+      if (editsScenario.type === 'scenario')
+        editsScenario.layers.push(editsLayer);
       if (editsScenario.status === 'published') editsScenario.status = 'edited';
     } else {
       editsCopy.edits.push(editsLayer);
     }
   } else if (scenario && editsScenario && type === 'move') {
     editsLayer.visible = true;
-    editsLayer.adds = [...editsLayer.adds, ...editsLayer.updates];
-    editsLayer.updates = [];
-    editsLayer.published.forEach((edit) => {
-      const indx = editsLayer.adds.findIndex(
-        (x) =>
-          x.attributes.PERMANENT_IDENTIFIER ===
-          edit.attributes.PERMANENT_IDENTIFIER,
-      );
-      if (indx === -1) editsLayer.adds.push(edit);
-    });
-    editsLayer.published = [];
-    editsLayer.deletes = [];
-    editsScenario.layers.push(editsLayer);
     if (editsScenario.status === 'published') editsScenario.status = 'edited';
     editsCopy.edits = editsCopy.edits.filter(
       (edit) => edit.layerId !== editsLayer.layerId,
     );
+
+    if (editsScenario.type === 'scenario' && editsLayer.type === 'layer') {
+      editsLayer.adds = [...editsLayer.adds, ...editsLayer.updates];
+      editsLayer.updates = [];
+      editsLayer.published.forEach((edit) => {
+        if (editsLayer.type !== 'layer') return;
+        const indx = editsLayer.adds.findIndex(
+          (x) =>
+            x.attributes.PERMANENT_IDENTIFIER ===
+            edit.attributes.PERMANENT_IDENTIFIER,
+        );
+        if (indx === -1) editsLayer.adds.push(edit);
+      });
+      editsLayer.published = [];
+      editsLayer.deletes = [];
+      editsScenario.layers.push(editsLayer);
+    }
   } else {
     // handle property changes
     if (editsScenario) {
@@ -2029,7 +2112,7 @@ export function updateLayerEdits({
     }
 
     if (appType === 'sampling') editsLayer.visible = layer.visible;
-    else editsLayer.visible = layer.sketchLayer.visible;
+    else editsLayer.visible = layer.sketchLayer?.visible ?? layer.visible;
     editsLayer.listMode = layer.listMode;
     editsLayer.name = layer.name;
     editsLayer.label = layer.name;
@@ -2044,9 +2127,8 @@ export function updateLayerEdits({
   // set the hasContaminationRan value (default is false)
   if (editsScenario?.type === 'scenario')
     editsScenario.hasContaminationRan = hasContaminationRan;
-  editsLayer.hasContaminationRan = hasContaminationRan;
 
-  if (changes) {
+  if (changes && editsLayer.type === 'layer') {
     if (type === 'replace') editsLayer.adds = [];
 
     // Add new graphics
@@ -2176,7 +2258,12 @@ export function updatePointSymbol(
       // set the symbol based on sample/layer type
       let udtSymbol: PolygonSymbol | null = null;
       udtSymbol = defaultSymbols.symbols[layerType] as any;
-      if (defaultSymbols.symbols.hasOwnProperty(graphic.attributes.TYPEUUID)) {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          defaultSymbols.symbols,
+          graphic.attributes.TYPEUUID,
+        )
+      ) {
         udtSymbol = defaultSymbols.symbols[graphic.attributes.TYPEUUID] as any;
       }
 
@@ -2194,7 +2281,12 @@ export function updatePointSymbol(
       // set the symbol based on sample/layer type
       let udtSymbol: PolygonSymbol | null = null;
       udtSymbol = defaultSymbols.symbols[layerType] as any;
-      if (defaultSymbols.symbols.hasOwnProperty(graphic.attributes.TYPEUUID)) {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          defaultSymbols.symbols,
+          graphic.attributes.TYPEUUID,
+        )
+      ) {
         udtSymbol = defaultSymbols.symbols[graphic.attributes.TYPEUUID] as any;
       }
 
@@ -2215,7 +2307,7 @@ export function updatePolygonSymbol(
   defaultSymbols: DefaultSymbolsType,
 ) {
   layers.forEach((layer) => {
-    if (layer.sketchLayer.type !== 'graphics') return;
+    if (layer.sketchLayer?.type !== 'graphics') return;
 
     layer.sketchLayer.graphics.forEach((graphic) => {
       if (graphic.geometry.type !== 'polygon') return;
@@ -2232,7 +2324,12 @@ export function updatePolygonSymbol(
 
       // set the symbol based on sample/layer type
       graphic.symbol = defaultSymbols.symbols[layerType] as any;
-      if (defaultSymbols.symbols.hasOwnProperty(graphic.attributes.TYPEUUID)) {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          defaultSymbols.symbols,
+          graphic.attributes.TYPEUUID,
+        )
+      ) {
         graphic.symbol = defaultSymbols.symbols[
           graphic.attributes.TYPEUUID
         ] as any;
@@ -2241,15 +2338,39 @@ export function updatePolygonSymbol(
   });
 }
 
-export function createScenarioDecon(
+export function createScenarioDeconLayer(
   defaultDeconSelections: any[],
-  scenarioName: string = 'Default Decon Scenario',
-  scenarioDescription: string = '',
+  layerName: string = 'Default AOI Layer',
 ) {
   // create a new group layer for the scenario
+  const groupLayerUuid = generateUUID();
   const groupLayer = new GroupLayer({
-    title: scenarioName,
+    id: groupLayerUuid,
+    title: layerName,
   });
+
+  const tempCharacterizeAoiLayer: LayerType = {
+    id: -1,
+    pointsId: -1,
+    uuid: groupLayerUuid,
+    layerId: groupLayerUuid,
+    portalId: '',
+    value: groupLayerUuid,
+    name: layerName,
+    label: layerName,
+    layerType: 'AOI Analysis',
+    editType: 'add',
+    visible: true,
+    listMode: 'show',
+    sort: 0,
+    geometryType: 'esriGeometryPolygon',
+    addedFrom: 'sketch',
+    status: 'added',
+    sketchLayer: groupLayer,
+    pointsLayer: null,
+    hybridLayer: null,
+    parentLayer: null,
+  } as LayerType;
 
   const layerUuidImageAnalysis = generateUUID();
   const graphicsLayerImageAnalysis = new GraphicsLayer({
@@ -2327,58 +2448,67 @@ export function createScenarioDecon(
     newLayers.push(createLayerEditTemplate(tempAssessedAoiLayer, 'add'));
   }
 
+  if (tempSketchLayer?.sketchLayer) groupLayer.add(tempSketchLayer.sketchLayer);
+  groupLayer.addMany([graphicsLayerImageAnalysis, graphicsLayer]);
+
+  const deconUuid = generateUUID();
+  const deconLayerName = 'Default Decon Operation';
+
   // create the scenario to be added to edits
   return {
-    graphicsLayerImageAnalysis,
-    graphicsLayer,
-    groupLayer,
     layers: newLayers,
     sketchLayer: tempSketchLayer,
-    scenario: {
-      type: 'scenario-decon',
+    groupLayer,
+    layerAoiAnalysis: {
+      type: 'layer-aoi-analysis',
       id: -1,
       layerId: groupLayer.id,
       portalId: '',
-      name: scenarioName,
-      label: scenarioName,
+      name: layerName,
+      label: layerName,
       value: groupLayer.id,
-      layerType: 'Decon',
+      layerType: 'AOI Analysis',
       addedFrom: 'sketch',
       status: 'added',
       editType: 'add',
       visible: true,
       listMode: 'show',
-      scenarioName: scenarioName,
-      scenarioDescription: scenarioDescription,
       layers: newLayers,
-      table: null,
-      referenceLayersTable: {
-        id: -1,
-        referenceLayers: [],
-      },
-      customAttributes: [],
-      deconTechSelections: defaultDeconSelections,
-      deconSummaryResults: {
-        summary: {
-          totalAoiSqM: 0,
-          totalBuildingFootprintSqM: 0,
-          totalBuildingFloorsSqM: 0,
-          totalBuildingSqM: 0,
-          totalBuildingExtWallsSqM: 0,
-          totalBuildingIntWallsSqM: 0,
-          totalBuildingRoofSqM: 0,
-        },
-        aoiPercentages: {
-          asphalt: 0,
-          concrete: 0,
-          soil: 0,
-        },
-        calculateResults: null,
+      importedAoiLayer: null,
+      aoiLayerMode: 'draw',
+      aoiPercentages: {
+        asphalt: 0,
+        concrete: 0,
+        numAois: 0,
+        soil: 0,
       },
       aoiSummary: {
-        area: 0,
-        buildingFootprint: 0,
+        areaByMedia: [],
+        totalAoiSqM: 0,
+        totalBuildingExtWallsSqM: 0,
+        totalBuildingFloorsSqM: 0,
+        totalBuildingFootprintSqM: 0,
+        totalBuildingIntWallsSqM: 0,
+        totalBuildingRoofSqM: 0,
+        totalBuildingSqM: 0,
       },
+      deconTechSelections: defaultDeconSelections,
+      gsgFile: null,
+    } as LayerAoiAnalysisEditsType,
+    layerDecon: {
+      type: 'layer-decon',
+      id: -1,
+      layerId: deconUuid,
+      portalId: '',
+      name: deconLayerName,
+      label: deconLayerName,
+      value: deconUuid,
+      layerType: 'Decon',
+      status: 'added',
+      editType: 'add',
+      visible: true,
+      listMode: 'show',
+      analysisLayerId: '',
       deconLayerResults: {
         cost: 0,
         time: 0,
@@ -2386,13 +2516,68 @@ export function createScenarioDecon(
         wasteMass: 0,
         resultsTable: [],
       },
-      calculateSettings: { current: settingDefaults },
-      importedAoiLayer: null,
-      aoiLayerMode: 'draw',
-      gsgFile: null,
-    } as ScenarioDeconEditsType,
+      deconSummaryResults: {},
+      deconTechSelections: defaultDeconSelections,
+    } as LayerDeconEditsType,
+    tempDeconLayer: {
+      id: -1,
+      pointsId: -1,
+      uuid: deconUuid,
+      layerId: deconUuid,
+      portalId: '',
+      value: deconUuid,
+      name: deconLayerName,
+      label: deconLayerName,
+      layerType: 'Decon',
+      editType: 'add',
+      visible: true,
+      listMode: 'show',
+      sort: 0,
+      geometryType: 'esriGeometryPolygon',
+      addedFrom: 'sketch',
+      status: 'added',
+      sketchLayer: null,
+      pointsLayer: null,
+      hybridLayer: null,
+      parentLayer: null,
+    } as LayerType,
     tempAssessedAoiLayer,
     tempImageAnalysisLayer,
+    tempCharacterizeAoiLayer,
+  };
+}
+
+export function createScenarioDecon(
+  scenarioName: string = 'Default Decon Scenario',
+  scenarioDescription: string = '',
+) {
+  const uuid = generateUUID();
+
+  // create the scenario to be added to edits
+  return {
+    scenario: {
+      type: 'scenario-decon',
+      id: -1,
+      layerId: uuid,
+      portalId: '',
+      name: scenarioName,
+      label: scenarioName,
+      value: uuid,
+      layerType: 'Decon Scenario',
+      addedFrom: 'sketch',
+      status: 'added',
+      editType: 'add',
+      visible: true,
+      listMode: 'show',
+      scenarioName: scenarioName,
+      scenarioDescription: scenarioDescription,
+      linkedLayerIds: [],
+      table: null,
+      referenceLayersTable: {
+        id: -1,
+        referenceLayers: [],
+      },
+    } as ScenarioDeconEditsType,
   };
 }
 

@@ -32,6 +32,7 @@ import { PlanGraphics, SketchContext } from 'contexts/Sketch';
 // types
 import {
   EditsType,
+  LayerDeconEditsType,
   ScenarioDeconEditsType,
   ScenarioEditsType,
   ServiceMetaDataType,
@@ -180,10 +181,6 @@ export function useSessionStorage(appType: AppType) {
     initializeDB().then(() => setDbInitialized(true));
   }, []);
 
-  const useAppSpecific =
-    appType === 'decon' ? useSessionStorageDecon : useSessionStorageSampling;
-
-  useAppSpecific(dbInitialized);
   useGraphicColor(dbInitialized);
   useEditsLayerStorage(dbInitialized, appType);
   useReferenceLayerStorage(dbInitialized);
@@ -192,8 +189,7 @@ export function useSessionStorage(appType: AppType) {
   useMapExtentStorage(dbInitialized);
   useMapPositionStorage(dbInitialized);
   useHomeWidgetStorage(dbInitialized);
-  useSamplesLayerStorage(dbInitialized);
-  useContaminationMapStorage(dbInitialized);
+  useLayerSelectionsStorage(dbInitialized);
   useGenerateRandomMaskStorage(dbInitialized);
   useCalculateSettingsStorage(dbInitialized);
   useCurrentTabSettings(dbInitialized);
@@ -205,13 +201,6 @@ export function useSessionStorage(appType: AppType) {
   usePublishStorage(dbInitialized);
   useDisplayModeStorage(dbInitialized);
   useGsgFileStorage(dbInitialized);
-}
-
-function useSessionStorageDecon(dbInitialized: boolean) {
-  usePlanSettingsStorage(dbInitialized);
-}
-
-function useSessionStorageSampling(dbInitialized: boolean) {
   useTrainingModeStorage(dbInitialized);
 }
 
@@ -351,13 +340,39 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
         // scenarios need to be added to a group layer first
         if (
           editsLayer.type === 'scenario' ||
-          editsLayer.type === 'scenario-decon'
+          editsLayer.type === 'layer-aoi-analysis'
         ) {
           const groupLayer = new GroupLayer({
             id: editsLayer.layerId,
-            title: editsLayer.scenarioName,
+            title:
+              editsLayer.type === 'layer-aoi-analysis'
+                ? editsLayer.name
+                : editsLayer.scenarioName,
             visible: editsLayer.visible,
             listMode: editsLayer.listMode,
+          });
+
+          newLayers.push({
+            id: editsLayer.id,
+            pointsId: -1,
+            uuid: editsLayer.layerId,
+            layerId: editsLayer.layerId,
+            portalId: editsLayer.portalId,
+            value: editsLayer.value,
+            name: editsLayer.name,
+            label: editsLayer.label,
+            layerType: editsLayer.layerType,
+            editType: 'add',
+            addedFrom: 'sketch',
+            status: editsLayer.status,
+            visible: editsLayer.visible,
+            listMode: editsLayer.listMode,
+            sort: 0,
+            geometryType: 'esriGeometryPolygon',
+            sketchLayer: groupLayer,
+            pointsLayer: null,
+            hybridLayer: null,
+            parentLayer: null,
           });
 
           // create the layers and add them to the group layer
@@ -381,21 +396,39 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
           });
           groupLayer.addMany(scenarioLayers);
 
-          if (editsLayer.type === 'scenario-decon') {
-            newAoiCharacterizationGraphics[editsLayer.layerId] = {
-              aoiArea: editsLayer.aoiSummary.area,
-              aoiPercentages: editsLayer.deconSummaryResults.aoiPercentages,
-              buildingFootprint: editsLayer.aoiSummary.buildingFootprint,
-              graphics: buildingGraphics,
-              imageGraphics,
-              summary: editsLayer.deconSummaryResults.summary,
-            };
-          }
-
           graphicsLayers.push(groupLayer);
+        }
+        // scenarios need to be added to a group layer first
+        if (editsLayer.type === 'layer-decon') {
+          newLayers.push({
+            id: editsLayer.id,
+            pointsId: -1,
+            uuid: editsLayer.layerId,
+            layerId: editsLayer.layerId,
+            portalId: editsLayer.portalId,
+            value: editsLayer.value,
+            name: editsLayer.name,
+            label: editsLayer.label,
+            layerType: editsLayer.layerType,
+            editType: 'add',
+            addedFrom: 'sketch',
+            status: editsLayer.status,
+            visible: editsLayer.visible,
+            listMode: editsLayer.listMode,
+            sort: 0,
+            geometryType: 'esriGeometryPolygon',
+            sketchLayer: null,
+            pointsLayer: null,
+            hybridLayer: null,
+            parentLayer: null,
+          });
 
           calculateResults =
             editsLayer?.deconSummaryResults?.calculateResults ?? null;
+        }
+
+        if (editsLayer.type === 'scenario-decon') {
+          // do nothing
         }
       });
 
@@ -415,7 +448,8 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
       }
 
       if (newLayers.length > 0) {
-        setLayers([...layers, ...newLayers]);
+        window.totsLayers = [...layers, ...newLayers];
+        setLayers(window.totsLayers);
         map.addMany(graphicsLayers);
       }
 
@@ -429,6 +463,8 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
     layersInitialized,
     map,
     readInitialized,
+    setAoiCharacterizationData,
+    setCalculateResultsDecon,
     setEdits,
     setLayers,
     setLayersInitialized,
@@ -868,20 +904,30 @@ function useHomeWidgetStorage(dbInitialized: boolean) {
 }
 
 // Uses browser storage for holding the currently selected sample layer.
-function useSamplesLayerStorage(dbInitialized: boolean) {
-  const key = 'selected_sample_layer';
-  const key2 = 'selected_scenario';
+function useLayerSelectionsStorage(dbInitialized: boolean) {
+  const key = 'layer_selections';
 
+  const { contaminationMap, setContaminationMap } =
+    useContext(CalculateContext);
   const { setOptions } = useContext(DialogContext);
   const {
+    deconOperation,
     edits,
     layers,
     selectedScenario,
     sketchLayer,
+    setDeconOperation,
     setJsonDownload,
     setSelectedScenario,
     setSketchLayer,
   } = useContext(SketchContext);
+
+  type LayerSelectionType = {
+    contaminationMap: string;
+    deconOperation: string;
+    scenario: string;
+    sketchLayer: string;
+  };
 
   // Retreives the selected sample layer (sketchLayer) from browser storage
   // when the app loads
@@ -891,11 +937,12 @@ function useSamplesLayerStorage(dbInitialized: boolean) {
     if (!dbInitialized || layers.length === 0 || readInitialized) return;
 
     setReadInitialized(true);
-    Promise.all([readFromStorage(key), readFromStorage(key2)]).then(
-      (records) => {
-        // set the selected scenario first
-        if (records.length > 1) {
-          const scenarioId = records[1];
+    readFromStorage(key)
+      .then((selections: LayerSelectionType | undefined) => {
+        if (!selections) return;
+
+        if (selections.scenario) {
+          const scenarioId = selections.scenario;
           const scenario = edits.edits.find(
             (item) =>
               ['scenario', 'scenario-decon'].includes(item.type) &&
@@ -906,29 +953,46 @@ function useSamplesLayerStorage(dbInitialized: boolean) {
               scenario as ScenarioEditsType | ScenarioDeconEditsType,
             );
             if (scenario.type === 'scenario-decon') {
-              setJsonDownload(
-                scenario.deconSummaryResults?.calculateResults?.resultsTable,
-              );
+              const deconOp = edits.edits.find(
+                (e) =>
+                  e.type === 'layer-decon' &&
+                  scenario.linkedLayerIds.includes(e.layerId),
+              ) as LayerDeconEditsType | undefined;
+              if (deconOp) {
+                setJsonDownload(
+                  deconOp.deconSummaryResults.calculateResults.resultsTable,
+                );
+              }
             }
           }
         }
 
-        if (records.length > 0) {
-          // then set the layer
-          const layerId = records[0];
-          if (!layerId) return;
+        if (selections.sketchLayer)
+          setSketchLayer(getLayerById(layers, selections.sketchLayer));
 
-          setSketchLayer(getLayerById(layers, layerId));
-        }
+        if (selections.contaminationMap)
+          setContaminationMap(
+            getLayerById(layers, selections.contaminationMap),
+          );
 
+        if (selections.deconOperation)
+          setDeconOperation(getLayerById(layers, selections.deconOperation));
+      })
+      .catch((err) => {
+        console.error('error: ', err);
+      })
+      .finally(() => {
         setReadDone(true);
-      },
-    );
+      });
   }, [
     dbInitialized,
     edits,
     layers,
     readDone,
+    readInitialized,
+    setContaminationMap,
+    setDeconOperation,
+    setJsonDownload,
     setSelectedScenario,
     setSketchLayer,
   ]);
@@ -937,51 +1001,24 @@ function useSamplesLayerStorage(dbInitialized: boolean) {
   useEffect(() => {
     if (!readDone) return;
 
-    const data = sketchLayer?.layerId ? sketchLayer.layerId : '';
+    const data: LayerSelectionType = {
+      contaminationMap: contaminationMap?.layerId
+        ? contaminationMap.layerId
+        : '',
+      deconOperation: deconOperation?.layerId ? deconOperation.layerId : '',
+      scenario: selectedScenario?.layerId ? selectedScenario.layerId : '',
+      sketchLayer: sketchLayer?.layerId ? sketchLayer.layerId : '',
+    };
+
     writeToStorage(key, data, setOptions);
-  }, [readDone, setOptions, sketchLayer]);
-
-  // Saves the selected scenario to browser storage whenever it changes
-  useEffect(() => {
-    if (!readDone) return;
-
-    const data = selectedScenario?.layerId ? selectedScenario.layerId : '';
-    writeToStorage(key2, data, setOptions);
-  }, [readDone, selectedScenario, setOptions]);
-}
-
-// Uses browser storage for holding the currently selected contamination map layer.
-function useContaminationMapStorage(dbInitialized: boolean) {
-  const key = 'selected_contamination_layer';
-  const { setOptions } = useContext(DialogContext);
-  const { layers } = useContext(SketchContext);
-  const {
+  }, [
     contaminationMap,
-    setContaminationMap, //
-  } = useContext(CalculateContext);
-
-  // Retreives the selected contamination map from browser storage
-  // when the app loads
-  const [readInitialized, setReadInitialized] = useState(false);
-  const [readDone, setReadDone] = useState(false);
-  useEffect(() => {
-    if (!dbInitialized || layers.length === 0 || readInitialized) return;
-
-    setReadInitialized(true);
-    readFromStorage(key).then((layerId) => {
-      setReadDone(true);
-      if (!layerId) return;
-      setContaminationMap(getLayerById(layers, layerId));
-    });
-  }, [dbInitialized, layers, readInitialized, setContaminationMap]);
-
-  // Saves the selected contamination map to browser storage whenever it changes
-  useEffect(() => {
-    if (!readDone) return;
-
-    const data = contaminationMap?.layerId ? contaminationMap.layerId : '';
-    writeToStorage(key, data, setOptions);
-  }, [contaminationMap, readDone, setOptions]);
+    deconOperation,
+    readDone,
+    setOptions,
+    selectedScenario,
+    sketchLayer,
+  ]);
 }
 
 // Uses browser storage for holding the currently selected sampling mask layer.
@@ -1750,35 +1787,6 @@ function useDisplayModeStorage(dbInitialized: boolean) {
     terrain3dVisible,
     viewUnderground3d,
   ]);
-}
-
-// Uses browser storage for holding the training mode selection.
-function usePlanSettingsStorage(dbInitialized: boolean) {
-  const key = 'plan_settings';
-
-  const { setOptions } = useContext(DialogContext);
-  const { planSettings, setPlanSettings } = useContext(SketchContext);
-
-  // Retreives training mode data from browser storage when the app loads
-  const [readInitialized, setReadInitialized] = useState(false);
-  const [readDone, setReadDone] = useState(false);
-  useEffect(() => {
-    if (!dbInitialized || readInitialized) return;
-
-    setReadInitialized(true);
-    readFromStorage(key).then((planSettings) => {
-      setReadDone(true);
-      if (!planSettings) return;
-
-      setPlanSettings(planSettings);
-    });
-  }, [dbInitialized, readInitialized, setPlanSettings]);
-
-  useEffect(() => {
-    if (!readDone) return;
-
-    writeToStorage(key, planSettings, setOptions);
-  }, [planSettings, readDone, setOptions]);
 }
 
 // Uses browser storage for holding the gsg files.

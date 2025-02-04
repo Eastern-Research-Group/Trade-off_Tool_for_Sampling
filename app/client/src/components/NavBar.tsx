@@ -414,7 +414,7 @@ function NavBar({ appType, height }: Props) {
   }
 
   // run calculations to update the running tally
-  if (appType === 'sampling') useCalculatePlan();
+  useCalculatePlan(appType);
   useCalculateDeconPlan();
 
   const pannelRef = useRef<HTMLDivElement>(null);
@@ -432,7 +432,7 @@ function NavBar({ appType, height }: Props) {
           <button
             className="btn"
             css={helpOkButtonStyles}
-            onClick={(ev) => setGettingStartedOpen(false)}
+            onClick={(_ev) => setGettingStartedOpen(false)}
           >
             Close
           </button>
@@ -524,7 +524,7 @@ function NavBar({ appType, height }: Props) {
                 )}
 
               <button
-                onClick={(ev) => setGettingStartedOpen(!gettingStartedOpen)}
+                onClick={(_ev) => setGettingStartedOpen(!gettingStartedOpen)}
                 css={navButtonStyles(false)}
               >
                 <i className="fas fa-question" css={helpIconStyles} />
@@ -604,7 +604,9 @@ function NavBar({ appType, height }: Props) {
                 <AdditionalSetup appType={appType} />
               )}
               {currentPanel.value === 'locateSamples' && <LocateSamples />}
-              {currentPanel.value === 'decon' && <CreateDeconPlan />}
+              {currentPanel.value === 'decon' && (
+                <CreateDeconPlan appType={appType} />
+              )}
               {currentPanel.value === 'calculate' && (
                 <Calculate appType={appType} />
               )}

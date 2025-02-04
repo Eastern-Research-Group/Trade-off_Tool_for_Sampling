@@ -41,8 +41,6 @@ import {
   setZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-// config
-import { isDecon } from 'config/navigation';
 
 type SketchWidgetType = {
   '2d': Sketch;
@@ -152,7 +150,10 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
 
       const widget = new Sketch({
         availableCreateTools: [],
-        layer: layer.sketchLayer,
+        layer:
+          layer.sketchLayer?.type === 'graphics'
+            ? layer.sketchLayer
+            : undefined,
         view,
         viewModel: svm as any,
         visibleElements: {
@@ -176,7 +177,10 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
       appType === 'decon' ? 'Area of Interest' : 'Samples';
 
     const svm2d = new SketchViewModel({
-      layer: sketchLayer.sketchLayer,
+      layer:
+        sketchLayer.sketchLayer?.type === 'graphics'
+          ? sketchLayer.sketchLayer
+          : undefined,
       view: mapView,
       polygonSymbol: defaultSymbols.symbols[defaultSymbolKey],
       pointSymbol: defaultSymbols.symbols[defaultSymbolKey] as any,
@@ -194,7 +198,10 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
     mapView.ui.add(widget2d, { position: 'top-right', index: 1 });
 
     const svm3d = new SketchViewModel({
-      layer: sketchLayer.sketchLayer,
+      layer:
+        sketchLayer.sketchLayer?.type === 'graphics'
+          ? sketchLayer.sketchLayer
+          : undefined,
       view: sceneView,
       polygonSymbol: defaultSymbols.symbols[defaultSymbolKey],
       pointSymbol: defaultSymbols.symbols[defaultSymbolKey] as any,
@@ -205,7 +212,14 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
         enableZ: true,
       },
       snappingOptions: {
-        featureSources: [{ layer: sketchLayer.sketchLayer }],
+        featureSources: [
+          {
+            layer:
+              sketchLayer.sketchLayer?.type === 'graphics'
+                ? sketchLayer.sketchLayer
+                : undefined,
+          },
+        ],
       },
     });
     const widget3d = buildWidget(sceneView, sketchLayer, svm3d);
@@ -361,7 +375,10 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
     if (!aoiSketchLayer) return;
     if (aoiSketchVM) return;
     const svm = new SketchViewModel({
-      layer: aoiSketchLayer.sketchLayer,
+      layer:
+        aoiSketchLayer.sketchLayer?.type === 'graphics'
+          ? aoiSketchLayer.sketchLayer
+          : undefined,
       view: mapView,
       polygonSymbol: defaultSymbols.symbols['Area of Interest'],
       pointSymbol: defaultSymbols.symbols['Area of Interest'] as any,
@@ -413,13 +430,17 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
       } as any;
     }
 
-    sketchLayer.sketchLayer.elevationInfo =
-      displayDimensions === '3d' ? { mode: 'absolute-height' } : (null as any);
+    if (sketchLayer.sketchLayer?.type === 'graphics') {
+      sketchLayer.sketchLayer.elevationInfo =
+        displayDimensions === '3d'
+          ? { mode: 'absolute-height' }
+          : (null as any);
+    }
 
     // get the button and it's id
     const button = document.querySelector('.sketch-button-selected');
     const id = button && button.id;
-    if (id && sampleAttributes.hasOwnProperty(id)) {
+    if (id && Object.prototype.hasOwnProperty.call(sampleAttributes, id)) {
       if (appType === 'decon') {
         sketchVM['2d'].cancel();
         sketchVM['3d'].cancel();
@@ -441,7 +462,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
         }
 
         if (displayDimensions !== lastDisplayDimensions) {
-          let shapeType = attributes.ShapeType;
+          const shapeType = attributes.ShapeType;
           startSketch(shapeType);
           setLastDisplayDimensions(displayDimensions);
         }
@@ -1038,7 +1059,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
     // update the popupTemplate for all Sample/VSP layers
     layers.forEach((layer) => {
       if (layer.layerType === 'Samples' || layer.layerType === 'VSP') {
-        if (layer.sketchLayer.type === 'graphics') {
+        if (layer.sketchLayer?.type === 'graphics') {
           layer.sketchLayer.graphics.forEach((graphic) => {
             graphic.popupTemplate = popupTemplate;
           });
@@ -1076,7 +1097,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
           .replace('-points', '')
           .replace('-hybrid', ''),
     );
-    if (!layer || layer.sketchLayer.type !== 'graphics') return;
+    if (!layer || layer.sketchLayer?.type !== 'graphics') return;
 
     // make a copy of the edits context variable
     const editsCopy = updateLayerEdits({
@@ -1158,7 +1179,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
             }
           });
 
-          view.popup.watch('selectedFeature', (graphic) => {
+          view.popup.watch('selectedFeature', (_graphic) => {
             if (view.popup.title !== 'Edit Multiple') {
               const deleteMultiAction = view.popup.actions.find(
                 (action) => action.id === 'delete-multi',

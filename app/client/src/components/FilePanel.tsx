@@ -577,7 +577,7 @@ function FilePanel({ appType }: Props) {
       publishParameters['numberOfDigitsAfterDecimal'] = numDecimals;
     }
 
-    let fileTypeToSend = file.file.esriFileType;
+    const fileTypeToSend = file.file.esriFileType;
 
     // generate the features
     const params = {
@@ -661,7 +661,7 @@ function FilePanel({ appType }: Props) {
         });
 
         // get the list of fields
-        let fields: __esri.Field[] = [];
+        const fields: __esri.Field[] = [];
         layerDefinition.fields.forEach((field: __esri.Field) => {
           // Using Field.fromJSON to convert the Rest fields to the ArcGIS JS fields
           fields.push(Field.fromJSON(field));
@@ -729,7 +729,7 @@ function FilePanel({ appType }: Props) {
             Promise.all(requests)
               .then((responses) => {
                 // get the first result for filling in metadata
-                let firstResult = responses[0].results[0].value;
+                const firstResult = responses[0].results[0].value;
                 const features: any[] = [];
 
                 // build an array with all of the features
@@ -1001,7 +1001,7 @@ function FilePanel({ appType }: Props) {
       const graphics: __esri.Graphic[] = [];
       const hybridGraphics: __esri.Graphic[] = [];
       const points: __esri.Graphic[] = [];
-      let missingAttributes: string[] = [];
+      const missingAttributes: string[] = [];
       let unknownSampleTypes: boolean = false;
       for (const layer of generateResponse.featureCollection.layers) {
         if (
@@ -1027,7 +1027,7 @@ function FilePanel({ appType }: Props) {
 
           // add sample layer specific attributes
           const timestamp = getCurrentDateTime();
-          let uuid = generateUUID();
+          const uuid = generateUUID();
           if (layerType.value === 'Contamination Map' && appType === 'decon') {
             graphic.attributes['CONTAMREDUCED'] = false;
             graphic.attributes['CONTAMINATED'] =
@@ -1036,7 +1036,7 @@ function FilePanel({ appType }: Props) {
           }
           if (layerType.value === 'Samples') {
             const { Notes, TYPE } = graphic.attributes;
-            if (!sampleAttributes.hasOwnProperty(TYPE)) {
+            if (!Object.prototype.hasOwnProperty.call(sampleAttributes, TYPE)) {
               unknownSampleTypes = true;
             } else {
               graphic.attributes = { ...sampleAttributes[TYPE] };
@@ -1093,7 +1093,10 @@ function FilePanel({ appType }: Props) {
 
           // set the symbol styles based on the sample/layer type
           if (
-            defaultSymbols.symbols.hasOwnProperty(graphic.attributes.TYPEUUID)
+            Object.prototype.hasOwnProperty.call(
+              defaultSymbols.symbols,
+              graphic.attributes.TYPEUUID,
+            )
           ) {
             graphic.symbol =
               defaultSymbols.symbols[graphic.attributes.TYPEUUID];
@@ -1179,11 +1182,12 @@ function FilePanel({ appType }: Props) {
         map.add(hybridLayer);
 
         setSelectedScenario((selectedScenario) => {
-          if (!selectedScenario) return selectedScenario;
+          if (!selectedScenario || selectedScenario.type !== 'scenario')
+            return selectedScenario;
 
           const scenario = editsCopy.edits.find(
             (edit) =>
-              ['scenario', 'scenario-decon'].includes(edit.type) &&
+              edit.type === 'scenario' &&
               edit.layerId === selectedScenario.layerId,
           ) as ScenarioEditsType;
           const newLayer = scenario.layers.find(
@@ -1208,7 +1212,7 @@ function FilePanel({ appType }: Props) {
       // zoom to the layer unless it is a contamination map
       if (graphics.length > 0 && layerType.value !== 'Contamination Map') {
         if (selectedScenario && groupLayer && isSamplesOrVsp) {
-          groupLayer.add(layerToAdd.sketchLayer);
+          if (layerToAdd.sketchLayer) groupLayer.add(layerToAdd.sketchLayer);
           if (layerToAdd.pointsLayer) {
             groupLayer.add(layerToAdd.pointsLayer);
           }
@@ -1348,9 +1352,12 @@ function FilePanel({ appType }: Props) {
         ...referenceLayers,
         {
           ...layerProps,
+          fields: layer.layerDefinition.fields,
           rawLayer: layer,
           layerId: layerToAdd.id,
           portalId: '',
+          renderer: layer.layerDefinition.drawingInfo.renderer,
+          source: layer.featureSet.features,
         },
       ]);
     });
@@ -1447,12 +1454,10 @@ function FilePanel({ appType }: Props) {
       (option) => option.value !== 'Samples',
     );
   }
-  if (appType === 'sampling') {
-    if (!trainingMode)
-      selectLayerOptions = selectLayerOptions.filter(
-        (option) => option.value !== 'Contamination Map',
-      );
-  }
+  if (!trainingMode)
+    selectLayerOptions = selectLayerOptions.filter(
+      (option) => option.value !== 'Contamination Map',
+    );
 
   return (
     <div css={searchContainerStyles}>
@@ -1716,7 +1721,7 @@ function FilePanel({ appType }: Props) {
                         type="checkbox"
                         css={checkBoxStyles}
                         checked={generalizeFeatures}
-                        onChange={(ev) =>
+                        onChange={(_ev) =>
                           setGeneralizeFeatures(!generalizeFeatures)
                         }
                       />

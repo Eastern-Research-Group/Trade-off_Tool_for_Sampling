@@ -157,7 +157,7 @@ function CalculateResults() {
         return;
       }
 
-      layer.sketchLayer.visible = false;
+      if (layer.sketchLayer) layer.sketchLayer.visible = false;
     });
 
     // get the sample layers for the selected scenario
@@ -250,13 +250,15 @@ function CalculateResults() {
 
       // get the data url
       const url = canvas.toDataURL('image/jpeg');
-      url
-        ? setBase64Screenshot({
-            image: url,
-            height: img.height,
-            width: img.width,
-          })
-        : setDownloadStatus('base64-failure');
+      if (url) {
+        setBase64Screenshot({
+          image: url,
+          height: img.height,
+          width: img.width,
+        });
+      } else {
+        setDownloadStatus('base64-failure');
+      }
 
       // Clean up
       canvas = null;
@@ -717,7 +719,12 @@ function CalculateResults() {
 
     function addSampleSheet() {
       // only here to satisfy typescript
-      if (!map || !selectedScenario || selectedScenario.layers.length === 0) {
+      if (
+        !map ||
+        !selectedScenario ||
+        selectedScenario.type !== 'scenario' ||
+        selectedScenario.layers.length === 0
+      ) {
         return;
       }
 
