@@ -250,13 +250,15 @@ function CalculateResults() {
 
       // get the data url
       const url = canvas.toDataURL('image/jpeg');
-      url
-        ? setBase64Screenshot({
-            image: url,
-            height: img.height,
-            width: img.width,
-          })
-        : setDownloadStatus('base64-failure');
+      if (url) {
+        setBase64Screenshot({
+          image: url,
+          height: img.height,
+          width: img.width,
+        });
+      } else {
+        setDownloadStatus('base64-failure');
+      }
 
       // Clean up
       canvas = null;

@@ -38,7 +38,7 @@ const inputStyles = css`
 `;
 
 function generateFilterInput({
-  column: { filterValue, preFilteredRows, setFilter },
+  column: { filterValue, setFilter },
 }: {
   column: {
     filterValue: any;

@@ -359,14 +359,15 @@ function LocateSamples() {
 
     // determine whether the sketch button draws points or polygons
     const attributes = sampleAttributes[label as any];
-    let shapeType = attributes.ShapeType;
+    const shapeType = attributes.ShapeType;
 
     // make the style of the button active
     const wasSet = activateSketchButton(label);
 
     // update the sketchVM symbol
     let symbolType = 'Samples';
-    if (defaultSymbols.symbols.hasOwnProperty(label)) symbolType = label;
+    if (Object.prototype.hasOwnProperty.call(defaultSymbols.symbols, label))
+      symbolType = label;
 
     const isPath = attributes.POINT_STYLE.includes('path|');
     const pointProps = {
@@ -595,7 +596,7 @@ function LocateSamples() {
                       <button
                         css={iconButtonStyles}
                         title="Clone Scenario"
-                        onClick={(ev) => {
+                        onClick={(_ev) => {
                           if (!map) return;
 
                           // get the name for the new layer
@@ -774,6 +775,14 @@ function LocateSamples() {
 
                   // update the visiblity of layers
                   layers.forEach((layer) => {
+                    const layersToIgnore = [
+                      'AOI Analysis',
+                      'AOI Assessed',
+                      'Decon Mask',
+                      'Image Analysis',
+                    ];
+                    if (layersToIgnore.includes(layer.layerType)) return;
+
                     if (layer.parentLayer) {
                       layer.parentLayer.visible =
                         layer.parentLayer.id === newScenario.layerId
@@ -793,8 +802,9 @@ function LocateSamples() {
                   setEdits((edits) => ({
                     count: edits.count + 1,
                     edits: edits.edits.map((edit) => {
-                      let visible = edit.visible;
+                      if (edit.type === 'layer-aoi-analysis') return edit;
 
+                      let visible = edit.visible;
                       if (edit.type === 'scenario') {
                         visible =
                           edit.layerId === newScenario.layerId ? true : false;
@@ -1178,7 +1188,7 @@ function LocateSamples() {
                       <button
                         css={iconButtonStyles}
                         title="Clone Layer"
-                        onClick={(ev) => {
+                        onClick={(_ev) => {
                           // get the name for the new layer
                           const newLayerName = getNewName(
                             layers.map((layer) => layer.label),
@@ -1244,7 +1254,7 @@ function LocateSamples() {
 
                           // clone the active layer in edits
                           // make a copy of the edits context variable
-                          let editsCopy = updateLayerEdits({
+                          const editsCopy = updateLayerEdits({
                             appType: 'sampling',
                             changes: tempLayer.sketchLayer.graphics,
                             edits,
@@ -1403,17 +1413,20 @@ function LocateSamples() {
                           const sampleType = option.label;
 
                           if (
-                            !sampleAttributes.hasOwnProperty(sampleTypeUuid)
+                            !Object.prototype.hasOwnProperty.call(
+                              sampleAttributes,
+                              sampleTypeUuid,
+                            )
                           ) {
                             return null;
                           }
 
                           const shapeType =
                             sampleAttributes[sampleTypeUuid].ShapeType;
-                          const edited =
-                            userDefinedAttributes.sampleTypes.hasOwnProperty(
-                              sampleTypeUuid,
-                            );
+                          const edited = Object.prototype.hasOwnProperty.call(
+                            userDefinedAttributes.sampleTypes,
+                            sampleTypeUuid,
+                          );
                           return (
                             <SketchButton
                               key={index}
@@ -1473,20 +1486,12 @@ function LocateSamples() {
               </AccordionItem>
               <AccordionItem title="Add Multiple Random Samples">
                 <div css={sectionContainer}>
-                  <GenerateSamples
-                    id="gen-random"
-                    title="Add Multiple Random Samples"
-                    type="random"
-                  />
+                  <GenerateSamples id="gen-random" type="random" />
                 </div>
               </AccordionItem>
               <AccordionItem title="Add Statistical Sampling Approach">
                 <div css={sectionContainer}>
-                  <GenerateSamples
-                    id="gen-statistic"
-                    title="Add Statistical Sampling Approach"
-                    type="statistic"
-                  />
+                  <GenerateSamples id="gen-statistic" type="statistic" />
                 </div>
               </AccordionItem>
             </AccordionList>

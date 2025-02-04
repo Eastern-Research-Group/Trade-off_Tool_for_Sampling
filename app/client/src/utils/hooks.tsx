@@ -41,7 +41,6 @@ import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext } from 'contexts/Publish';
 import {
   AoiCharacterizationData,
-  AoiDataType,
   JsonDownloadType,
   PlanGraphics,
   SketchContext,
@@ -237,7 +236,12 @@ export function processScenario(
       // get total CFU for media
       let totalArea = 0;
       let totalCfu = 0;
-      if (contaminationPercentages.hasOwnProperty(scenarioId)) {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          contaminationPercentages,
+          scenarioId,
+        )
+      ) {
         Object.keys(contaminationPercentages[scenarioId]).forEach(
           (key: any) => {
             // area of media and cfu level
@@ -267,84 +271,6 @@ export function processScenario(
   return newDeconTechSelections;
 }
 
-function processScenarioTest(
-  layer: LayerAoiAnalysisEditsType,
-  contaminationPercentages: ContaminationPercentages,
-  planBuildingCfu: PlanBuildingCfu,
-  defaultDeconSelections: any[],
-) {
-  const {
-    totalAoiSqM,
-    totalBuildingFloorsSqM,
-    totalBuildingExtWallsSqM,
-    totalBuildingIntWallsSqM,
-    totalBuildingRoofSqM,
-  } = layer.aoiSummary;
-
-  const curDeconTechSelections =
-    layer.deconTechSelections && layer.deconTechSelections.length > 0
-      ? layer.deconTechSelections
-      : defaultDeconSelections;
-  const newDeconTechSelections: any = [];
-  curDeconTechSelections.forEach((sel) => {
-    // find decon settings
-    const media = sel.media;
-
-    let surfaceArea = 0;
-    let avgCfu = 0;
-    let pctAoi = 0;
-    if (media.includes('Building ')) {
-      avgCfu =
-        (planBuildingCfu[layer.layerId] ?? 0) * (partitionFactors[media] ?? 1);
-
-      if (media === 'Building Exterior Walls')
-        surfaceArea = totalBuildingExtWallsSqM;
-      if (media === 'Building Interior Walls')
-        surfaceArea = totalBuildingIntWallsSqM;
-      if (media === 'Building Interior Floors')
-        surfaceArea = totalBuildingFloorsSqM;
-      if (media === 'Building Roofs') surfaceArea = totalBuildingRoofSqM;
-    } else {
-      pctAoi = (layer.aoiPercentages as any)[
-        (mediaToBeepEnum as any)[sel.media]
-      ] as number;
-      const pctFactor = pctAoi * 0.01;
-
-      // get surface area of soil, asphalt or concrete
-      //             60 =             100 * 0.6 surface area of concrete
-      surfaceArea = totalAoiSqM * pctFactor;
-
-      // get total CFU for media
-      let totalArea = 0;
-      let totalCfu = 0;
-      if (contaminationPercentages.hasOwnProperty(layer.layerId)) {
-        Object.keys(contaminationPercentages[layer.layerId]).forEach(
-          (key: any) => {
-            // area of media and cfu level
-            const pctCfu = contaminationPercentages[layer.layerId][key];
-            //                34.2 =   0.57 * 60
-            const surfaceAreaSfCfu = pctCfu * surfaceArea;
-            totalArea += surfaceAreaSfCfu;
-
-            // 34.2M  =             34.2 * 1M;
-            // SUM    = 35.916M CFU
-            totalCfu += surfaceAreaSfCfu * key;
-          },
-        );
-      }
-
-      avgCfu = !totalCfu && !totalArea ? 0 : totalCfu / totalArea;
-    }
-
-    newDeconTechSelections.push({
-      ...sel,
-      avgCfu,
-    });
-  });
-
-  return newDeconTechSelections;
-}
-
 export async function fetchBuildingData(
   aoiGraphics: __esri.Graphic[],
   services: any,
@@ -353,7 +279,7 @@ export async function fetchBuildingData(
   gsgFile: GsgParam | undefined,
   sceneViewForArea: __esri.SceneView | null,
   cutFootprintsOut: boolean = true,
-  buildingFilter: string[] = [],
+  _buildingFilter: string[] = [],
 ) {
   const requests: any[] = [];
   aoiGraphics.forEach((graphic) => {
@@ -429,7 +355,7 @@ export async function fetchBuildingData(
           },
           geometry: feature.geometry,
           symbol: new SimpleFillSymbol({
-            color: buildingColors.hasOwnProperty(occCls)
+            color: Object.prototype.hasOwnProperty.call(buildingColors, occCls)
               ? buildingColors[occCls]
               : buildingColors['Other'],
             outline: {
@@ -455,7 +381,7 @@ export async function fetchBuildingData(
   });
 
   const iaResponses: any[] = [];
-  for (let graphic of aoiGraphics) {
+  for (const graphic of aoiGraphics) {
     removeZValues(graphic);
 
     const featureSet = new FeatureSet({
@@ -507,7 +433,7 @@ export async function fetchBuildingData(
       planGraphics[planId].aoiPercentages.numAois +=
         summaryOutput.value.features.length;
 
-      summaryOutput.value.features.forEach((f: any, index: number) => {
+      summaryOutput.value.features.forEach((f: any) => {
         planGraphics[planId].aoiPercentages.asphalt += f.attributes.ASPHALT;
         planGraphics[planId].aoiPercentages.concrete += f.attributes.CONCRETE;
         planGraphics[planId].aoiPercentages.soil += f.attributes.SOIL;
@@ -521,7 +447,10 @@ export async function fetchBuildingData(
     if (featuresOutput) {
       featuresOutput.value.features.forEach((f: any) => {
         const category = f.attributes.category;
-        const symbol = imageAnalysisSymbols.hasOwnProperty(category)
+        const symbol = Object.prototype.hasOwnProperty.call(
+          imageAnalysisSymbols,
+          category,
+        )
           ? (imageAnalysisSymbols as any)[category]
           : backupImagerySymbol;
 
@@ -588,7 +517,8 @@ export async function fetchBuildingData(
 
         const areaSM = await calculateArea(graphic, sceneViewForArea);
         if (typeof areaSM === 'number') {
-          if (imageAreas.hasOwnProperty(key)) imageAreas[key] += areaSM;
+          if (Object.prototype.hasOwnProperty.call(imageAreas, key))
+            imageAreas[key] += areaSM;
           else imageAreas[key] = areaSM;
         }
       }
@@ -678,7 +608,9 @@ export function useStartOver() {
       if (doubleClickEvent) doubleClickEvent.remove();
       if (moveEvent) moveEvent.remove();
       if (popupEvent) popupEvent.remove();
-    } catch (_ex) {}
+    } catch (ex) {
+      console.error(ex);
+    }
 
     setSelectedScenario(null);
     setSketchLayer(null);
@@ -787,7 +719,7 @@ export function useStartOver() {
 // Runs sampling plan calculations whenever the
 // samples change or the variables on the calculate tab
 // change.
-export function useCalculatePlan() {
+export function useCalculatePlan(appType: AppType) {
   const {
     edits,
     layers,
@@ -814,6 +746,8 @@ export function useCalculatePlan() {
   // changes that will cause a re-calculation.
   const [calcGraphics, setCalcGraphics] = useState<__esri.Graphic[]>([]);
   useEffect(() => {
+    if (appType !== 'sampling') return;
+
     // Get the number of graphics for the selected scenario
     let numGraphics = 0;
     if (
@@ -852,7 +786,7 @@ export function useCalculatePlan() {
         data: null,
       };
     });
-  }, [edits, layers, selectedScenario, setCalculateResults]);
+  }, [appType, edits, layers, selectedScenario, setCalculateResults]);
 
   const [totals, setTotals] = useState({
     ttpk: 0,
@@ -874,6 +808,8 @@ export function useCalculatePlan() {
 
   // perform geospatial calculatations
   useEffect(() => {
+    if (appType !== 'sampling') return;
+
     // exit early checks
     if (
       !selectedScenario ||
@@ -1035,12 +971,14 @@ export function useCalculatePlan() {
     }
 
     processFeatures();
-  }, [edits, layers, sceneViewForArea, selectedScenario]);
+  }, [appType, edits, layers, sceneViewForArea, selectedScenario]);
 
   // perform non-geospatial calculations
   useEffect(() => {
+    if (appType !== 'sampling') return;
+
     // exit early checks
-    if (!selectedScenario) return;
+    if (selectedScenario?.type !== 'scenario') return;
     if (calcGraphics.length === 0 || totalArea === 0) {
       setCalculateResults({ status: 'none', panelOpen: false, data: null });
       return;
@@ -1163,12 +1101,21 @@ export function useCalculatePlan() {
         data: resultObject,
       };
     });
-  }, [calcGraphics, selectedScenario, setCalculateResults, totals, totalArea]);
+  }, [
+    appType,
+    calcGraphics,
+    selectedScenario,
+    setCalculateResults,
+    totals,
+    totalArea,
+  ]);
 
   // Updates the calculation context values with the inputs.
   // The intention is to update these values whenever the user navigates away from
   // the calculate resources tab or when they click the View Detailed Results button.
   useEffect(() => {
+    if (appType !== 'sampling') return;
+
     if (!selectedScenario || !updateContextValues) return;
     setUpdateContextValues(false);
 
@@ -1184,7 +1131,7 @@ export function useCalculatePlan() {
     };
 
     setSelectedScenario((selectedScenario) => {
-      if (selectedScenario) {
+      if (selectedScenario?.type === 'scenario') {
         selectedScenario.calculateSettings.current = {
           ...selectedScenario.calculateSettings.current,
           ...newSettings,
@@ -1211,6 +1158,7 @@ export function useCalculatePlan() {
       };
     });
   }, [
+    appType,
     inputNumLabs,
     inputNumLabHours,
     inputNumSamplingHours,
@@ -1232,7 +1180,6 @@ export function useCalculatePlan() {
 // change.
 export function useCalculateDeconPlan() {
   const {
-    aoiCharacterizationData,
     defaultDeconSelections,
     displayDimensions,
     edits,
@@ -1262,7 +1209,7 @@ export function useCalculateDeconPlan() {
         data: null,
       };
     });
-  }, [selectedScenario]);
+  }, [selectedScenario, setCalculateResultsDecon]);
 
   type ContaminatedAoiAreas = { [planId: string]: { [key: number]: number } };
   const [aoiContamIntersect, setAoiContamIntersect] = useState<{
@@ -1293,7 +1240,7 @@ export function useCalculateDeconPlan() {
       const linkedDeconOperations: LayerDeconEditsType[] = [];
       const linkedAoiCharacterizationIds: string[] = [];
       const linkedAoiCharacterizations: LayerAoiAnalysisEditsType[] = [];
-      let editsCopy: EditsType = edits;
+      const editsCopy: EditsType = edits;
       editsCopy.edits.forEach((edit) => {
         if (
           edit.type !== 'layer-decon' ||
@@ -1407,7 +1354,7 @@ export function useCalculateDeconPlan() {
                 linkedDeconOperations.find(
                   (op) => op.analysisLayerId === characterizationLayer.layerId,
                 )?.layerId ?? '';
-              if (planBuildingCfu.hasOwnProperty(opId)) {
+              if (Object.prototype.hasOwnProperty.call(planBuildingCfu, opId)) {
                 planBuildingCfu[opId] += plumeCfu;
               } else {
                 planBuildingCfu[opId] = plumeCfu;
@@ -1445,7 +1392,10 @@ export function useCalculateDeconPlan() {
                 contaminatedAoiAreas?.[characterization.layerId]?.[contamValue];
               if (typeof clippedAreaM2 === 'number') {
                 if (
-                  !contaminatedAoiAreas.hasOwnProperty(characterization.layerId)
+                  !Object.prototype.hasOwnProperty.call(
+                    contaminatedAoiAreas,
+                    characterization.layerId,
+                  )
                 ) {
                   contaminatedAoiAreas[characterization.layerId] = {};
                 }
@@ -1478,7 +1428,10 @@ export function useCalculateDeconPlan() {
           Object.keys(contaminatedAoiAreas[characterizationId]).forEach(
             (key: any) => {
               if (
-                !contaminationPercentages.hasOwnProperty(characterizationId)
+                !Object.prototype.hasOwnProperty.call(
+                  contaminationPercentages,
+                  characterizationId,
+                )
               ) {
                 contaminationPercentages[characterizationId] = {};
               }
@@ -1624,7 +1577,7 @@ export function useCalculateDeconPlan() {
         const tech: { [deconTech: string]: JsonDownloadType } = {};
         scenarioItems.forEach((item) => {
           const deconTech = item.decontaminationTechnology;
-          if (tech.hasOwnProperty(deconTech)) {
+          if (Object.prototype.hasOwnProperty.call(tech, deconTech)) {
             tech[deconTech].decontaminationCost += item.decontaminationCost;
             tech[deconTech].decontaminationTimeDays +=
               item.decontaminationTimeDays;
@@ -1699,11 +1652,15 @@ export function useCalculateDeconPlan() {
   }, [
     calculateResultsDecon,
     contaminationMap,
+    defaultDeconSelections,
     edits,
     layers,
     sampleAttributesDecon,
+    sceneViewForArea,
     selectedScenario,
-    view,
+    setCalculateResultsDecon,
+    setEdits,
+    setJsonDownload,
   ]);
 
   useEffect(() => {
@@ -1724,8 +1681,6 @@ export function useCalculateDeconPlan() {
           ...contaminationMap.sketchLayer.graphics.clone().toArray(),
         );
       }
-
-      let cfuReductionBuildings = 0;
 
       const linkedDeconOperations: LayerDeconEditsType[] = [];
       const linkedAoiCharacterizationIds: string[] = [];
@@ -1753,16 +1708,26 @@ export function useCalculateDeconPlan() {
       let newContamGraphics: __esri.Graphic[] = [];
       for (const deconOp of linkedDeconOperations) {
         // tie graphics and imageryGraphics to a scenario
-        const planData = aoiCharacterizationData.planGraphics[deconOp.layerId];
-
         const aoiLayerEdits = linkedAoiCharacterizations.find(
           (c) => c.layerId === deconOp.analysisLayerId,
+        );
+        const deconMaskEdits = aoiLayerEdits?.layers.find(
+          (l) => l.layerType === 'Decon Mask',
+        );
+        const aoiAssessedEdits = aoiLayerEdits?.layers.find(
+          (l) => l.layerType === 'AOI Assessed',
         );
         const deconAoiLayer =
           layers.find(
             (l) =>
               l.layerType === 'Decon Mask' &&
-              l.layerId === aoiLayerEdits?.layerId,
+              l.layerId === deconMaskEdits?.layerId,
+          ) ?? null;
+        const buildingLayer =
+          layers.find(
+            (l) =>
+              l.layerType === 'AOI Assessed' &&
+              l.layerId === aoiAssessedEdits?.layerId,
           ) ?? null;
 
         const curDeconTechSelections =
@@ -1820,7 +1785,6 @@ export function useCalculateDeconPlan() {
             const innerGeometry = Array.isArray(newInnerContamGeometry)
               ? newInnerContamGeometry
               : [newInnerContamGeometry];
-            const contamVal = contamGraphic.attributes.CONTAMVAL;
 
             let CONTAMVALINTWALLS = contamGraphic.attributes.INTWALLS;
             let CONTAMVALEXTWALLS = contamGraphic.attributes.EXTWALLS;
@@ -1831,8 +1795,11 @@ export function useCalculateDeconPlan() {
             for (const sel of curDeconTechSelections) {
               if (sel.deconTech) hasDeconTech = true;
 
-              if (sel.media.includes('Building')) {
-                for (const graphic of planData.graphics) {
+              if (
+                sel.media.includes('Building') &&
+                buildingLayer?.sketchLayer?.type === 'graphics'
+              ) {
+                for (const graphic of buildingLayer.sketchLayer.graphics) {
                   if (!graphic.attributes.CONTAMTYPE) continue;
                   if (
                     !graphic.geometry ||
@@ -1848,37 +1815,28 @@ export function useCalculateDeconPlan() {
                   const plumeCfu = graphic.attributes.CONTAMVALPLUME;
                   let mediaCfu = plumeCfu * (partitionFactors[sel.media] ?? 0);
 
-                  let area = 0;
                   if (sel.media === 'Building Roofs') {
-                    area = graphic.attributes.roofSqM;
                     if (contamGraphic.attributes.ROOFS)
                       mediaCfu = contamGraphic.attributes.ROOFS;
                   }
                   if (sel.media === 'Building Interior Floors') {
-                    area = graphic.attributes.floorsSqM;
                     if (contamGraphic.attributes.FLOORS)
                       mediaCfu = contamGraphic.attributes.FLOORS;
                   }
                   if (sel.media === 'Building Exterior Walls') {
-                    area = graphic.attributes.extWallsSqM;
                     if (contamGraphic.attributes.EXTWALLS)
                       mediaCfu = contamGraphic.attributes.EXTWALLS;
                   }
                   if (sel.media === 'Building Interior Walls') {
-                    area = graphic.attributes.intWallsSqM;
                     if (contamGraphic.attributes.INTWALLS)
                       mediaCfu = contamGraphic.attributes.INTWALLS;
                   }
-
-                  let cfu = mediaCfu * area;
 
                   const deconTech = sampleAttributesDecon[sel.deconTech?.value];
                   if (!deconTech) continue;
 
                   const { LOD_NON: contaminationRemovalFactor } =
                     sampleAttributesDecon[sel.deconTech.value];
-                  const avgReduction = cfu * contaminationRemovalFactor;
-                  cfuReductionBuildings += avgReduction;
 
                   const contamReductionFactor = parseSmallFloat(
                     1 - contaminationRemovalFactor,
@@ -1993,11 +1951,11 @@ export function useCalculateDeconPlan() {
 
           if (
             aoiAssessedLayer?.sketchLayer?.type === 'graphics' &&
-            planData?.graphics
+            buildingLayer?.sketchLayer?.type === 'graphics'
           ) {
             aoiAssessedLayer?.sketchLayer.graphics.removeAll();
             aoiAssessedLayer?.sketchLayer.graphics.addMany(
-              planData.graphics.map((g) => {
+              buildingLayer.sketchLayer.graphics.map((g) => {
                 if (!g.attributes.CONTAMTYPE || !hasDeconTech) return g;
 
                 const newG = g.clone();
@@ -2027,7 +1985,6 @@ export function useCalculateDeconPlan() {
 
     performCalculations();
   }, [
-    aoiCharacterizationData,
     aoiContamIntersect,
     calculateResultsDecon,
     contaminationMap,
@@ -2037,6 +1994,7 @@ export function useCalculateDeconPlan() {
     resultsOpen,
     sampleAttributesDecon,
     sceneViewForArea,
+    selectedScenario,
     setEfficacyResults,
   ]);
 
@@ -2312,7 +2270,9 @@ export function use3dSketch(appType: AppType) {
       if (doubleClickEvent) doubleClickEvent.remove();
       if (moveEvent) moveEvent.remove();
       if (popupEvent) popupEvent.remove();
-    } catch (_ex) {}
+    } catch (ex) {
+      console.error(ex);
+    }
 
     if (map && tempSketchLayer) {
       tempSketchLayer?.removeAll();

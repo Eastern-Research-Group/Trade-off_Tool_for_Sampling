@@ -121,7 +121,7 @@ function URLPanel() {
 
   if (!map) return null;
 
-  const handleAdd = (ev: ReactMouseEvent<HTMLButtonElement>) => {
+  const handleAdd = (_ev: ReactMouseEvent<HTMLButtonElement>) => {
     // make sure the url hasn't already been added
     const index = urlLayers.findIndex(
       (layer) => layer.url.toLowerCase() === url.toLowerCase(),

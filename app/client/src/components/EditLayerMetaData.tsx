@@ -24,6 +24,7 @@ import {
 import { createErrorObject } from 'utils/utils';
 // types
 import {
+  LayerDeconEditsType,
   LayerEditsType,
   ScenarioDeconEditsType,
   ScenarioEditsType,
@@ -433,7 +434,7 @@ function EditScenario({
 
       const deconLayerEdits = edits.edits.find(
         (e) => !deconOpsLinked.includes(e.layerId) && e.type === 'layer-decon',
-      );
+      ) as LayerDeconEditsType | undefined;
       const aoiLayer = edits.edits.find((e) => e.type === 'layer-aoi-analysis');
       if (deconLayerEdits) {
         newScenario.linkedLayerIds = [deconLayerEdits.layerId];
@@ -638,6 +639,7 @@ function EditLayer({
     layers,
     setLayers,
     selectedScenario,
+    setSelectedScenario,
     setSketchLayer,
     map,
   } = useContext(SketchContext);
@@ -669,7 +671,7 @@ function EditLayer({
     }
 
     // find the parent layer
-    let parentLayer: __esri.GroupLayer | null = selectedScenario
+    const parentLayer: __esri.GroupLayer | null = selectedScenario
       ? (map.layers.find(
           (layer) =>
             layer.type === 'group' && layer.id === selectedScenario.layerId,
@@ -743,6 +745,17 @@ function EditLayer({
         layer: tempLayer,
         type: 'add',
       });
+
+      // link to the selected plan
+      if (selectedScenario) {
+        const scenario = editsCopy.edits.find(
+          (edit) => edit.layerId === selectedScenario.layerId,
+        );
+        if (scenario && scenario.type === 'scenario-decon') {
+          scenario.linkedLayerIds.push(tempLayer.layerId);
+        }
+      }
+
       setEdits(editsCopy);
 
       // add the layer to the scenario's group layer, a scenario is selected
@@ -763,27 +776,48 @@ function EditLayer({
       // make the new layer the active sketch layer
       setSketchLayer(tempLayer);
 
-      // TODO see if we need to bring this back
-      // setSelectedScenario((selectedScenario) => {
-      //   if (!selectedScenario) return selectedScenario;
+      setSelectedScenario((selectedScenario) => {
+        if (!selectedScenario) return selectedScenario;
 
-      //   // TODO get this working for decon
-      //   const scenario = editsCopy.edits.find(
-      //     (edit) =>
-      //       ['scenario', 'scenario-decon'].includes(edit.type) &&
-      //       edit.layerId === selectedScenario.layerId,
-      //   ) as ScenarioEditsType | ScenarioDeconEditsType;
-      //   const newLayer = scenario.layers.find(
-      //     (layer) => layer.layerId === tempLayer.layerId,
-      //   );
+        const scenario = editsCopy.edits.find(
+          (edit) =>
+            edit.type === selectedScenario.type &&
+            edit.layerId === selectedScenario.layerId,
+        ) as ScenarioEditsType | ScenarioDeconEditsType;
 
-      //   if (!newLayer) return selectedScenario;
+        if (
+          scenario.type === 'scenario' &&
+          selectedScenario.type === 'scenario'
+        ) {
+          const newLayer = scenario.layers.find(
+            (layer) => layer.layerId === tempLayer.layerId,
+          );
 
-      //   return {
-      //     ...selectedScenario,
-      //     layers: [...selectedScenario.layers, newLayer],
-      //   };
-      // });
+          if (!newLayer) return selectedScenario;
+
+          return {
+            ...selectedScenario,
+            layers: [...selectedScenario.layers, newLayer],
+          };
+        }
+        if (
+          scenario.type === 'scenario-decon' &&
+          selectedScenario.type === 'scenario-decon'
+        ) {
+          const newLayer = scenario.linkedLayerIds.find(
+            (layerId) => layerId === tempLayer.layerId,
+          );
+
+          if (!newLayer) return selectedScenario;
+
+          return {
+            ...selectedScenario,
+            linkedLayerIds: [...selectedScenario.linkedLayerIds, newLayer],
+          };
+        }
+
+        return selectedScenario;
+      });
     }
 
     setSaveStatus('success');
@@ -804,7 +838,7 @@ function EditLayer({
         the{' '}
         <button
           css={modLinkButtonStyles}
-          onClick={(ev) => {
+          onClick={(_ev) => {
             setGoTo('addData');
             setGoToOptions({
               from: 'file',

@@ -118,7 +118,12 @@ function buildLegendListItem(event: any, view: __esri.MapView) {
         isPoints || (isHybrid && attributes.ShapeType === 'point')
           ? attributes?.POINT_STYLE || null
           : null;
-      if (defaultSymbols.symbols.hasOwnProperty(option.value)) {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          defaultSymbols.symbols,
+          option.value,
+        )
+      ) {
         legendItems.push({
           value: option.value,
           title: option.label,
@@ -999,7 +1004,7 @@ function Toolbar({ appType }: Props) {
           <button
             css={toolBarButtonStyles()}
             className={settingsVisible ? buttonSelectedClass : ''}
-            onClick={(ev) => {
+            onClick={(_ev) => {
               setSettingsVisible(!settingsVisible);
               setBasemapVisible(false);
               setLegendVisible(false);
@@ -1025,7 +1030,7 @@ function Toolbar({ appType }: Props) {
                 name="dimension"
                 value="2d"
                 checked={displayDimensions === '2d'}
-                onChange={(ev) => setDisplayDimensions('2d')}
+                onChange={(_ev) => setDisplayDimensions('2d')}
               />
               <label htmlFor="dimension-2d">2D</label>
               <br />
@@ -1036,7 +1041,7 @@ function Toolbar({ appType }: Props) {
                 name="dimension"
                 value="3d"
                 checked={displayDimensions === '3d'}
-                onChange={(ev) => {
+                onChange={(_ev) => {
                   setDisplayDimensions('3d');
                   setDisplayGeometryType('points');
                 }}
@@ -1061,7 +1066,7 @@ function Toolbar({ appType }: Props) {
                   name="shape"
                   value="points"
                   checked={displayGeometryType === 'points'}
-                  onChange={(ev) => setDisplayGeometryType('points')}
+                  onChange={(_ev) => setDisplayGeometryType('points')}
                 />
                 <label htmlFor="shape-points">Points</label>
                 <br />
@@ -1072,7 +1077,7 @@ function Toolbar({ appType }: Props) {
                   name="shape"
                   value="polygons"
                   checked={displayGeometryType === 'polygons'}
-                  onChange={(ev) => setDisplayGeometryType('polygons')}
+                  onChange={(_ev) => setDisplayGeometryType('polygons')}
                 />
                 <label htmlFor="shape-polygons">Polygons</label>
                 <br />
@@ -1084,7 +1089,7 @@ function Toolbar({ appType }: Props) {
                       name="shape"
                       value="hybrid"
                       checked={displayGeometryType === 'hybrid'}
-                      onChange={(ev) => setDisplayGeometryType('hybrid')}
+                      onChange={(_ev) => setDisplayGeometryType('hybrid')}
                     />
                     <span>Hybrid</span>
                   </label>
@@ -1158,7 +1163,7 @@ function Toolbar({ appType }: Props) {
           <button
             css={toolBarButtonStyles()}
             className={basemapVisible ? buttonSelectedClass : ''}
-            onClick={(ev) => {
+            onClick={(_ev) => {
               setBasemapVisible(!basemapVisible);
               setLegendVisible(false);
               setSettingsVisible(false);
@@ -1182,7 +1187,7 @@ function Toolbar({ appType }: Props) {
           <button
             css={toolBarButtonStyles()}
             className={legendVisible ? buttonSelectedClass : ''}
-            onClick={(ev) => {
+            onClick={(_ev) => {
               setLegendVisible(!legendVisible);
               setBasemapVisible(false);
               setSettingsVisible(false);
@@ -1200,7 +1205,7 @@ function Toolbar({ appType }: Props) {
         {oAuthInfo && (
           <button
             css={toolBarButtonStyles('105px')}
-            onClick={(ev) => {
+            onClick={(_ev) => {
               if (signedIn) {
                 IdentityManager.destroyCredentials();
                 setSignedIn(false);

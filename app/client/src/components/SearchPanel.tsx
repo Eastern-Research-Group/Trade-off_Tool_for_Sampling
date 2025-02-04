@@ -392,7 +392,7 @@ function SearchPanel({ appType }: Props) {
     else query = appendToQuery(query, defaultTypePart);
 
     // build the query parameters
-    let queryParams = {
+    const queryParams = {
       query,
       sortOrder,
       categories: [categories],
@@ -563,7 +563,7 @@ function SearchPanel({ appType }: Props) {
             id="within_map_filter"
             type="checkbox"
             checked={withinMap}
-            onChange={(ev) => setWithinMap(!withinMap)}
+            onChange={(_ev) => setWithinMap(!withinMap)}
           />{' '}
           <label htmlFor="within_map_filter">Within map...</label>
         </div>
@@ -603,7 +603,7 @@ function SearchPanel({ appType }: Props) {
         <button
           css={searchButtonStyles}
           type="submit"
-          onClick={(ev) => setSearch(searchText)}
+          onClick={(_ev) => setSearch(searchText)}
         >
           <i className="fas fa-search"></i>
           <span className="sr-only" css={highContrastSpan}>
@@ -787,7 +787,6 @@ function ResultCard({ appType, result }: ResultCardProps) {
   const { trainingMode } = useContext(NavigationContext);
   const { setSampleTypeSelections } = useContext(PublishContext);
   const {
-    defaultDeconSelections,
     defaultSymbols,
     setDefaultSymbols,
     displayDimensions,
@@ -888,7 +887,12 @@ function ResultCard({ appType, result }: ResultCardProps) {
           const tempLayer = layer as __esri.GraphicsLayer;
 
           tempLayer.graphics.forEach((graphic) => {
-            if (!sampleAttributes.hasOwnProperty(graphic.attributes.TYPEUUID))
+            if (
+              !Object.prototype.hasOwnProperty.call(
+                sampleAttributes,
+                graphic.attributes.TYPEUUID,
+              )
+            )
               return;
 
             const predefinedAttributes: any =
@@ -1034,7 +1038,12 @@ function ResultCard({ appType, result }: ResultCardProps) {
         });
 
         if (!typeUuid) {
-          if (sampleTypes?.sampleAttributes.hasOwnProperty(attributes.TYPE)) {
+          if (
+            Object.prototype.hasOwnProperty.call(
+              sampleTypes?.sampleAttributes,
+              attributes.TYPE,
+            )
+          ) {
             typeUuid = attributes.TYPE;
           } else {
             typeUuid = generateUUID();
@@ -1045,8 +1054,14 @@ function ResultCard({ appType, result }: ResultCardProps) {
       }
 
       if (
-        !sampleAttributes.hasOwnProperty(attributes.TYPEUUID) &&
-        !newAttributes.hasOwnProperty(attributes.TYPEUUID)
+        !Object.prototype.hasOwnProperty.call(
+          sampleAttributes,
+          attributes.TYPEUUID,
+        ) &&
+        !Object.prototype.hasOwnProperty.call(
+          newAttributes,
+          attributes.TYPEUUID,
+        )
       ) {
         newUserSampleTypes.push({
           value: attributes.TYPEUUID,
@@ -1171,7 +1186,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       const layersToAdd: LayerType[] = [];
       const refLayersToAdd: any[] = [];
       const zoomToGraphics: __esri.Graphic[] = [];
-      let table: any = {};
+      const table: any = {};
       let referenceLayersTable: ReferenceLayersTableType = {
         id: -1,
         referenceLayers: [],
@@ -1285,7 +1300,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
           }
         } else if (isSampleLayer || isVspLayer) {
           let newSymbolsAdded = false;
-          let newDefaultSymbols: DefaultSymbolsType = {
+          const newDefaultSymbols: DefaultSymbolsType = {
             editCount: defaultSymbols.editCount + 1,
             symbols: { ...defaultSymbols.symbols },
           };
@@ -1296,7 +1311,12 @@ function ResultCard({ appType, result }: ResultCardProps) {
           if (uniqueValueInfos) {
             uniqueValueInfos.forEach((value: any) => {
               // exit if value exists already
-              if (defaultSymbols.symbols.hasOwnProperty(value.value)) {
+              if (
+                Object.prototype.hasOwnProperty.call(
+                  defaultSymbols.symbols,
+                  value.value,
+                )
+              ) {
                 return;
               }
 
@@ -1347,9 +1367,13 @@ function ResultCard({ appType, result }: ResultCardProps) {
             } else {
               const typeUuid = graphic.attributes.TYPEUUID;
               let customAttributes = {};
-              if (newAttributes.hasOwnProperty(typeUuid)) {
+              if (
+                Object.prototype.hasOwnProperty.call(newAttributes, typeUuid)
+              ) {
                 customAttributes = newAttributes[typeUuid].attributes;
-              } else if (sampleAttributes.hasOwnProperty(typeUuid)) {
+              } else if (
+                Object.prototype.hasOwnProperty.call(sampleAttributes, typeUuid)
+              ) {
                 customAttributes = sampleAttributes[typeUuid];
               }
               newGraphic.attributes = {
@@ -1361,11 +1385,19 @@ function ResultCard({ appType, result }: ResultCardProps) {
             const typeUuid = feature.attributes.TYPEUUID;
             newGraphic.symbol =
               newDefaultSymbols.symbols[
-                newDefaultSymbols.symbols.hasOwnProperty(typeUuid)
+                Object.prototype.hasOwnProperty.call(
+                  newDefaultSymbols.symbols,
+                  typeUuid,
+                )
                   ? typeUuid
                   : 'Samples'
               ];
-            if (newDefaultSymbols.symbols.hasOwnProperty(typeUuid)) {
+            if (
+              Object.prototype.hasOwnProperty.call(
+                newDefaultSymbols.symbols,
+                typeUuid,
+              )
+            ) {
               graphic.symbol = newDefaultSymbols.symbols[typeUuid];
             }
 
@@ -1373,7 +1405,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
             // add the graphic to the correct layer uuid
             const decisionUuid = newGraphic.attributes.DECISIONUNITUUID;
-            if (graphics.hasOwnProperty(decisionUuid)) {
+            if (Object.prototype.hasOwnProperty.call(graphics, decisionUuid)) {
               graphics[decisionUuid].push(newGraphic);
             } else {
               graphics[decisionUuid] = [newGraphic];
@@ -1456,8 +1488,8 @@ function ResultCard({ appType, result }: ResultCardProps) {
             });
 
             // convert the polygon graphics into points
-            let pointGraphics: __esri.Graphic[] = [];
-            let hybridGraphics: __esri.Graphic[] = [];
+            const pointGraphics: __esri.Graphic[] = [];
+            const hybridGraphics: __esri.Graphic[] = [];
             graphicsList.forEach((graphicParams) => {
               const graphic = new Graphic(graphicParams);
               pointGraphics.push(convertToPoint(graphic));
@@ -1735,7 +1767,8 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
                   if (!typeUuid) {
                     if (
-                      sampleTypes?.sampleAttributes.hasOwnProperty(
+                      Object.prototype.hasOwnProperty.call(
+                        sampleTypes?.sampleAttributes,
                         attributes.TYPE,
                       )
                     ) {
@@ -1750,7 +1783,10 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
                 // Add the user defined type if it does not exist
                 if (
-                  !sampleAttributes.hasOwnProperty(graphic.attributes.TYPEUUID)
+                  !Object.prototype.hasOwnProperty.call(
+                    sampleAttributes,
+                    graphic.attributes.TYPEUUID,
+                  )
                 ) {
                   newUserSampleTypes.push({
                     value: typeUuid,
@@ -1955,7 +1991,12 @@ function ResultCard({ appType, result }: ResultCardProps) {
           const tempLayer = layer as __esri.GraphicsLayer;
 
           tempLayer.graphics.forEach((graphic) => {
-            if (!sampleAttributes.hasOwnProperty(graphic.attributes.TYPEUUID))
+            if (
+              !Object.prototype.hasOwnProperty.call(
+                sampleAttributes,
+                graphic.attributes.TYPEUUID,
+              )
+            )
               return;
 
             const predefinedAttributes: any =
@@ -2099,7 +2140,12 @@ function ResultCard({ appType, result }: ResultCardProps) {
         });
 
         if (!typeUuid) {
-          if (sampleTypes?.sampleAttributes.hasOwnProperty(attributes.TYPE)) {
+          if (
+            Object.prototype.hasOwnProperty.call(
+              sampleTypes?.sampleAttributes,
+              attributes.TYPE,
+            )
+          ) {
             typeUuid = attributes.TYPE;
           } else {
             typeUuid = generateUUID();
@@ -2110,8 +2156,14 @@ function ResultCard({ appType, result }: ResultCardProps) {
       }
 
       if (
-        !sampleAttributes.hasOwnProperty(attributes.TYPEUUID) &&
-        !newAttributes.hasOwnProperty(attributes.TYPEUUID)
+        !Object.prototype.hasOwnProperty.call(
+          sampleAttributes,
+          attributes.TYPEUUID,
+        ) &&
+        !Object.prototype.hasOwnProperty.call(
+          newAttributes,
+          attributes.TYPEUUID,
+        )
       ) {
         newUserSampleTypes.push({
           value: attributes.TYPEUUID,
@@ -2228,7 +2280,6 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
       // define items used for updating states
       let editsCopy: EditsType = deepCopyObject(edits);
-      let calcSettings: CalculateSettingsBaseType | null = null;
       const mapLayersToAdd: __esri.Layer[] = [];
       const newAttributes: Attributes = {};
       const newCustomAttributes: AttributesType[] = [];
@@ -2236,7 +2287,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       const layersToAdd: LayerType[] = [];
       const refLayersToAdd: any[] = [];
       const zoomToGraphics: __esri.Graphic[] = [];
-      let table: any = {};
+      const table: any = {};
       let referenceLayersTable: ReferenceLayersTableType = {
         id: -1,
         referenceLayers: [],
@@ -2339,18 +2390,14 @@ function ResultCard({ appType, result }: ResultCardProps) {
           layerDetails.type === 'Table' &&
           layerDetails.name.endsWith('-calculate-settings')
         ) {
-          if (layerFeatures.features.length > 0) {
-            calcSettings = {
-              ...layerFeatures.features[0].attributes,
-            };
-          }
+          // do nothing
         } else if (isPointsSampleLayer || isVspPointsSampleLayer) {
           if (layerFeatures.features?.length > 0) {
             updatePointIds(layerFeatures, layerDetails, layersToAdd, editsCopy);
           }
         } else if (isSampleLayer || isVspLayer) {
           let newSymbolsAdded = false;
-          let newDefaultSymbols: DefaultSymbolsType = {
+          const newDefaultSymbols: DefaultSymbolsType = {
             editCount: defaultSymbols.editCount + 1,
             symbols: { ...defaultSymbols.symbols },
           };
@@ -2361,7 +2408,12 @@ function ResultCard({ appType, result }: ResultCardProps) {
           if (uniqueValueInfos) {
             uniqueValueInfos.forEach((value: any) => {
               // exit if value exists already
-              if (defaultSymbols.symbols.hasOwnProperty(value.value)) {
+              if (
+                Object.prototype.hasOwnProperty.call(
+                  defaultSymbols.symbols,
+                  value.value,
+                )
+              ) {
                 return;
               }
 
@@ -2412,9 +2464,13 @@ function ResultCard({ appType, result }: ResultCardProps) {
             } else {
               const typeUuid = graphic.attributes.TYPEUUID;
               let customAttributes = {};
-              if (newAttributes.hasOwnProperty(typeUuid)) {
+              if (
+                Object.prototype.hasOwnProperty.call(newAttributes, typeUuid)
+              ) {
                 customAttributes = newAttributes[typeUuid].attributes;
-              } else if (sampleAttributes.hasOwnProperty(typeUuid)) {
+              } else if (
+                Object.prototype.hasOwnProperty.call(sampleAttributes, typeUuid)
+              ) {
                 customAttributes = sampleAttributes[typeUuid];
               }
               newGraphic.attributes = {
@@ -2426,11 +2482,19 @@ function ResultCard({ appType, result }: ResultCardProps) {
             const typeUuid = feature.attributes.TYPEUUID;
             newGraphic.symbol =
               newDefaultSymbols.symbols[
-                newDefaultSymbols.symbols.hasOwnProperty(typeUuid)
+                Object.prototype.hasOwnProperty.call(
+                  newDefaultSymbols.symbols,
+                  typeUuid,
+                )
                   ? typeUuid
                   : 'Samples'
               ];
-            if (newDefaultSymbols.symbols.hasOwnProperty(typeUuid)) {
+            if (
+              Object.prototype.hasOwnProperty.call(
+                newDefaultSymbols.symbols,
+                typeUuid,
+              )
+            ) {
               graphic.symbol = newDefaultSymbols.symbols[typeUuid];
             }
 
@@ -2438,7 +2502,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
             // add the graphic to the correct layer uuid
             const decisionUuid = newGraphic.attributes.DECISIONUNITUUID;
-            if (graphics.hasOwnProperty(decisionUuid)) {
+            if (Object.prototype.hasOwnProperty.call(graphics, decisionUuid)) {
               graphics[decisionUuid].push(newGraphic);
             } else {
               graphics[decisionUuid] = [newGraphic];
@@ -2487,11 +2551,6 @@ function ResultCard({ appType, result }: ResultCardProps) {
             linkedLayerIds: [],
             table,
             referenceLayersTable,
-            customAttributes: newCustomAttributes,
-            calculateSettings: {
-              current: calcSettings || settingDefaults,
-              published: calcSettings || undefined,
-            },
           };
 
           // make a copy of the edits context variable
@@ -2519,8 +2578,8 @@ function ResultCard({ appType, result }: ResultCardProps) {
             });
 
             // convert the polygon graphics into points
-            let pointGraphics: __esri.Graphic[] = [];
-            let hybridGraphics: __esri.Graphic[] = [];
+            const pointGraphics: __esri.Graphic[] = [];
+            const hybridGraphics: __esri.Graphic[] = [];
             graphicsList.forEach((graphicParams) => {
               const graphic = new Graphic(graphicParams);
               pointGraphics.push(convertToPoint(graphic));
@@ -2800,7 +2859,8 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
                   if (!typeUuid) {
                     if (
-                      technologyTypes.deconAttributes.hasOwnProperty(
+                      Object.prototype.hasOwnProperty.call(
+                        technologyTypes.deconAttributes,
                         attributes.TYPE,
                       )
                     ) {
@@ -2815,7 +2875,10 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
                 // Add the user defined type if it does not exist
                 if (
-                  !sampleAttributes.hasOwnProperty(graphic.attributes.TYPEUUID)
+                  !Object.prototype.hasOwnProperty.call(
+                    sampleAttributes,
+                    graphic.attributes.TYPEUUID,
+                  )
                 ) {
                   newUserSampleTypes.push({
                     value: typeUuid,

@@ -397,9 +397,6 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
           groupLayer.addMany(scenarioLayers);
 
           graphicsLayers.push(groupLayer);
-
-          calculateResults =
-            editsLayer?.deconSummaryResults?.calculateResults ?? null;
         }
         // scenarios need to be added to a group layer first
         if (editsLayer.type === 'layer-decon') {
@@ -425,6 +422,9 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
             hybridLayer: null,
             parentLayer: null,
           });
+
+          calculateResults =
+            editsLayer?.deconSummaryResults?.calculateResults ?? null;
         }
 
         if (editsLayer.type === 'scenario-decon') {
@@ -463,6 +463,8 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
     layersInitialized,
     map,
     readInitialized,
+    setAoiCharacterizationData,
+    setCalculateResultsDecon,
     setEdits,
     setLayers,
     setLayersInitialized,
@@ -985,6 +987,10 @@ function useLayerSelectionsStorage(dbInitialized: boolean) {
     edits,
     layers,
     readDone,
+    readInitialized,
+    setContaminationMap,
+    setDeconOperation,
+    setJsonDownload,
     setSelectedScenario,
     setSketchLayer,
   ]);

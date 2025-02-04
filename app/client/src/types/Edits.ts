@@ -101,18 +101,8 @@ export type LayerAoiAnalysisEditsType = {
       surfaceArea: number;
     }[];
   };
-  gsgFile?: any;
-
-  // TODO - these should be removed
   deconTechSelections: any[];
-  deconSummaryResults: any;
-  deconLayerResults: {
-    cost: number;
-    time: number;
-    wasteVolume: number;
-    wasteMass: number;
-    resultsTable: JsonDownloadType[];
-  };
+  gsgFile?: any;
 };
 
 export type LayerDeconEditsType = {
@@ -130,8 +120,6 @@ export type LayerDeconEditsType = {
   listMode: 'hide' | 'hide-children' | 'show'; // layer visiblity in legend widget
   analysisLayerId: string;
   deconSummaryResults: any;
-
-  // TODO - these should be removed
   deconTechSelections: any[];
   deconLayerResults: {
     cost: number;
@@ -161,8 +149,6 @@ export type ScenarioDeconEditsType = {
   linkedLayerIds: string[];
   table: TableType | null;
   referenceLayersTable: ReferenceLayersTableType;
-  customAttributes: AttributesType[]; // TODO not really being used
-  calculateSettings: CalculateSettingsType; // TODO not really being used
 };
 
 export type ScenarioEditsType = {
@@ -204,7 +190,6 @@ export type ScenarioEditsType = {
   importedAoiLayer?: LayerEditsType | null;
   aoiLayerMode?: '' | 'draw' | 'file';
   gsgFile?: any;
-  // contaminationResults: LayerEditsType; // TODO add this in if time permits
 };
 
 export type LayerEditsType = {

@@ -134,11 +134,10 @@ type GenerateRandomType = {
 
 type GenerateSamplesProps = {
   id: string;
-  title: string;
   type: 'random' | 'statistic';
 };
 
-function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
+function GenerateSamples({ id, type }: GenerateSamplesProps) {
   const { userInfo } = useContext(AuthenticationContext);
   const { sampleTypes } = useContext(LookupFilesContext);
   const { setGoTo, setGoToOptions, trainingMode } =
@@ -421,7 +420,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
     const aoisFull: AoiType[] = [];
     let aoiIndex = 0;
     for (const aoi of aois) {
-      let aoisToProcess = [
+      const aoisToProcess = [
         {
           area: aoi.area,
           graphic: aoi.graphic,
@@ -432,7 +431,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       // get number of splits
       const numSubAois = (aoi.numSamples / maxRecordCount) * 2;
 
-      let tempAois: {
+      const tempAois: {
         area: number;
         graphic: __esri.Graphic;
         percentAoi: number;
@@ -526,7 +525,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       let samplesLeft = aoi.numSamples;
       tempAois.sort((a, b) => b.area - a.area);
       let index = 0;
-      for (let subAoi of tempAois) {
+      for (const subAoi of tempAois) {
         const samplesToGenerate =
           tempAois.length === index + 1
             ? samplesLeft
@@ -592,7 +591,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
       }
 
       let aoisFullSplit: AoiType[] = [];
-      let aoisIndex: number[] = [];
+      const aoisIndex: number[] = [];
       if (type === 'statistic') {
         aoisFullSplit = await getSplitAoiAreas(aoisFull);
         aoisFullSplit.forEach((aoi) => {
@@ -646,7 +645,12 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
         // set the sample styles
         let symbol: PolygonSymbol = defaultSymbols.symbols['Samples'];
-        if (defaultSymbols.symbols.hasOwnProperty(sampleType.value)) {
+        if (
+          Object.prototype.hasOwnProperty.call(
+            defaultSymbols.symbols,
+            sampleType.value,
+          )
+        ) {
           symbol = defaultSymbols.symbols[sampleType.value];
         }
 
@@ -730,7 +734,12 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
         for (const geometry of geometryTrimmed) {
           // set the sample styles
           let symbol: PolygonSymbol = defaultSymbols.symbols['Samples'];
-          if (defaultSymbols.symbols.hasOwnProperty(sampleType.value)) {
+          if (
+            Object.prototype.hasOwnProperty.call(
+              defaultSymbols.symbols,
+              sampleType.value,
+            )
+          ) {
             symbol = defaultSymbols.symbols[sampleType.value];
           }
 
@@ -987,7 +996,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
 
   const [validationMessages, setValidationMessages] = useState<string[]>([]);
   useEffect(() => {
-    let messages: string[] = [];
+    const messages: string[] = [];
     validateDecimalInput(messages, percentConfidence, 'Percent Confidence');
     validateDecimalInput(messages, percentComplient, 'Percent Complient');
     setValidationMessages(messages);
@@ -1043,7 +1052,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
               value="Draw area of Interest"
               disabled={generateRandomResponse.status === 'fetching'}
               checked={generateRandomMode === 'draw'}
-              onChange={(ev) => {
+              onChange={(_ev) => {
                 setGenerateRandomMode('draw');
               }}
             />
@@ -1081,7 +1090,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
               value="Use Imported Area of Interest"
               disabled={generateRandomResponse.status === 'fetching'}
               checked={generateRandomMode === 'file'}
-              onChange={(ev) => {
+              onChange={(_ev) => {
                 setGenerateRandomMode('file');
 
                 if (!selectedAoiFile) {
@@ -1118,7 +1127,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                 <button
                   css={addButtonStyles}
                   disabled={generateRandomResponse.status === 'fetching'}
-                  onClick={(ev) => {
+                  onClick={(_ev) => {
                     setGoTo('addData');
                     setGoToOptions({
                       from: 'file',
@@ -1239,7 +1248,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                   value="Use AOI Elevation"
                   disabled={generateRandomResponse.status === 'fetching'}
                   checked={generateRandomElevationMode === 'aoiElevation'}
-                  onChange={(ev) => {
+                  onChange={(_ev) => {
                     setGenerateRandomElevationMode('aoiElevation');
                   }}
                 />
@@ -1258,7 +1267,7 @@ function GenerateSamples({ id, title, type }: GenerateSamplesProps) {
                   value="Snap to Ground"
                   disabled={generateRandomResponse.status === 'fetching'}
                   checked={generateRandomElevationMode === 'ground'}
-                  onChange={(ev) => {
+                  onChange={(_ev) => {
                     setGenerateRandomElevationMode('ground');
                   }}
                 />

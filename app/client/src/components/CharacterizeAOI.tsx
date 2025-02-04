@@ -360,8 +360,8 @@ function CharacterizeAOI({
       planGraphics: {},
     });
 
-    let responseIndexes: string[] = [];
-    let planGraphics: PlanGraphics = {};
+    const responseIndexes: string[] = [];
+    const planGraphics: PlanGraphics = {};
     let planAoiArea = 0;
     for (const graphic of aoiGraphics) {
       const areaSM = await calculateArea(graphic, sceneViewForArea);
@@ -373,7 +373,12 @@ function CharacterizeAOI({
       responseIndexes.push(deconSketchLayer.layerId);
     }
 
-    if (!planGraphics.hasOwnProperty(deconSketchLayer.layerId)) {
+    if (
+      !Object.prototype.hasOwnProperty.call(
+        planGraphics,
+        deconSketchLayer.layerId,
+      )
+    ) {
       planGraphics[deconSketchLayer.layerId] = {
         graphics: [],
         imageGraphics: [],
@@ -728,11 +733,14 @@ function CharacterizeAOI({
   }, [
     deconLayers,
     deconSketchLayer,
+    defaultDeconSelections,
     initializedDeconLayer,
     initializedLayers,
+    layers,
     layersInitialized,
     map,
     setDeconSketchLayer,
+    setEdits,
     setLayers,
   ]);
 
@@ -894,17 +902,30 @@ function CharacterizeAOI({
                         );
                       });
 
-                      // TODO verify this delete does everything we need it to do
-                      // (i.e., remove linkages, etc.)
-
                       // remove the scenario from edits
                       const newEdits: EditsType = {
                         count: edits.count + 1,
                         edits: edits.edits.filter(
                           (item) => item.layerId !== deconSketchLayer.layerId,
-                          // TODO need to filter out sublayers as well
                         ),
                       };
+
+                      edits.edits.forEach((edit) => {
+                        if (edit.type !== 'layer-decon') return;
+                        if (!idsToDelete.includes(edit.analysisLayerId)) return;
+
+                        edit.analysisLayerId = '';
+                        edit.deconTechSelections = edit.deconTechSelections.map(
+                          (tech) => {
+                            return {
+                              ...tech,
+                              pctAoi: 0,
+                              surfaceArea: 0,
+                            };
+                          },
+                        );
+                      });
+
                       setEdits(newEdits);
 
                       // select the next available scenario
@@ -912,6 +933,14 @@ function CharacterizeAOI({
                       setSelectedScenario(
                         scenarios.length > 0 ? scenarios[0] : null,
                       );
+
+                      setCalculateResultsDecon((calculateResultsDecon) => {
+                        return {
+                          status: 'fetching',
+                          panelOpen: calculateResultsDecon.panelOpen,
+                          data: null,
+                        };
+                      });
 
                       if (!map) return;
 
@@ -1004,8 +1033,8 @@ function CharacterizeAOI({
                             (a) => a.media === tech.media,
                           );
 
-                          let pctAoi = media?.pctAoi ?? 0;
-                          let surfaceArea = media?.surfaceArea ?? 0;
+                          const pctAoi = media?.pctAoi ?? 0;
+                          const surfaceArea = media?.surfaceArea ?? 0;
 
                           return {
                             ...tech,
@@ -1100,7 +1129,7 @@ function CharacterizeAOI({
               value="Draw area of Interest"
               disabled={calculateResultsDecon.status === 'fetching'}
               checked={generateRandomMode === 'draw'}
-              onChange={(ev) => {
+              onChange={(_ev) => {
                 if (!deconSketchLayer) return;
                 setGenerateRandomMode('draw');
 
@@ -1172,7 +1201,7 @@ function CharacterizeAOI({
               value="Use Imported Area of Interest"
               disabled={calculateResultsDecon.status === 'fetching'}
               checked={generateRandomMode === 'file'}
-              onChange={(ev) => {
+              onChange={(_ev) => {
                 if (!deconSketchLayer) return;
 
                 setGenerateRandomMode('file');
@@ -1281,7 +1310,7 @@ function CharacterizeAOI({
                 <button
                   css={addButtonStyles}
                   disabled={calculateResultsDecon.status === 'fetching'}
-                  onClick={(ev) => {
+                  onClick={(_ev) => {
                     setGoTo('addData');
                     setGoToOptions({
                       from: 'file',
@@ -1328,7 +1357,7 @@ function CharacterizeAOI({
                 <button
                   css={addButtonStyles}
                   disabled={calculateResultsDecon.status === 'fetching'}
-                  onClick={(ev) => {
+                  onClick={(_ev) => {
                     setGoTo('addData');
                     setGoToOptions({
                       from: 'file',

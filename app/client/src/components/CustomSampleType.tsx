@@ -59,7 +59,7 @@ function getSampleTypeName(
   desiredName: string,
 ) {
   // get a list of names in use
-  let usedNames: string[] = [];
+  const usedNames: string[] = [];
   sampleTypes.forEach((sampleType) => {
     usedNames.push(sampleType.label);
   });
@@ -213,7 +213,7 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
 
     // get the sample type name, for a clone operation
     // add a number to the end of the name.
-    let sampleTypeUuid = userDefinedSampleType.value;
+    const sampleTypeUuid = userDefinedSampleType.value;
     let sampleTypeName = userDefinedSampleType.label;
     const attributes = sampleAttributes[sampleTypeUuid as any];
     if (editType === 'clone') {
@@ -277,7 +277,7 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
       messageParts.push('User Defined types must have a sample type name.');
     }
     if (
-      sampleAttributes.hasOwnProperty(sampleTypeName) &&
+      Object.prototype.hasOwnProperty.call(sampleAttributes, sampleTypeName) &&
       (editingStatus !== 'edit' ||
         (editingStatus === 'edit' &&
           userDefinedSampleType &&
@@ -411,7 +411,12 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
   useEffect(() => {
     if (!userDefinedSampleType) return;
 
-    if (defaultSymbols.symbols.hasOwnProperty(userDefinedSampleType.value)) {
+    if (
+      Object.prototype.hasOwnProperty.call(
+        defaultSymbols.symbols,
+        userDefinedSampleType.value,
+      )
+    ) {
       setUdtSymbol(defaultSymbols.symbols[userDefinedSampleType.value]);
     } else {
       setUdtSymbol(defaultSymbols.symbols['Samples']);
@@ -526,13 +531,14 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
                 title={
                   editingStatus === 'clone' ? 'Cancel' : 'Clone Sample Type'
                 }
-                onClick={(ev) => {
+                onClick={(_ev) => {
                   setValidationMessage('');
                   if (editingStatus === 'clone') {
                     setEditingStatus(null);
                     if (
                       userDefinedSampleType &&
-                      defaultSymbols.symbols.hasOwnProperty(
+                      Object.prototype.hasOwnProperty.call(
+                        defaultSymbols.symbols,
                         userDefinedSampleType.value,
                       )
                     ) {
@@ -561,7 +567,7 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
                 <button
                   css={iconButtonStyles}
                   title={editingStatus === 'view' ? 'Hide' : 'View Sample Type'}
-                  onClick={(ev) => {
+                  onClick={(_ev) => {
                     setValidationMessage('');
                     if (editingStatus === 'view') {
                       setEditingStatus(null);
@@ -588,7 +594,7 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
                   title={
                     editingStatus === 'edit' ? 'Cancel' : 'Edit Sample Type'
                   }
-                  onClick={(ev) => {
+                  onClick={(_ev) => {
                     setValidationMessage('');
                     if (editingStatus === 'edit') {
                       setEditingStatus(null);
@@ -613,7 +619,7 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
           <button
             css={iconButtonStyles}
             title={editingStatus === 'create' ? 'Cancel' : 'Create Sample Type'}
-            onClick={(ev) => {
+            onClick={(_ev) => {
               setValidationMessage('');
               if (editingStatus === 'create') {
                 setEditingStatus(null);
@@ -825,7 +831,7 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
           <div css={inlineMenuStyles}>
             <button
               css={addButtonStyles}
-              onClick={(ev) => {
+              onClick={(_ev) => {
                 setEditingStatus(null);
                 setValidationMessage('');
               }}
@@ -836,21 +842,23 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
               (editingStatus === 'view' &&
                 udtSymbol &&
                 userDefinedSampleType &&
-                ((defaultSymbols.symbols.hasOwnProperty(
+                ((Object.prototype.hasOwnProperty.call(
+                  defaultSymbols.symbols,
                   userDefinedSampleType.value,
                 ) &&
                   JSON.stringify(udtSymbol) !==
                     JSON.stringify(
                       defaultSymbols.symbols[userDefinedSampleType.value],
                     )) ||
-                  (!defaultSymbols.symbols.hasOwnProperty(
+                  (!Object.prototype.hasOwnProperty.call(
+                    defaultSymbols.symbols,
                     userDefinedSampleType.value,
                   ) &&
                     JSON.stringify(udtSymbol) !==
                       JSON.stringify(defaultSymbols.symbols['Samples']))))) && (
               <button
                 css={addButtonStyles}
-                onClick={async (ev) => {
+                onClick={async (_ev) => {
                   setValidationMessage('');
                   const typeUuid =
                     (editingStatus === 'edit' || editingStatus === 'view') &&
@@ -918,7 +926,10 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
                       DECISIONUNITSORT: 0,
                     };
                     if (
-                      userDefinedAttributes.sampleTypes.hasOwnProperty(typeUuid)
+                      Object.prototype.hasOwnProperty.call(
+                        userDefinedAttributes.sampleTypes,
+                        typeUuid,
+                      )
                     ) {
                       const sampleType =
                         userDefinedAttributes.sampleTypes[typeUuid].attributes;
@@ -945,7 +956,10 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
                       item.sampleTypes[typeUuid] = {
                         status,
                         attributes: newAttributes,
-                        serviceId: item.sampleTypes.hasOwnProperty(typeUuid)
+                        serviceId: Object.prototype.hasOwnProperty.call(
+                          item.sampleTypes,
+                          typeUuid,
+                        )
                           ? item.sampleTypes[typeUuid].serviceId
                           : '',
                       };

@@ -81,7 +81,7 @@ export function createErrorObject(error: any) {
  * @returns The escaped version of the username or org id.
  */
 export function escapeForLucene(value: string) {
-  var a = [
+  const a = [
     '+',
     '-',
     '&',
@@ -100,7 +100,7 @@ export function escapeForLucene(value: string) {
     ':',
     '\\',
   ];
-  var r = new RegExp('(\\' + a.join('|\\') + ')', 'g');
+  const r = new RegExp('(\\' + a.join('|\\') + ')', 'g');
   return value.replace(r, '\\$1');
 }
 
@@ -141,7 +141,7 @@ export function getEnvironment() {
  */
 export function getNewName(existingNames: string[], desiredName: string) {
   const numInDesiredName = getNumberFromParen(desiredName);
-  let newName =
+  const newName =
     numInDesiredName || numInDesiredName === 0
       ? desiredName.replace(`(${numInDesiredName})`, '').trim()
       : desiredName;
@@ -185,7 +185,7 @@ function getNumberFromParen(str: string) {
  */
 export function getScenarioName(edits: EditsType, desiredName: string) {
   const numInDesiredName = getNumberFromParen(desiredName);
-  let newName =
+  const newName =
     numInDesiredName || numInDesiredName === 0
       ? desiredName.replace(`(${numInDesiredName})`, '').trim()
       : desiredName;

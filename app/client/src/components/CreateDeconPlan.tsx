@@ -253,7 +253,7 @@ function CreateDeconPlan({ appType }: Props) {
         return deconOp;
       return firstLayer ?? null;
     });
-  }, [selectedScenario]);
+  }, [layers, selectedScenario, setDeconOperation]);
 
   // Sets the sketchLayer to the first layer in the layer selection drop down,
   // if available. If the drop down is empty, an empty sketchLayer will be
@@ -311,46 +311,6 @@ function CreateDeconPlan({ appType }: Props) {
     ) as LayerAoiAnalysisEditsType;
     setDeconSketchLayer(layer ?? null);
   }, [deconOperation, edits, setDeconSketchLayer]);
-
-  // TODO - see if this should be brought back
-  // // Changes the selected layer if the scenario is changed. The first
-  // // available layer in the scenario will be chosen. If the scenario
-  // // has no layers, then the first availble unlinked layer is chosen.
-  // useEffect(() => {
-  //   if (!selectedScenario || selectedScenario.type !== 'scenario-decon') return;
-  //   if (
-  //     sketchLayer &&
-  //     (!sketchLayer.parentLayer ||
-  //       sketchLayer.parentLayer.id === selectedScenario.layerId)
-  //   ) {
-  //     return;
-  //   }
-
-  //   // select the first layer within the selected scenario
-  //   if (selectedScenario.layers.length > 0) {
-  //     const deconLayer = selectedScenario.layers.find(
-  //       (l) => l.layerType === 'Samples',
-  //     );
-  //     const newSketchLayer = layers.find(
-  //       (layer) =>
-  //         (deconLayer && layer.layerId === deconLayer.layerId) ||
-  //         (!deconLayer && layer.layerId === selectedScenario.layers[0].layerId),
-  //     );
-  //     if (newSketchLayer) {
-  //       setSketchLayer(newSketchLayer);
-  //       return;
-  //     }
-  //   }
-
-  //   // select the first unlinked layer
-  //   const newSketchLayer = layers.find(
-  //     (layer) =>
-  //       (layer.layerType === 'Samples' || layer.layerType === 'VSP') &&
-  //       !layer.parentLayer,
-  //   );
-  //   if (newSketchLayer) setSketchLayer(newSketchLayer);
-  //   else setSketchLayer(null);
-  // }, [layers, selectedScenario, sketchLayer, setSketchLayer]);
 
   // scenario and layer edit UI visibility controls
   const [addOperationVisible, setAddOperationVisible] = useState(false);
@@ -501,7 +461,7 @@ function CreateDeconPlan({ appType }: Props) {
                       <button
                         css={iconButtonStyles}
                         title="Clone Plan"
-                        onClick={(ev) => {
+                        onClick={(_ev) => {
                           // get the name for the new layer
                           const newScenarioName = getScenarioName(
                             edits,
@@ -826,7 +786,7 @@ function CreateDeconPlan({ appType }: Props) {
                           <button
                             css={iconButtonStyles}
                             title="Clone Operation"
-                            onClick={(ev) => {
+                            onClick={(_ev) => {
                               // get the name for the new layer
                               const newLayerName = getNewName(
                                 layers.map((layer) => layer.label),
@@ -1094,11 +1054,34 @@ function CreateDeconPlan({ appType }: Props) {
                             return [...layers, newOpLayer];
                           });
 
-                          setEdits((edits) => {
+                          setSelectedScenario((selectedScenario) => {
+                            if (selectedScenario?.type !== 'scenario-decon')
+                              return selectedScenario;
                             return {
-                              count: edits.count + 1,
+                              ...selectedScenario,
+                              linkedLayerIds: [
+                                ...selectedScenario.linkedLayerIds,
+                                deconUuid,
+                              ],
+                            };
+                          });
+
+                          setEdits((edits) => {
+                            const editsCopy = deepCopyObject(
+                              edits,
+                            ) as EditsType;
+                            const scenarioEdits = editsCopy.edits.find(
+                              (edit) =>
+                                edit.layerId === selectedScenario.layerId,
+                            );
+                            if (scenarioEdits?.type === 'scenario-decon') {
+                              scenarioEdits.linkedLayerIds.push(deconUuid);
+                            }
+
+                            return {
+                              count: editsCopy.count + 1,
                               edits: [
-                                ...edits.edits,
+                                ...editsCopy.edits,
                                 {
                                   type: 'layer-decon',
                                   id: -1,
@@ -1120,7 +1103,7 @@ function CreateDeconPlan({ appType }: Props) {
                                     wasteMass: 0,
                                     resultsTable: [],
                                   },
-                                  deconSummaryResults: {}, // TODO see if we need to fill this out more
+                                  deconSummaryResults: {},
                                   deconTechSelections: defaultDeconSelections,
                                 } as LayerDeconEditsType,
                               ],
@@ -1170,7 +1153,7 @@ function CreateDeconPlan({ appType }: Props) {
                     />
                     <button
                       css={addButtonStyles}
-                      onClick={(ev) => {
+                      onClick={(_ev) => {
                         setGoTo('addData');
                         setGoToOptions({
                           from: 'file',
@@ -1298,7 +1281,7 @@ function DeconSelectionTable({
         };
       });
     }
-  }, [deconOperation, defaultDeconSelections, setEdits]);
+  }, [deconOperation, defaultDeconSelections, edits, setEdits]);
 
   const [hasUpdatedSelections, setHasUpdatedSelections] = useState(false);
   useEffect(() => {
@@ -1344,21 +1327,7 @@ function DeconSelectionTable({
         };
       });
 
-      // TODO see if we need this
-      // setSelectedScenario((selectedScenario) => {
-      //   // TODO update this to be based on user's selected layer
-      //   if (
-      //     selectedScenario &&
-      //     selectedScenario.layers.length > 0 &&
-      //     selectedScenario.layers[0].type === 'layer-aoi-analysis'
-      //   )
-      //     selectedScenario.layers[0].deconTechSelections =
-      //       newTable ?? deconSelections;
-      //   return selectedScenario;
-      // });
-
       setTimeout(() => {
-        // TODO see if this can be moved out
         setCalculateResultsDecon((calculateResultsDecon) => {
           return {
             status: 'fetching',
@@ -1367,7 +1336,7 @@ function DeconSelectionTable({
           };
         });
         setUpdateEditsRan(false);
-      }, 1000);
+      }, 100);
     },
     [
       deconOperation,
@@ -1422,7 +1391,7 @@ function DeconSelectionTable({
 
         setDeconSelections(newTable);
       }}
-      getColumns={(tableWidth: any) => {
+      getColumns={(_tableWidth: any) => {
         return [
           {
             Header: 'ID',

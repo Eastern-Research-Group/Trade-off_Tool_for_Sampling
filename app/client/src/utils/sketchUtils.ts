@@ -15,7 +15,6 @@ import SpatialReference from '@arcgis/core/geometry/SpatialReference';
 import * as webMercatorUtils from '@arcgis/core/geometry/support/webMercatorUtils';
 import { Dispatch, SetStateAction } from 'react';
 // contexts
-import { settingDefaults } from 'contexts/Calculate';
 import { SampleTypes } from 'contexts/LookupFiles';
 // utils
 import {
@@ -126,7 +125,7 @@ export async function calculateArea(
     if (!wgsGeometry) return 'ERROR - WGS Geometry is null';
 
     // get the center
-    let center: __esri.Point | null = getCenterOfGeometry(wgsGeometry);
+    const center: __esri.Point | null = getCenterOfGeometry(wgsGeometry);
     if (!center) return;
 
     // get the spatial reference from the centroid
@@ -365,13 +364,18 @@ export function createLayer({
 
     // set the symbol styles based on sample/layer type
     let symbol = defaultSymbols.symbols[layerType] as any;
-    if (defaultSymbols.symbols.hasOwnProperty(graphic.attributes.TYPEUUID)) {
+    if (
+      Object.prototype.hasOwnProperty.call(
+        defaultSymbols.symbols,
+        graphic.attributes.TYPEUUID,
+      )
+    ) {
       symbol = defaultSymbols.symbols[graphic.attributes.TYPEUUID];
     }
     if (layerType === 'AOI Assessed') {
       const occCls = graphic.attributes.OCC_CLS;
       symbol = new SimpleFillSymbol({
-        color: buildingColors.hasOwnProperty(occCls)
+        color: Object.prototype.hasOwnProperty.call(buildingColors, occCls)
           ? buildingColors[occCls]
           : buildingColors['Other'],
         outline: {
@@ -382,7 +386,10 @@ export function createLayer({
     }
     if (layerType === 'Image Analysis') {
       const category = graphic.attributes.category;
-      symbol = imageAnalysisSymbols.hasOwnProperty(category)
+      symbol = Object.prototype.hasOwnProperty.call(
+        imageAnalysisSymbols,
+        category,
+      )
         ? (imageAnalysisSymbols as any)[category]
         : backupImagerySymbol;
     }
@@ -592,7 +599,6 @@ export function findLayerInEdits(
       // the desired item is a layer
       layerIndex = scenarioIdx;
     } else if (edit.type === 'layer-aoi-analysis') {
-      // TODO check if this is correct
       if (edit.layerId === layerId) layerIndex = scenarioIdx;
       else {
         edit.layers.forEach((sublayer, sublayerIdx) => {
@@ -912,8 +918,6 @@ function getPointSymbol3d(
     // custom shape type
     if (polygon.attributes.POINT_STYLE.includes('path|')) {
       style = 'path';
-
-      // TODO need to figure out how to handle this
       path = polygon.attributes.POINT_STYLE.split('|')[1];
     } else {
       style = shapeMapping[polygon.attributes.POINT_STYLE];
@@ -1748,6 +1752,8 @@ async function loadProjection() {
  * @returns z value of the graphic that was removed
  */
 export function removeZValues(graphic: __esri.Graphic) {
+  if (!graphic?.geometry) return;
+
   let z: number = 0;
 
   // update the z value of the point if necessary
@@ -1851,7 +1857,11 @@ export async function sampleValidation(
 
     // Check if the sample is a predefined type or not
     if (
-      sampleTypes?.sampleAttributes.hasOwnProperty(graphic.attributes.TYPEUUID)
+      sampleTypes &&
+      Object.prototype.hasOwnProperty.call(
+        sampleTypes.sampleAttributes,
+        graphic.attributes.TYPEUUID,
+      )
     ) {
       await performAreaToleranceCheck(graphic);
 
@@ -1860,10 +1870,13 @@ export async function sampleValidation(
         sampleTypes.sampleAttributes[graphic.attributes.TYPEUUID];
       for (const key in predefinedAttributes) {
         if (!sampleTypes.attributesToCheck.includes(key)) continue;
-        if (!hasAllAttributes && !graphic.attributes.hasOwnProperty(key))
+        if (
+          !hasAllAttributes &&
+          !Object.prototype.hasOwnProperty.call(graphic.attributes, key)
+        )
           continue;
         if (
-          graphic.attributes.hasOwnProperty(key) &&
+          Object.prototype.hasOwnProperty.call(graphic.attributes, key) &&
           predefinedAttributes[key] === graphic.attributes[key]
         ) {
           continue;
@@ -2246,7 +2259,12 @@ export function updatePointSymbol(
       // set the symbol based on sample/layer type
       let udtSymbol: PolygonSymbol | null = null;
       udtSymbol = defaultSymbols.symbols[layerType] as any;
-      if (defaultSymbols.symbols.hasOwnProperty(graphic.attributes.TYPEUUID)) {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          defaultSymbols.symbols,
+          graphic.attributes.TYPEUUID,
+        )
+      ) {
         udtSymbol = defaultSymbols.symbols[graphic.attributes.TYPEUUID] as any;
       }
 
@@ -2264,7 +2282,12 @@ export function updatePointSymbol(
       // set the symbol based on sample/layer type
       let udtSymbol: PolygonSymbol | null = null;
       udtSymbol = defaultSymbols.symbols[layerType] as any;
-      if (defaultSymbols.symbols.hasOwnProperty(graphic.attributes.TYPEUUID)) {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          defaultSymbols.symbols,
+          graphic.attributes.TYPEUUID,
+        )
+      ) {
         udtSymbol = defaultSymbols.symbols[graphic.attributes.TYPEUUID] as any;
       }
 
@@ -2302,7 +2325,12 @@ export function updatePolygonSymbol(
 
       // set the symbol based on sample/layer type
       graphic.symbol = defaultSymbols.symbols[layerType] as any;
-      if (defaultSymbols.symbols.hasOwnProperty(graphic.attributes.TYPEUUID)) {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          defaultSymbols.symbols,
+          graphic.attributes.TYPEUUID,
+        )
+      ) {
         graphic.symbol = defaultSymbols.symbols[
           graphic.attributes.TYPEUUID
         ] as any;
@@ -2465,31 +2493,7 @@ export function createScenarioDeconLayer(
         totalBuildingRoofSqM: 0,
         totalBuildingSqM: 0,
       },
-      deconLayerResults: {
-        cost: 0,
-        time: 0,
-        wasteVolume: 0,
-        wasteMass: 0,
-        resultsTable: [],
-      },
       deconTechSelections: defaultDeconSelections,
-      deconSummaryResults: {
-        summary: {
-          totalAoiSqM: 0,
-          totalBuildingFootprintSqM: 0,
-          totalBuildingFloorsSqM: 0,
-          totalBuildingSqM: 0,
-          totalBuildingExtWallsSqM: 0,
-          totalBuildingIntWallsSqM: 0,
-          totalBuildingRoofSqM: 0,
-        },
-        aoiPercentages: {
-          asphalt: 0,
-          concrete: 0,
-          soil: 0,
-        },
-        calculateResults: null,
-      },
       gsgFile: null,
     } as LayerAoiAnalysisEditsType,
     layerDecon: {
@@ -2568,14 +2572,12 @@ export function createScenarioDecon(
       listMode: 'show',
       scenarioName: scenarioName,
       scenarioDescription: scenarioDescription,
-      linkedLayerIds: [], // [layerDecon],
+      linkedLayerIds: [],
       table: null,
       referenceLayersTable: {
         id: -1,
         referenceLayers: [],
       },
-      customAttributes: [],
-      calculateSettings: { current: settingDefaults },
     } as ScenarioDeconEditsType,
   };
 }

@@ -171,7 +171,8 @@ function getFeatureServiceRetry(
           } else {
             // recursive retry (1 second between retries)
             console.log(
-              `Failed to fetch feature service. Retrying (${retryCount + 1
+              `Failed to fetch feature service. Retrying (${
+                retryCount + 1
               } of 3)...`,
             );
             setTimeout(() => fetchLookup(retryCount + 1), 1000);
@@ -220,7 +221,8 @@ function getFeatureServiceWrapped(
           // Workaround for esri.Portal not having credential
           const tempPortal: any = portal;
           fetchCheck(
-            `${portalService.url}?f=json${getEnvironmentStringParam()}&token=${tempPortal.credential.token
+            `${portalService.url}?f=json${getEnvironmentStringParam()}&token=${
+              tempPortal.credential.token
             }`,
           )
             .then((res) => {
@@ -344,7 +346,7 @@ function createFeatureService(
         fetchPost(
           `${portal.user.userContentUrl}/items/${res.itemId}/update`,
           indata,
-        ).then((res) => {
+        ).then((_res) => {
           // get the feature service from the portal and return it
           getFeatureServiceRetry(portal, serviceMetaData)
             .then((service) => resolve(service))
@@ -451,9 +453,8 @@ function buildRendererParams(layer: LayerType, layerProps: LayerProps | null) {
   // get the extent from the array of graphics
   if (layer.sketchLayer.type === 'graphics') {
     layer.sketchLayer.graphics.forEach((graphic) => {
-      graphicsExtent === null
-        ? (graphicsExtent = graphic.geometry.extent)
-        : graphicsExtent.union(graphic.geometry.extent);
+      if (graphicsExtent === null) graphicsExtent = graphic.geometry.extent;
+      else graphicsExtent.union(graphic.geometry.extent);
 
       // build the renderer to publish
       const attributes = graphic.attributes;
@@ -1112,7 +1113,7 @@ async function updateFeatureLayers({
     const addParams: any[] = [];
     const deleteParams: any[] = [];
     const updateParams: any[] = [];
-    layers.forEach((layer, index: number) => {
+    layers.forEach((layer) => {
       const {
         graphicsExtent,
         uniqueValueInfosPolygons,
@@ -1777,7 +1778,7 @@ function buildTableEdits({
   const adds: any[] = [];
   const updates: any[] = [];
   const deletes: any[] = [];
-  let sampleTypesOut: any = {};
+  const sampleTypesOut: any = {};
 
   layers.forEach((layer) => {
     const { sampleTypes } = buildRendererParams(layer, layerProps);
@@ -1786,7 +1787,7 @@ function buildTableEdits({
     if (table?.sampleTypes) {
       Object.keys(table.sampleTypes).forEach((key) => {
         if (
-          !sampleTypes.hasOwnProperty(key) &&
+          !Object.prototype.hasOwnProperty.call(sampleTypes, key) &&
           table.sampleTypes[key]?.GLOBALID
         ) {
           deletes.push(table.sampleTypes[key].GLOBALID);
@@ -1796,7 +1797,7 @@ function buildTableEdits({
 
     // build the adds and updates arrays
     Object.keys(sampleTypes).forEach((key) => {
-      if (table?.sampleTypes?.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(table?.sampleTypes, key)) {
         updates.push(sampleTypes[key]);
         sampleTypesOut[key] = sampleTypes[key];
       } else {
@@ -1846,7 +1847,7 @@ async function buildReferenceLayerTableEdits({
   const adds: any[] = [];
   const updates: any[] = [];
   const deletes: any[] = [];
-  let referenceLayersOut: ReferenceLayerTableType[] = [];
+  const referenceLayersOut: ReferenceLayerTableType[] = [];
   const timestamp = getCurrentDateTime();
 
   // build a unique list of reference materials across web map and web scene
@@ -2134,7 +2135,12 @@ function addWebMap({
 
     const fieldInfos: any[] = [];
     attributesToInclude?.forEach((attribute) => {
-      if (layerProps.webMapFieldProps.hasOwnProperty(attribute.name)) {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          layerProps.webMapFieldProps,
+          attribute.name,
+        )
+      ) {
         fieldInfos.push((layerProps.webMapFieldProps as any)[attribute.name]);
       } else {
         let format: any = undefined;
@@ -2305,7 +2311,12 @@ function addWebScene({
 
     const fieldInfos: any[] = [];
     attributesToInclude?.forEach((attribute) => {
-      if (layerProps.webMapFieldProps.hasOwnProperty(attribute.name)) {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          layerProps.webMapFieldProps,
+          attribute.name,
+        )
+      ) {
         fieldInfos.push((layerProps.webMapFieldProps as any)[attribute.name]);
       } else {
         let format: any = undefined;
@@ -2630,7 +2641,12 @@ function publish({
                   mapLayer.pointsId = layer.id;
                 }
 
-                if (!idMapping.hasOwnProperty(mapLayer.uuid)) {
+                if (
+                  !Object.prototype.hasOwnProperty.call(
+                    idMapping,
+                    mapLayer.uuid,
+                  )
+                ) {
                   idMapping[mapLayer.uuid] = { portalId };
                 }
                 if (isPoints) idMapping[mapLayer.uuid].pointsId = layer.id;
@@ -2808,7 +2824,7 @@ function publishTable({
             .catch((err) => reject(err));
         }
 
-        for (let table of service.featureService.tables) {
+        for (const table of service.featureService.tables) {
           if (table.name === serviceMetaData.label) {
             changes.id = table.id;
             break;

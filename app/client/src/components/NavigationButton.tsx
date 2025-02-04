@@ -11,7 +11,6 @@ import {
   PanelValueType,
   samplingPanels,
 } from 'config/navigation';
-import { AppType } from 'types/Navigation';
 
 // --- styles (NavigationButton) ---
 const containerStyles = css`
@@ -42,7 +41,7 @@ function NavigationButton({ currentPanel }: Props) {
     <div css={containerStyles}>
       <button
         css={nextButtonStyles}
-        onClick={(ev) => {
+        onClick={(_ev) => {
           setGoTo(nextPanel);
         }}
       >

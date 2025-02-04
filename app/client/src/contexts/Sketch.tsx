@@ -440,7 +440,10 @@ export function SketchProvider({ children }: Props) {
     sampleTypes.sampleSelectOptions.forEach((option: any) => {
       allSampleOptions.push({
         value: option.value,
-        label: userDefinedAttributes.sampleTypes.hasOwnProperty(option.value)
+        label: Object.prototype.hasOwnProperty.call(
+          userDefinedAttributes.sampleTypes,
+          option.value,
+        )
           ? `${option.value} (edited)`
           : option.label,
         isPredefined: option.isPredefined,

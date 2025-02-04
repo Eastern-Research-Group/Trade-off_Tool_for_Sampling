@@ -431,7 +431,9 @@ function ConfigureOutput({ appType }: Props) {
           attributes={[
             ...defaultPlanAttributes,
             ...(trainingMode ? trainingModePlanAttributes : []),
-            ...(selectedScenario ? selectedScenario.customAttributes : []),
+            ...(selectedScenario?.type === 'scenario'
+              ? selectedScenario.customAttributes
+              : []),
           ]}
           selectedIndex={attributesIndex}
           onSave={() => setEditAttributesOpen(false)}
@@ -623,7 +625,7 @@ function ConfigureOutput({ appType }: Props) {
                       data={[
                         ...defaultPlanAttributes,
                         ...(trainingMode ? trainingModePlanAttributes : []),
-                        ...(selectedScenario
+                        ...(selectedScenario?.type === 'scenario'
                           ? selectedScenario.customAttributes
                           : []),
                       ]}
@@ -631,7 +633,7 @@ function ConfigureOutput({ appType }: Props) {
                       striped={true}
                       initialSelectedRowIds={{ ids: [] }}
                       sortBy={[{ id: 'ID', desc: false }]}
-                      getColumns={(tableWidth: any) => {
+                      getColumns={(_tableWidth: any) => {
                         return [
                           {
                             Header: 'ID',
@@ -662,7 +664,7 @@ function ConfigureOutput({ appType }: Props) {
                                   <button
                                     css={editButtonStyles}
                                     disabled={!selectedScenario}
-                                    onClick={(event) => {
+                                    onClick={(_event) => {
                                       setAttributesIndex(row.index);
                                       setEditAttributesOpen(true);
                                     }}
@@ -672,7 +674,7 @@ function ConfigureOutput({ appType }: Props) {
                                   <button
                                     css={editButtonStyles}
                                     disabled={!selectedScenario}
-                                    onClick={(event) => {
+                                    onClick={(_event) => {
                                       if (!selectedScenario) return;
 
                                       const index = edits.edits.findIndex(
@@ -773,7 +775,7 @@ function ConfigureOutput({ appType }: Props) {
                   name="mode"
                   value="Publish to Existing Service"
                   checked={publishSamplesMode === 'new'}
-                  onChange={(ev) => {
+                  onChange={(_ev) => {
                     setPublishSamplesMode('new');
                   }}
                 />
@@ -791,7 +793,7 @@ function ConfigureOutput({ appType }: Props) {
                   name="mode"
                   value="Publish to New Service"
                   checked={publishSamplesMode === 'existing'}
-                  onChange={(ev) => {
+                  onChange={(_ev) => {
                     setPublishSamplesMode('existing');
                   }}
                 />
@@ -1010,7 +1012,7 @@ function EditAttributePopup({
       return;
     }
 
-    let newOptions: DataType[] = [];
+    const newOptions: DataType[] = [];
     if (dataType.value === 'double' || dataType.value === 'integer') {
       newOptions.push(
         ...[
@@ -1101,7 +1103,7 @@ function EditAttributePopup({
             setEdits((edits) => {
               const editedScenario = edits.edits[index] as ScenarioEditsType;
 
-              let newAttributes = editedScenario.customAttributes.map(
+              const newAttributes = editedScenario.customAttributes.map(
                 (attribute, index) => {
                   if (index === selectedIndex) {
                     return newAttribute;
@@ -1285,7 +1287,7 @@ function EditAttributePopup({
                     striped={true}
                     hideHeader={false}
                     onDataChange={onDataChange}
-                    getColumns={(tableWidth: any) => {
+                    getColumns={(_tableWidth: any) => {
                       return [
                         {
                           Header: 'ID',

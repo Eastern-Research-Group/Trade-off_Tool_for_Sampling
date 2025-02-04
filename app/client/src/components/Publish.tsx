@@ -464,7 +464,7 @@ function Publish({ appType }: Props) {
     const publishLayers: LayerType[] = publishLayer ? [publishLayer] : [];
 
     // build the layerEdits
-    let layerEdits: LayerEditsType = {
+    const layerEdits: LayerEditsType = {
       type: 'layer',
       id: editsScenario.id,
       pointsId: -1,
@@ -584,7 +584,8 @@ function Publish({ appType }: Props) {
           // need to loop through each array and check the success flag
           if (layerRes.addResults) {
             layerRes.addResults.forEach((item: any, index: number) => {
-              item.success ? (totals.added += 1) : (totals.failed += 1);
+              if (item.success) totals.added += 1;
+              else totals.failed += 1;
 
               // update the edits arrays
               const origItem = layerEdits.adds[index];
@@ -631,7 +632,9 @@ function Publish({ appType }: Props) {
                 }
               } else {
                 // update the adds for this layer
-                if (changes.hasOwnProperty(decisionUUID)) {
+                if (
+                  Object.prototype.hasOwnProperty.call(changes, decisionUUID)
+                ) {
                   changes[decisionUUID].adds.push(origItem);
                 } else {
                   changes[decisionUUID] = {
@@ -646,17 +649,21 @@ function Publish({ appType }: Props) {
           }
           if (layerRes.updateResults) {
             layerRes.updateResults.forEach((item: any, index: number) => {
-              item.success ? (totals.updated += 1) : (totals.failed += 1);
+              if (item.success) totals.updated += 1;
+              else totals.failed += 1;
 
               // update the edits arrays
               const origItem = layerEdits.updates[index];
               const decisionUUID = origItem.attributes.DECISIONUNITUUID;
-              if (item.success && changes.hasOwnProperty(decisionUUID)) {
+              if (
+                item.success &&
+                Object.prototype.hasOwnProperty.call(changes, decisionUUID)
+              ) {
                 origItem.attributes.OBJECTID = item.objectId;
                 origItem.attributes.GLOBALID = item.globalId;
 
                 // get the publish items for this layer
-                let layerNewPublished = changes[decisionUUID].published;
+                const layerNewPublished = changes[decisionUUID].published;
 
                 // find the item in published
                 const index = layerNewPublished.findIndex(
@@ -694,7 +701,9 @@ function Publish({ appType }: Props) {
                 }
               } else {
                 // update the updates for this layer
-                if (changes.hasOwnProperty(decisionUUID)) {
+                if (
+                  Object.prototype.hasOwnProperty.call(changes, decisionUUID)
+                ) {
                   changes[decisionUUID].updates.push(origItem);
                 } else {
                   changes[decisionUUID] = {
@@ -709,14 +718,18 @@ function Publish({ appType }: Props) {
           }
           if (layerRes.deleteResults) {
             layerRes.deleteResults.forEach((item: any, index: number) => {
-              item.success ? (totals.deleted += 1) : (totals.failed += 1);
+              if (item.success) totals.deleted += 1;
+              else totals.failed += 1;
 
               // update the edits delete array
               const origItem = layerEdits.deletes[index];
               const decisionUUID = origItem.DECISIONUNITUUID;
-              if (item.success && changes.hasOwnProperty(decisionUUID)) {
+              if (
+                item.success &&
+                Object.prototype.hasOwnProperty.call(changes, decisionUUID)
+              ) {
                 // get the publish items for this layer
-                let layerNewPublished = changes[decisionUUID].published;
+                const layerNewPublished = changes[decisionUUID].published;
 
                 // find the item in published
                 const pubIndex = layerNewPublished.findIndex(
@@ -734,7 +747,9 @@ function Publish({ appType }: Props) {
                 }
               } else {
                 // update the updates for this layer
-                if (changes.hasOwnProperty(decisionUUID)) {
+                if (
+                  Object.prototype.hasOwnProperty.call(changes, decisionUUID)
+                ) {
                   changes[decisionUUID].deletes.push(origItem);
                 } else {
                   changes[decisionUUID] = {
@@ -794,7 +809,12 @@ function Publish({ appType }: Props) {
 
           editsScenario.layers.forEach((editedLayer) => {
             // update the ids
-            if (res.idMapping.hasOwnProperty(editedLayer.uuid)) {
+            if (
+              Object.prototype.hasOwnProperty.call(
+                res.idMapping,
+                editedLayer.uuid,
+              )
+            ) {
               editedLayer.portalId = portalId;
               editedLayer.id = res.idMapping[editedLayer.uuid].id;
               editedLayer.pointsId = res.idMapping[editedLayer.uuid].pointsId;
@@ -856,7 +876,8 @@ function Publish({ appType }: Props) {
         // updated the edited layer
         setLayers((layers) =>
           layers.map((layer) => {
-            if (!changes.hasOwnProperty(layer.uuid)) return layer;
+            if (!Object.prototype.hasOwnProperty.call(changes, layer.uuid))
+              return layer;
 
             const updatedLayer: LayerType = {
               ...layer,
@@ -865,7 +886,9 @@ function Publish({ appType }: Props) {
             };
 
             // update the ids
-            if (res.idMapping.hasOwnProperty(layer.uuid)) {
+            if (
+              Object.prototype.hasOwnProperty.call(res.idMapping, layer.uuid)
+            ) {
               updatedLayer.id = res.idMapping[layer.uuid].id;
               updatedLayer.pointsId = res.idMapping[layer.uuid].pointsId;
             }
@@ -1011,7 +1034,7 @@ function Publish({ appType }: Props) {
     const publishLayers: LayerType[] = publishLayer ? [publishLayer] : [];
 
     // build the layerEdits
-    let layerEdits: LayerEditsType = {
+    const layerEdits: LayerEditsType = {
       type: 'layer',
       id: editsScenario.id,
       pointsId: editsScenario.pointsId,
@@ -1170,7 +1193,8 @@ function Publish({ appType }: Props) {
           // need to loop through each array and check the success flag
           if (layerRes.addResults) {
             layerRes.addResults.forEach((item: any, index: number) => {
-              item.success ? (totals.added += 1) : (totals.failed += 1);
+              if (item.success) totals.added += 1;
+              else totals.failed += 1;
 
               // update the edits arrays
               const origItem = layerEdits.adds[index];
@@ -1185,7 +1209,9 @@ function Publish({ appType }: Props) {
                 origItem.attributes.GLOBALID = item.globalId;
 
                 // update the published for this layer
-                if (changes.hasOwnProperty(decisionUUID)) {
+                if (
+                  Object.prototype.hasOwnProperty.call(changes, decisionUUID)
+                ) {
                   const exist =
                     changes[decisionUUID].published.findIndex(
                       (x) =>
@@ -1222,7 +1248,9 @@ function Publish({ appType }: Props) {
                 }
               } else {
                 // update the adds for this layer
-                if (changes.hasOwnProperty(decisionUUID)) {
+                if (
+                  Object.prototype.hasOwnProperty.call(changes, decisionUUID)
+                ) {
                   changes[decisionUUID].adds.push(origItem);
                 } else {
                   changes[decisionUUID] = {
@@ -1237,12 +1265,16 @@ function Publish({ appType }: Props) {
           }
           if (layerRes.updateResults) {
             layerRes.updateResults.forEach((item: any, index: number) => {
-              item.success ? (totals.updated += 1) : (totals.failed += 1);
+              if (item.success) totals.updated += 1;
+              else totals.failed += 1;
 
               // update the edits arrays
               const origItem = layerEdits.updates[index];
               const decisionUUID = origItem.attributes.DECISIONUNITUUID;
-              if (item.success && changes.hasOwnProperty(decisionUUID)) {
+              if (
+                item.success &&
+                Object.prototype.hasOwnProperty.call(changes, decisionUUID)
+              ) {
                 const type = origItem.attributes.TYPE;
                 origItem.attributes = { ...sampleAttributes[type] };
                 origItem.attributes.DECISIONUNITUUID = decisionUUID;
@@ -1250,7 +1282,7 @@ function Publish({ appType }: Props) {
                 origItem.attributes.GLOBALID = item.globalId;
 
                 // get the publish items for this layer
-                let layerNewPublished = changes[decisionUUID].published;
+                const layerNewPublished = changes[decisionUUID].published;
 
                 // find the item in published
                 const index = layerNewPublished.findIndex(
@@ -1288,7 +1320,9 @@ function Publish({ appType }: Props) {
                 }
               } else {
                 // update the updates for this layer
-                if (changes.hasOwnProperty(decisionUUID)) {
+                if (
+                  Object.prototype.hasOwnProperty.call(changes, decisionUUID)
+                ) {
                   changes[decisionUUID].updates.push(origItem);
                 } else {
                   changes[decisionUUID] = {
@@ -1303,14 +1337,18 @@ function Publish({ appType }: Props) {
           }
           if (layerRes.deleteResults) {
             layerRes.deleteResults.forEach((item: any, index: number) => {
-              item.success ? (totals.deleted += 1) : (totals.failed += 1);
+              if (item.success) totals.deleted += 1;
+              else totals.failed += 1;
 
               // update the edits delete array
               const origItem = layerEdits.deletes[index];
               const decisionUUID = origItem.DECISIONUNITUUID;
-              if (item.success && changes.hasOwnProperty(decisionUUID)) {
+              if (
+                item.success &&
+                Object.prototype.hasOwnProperty.call(changes, decisionUUID)
+              ) {
                 // get the publish items for this layer
-                let layerNewPublished = changes[decisionUUID].published;
+                const layerNewPublished = changes[decisionUUID].published;
 
                 // find the item in published
                 const pubIndex = layerNewPublished.findIndex(
@@ -1328,7 +1366,9 @@ function Publish({ appType }: Props) {
                 }
               } else {
                 // update the updates for this layer
-                if (changes.hasOwnProperty(decisionUUID)) {
+                if (
+                  Object.prototype.hasOwnProperty.call(changes, decisionUUID)
+                ) {
                   changes[decisionUUID].deletes.push(origItem);
                 } else {
                   changes[decisionUUID] = {
@@ -1388,7 +1428,12 @@ function Publish({ appType }: Props) {
 
           editsScenario.layers.forEach((editedLayer) => {
             // update the ids
-            if (res.idMapping.hasOwnProperty(editedLayer.uuid)) {
+            if (
+              Object.prototype.hasOwnProperty.call(
+                res.idMapping,
+                editedLayer.uuid,
+              )
+            ) {
               editedLayer.portalId = portalId;
               editedLayer.id = res.idMapping[editedLayer.uuid].id;
               editedLayer.pointsId = res.idMapping[editedLayer.uuid].pointsId;
@@ -1449,7 +1494,8 @@ function Publish({ appType }: Props) {
         // updated the edited layer
         setLayers((layers) =>
           layers.map((layer) => {
-            if (!changes.hasOwnProperty(layer.uuid)) return layer;
+            if (!Object.prototype.hasOwnProperty.call(changes, layer.uuid))
+              return layer;
 
             const updatedLayer: LayerType = {
               ...layer,
@@ -1458,7 +1504,9 @@ function Publish({ appType }: Props) {
             };
 
             // update the ids
-            if (res.idMapping.hasOwnProperty(layer.uuid)) {
+            if (
+              Object.prototype.hasOwnProperty.call(res.idMapping, layer.uuid)
+            ) {
               updatedLayer.id = res.idMapping[layer.uuid].id;
               updatedLayer.pointsId = res.idMapping[layer.uuid].pointsId;
             }
@@ -1593,7 +1641,8 @@ function Publish({ appType }: Props) {
           // need to loop through each array and check the success flag
           if (res.edits.addResults) {
             res.edits.addResults.forEach((item: any, index: number) => {
-              item.success ? (totals.added += 1) : (totals.failed += 1);
+              if (item.success) totals.added += 1;
+              else totals.failed += 1;
 
               // update the edits arrays
               const origItem = changes.adds[index];
@@ -1613,7 +1662,8 @@ function Publish({ appType }: Props) {
           }
           if (res.edits.updateResults) {
             res.edits.updateResults.forEach((item: any, index: number) => {
-              item.success ? (totals.updated += 1) : (totals.failed += 1);
+              if (item.success) totals.updated += 1;
+              else totals.failed += 1;
 
               // update the edits arrays
               const origItem = changes.updates[index];
@@ -1633,7 +1683,8 @@ function Publish({ appType }: Props) {
           }
           if (res.edits.deleteResults) {
             res.edits.deleteResults.forEach((item: any, index: number) => {
-              item.success ? (totals.deleted += 1) : (totals.failed += 1);
+              if (item.success) totals.deleted += 1;
+              else totals.failed += 1;
 
               // update the edits arrays
               const origItem = changes.deletes[index];
@@ -1709,7 +1760,10 @@ function Publish({ appType }: Props) {
         const symbolTypeUuid = sampleType.attributes.TYPEUUID ?? 'Samples';
         const defaultSymbol =
           defaultSymbols.symbols[
-            defaultSymbols.symbols.hasOwnProperty(symbolTypeUuid)
+            Object.prototype.hasOwnProperty.call(
+              defaultSymbols.symbols,
+              symbolTypeUuid,
+            )
               ? symbolTypeUuid
               : 'Samples'
           ];
@@ -1771,7 +1825,10 @@ function Publish({ appType }: Props) {
                 sampleType.attributes.TYPEUUID ?? 'Samples';
               const defaultSymbol =
                 defaultSymbols.symbols[
-                  defaultSymbols.symbols.hasOwnProperty(symbolTypeUuid)
+                  Object.prototype.hasOwnProperty.call(
+                    defaultSymbols.symbols,
+                    symbolTypeUuid,
+                  )
                     ? symbolTypeUuid
                     : 'Samples'
                 ];

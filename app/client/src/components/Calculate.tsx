@@ -26,7 +26,7 @@ import { CalculateContext } from 'contexts/Calculate';
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // types
-import { LayerDeconEditsType, ScenarioDeconEditsType } from 'types/Edits';
+import { LayerDeconEditsType } from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { ErrorType } from 'types/Misc';
 import { AppType } from 'types/Navigation';
@@ -209,7 +209,7 @@ function Calculate({ appType }: Props) {
   // sync the inputs with settings pulled from AGO
   const [pageInitialized, setPageInitialized] = useState(false);
   useEffect(() => {
-    if (!selectedScenario || pageInitialized) return;
+    if (selectedScenario?.type !== 'scenario' || pageInitialized) return;
     setPageInitialized(true);
 
     const {
@@ -901,7 +901,7 @@ function Calculate({ appType }: Props) {
                     />
                     <button
                       css={addButtonStyles}
-                      onClick={(ev) => {
+                      onClick={(_ev) => {
                         setGoTo('addData');
                         setGoToOptions({
                           from: 'file',
@@ -1026,7 +1026,7 @@ type DownloadStatus =
 
 type CalculateResultsPopupProps = {
   isOpen: boolean;
-  onClose: Function;
+  onClose: () => void;
 };
 
 function CalculateResultsPopup({
@@ -1177,6 +1177,7 @@ function CalculateResultsPopup({
     mapView,
     sceneView,
     screenshotInitialized,
+    selectedScenario,
   ]);
 
   // convert the screenshot to base64
@@ -1208,13 +1209,15 @@ function CalculateResultsPopup({
 
       // get the data url
       const url = canvas.toDataURL('image/jpeg');
-      url
-        ? setBase64Screenshot({
-            image: url,
-            height: img.height,
-            width: img.width,
-          })
-        : setDownloadStatus('base64-failure');
+      if (url) {
+        setBase64Screenshot({
+          image: url,
+          height: img.height,
+          width: img.width,
+        });
+      } else {
+        setDownloadStatus('base64-failure');
+      }
 
       // Clean up
       canvas = null;
@@ -1815,6 +1818,8 @@ function CalculateResultsPopup({
     jsonDownload,
     layers,
     map,
+    selectedScenario,
+    trainingMode,
   ]);
 
   let totalSolidWasteVolume = 0;
@@ -1925,7 +1930,7 @@ function CalculateResultsPopup({
           idColumn={'contaminationScenario'}
           striped={true}
           height={-1}
-          getColumns={(tableWidth: any) => {
+          getColumns={(_tableWidth: any) => {
             return [
               {
                 Header: 'Contamination Scenario',
@@ -2052,7 +2057,7 @@ function CalculateResultsPopup({
                 idColumn={'contaminationScenario'}
                 striped={true}
                 height={-1}
-                getColumns={(tableWidth: any) => {
+                getColumns={(_tableWidth: any) => {
                   return [
                     {
                       Header: 'Contamination Scenario',
