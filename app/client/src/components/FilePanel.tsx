@@ -1352,9 +1352,12 @@ function FilePanel({ appType }: Props) {
         ...referenceLayers,
         {
           ...layerProps,
+          fields: layer.layerDefinition.fields,
           rawLayer: layer,
           layerId: layerToAdd.id,
           portalId: '',
+          renderer: layer.layerDefinition.drawingInfo.renderer,
+          source: layer.featureSet.features,
         },
       ]);
     });

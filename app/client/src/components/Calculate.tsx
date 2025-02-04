@@ -1923,7 +1923,7 @@ function CalculateResultsPopup({
           )}
         <br />
 
-        <h2>Overall Summary</h2>
+        <h2>{selectedScenario?.scenarioName} Overall Summary</h2>
         <ReactTableEditable
           id={tableId}
           data={tableData}

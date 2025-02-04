@@ -938,7 +938,9 @@ function useLayerSelectionsStorage(dbInitialized: boolean) {
 
     setReadInitialized(true);
     readFromStorage(key)
-      .then((selections: LayerSelectionType) => {
+      .then((selections: LayerSelectionType | undefined) => {
+        if (!selections) return;
+
         if (selections.scenario) {
           const scenarioId = selections.scenario;
           const scenario = edits.edits.find(

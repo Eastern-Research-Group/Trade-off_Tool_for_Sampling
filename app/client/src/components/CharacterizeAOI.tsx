@@ -842,13 +842,15 @@ function CharacterizeAOI({
       window.totsLayers = tLayers;
       setLayers(tLayers);
 
-      setCalculateResultsDecon((calculateResultsDecon) => {
-        return {
-          status: 'fetching',
-          panelOpen: calculateResultsDecon.panelOpen,
-          data: null,
-        };
-      });
+      if (selectedScenario?.type === 'scenario-decon') {
+        setCalculateResultsDecon((calculateResultsDecon) => {
+          return {
+            status: 'fetching',
+            panelOpen: calculateResultsDecon.panelOpen,
+            data: null,
+          };
+        });
+      }
 
       // add the scenario group layer to the map
       map.add(groupLayer);
@@ -934,13 +936,15 @@ function CharacterizeAOI({
                         scenarios.length > 0 ? scenarios[0] : null,
                       );
 
-                      setCalculateResultsDecon((calculateResultsDecon) => {
-                        return {
-                          status: 'fetching',
-                          panelOpen: calculateResultsDecon.panelOpen,
-                          data: null,
-                        };
-                      });
+                      if (scenarios.length > 0) {
+                        setCalculateResultsDecon((calculateResultsDecon) => {
+                          return {
+                            status: 'fetching',
+                            panelOpen: calculateResultsDecon.panelOpen,
+                            data: null,
+                          };
+                        });
+                      }
 
                       if (!map) return;
 
@@ -1051,13 +1055,15 @@ function CharacterizeAOI({
               };
             });
 
-            setCalculateResultsDecon((calculateResultsDecon) => {
-              return {
-                status: 'fetching',
-                panelOpen: calculateResultsDecon.panelOpen,
-                data: null,
-              };
-            });
+            if (selectedScenario?.type === 'scenario-decon') {
+              setCalculateResultsDecon((calculateResultsDecon) => {
+                return {
+                  status: 'fetching',
+                  panelOpen: calculateResultsDecon.panelOpen,
+                  data: null,
+                };
+              });
+            }
           }}
         />
       </div>

@@ -473,7 +473,8 @@ function CreateDeconPlan({ appType }: Props) {
                             edits.edits,
                             selectedScenario.layerId,
                           ).editsScenario;
-                          if (!selectedScenarioEdits) return;
+                          if (selectedScenarioEdits?.type !== 'scenario-decon')
+                            return;
 
                           // copy the edits for that scenario
                           const copiedScenario: ScenarioDeconEditsType =
@@ -486,6 +487,7 @@ function CreateDeconPlan({ appType }: Props) {
                           copiedScenario.id = -1;
                           copiedScenario.label = newScenarioName;
                           copiedScenario.layerId = uuid;
+                          copiedScenario.linkedLayerIds = [];
                           copiedScenario.name = newScenarioName;
                           copiedScenario.portalId = '';
                           copiedScenario.scenarioName = newScenarioName;
@@ -496,7 +498,48 @@ function CreateDeconPlan({ appType }: Props) {
                             deepCopyObject(edits);
                           fullCopyEdits.edits.push(copiedScenario);
 
+                          const idLinkages: { [id: string]: string } = {};
+                          fullCopyEdits.edits.forEach((edit) => {
+                            if (
+                              edit.type !== 'layer-decon' ||
+                              !selectedScenarioEdits.linkedLayerIds.includes(
+                                edit.layerId,
+                              )
+                            )
+                              return;
+
+                            const deconUuid = generateUUID();
+                            idLinkages[edit.layerId] = deconUuid;
+
+                            copiedScenario.linkedLayerIds.push(deconUuid);
+                            fullCopyEdits.edits.push({
+                              ...edit,
+                              layerId: deconUuid,
+                              value: deconUuid,
+                            });
+                          });
+
                           setEdits(fullCopyEdits);
+
+                          setLayers((layers) => {
+                            const newLayers: LayerType[] = [];
+                            layers.forEach((layer) => {
+                              if (
+                                !Object.keys(idLinkages).includes(layer.layerId)
+                              )
+                                return;
+
+                              const id = idLinkages[layer.layerId];
+                              newLayers.push({
+                                ...layer,
+                                layerId: id,
+                                uuid: id,
+                                value: id,
+                              });
+                            });
+
+                            return [...layers, ...newLayers];
+                          });
 
                           setSelectedScenario(copiedScenario);
                         }}
