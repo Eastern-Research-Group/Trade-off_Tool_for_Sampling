@@ -2064,7 +2064,6 @@ export function updateLayerEdits({
     ).editsScenario;
   }
 
-  // TODO fix typescript issues here
   // if it was not found create the edit template for this layer and
   // add it to the copy of edits
   if (!editsLayer) {
