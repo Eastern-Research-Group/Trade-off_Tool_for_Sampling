@@ -30,6 +30,7 @@ async function getFile(
   filename,
   isLocal,
   responseType = undefined,
+  responseEncoding = undefined,
 ) {
   return isLocal
     ? readFile(path.resolve(__dirname, '../../public', filename))
@@ -38,6 +39,7 @@ async function getFile(
         url: `${s3BucketUrl}/${filename}`,
         timeout: 10000,
         responseType,
+        responseEncoding,
       });
 }
 
@@ -99,7 +101,16 @@ module.exports = function (app) {
     const s3BucketUrl = app.get('s3_bucket_url');
 
     // NOTE: static content files found in `app/server/app/public/data` directory
-    getFile(s3BucketUrl, 'data/config/defaultGsg.gsg', isLocalTest)
+    getFile(
+      s3BucketUrl,
+      'data/config/defaultGsg.gsg',
+      isLocalTest,
+      'arraybuffer',
+      'binary',
+    )
+      .then((gsg) => {
+        return isLocalTest ? gsg : gsg.data;
+      })
       .then((gsg) => {
         getFiles(
           req,
