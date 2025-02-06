@@ -1,7 +1,6 @@
 {
   "totsGPServer": "https://geopub.epa.gov/arcgis/rest/services/ORD/TOTS/GPServer",
-  "totsTestGPServer": "https://ags.erg.com/arcgis/rest/services/ORD/TOTS_TEST/GPServer",
-  "shippTestGPServer": "https://ags.erg.com/arcgis/rest/services/ORD/SHIPP/GPServer",
+  "totsTestGPServer": "https://ags.erg.com/arcgis/rest/services/ORD/TOTS/GPServer",
   "gpServerInputMaxRecordCount": 2000,
   "proxyUrl": "https://app7.erg.com/PHP/proxy.php?",
   "structures": "https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/USA_Structures_View/FeatureServer/0",

@@ -408,9 +408,9 @@ export async function fetchBuildingData(
     // call gp service
     const props = {
       f: 'json',
-      Feature_Set: featureSet.toJSON(),
-      GSG_File: gsgFile,
-      Imagery_Layer_URL:
+      Area_of_Interest_Mask: featureSet.toJSON(),
+      GSGFile: gsgFile,
+      ImageryLayer:
         'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
     };
 
@@ -418,7 +418,7 @@ export async function fetchBuildingData(
 
     iaResponses.push(
       await geoprocessorFetch({
-        url: `${services.shippTestGPServer}/Classify%20AOI`,
+        url: `${services.totsTestGPServer}/Classify%20AOI`,
         inputParameters: props,
       }),
     );

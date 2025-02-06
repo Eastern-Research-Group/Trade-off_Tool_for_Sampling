@@ -165,6 +165,7 @@ export { LookupFilesContext, LookupFilesProvider, useLookupFiles };
 type AttributesType = { [key: string]: AttributeItems };
 
 type Content = {
+  defaultGsg: string;
   layerProps: LayerProps;
   notifications: {
     backgroundColor: string;
@@ -174,7 +175,6 @@ type Content = {
   services: {
     gpServerInputMaxRecordCount: number;
     proxyUrl: string;
-    shippTestGPServer: string;
     structures: string;
     totsGPServer: string;
     totsTestGPServer: string;

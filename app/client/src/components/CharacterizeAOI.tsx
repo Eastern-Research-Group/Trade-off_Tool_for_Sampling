@@ -232,7 +232,7 @@ function CharacterizeAOI({
     setSelectedScenario,
     sketchVM,
   } = useContext(SketchContext);
-  const { services } = useLookupFiles().data;
+  const { defaultGsg, services } = useLookupFiles().data;
 
   // Initializes the aoi layer for performance reasons
   useEffect(() => {
@@ -406,21 +406,24 @@ function CharacterizeAOI({
     }
 
     try {
-      let gsgParam: GsgParam | undefined;
+      let gsgFile;
       if (gsgFiles && gsgFiles.selectedIndex !== null) {
         const file = gsgFiles.files[gsgFiles.selectedIndex];
-        const gsgFile = await convertBase64ToFile(file.file, file.path);
-        const gsgFileUploaded: any = await fetchPostFile(
-          `${services.shippTestGPServer}/uploads/upload`,
-          {
-            f: 'json',
-          },
-          gsgFile,
-        );
-        gsgParam = {
-          itemID: gsgFileUploaded.item.itemID,
-        };
+        gsgFile = await convertBase64ToFile(file.file, file.path);
+      } else {
+        gsgFile = await convertBase64ToFile(defaultGsg, 'defaultGsg.gsg');
       }
+
+      const gsgFileUploaded: any = await fetchPostFile(
+        `${services.totsTestGPServer}/uploads/upload`,
+        {
+          f: 'json',
+        },
+        gsgFile,
+      );
+      const gsgParam: GsgParam = {
+        itemID: gsgFileUploaded.item.itemID,
+      };
 
       // TODO - look into adding more queries here
       await fetchBuildingData(
@@ -435,7 +438,7 @@ function CharacterizeAOI({
 
       if (gsgParam) {
         await fetchPost(
-          `${services.shippTestGPServer}/uploads/${gsgParam.itemID}/delete`,
+          `${services.totsTestGPServer}/uploads/${gsgParam.itemID}/delete`,
           {
             f: 'json',
           },
