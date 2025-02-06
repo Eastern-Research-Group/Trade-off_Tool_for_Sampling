@@ -94,25 +94,40 @@ module.exports = function (app) {
 
   // --- get static content from S3
   router.get('/lookupFiles', (req, res) => {
+    const { isLocal, isTest } = getEnvironment();
+    const isLocalTest = isLocal || isTest;
+    const s3BucketUrl = app.get('s3_bucket_url');
+
     // NOTE: static content files found in `app/server/app/public/data` directory
-    getFiles(
-      req,
-      res,
-      [
-        'data/config/layerProps.json',
-        'data/config/services.json',
-        'data/notifications/messages.json',
-        'data/technologyTypes/types.json',
-      ],
-      (data) => {
-        return {
-          layerProps: data[0],
-          services: data[1],
-          notifications: data[2],
-          technologyTypes: data[3],
-        };
-      },
-    );
+    getFile(s3BucketUrl, 'data/config/defaultGsg.gsg', isLocalTest)
+      .then((gsg) => {
+        getFiles(
+          req,
+          res,
+          [
+            'data/config/layerProps.json',
+            'data/config/services.json',
+            'data/notifications/messages.json',
+            'data/technologyTypes/types.json',
+          ],
+          (data) => {
+            return {
+              layerProps: data[0],
+              services: data[1],
+              notifications: data[2],
+              technologyTypes: data[3],
+              defaultGsg: `data:application/octet-stream;base64,${gsg.toString('base64')}`,
+            };
+          },
+        );
+      })
+      .catch((error) => {
+        logError(error, metadataObj, isLocalTest);
+
+        return res
+          .status(error?.response?.status || 500)
+          .json({ message: 'Error getting static content from S3 bucket' });
+      });
   });
 
   // --- get static content from S3
