@@ -1325,26 +1325,26 @@ function CalculateResultsPopup({
       summarySheet.getCell(8, 2).alignment = rightAlignment;
       summarySheet.getCell(8, 2).numFmt = currencyNumberFormat;
       summarySheet.getCell(8, 2).value =
-        calculateResultsDecon.data['Total Cost'];
+        calculateResultsDecon.data['TOTAL_COST'];
       summarySheet.getCell(9, 1).font = labelFont;
       summarySheet.getCell(9, 1).value = 'Max Time day(s)';
       summarySheet.getCell(9, 2).font = defaultFont;
       summarySheet.getCell(9, 2).alignment = rightAlignment;
       summarySheet.getCell(9, 2).value =
-        calculateResultsDecon.data['Total Time'].toLocaleString();
+        calculateResultsDecon.data['TOTAL_TIME'].toLocaleString();
       summarySheet.getCell(10, 1).font = labelFont;
       summarySheet.getCell(10, 1).value = 'Total Waste Volume (m³)';
       summarySheet.getCell(10, 2).font = defaultFont;
       summarySheet.getCell(10, 2).alignment = rightAlignment;
       summarySheet.getCell(10, 2).value = Math.round(
-        calculateResultsDecon.data['Total Waste Volume'],
+        calculateResultsDecon.data['WASTE_VOLUME_SOLID'],
       ).toLocaleString();
       summarySheet.getCell(11, 1).font = labelFont;
       summarySheet.getCell(11, 1).value = 'Total Waste Mass (kg)';
       summarySheet.getCell(11, 2).font = defaultFont;
       summarySheet.getCell(11, 2).alignment = rightAlignment;
       summarySheet.getCell(11, 2).value = Math.round(
-        calculateResultsDecon.data['Total Waste Mass'],
+        calculateResultsDecon.data['WASTE_WEIGHT_SOLID'],
       ).toLocaleString();
 
       summarySheet.mergeCells(14, 3, 14, 4);
@@ -1897,25 +1897,25 @@ function CalculateResultsPopup({
                 <div>
                   <strong>Total Cost:</strong> $
                   {Math.round(
-                    calculateResultsDecon.data['Total Cost'],
+                    calculateResultsDecon.data['TOTAL_COST'],
                   ).toLocaleString()}
                 </div>
                 <div>
                   <strong>Max Time day(s):</strong>{' '}
-                  {calculateResultsDecon.data['Total Time'].toLocaleString()}
+                  {calculateResultsDecon.data['TOTAL_TIME'].toLocaleString()}
                 </div>
                 <div>
                   <strong>
                     Total Waste Volume (m<sup>3</sup>):
                   </strong>{' '}
                   {Math.round(
-                    calculateResultsDecon.data['Total Waste Volume'],
+                    calculateResultsDecon.data['WASTE_VOLUME_SOLID'],
                   ).toLocaleString()}
                 </div>
                 <div>
                   <strong>Total Waste Mass (kg):</strong>{' '}
                   {Math.round(
-                    calculateResultsDecon.data['Total Waste Mass'],
+                    calculateResultsDecon.data['WASTE_WEIGHT_SOLID'],
                   ).toLocaleString()}
                 </div>
               </div>

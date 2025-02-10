@@ -131,6 +131,9 @@
                     "defaultCalculateResultsTableFields": {
                       "type": "object"
                     },
+                    "defaultCalculateSettingsTableFields": {
+                      "type": "object"
+                    },
                     "defaultFields": {
                       "type": "object"
                     },

@@ -301,6 +301,7 @@ function EditScenario({
         },
         customAttributes: [],
         calculateSettings: { current: settingDefaults },
+        calculateResultsPublished: null,
       };
 
       // make a copy of the edits context variable

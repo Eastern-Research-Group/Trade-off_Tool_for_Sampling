@@ -466,31 +466,30 @@ function NavBar({ appType, height }: Props) {
                       <div css={mainTallyStyles}>
                         Total Cost: $
                         {Math.round(
-                          calculateResults.data['Total Cost'],
+                          calculateResults.data['TOTAL_COST'],
                         ).toLocaleString()}
                       </div>
                       <div css={subTallyStyles}>
                         <i className="fas fa-users fa-fw" /> $
                         {Math.round(
-                          calculateResults.data['Total Sampling Cost'],
+                          calculateResults.data['TOTAL_SAMPLING_COST'],
                         ).toLocaleString()}
                       </div>
                       <div css={subTallyStyles}>
                         <i className="fas fa-flask fa-fw" /> $
                         {Math.round(
-                          calculateResults.data['Total Analysis Cost'],
+                          calculateResults.data['TOTAL_LAB_COST'],
                         ).toLocaleString()}
                       </div>
                       <div css={mainTallyStyles}>
                         Max Time day(s):{' '}
-                        {calculateResults.data['Total Time'].toLocaleString()}
+                        {calculateResults.data['TOTAL_TIME'].toLocaleString()}
                       </div>
                       <div css={subTallyStyles}>
                         <i className="fas fa-users fa-fw" />{' '}
                         {(
                           Math.round(
-                            calculateResults.data['Time to Complete Sampling'] *
-                              10,
+                            calculateResults.data['SAMPLING_TIME'] * 10,
                           ) / 10
                         ).toLocaleString()}
                       </div>
@@ -498,25 +497,24 @@ function NavBar({ appType, height }: Props) {
                         <i className="fas fa-flask fa-fw" />{' '}
                         {(
                           Math.round(
-                            calculateResults.data['Time to Complete Analyses'] *
-                              10,
+                            calculateResults.data['LAB_ANALYSIS_TIME'] * 10,
                           ) / 10
                         ).toLocaleString()}
                       </div>
                       <hr css={resourceTallySeparator} />
                     </div>
-                    {calculateResults.data['Limiting Time Factor'] && (
+                    {calculateResults.data['LIMITING_TIME_FACTOR'] && (
                       <div>
                         <span css={mainTallyStyles}>Limiting Factor</span>
                         <br />
-                        {calculateResults.data['Limiting Time Factor'] ===
+                        {calculateResults.data['LIMITING_TIME_FACTOR'] ===
                           'Sampling' && <i className="fas fa-users fa-fw" />}
-                        {calculateResults.data['Limiting Time Factor'] ===
+                        {calculateResults.data['LIMITING_TIME_FACTOR'] ===
                           'Analysis' && (
                           <i className="fas fa-flask fa-fw" />
                         )}{' '}
                         <span>
-                          {calculateResults.data['Limiting Time Factor']}
+                          {calculateResults.data['LIMITING_TIME_FACTOR']}
                         </span>
                       </div>
                     )}
@@ -551,25 +549,25 @@ function NavBar({ appType, height }: Props) {
                       <div css={mainTallyStyles}>
                         Total Cost: $
                         {Math.round(
-                          calculateResultsDecon.data['Total Cost'],
+                          calculateResultsDecon.data['TOTAL_COST'],
                         ).toLocaleString()}
                       </div>
                       <div css={mainTallyStyles}>
                         Max Time day(s):{' '}
                         {calculateResultsDecon.data[
-                          'Total Time'
+                          'TOTAL_TIME'
                         ].toLocaleString()}
                       </div>
                       <div css={mainTallyStyles}>
                         Total Waste Volume (m<sup>3</sup>):{' '}
                         {Math.round(
-                          calculateResultsDecon.data['Total Waste Volume'],
+                          calculateResultsDecon.data['WASTE_VOLUME_SOLID'],
                         ).toLocaleString()}
                       </div>
                       <div css={mainTallyStyles}>
                         Total Waste Mass (kg):{' '}
                         {Math.round(
-                          calculateResultsDecon.data['Total Waste Mass'],
+                          calculateResultsDecon.data['WASTE_WEIGHT_SOLID'],
                         ).toLocaleString()}
                       </div>
                     </div>

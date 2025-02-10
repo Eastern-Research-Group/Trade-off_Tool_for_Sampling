@@ -22,6 +22,7 @@ import MessageBox from 'components/MessageBox';
 import ShowLessMore from 'components/ShowLessMore';
 // contexts
 import { AuthenticationContext } from 'contexts/Authentication';
+import { CalculateContext } from 'contexts/Calculate';
 import { useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import {
@@ -140,6 +141,7 @@ function Publish({ appType }: Props) {
   const { oAuthInfo, portal, setSignedIn, setPortal, signedIn } = useContext(
     AuthenticationContext,
   );
+  const { calculateResults } = useContext(CalculateContext);
   const { goToOptions, setGoToOptions, trainingMode } =
     useContext(NavigationContext);
   const {
@@ -385,7 +387,7 @@ function Publish({ appType }: Props) {
 
   // publishes a plan with all of the attributes
   const publishFullPlan = useCallback(() => {
-    if (!map || !portal || !selectedScenario) return;
+    if (!map || !portal || !selectedScenario || !calculateResults.data) return;
 
     const { scenarioIndex, editsScenario } = findLayerInEdits(
       edits.edits,
@@ -562,6 +564,10 @@ function Publish({ appType }: Props) {
         webSceneReferenceLayerSelections: [],
       },
       calculateSettings: editsScenario.calculateSettings,
+      calculateResults: {
+        current: calculateResults.data,
+        published: editsScenario.calculateResultsPublished,
+      },
     })
       .then((res: any) => {
         const portalId = res.portalId;
@@ -863,6 +869,20 @@ function Publish({ appType }: Props) {
           editsScenario.calculateSettings.published =
             editsScenario.calculateSettings.current;
 
+          // find the response for the calculateResults applyEdits response
+          const calcResultsId = res.calculateResults.id;
+          const calcResultsRes = res.edits.find(
+            (l: any) => l.id === calcResultsId,
+          )?.addResults?.[0];
+
+          if (calculateResults.data) {
+            editsScenario.calculateResultsPublished = {
+              ...calculateResults.data,
+              OBJECTID: calcResultsRes?.objectId ?? -1,
+              GLOBALID: calcResultsRes?.globalId,
+            };
+          }
+
           return {
             count: edits.count + 1,
             edits: [
@@ -919,6 +939,20 @@ function Publish({ appType }: Props) {
           selectedScenario.calculateSettings.published =
             selectedScenario.calculateSettings.current;
 
+          // find the response for the calculateSettings applyEdits response
+          const calcResultsId = res.calculateResults.id;
+          const calcResultsRes = res.edits.find(
+            (l: any) => l.id === calcResultsId,
+          )?.addResults?.[0];
+
+          if (calculateResults.data) {
+            selectedScenario.calculateResultsPublished = {
+              ...calculateResults.data,
+              OBJECTID: calcResultsRes?.objectId ?? -1,
+              GLOBALID: calcResultsRes?.globalId,
+            };
+          }
+
           return selectedScenario;
         });
       })
@@ -959,7 +993,7 @@ function Publish({ appType }: Props) {
 
   // publishes a plan with all of the attributes
   const publishPartialPlan = useCallback(() => {
-    if (!map || !portal || !selectedScenario) return;
+    if (!map || !portal || !selectedScenario || !calculateResults.data) return;
 
     const { scenarioIndex, editsScenario } = findLayerInEdits(
       edits.edits,
@@ -1174,6 +1208,10 @@ function Publish({ appType }: Props) {
         webSceneReferenceLayerSelections,
       },
       calculateSettings: editsScenario.calculateSettings,
+      calculateResults: {
+        current: calculateResults.data,
+        published: editsScenario.calculateResultsPublished,
+      },
     })
       .then((res: any) => {
         const portalId = res.portalId;
@@ -1481,6 +1519,20 @@ function Publish({ appType }: Props) {
           editsScenario.calculateSettings.published =
             editsScenario.calculateSettings.current;
 
+          // find the response for the calculateResults applyEdits response
+          const calcResultsId = res.calculateResults.id;
+          const calcResultsRes = res.edits.find(
+            (l: any) => l.id === calcResultsId,
+          )?.addResults?.[0];
+
+          if (calculateResults.data) {
+            editsScenario.calculateResultsPublished = {
+              ...calculateResults.data,
+              OBJECTID: calcResultsRes?.objectId ?? -1,
+              GLOBALID: calcResultsRes?.globalId,
+            };
+          }
+
           return {
             count: edits.count + 1,
             edits: [
@@ -1536,6 +1588,20 @@ function Publish({ appType }: Props) {
 
           selectedScenario.calculateSettings.published =
             selectedScenario.calculateSettings.current;
+
+          // find the response for the calculateSettings applyEdits response
+          const calcResultsId = res.calculateResults.id;
+          const calcResultsRes = res.edits.find(
+            (l: any) => l.id === calcResultsId,
+          )?.addResults?.[0];
+
+          if (calculateResults.data) {
+            selectedScenario.calculateResultsPublished = {
+              ...calculateResults.data,
+              OBJECTID: calcResultsRes?.objectId ?? -1,
+              GLOBALID: calcResultsRes?.globalId,
+            };
+          }
 
           return selectedScenario;
         });

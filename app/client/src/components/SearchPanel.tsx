@@ -1461,6 +1461,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
               current: calcSettings || settingDefaults,
               published: calcSettings || undefined,
             },
+            calculateResultsPublished: null,
           };
 
           // make a copy of the edits context variable

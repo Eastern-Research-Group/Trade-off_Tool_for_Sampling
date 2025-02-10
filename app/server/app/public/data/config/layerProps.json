@@ -585,7 +585,7 @@
       "defaultValue": null
     }
   ],
-  "defaultCalculateResultsTableFields": [
+  "defaultCalculateSettingsTableFields": [
     {
       "name": "OBJECTID",
       "alias": "OBJECTID",
@@ -692,6 +692,349 @@
       "type": "esriFieldTypeInteger",
       "actualType": "int",
       "sqlType": "sqlTypeInteger",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "CREATEDDATE",
+      "alias": "CREATEDDATE",
+      "type": "esriFieldTypeDate",
+      "sqlType": "sqlTypeOther",
+      "nullable": true,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "USERNAME",
+      "alias": "USERNAME",
+      "type": "esriFieldTypeString",
+      "sqlType": "sqlTypeOther",
+      "length": 255,
+      "nullable": true,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "UPDATEDDATE",
+      "alias": "UPDATEDDATE",
+      "type": "esriFieldTypeDate",
+      "sqlType": "sqlTypeOther",
+      "nullable": true,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    }
+  ],
+  "defaultCalculateResultsTableFields": [
+    {
+      "name": "OBJECTID",
+      "alias": "OBJECTID",
+      "type": "esriFieldTypeOID",
+      "actualType": "int",
+      "sqlType": "sqlTypeInteger",
+      "length": 4,
+      "nullable": false,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GLOBALID",
+      "alias": "GlobalID",
+      "type": "esriFieldTypeGlobalID",
+      "sqlType": "sqlTypeOther",
+      "length": 38,
+      "nullable": false,
+      "editable": false,
+      "domain": null,
+      "defaultValue": "NEWID() WITH VALUES"
+    },
+    {
+      "name": "ALC",
+      "alias": "Analysis Labor Cost",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "AMC",
+      "alias": "Analysis Material Cost",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "LIMITING_TIME_FACTOR",
+      "alias": "Limiting Time Factor",
+      "type": "esriFieldTypeString",
+      "actualType": "nvarchar",
+      "sqlType": "sqlTypeNVarchar",
+      "length": 50,
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "PCT_AREA_SAMPLED",
+      "alias": "Percent of Area Sampled",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "SAMPLING_HOURS",
+      "alias": "Sampling Hours per Day",
+      "type": "esriFieldTypeInteger",
+      "actualType": "int",
+      "sqlType": "sqlTypeInteger",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "SAMPLING_MATERIAL_COST",
+      "alias": "Sampling Material Cost",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "SAMPLING_LABOR_COST",
+      "alias": "Sampling Personnel Labor Cost",
+      "type": "esriFieldTypeInteger",
+      "actualType": "int",
+      "sqlType": "sqlTypeInteger",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "NUM_SAMPLING_HOURS",
+      "alias": "Sampling Personnel hours per Day",
+      "type": "esriFieldTypeInteger",
+      "actualType": "int",
+      "sqlType": "sqlTypeInteger",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "TTA",
+      "alias": "Time to Analyze",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "TTC",
+      "alias": "Sampling Time to Collect",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "LAB_ANALYSIS_TIME",
+      "alias": "Time to Complete Analyses",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "SAMPLING_TIME",
+      "alias": "Time to Complete Sampling",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "TTPK",
+      "alias": "Sampling Time to Prepare Kits",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "TOTAL_LAB_COST",
+      "alias": "Total Analysis Cost",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "TOTAL_COST",
+      "alias": "Total Cost",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "NUM_SAMPLES",
+      "alias": "Total Number of Samples",
+      "type": "esriFieldTypeInteger",
+      "actualType": "int",
+      "sqlType": "sqlTypeInteger",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "NUM_USER_SAMPLES",
+      "alias": "Total Number of User-Defined Samples",
+      "type": "esriFieldTypeInteger",
+      "actualType": "int",
+      "sqlType": "sqlTypeInteger",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "TOTAL_SAMPLING_TIME",
+      "alias": "Total Required Sampling Time",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "TOTAL_SAMPLED_AREA",
+      "alias": "Total Sampled Area",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "TOTAL_SAMPLING_COST",
+      "alias": "Total Sampling Cost",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "TOTAL_SAMPLING_LABOR_COST",
+      "alias": "Total Sampling Labor Cost",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "TOTAL_TIME",
+      "alias": "Total Time",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "WASTE_VOLUME_SOLID",
+      "alias": "Solid Waste Volume (m3)",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "WASTE_VOLUME_SOLID_LITERS",
+      "alias": "Solid Waste Volume (L)",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "WASTE_WEIGHT_SOLID",
+      "alias": "Solid Waste Weight (kg)",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "WASTE_WEIGHT_SOLID_POUNDS",
+      "alias": "Solid Waste Weight (lbs)",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
       "nullable": true,
       "editable": true,
       "domain": null,
