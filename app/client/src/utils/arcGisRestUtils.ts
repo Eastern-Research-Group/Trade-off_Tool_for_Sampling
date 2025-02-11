@@ -1534,6 +1534,7 @@ function findLayerId({
  * @param referenceLayersTable Reference layers that were previously published
  * @param referenceMaterials Reference layers to store in reference layers table
  * @param calculateSettings Calculate settings to be stored
+ * @param calculateResults Calculation Results both current and already published
  * @returns A promise that resolves to the successfully saved objects
  */
 async function applyEdits({
@@ -2035,7 +2036,7 @@ async function buildCalculateSettingsTableEdits({
  * the sampling plan feature service.
  *
  * @param id Id of the layer
- * @param calculateSettings Calculate Settings both current and already published
+ * @param calculateResults Calculation Results both current and already published
  * @returns An object containing the edits arrays
  */
 async function buildCalculateResultsTableEdits({
@@ -2625,6 +2626,7 @@ function applyEditsTable({
  * @param referenceLayersTable Reference layers that were previously published
  * @param referenceMaterials Reference layers to apply to web map
  * @param calculateSettings Calculate settings to be stored
+ * @param calculateResults Calculation Results both current and already published
  * @returns A promise that resolves to the successfully published data
  */
 function publish({
