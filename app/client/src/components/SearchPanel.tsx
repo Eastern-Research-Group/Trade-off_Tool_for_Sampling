@@ -45,6 +45,7 @@ import {
 } from 'utils/sketchUtils';
 import { createErrorObject, escapeForLucene } from 'utils/utils';
 // types
+import { CalculateResultsDataType } from 'types/CalculateResults';
 import {
   CalculateSettingsBaseType,
   EditsType,
@@ -1132,6 +1133,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       const resSampleTypes: any[] = [];
       const resRefLayersTypes: any[] = [];
       const resCalculateSettings: any[] = [];
+      const resCalculateResults: any[] = [];
       featureLayersRes.tables.forEach((table: any) => {
         if (table.name.endsWith('-sample-types')) {
           resSampleTypes.push(table);
@@ -1142,10 +1144,14 @@ function ResultCard({ appType, result }: ResultCardProps) {
         if (table.name.endsWith('-calculate-settings')) {
           resCalculateSettings.push(table);
         }
+        if (table.name.endsWith('-calculate-results')) {
+          resCalculateResults.push(table);
+        }
       });
 
       // fire off the calls with the points layers last
       const resCombined = [
+        ...resCalculateResults,
         ...resCalculateSettings,
         ...resRefLayersTypes,
         ...resSampleTypes,
@@ -1179,6 +1185,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       // define items used for updating states
       let editsCopy: EditsType = deepCopyObject(edits);
       let calcSettings: CalculateSettingsBaseType | null = null;
+      let calcResults: CalculateResultsDataType | null = null;
       const mapLayersToAdd: __esri.Layer[] = [];
       const newAttributes: Attributes = {};
       const newCustomAttributes: AttributesType[] = [];
@@ -1291,6 +1298,15 @@ function ResultCard({ appType, result }: ResultCardProps) {
         ) {
           if (layerFeatures.features.length > 0) {
             calcSettings = {
+              ...layerFeatures.features[0].attributes,
+            };
+          }
+        } else if (
+          layerDetails.type === 'Table' &&
+          layerDetails.name.endsWith('-calculate-results')
+        ) {
+          if (layerFeatures.features.length > 0) {
+            calcResults = {
               ...layerFeatures.features[0].attributes,
             };
           }
@@ -1461,6 +1477,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
               current: calcSettings || settingDefaults,
               published: calcSettings || undefined,
             },
+            calculateResultsPublished: calcResults,
           };
 
           // make a copy of the edits context variable

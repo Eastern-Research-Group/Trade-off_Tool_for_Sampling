@@ -1,5 +1,7 @@
 // types
+import { CalculateResultsDataType } from 'types/CalculateResults';
 import {
+  CalculateResultsType,
   CalculateSettingsType,
   FeatureEditsType,
   LayerEditsType,
@@ -758,7 +760,23 @@ function createFeatureLayers(
     }
 
     // add the calculate-settings table if it hasn't already been added
-    const calculateResultsTableName = `${serviceMetaData.label}-calculate-settings`;
+    const calculateSettingsTableName = `${serviceMetaData.label}-calculate-settings`;
+    const hasCalculateSettingsTable =
+      service.featureService.tables.findIndex(
+        (t: any) => t.name === calculateSettingsTableName,
+      ) > -1;
+    if (!hasCalculateSettingsTable) {
+      tablesOut.push({
+        ...layerProps.defaultTableProps,
+        fields: layerProps.defaultCalculateSettingsTableFields,
+        type: 'Table',
+        name: calculateSettingsTableName,
+        description: `Calculate settings for "${serviceMetaData.label}".`,
+      });
+    }
+
+    // add the calculate-results table if it hasn't already been added
+    const calculateResultsTableName = `${serviceMetaData.label}-calculate-results`;
     const hasCalculateResultsTable =
       service.featureService.tables.findIndex(
         (t: any) => t.name === calculateResultsTableName,
@@ -769,7 +787,7 @@ function createFeatureLayers(
         fields: layerProps.defaultCalculateResultsTableFields,
         type: 'Table',
         name: calculateResultsTableName,
-        description: `Calculate settings for "${serviceMetaData.label}".`,
+        description: `Calculation results for "${serviceMetaData.label}".`,
       });
     }
 
@@ -1516,6 +1534,7 @@ function findLayerId({
  * @param referenceLayersTable Reference layers that were previously published
  * @param referenceMaterials Reference layers to store in reference layers table
  * @param calculateSettings Calculate settings to be stored
+ * @param calculateResults Calculation Results both current and already published
  * @returns A promise that resolves to the successfully saved objects
  */
 async function applyEdits({
@@ -1532,6 +1551,7 @@ async function applyEdits({
   referenceLayersTable,
   referenceMaterials,
   calculateSettings,
+  calculateResults,
 }: {
   portal: __esri.Portal;
   service: any;
@@ -1551,6 +1571,7 @@ async function applyEdits({
     webSceneReferenceLayerSelections: ReferenceLayerSelections[];
   };
   calculateSettings: CalculateSettingsType;
+  calculateResults: CalculateResultsType;
 }) {
   try {
     const changes: any[] = [];
@@ -1716,7 +1737,7 @@ async function applyEdits({
     refLayerTableOut = refOutput.table;
 
     let calculateSettingsTableOut: any | null = null;
-    const calculateSettingsOutput = await buildCalculateResultsTableEdits({
+    const calculateSettingsOutput = await buildCalculateSettingsTableEdits({
       id: findLayerId({
         service,
         layersResponse,
@@ -1726,6 +1747,18 @@ async function applyEdits({
     });
     changes.push(calculateSettingsOutput.edits);
     calculateSettingsTableOut = calculateSettingsOutput.edits;
+
+    let calculateResultsTableOut: any | null = null;
+    const calculateResultsOutput = await buildCalculateResultsTableEdits({
+      id: findLayerId({
+        service,
+        layersResponse,
+        name: `${scenarioName}-calculate-results`,
+      }),
+      calculateResults,
+    });
+    changes.push(calculateResultsOutput.edits);
+    calculateResultsTableOut = calculateResultsOutput.edits;
 
     // Workaround for esri.Portal not having credential
     const tempPortal: any = portal;
@@ -1747,6 +1780,7 @@ async function applyEdits({
       table: tableOut,
       refLayerTableOut,
       calculateSettingsTableOut,
+      calculateResultsTableOut,
     };
   } catch (err) {
     window.logErrorToGa(err);
@@ -1957,7 +1991,7 @@ async function buildReferenceLayerTableEdits({
  * @param calculateSettings Calculate Settings both current and already published
  * @returns An object containing the edits arrays
  */
-async function buildCalculateResultsTableEdits({
+async function buildCalculateSettingsTableEdits({
   id,
   calculateSettings,
 }: {
@@ -1982,6 +2016,54 @@ async function buildCalculateResultsTableEdits({
       attributes: {
         ...calculateSettings.published,
         ...calculateSettings.current,
+        UPDATEDDATE: timestamp,
+      },
+    });
+  }
+
+  return {
+    edits: {
+      id,
+      adds,
+      updates,
+      deletes: [],
+    },
+  };
+}
+
+/**
+ * Builds the edits arrays for publishing the calculate settings table of
+ * the sampling plan feature service.
+ *
+ * @param id Id of the layer
+ * @param calculateResults Calculation Results both current and already published
+ * @returns An object containing the edits arrays
+ */
+async function buildCalculateResultsTableEdits({
+  id,
+  calculateResults,
+}: {
+  id: number;
+  calculateResults: CalculateResultsType;
+}) {
+  const adds: any[] = [];
+  const updates: any[] = [];
+  const timestamp = getCurrentDateTime();
+
+  if (!calculateResults.published) {
+    adds.push({
+      attributes: {
+        ...calculateResults.current,
+        GLOBALID: generateUUID(),
+        CREATEDDATE: timestamp,
+        UPDATEDDATE: timestamp,
+      },
+    });
+  } else {
+    updates.push({
+      attributes: {
+        ...calculateResults.published,
+        ...calculateResults.current,
         UPDATEDDATE: timestamp,
       },
     });
@@ -2544,6 +2626,7 @@ function applyEditsTable({
  * @param referenceLayersTable Reference layers that were previously published
  * @param referenceMaterials Reference layers to apply to web map
  * @param calculateSettings Calculate settings to be stored
+ * @param calculateResults Calculation Results both current and already published
  * @returns A promise that resolves to the successfully published data
  */
 function publish({
@@ -2558,6 +2641,7 @@ function publish({
   referenceLayersTable,
   referenceMaterials,
   calculateSettings,
+  calculateResults,
 }: {
   portal: __esri.Portal;
   map: __esri.Map;
@@ -2575,6 +2659,7 @@ function publish({
     webSceneReferenceLayerSelections: ReferenceLayerSelections[];
   };
   calculateSettings: CalculateSettingsType;
+  calculateResults: CalculateResultsType;
 }) {
   return new Promise((resolve, reject) => {
     if (layers.length === 0) {
@@ -2689,6 +2774,7 @@ function publish({
                   referenceLayersTable,
                   referenceMaterials,
                   calculateSettings,
+                  calculateResults,
                 })
                   .then(async (editsRes: any) => {
                     try {
@@ -2740,6 +2826,7 @@ function publish({
                         edits: editsRes.response,
                         table: editsRes.table,
                         calculateSettings: editsRes.calculateSettingsTableOut,
+                        calculateResults: editsRes.calculateResultsTableOut,
                         itemData: {
                           name: itemName,
                           serviceUrl: itemServiceUrl,

@@ -729,6 +729,7 @@ export function useCalculatePlan(appType: AppType) {
     setSelectedScenario,
   } = useContext(SketchContext);
   const {
+    calculateResults,
     inputNumLabs,
     inputNumLabHours,
     inputNumSamplingHours,
@@ -741,6 +742,10 @@ export function useCalculatePlan(appType: AppType) {
     setUpdateContextValues,
     updateContextValues,
   } = useContext(CalculateContext);
+
+  useEffect(() => {
+    console.log('calculateResults: ', calculateResults);
+  }, [calculateResults]);
 
   // Reset the calculateResults context variable, whenever anything
   // changes that will cause a re-calculation.
@@ -1039,7 +1044,7 @@ export function useCalculatePlan(appType: AppType) {
     }
 
     // Get limiting time factor (will be undefined if they are equal)
-    let limitingFactor: CalculateResultsDataType['Limiting Time Factor'] = '';
+    let limitingFactor: CalculateResultsDataType['LIMITING_TIME_FACTOR'] = '';
     if (timeCompleteSampling > labThroughput) {
       limitingFactor = 'Sampling';
     } else {
@@ -1056,41 +1061,43 @@ export function useCalculatePlan(appType: AppType) {
       'User Specified Number of Available Labs for Analysis': numLabs,
       'User Specified Analysis Lab Hours per Day': numLabHours,
       'User Specified Surface Area': surfaceArea,
-      'Total Number of User-Defined Samples': calcGraphics.length,
+      NUM_USER_SAMPLES: calcGraphics.length,
 
       // assign counts
-      'Total Number of Samples': totals.ac,
-      'Total Sampled Area': totalArea,
-      'Time to Prepare Kits': totals.ttpk,
-      'Time to Collect': totals.ttc,
-      'Sampling Material Cost': totals.mcps,
-      'Time to Analyze': totals.tta,
-      'Analysis Labor Cost': totals.alc,
-      'Analysis Material Cost': totals.amc,
-      'Waste Volume': totals.wvps,
-      'Waste Weight': totals.wwps,
+      NUM_SAMPLES: totals.ac,
+      TOTAL_SAMPLED_AREA: totalArea,
+      TTPK: totals.ttpk,
+      TTC: totals.ttc,
+      SAMPLING_MATERIAL_COST: totals.mcps,
+      TTA: totals.tta,
+      ALC: totals.alc,
+      AMC: totals.amc,
+      WASTE_VOLUME_SOLID: totals.wvps / 1000, // convert liters to m3
+      WASTE_VOLUME_SOLID_LITERS: totals.wvps,
+      WASTE_WEIGHT_SOLID: totals.wwps / 2.2046226218, // convert lbs to kg
+      WASTE_WEIGHT_SOLID_POUNDS: totals.wwps,
 
       // spatial items
       'User Specified Total AOI': userSpecifiedAOI,
-      'Percent of Area Sampled': percentAreaSampled,
+      PCT_AREA_SAMPLED: percentAreaSampled,
 
       // sampling
-      'Total Required Sampling Time': samplingTimeHours,
-      'Sampling Hours per Day': samplingHours,
-      'Sampling Personnel hours per Day': samplingPersonnelHoursPerDay,
-      'Sampling Personnel Labor Cost': samplingPersonnelLaborCost,
-      'Time to Complete Sampling': timeCompleteSampling,
-      'Total Sampling Labor Cost': totalSamplingLaborCost,
-      'Total Sampling Cost': totalSamplingCost,
-      'Total Analysis Cost': totalAnalysisCost,
+      TOTAL_SAMPLING_TIME: samplingTimeHours,
+      SAMPLING_HOURS: samplingHours,
+      NUM_SAMPLING_HOURS: samplingPersonnelHoursPerDay,
+      SAMPLING_LABOR_COST: samplingPersonnelLaborCost,
+      SAMPLING_TIME: timeCompleteSampling,
+      TOTAL_SAMPLING_LABOR_COST: totalSamplingLaborCost,
+      TOTAL_SAMPLING_COST: totalSamplingCost,
+      TOTAL_LAB_COST: totalAnalysisCost,
 
       // analysis
-      'Time to Complete Analyses': labThroughput,
+      LAB_ANALYSIS_TIME: labThroughput,
 
       //totals
-      'Total Cost': totalCost,
-      'Total Time': Math.round(totalTime * 10) / 10,
-      'Limiting Time Factor': limitingFactor,
+      TOTAL_COST: totalCost,
+      TOTAL_TIME: Math.round(totalTime * 10) / 10,
+      LIMITING_TIME_FACTOR: limitingFactor,
     };
 
     // display loading spinner for 1 second
@@ -1613,12 +1620,12 @@ export function useCalculateDeconPlan() {
         'Solid Waste Mass': totalSolidWasteMass,
         'Liquid Waste Volume': totalLiquidWasteM3,
         'Liquid Waste Mass': totalLiquidWasteMass,
-        'Total Waste Volume': totalSolidWasteM3 + totalLiquidWasteM3,
-        'Total Waste Mass': totalSolidWasteMass + totalLiquidWasteMass,
+        WASTE_VOLUME_SOLID: totalSolidWasteM3 + totalLiquidWasteM3,
+        WASTE_WEIGHT_SOLID: totalSolidWasteMass + totalLiquidWasteMass,
 
         //totals
-        'Total Cost': totalDeconCost,
-        'Total Time': Math.round(totalDeconTime * 10) / 10,
+        TOTAL_COST: totalDeconCost,
+        TOTAL_TIME: Math.round(totalDeconTime * 10) / 10,
         'Total Contaminated Area': 0,
         'Total Reduction Area': 0,
         'Total Remaining Contaminated Area': 0,

@@ -7,6 +7,7 @@ export type LayerProps = {
   defaultFields: __esri.FieldProperties[];
   additionalTableFields: __esri.FieldProperties[];
   defaultReferenceTableFields: __esri.FieldProperties[];
+  defaultCalculateSettingsTableFields: __esri.FieldProperties[];
   defaultCalculateResultsTableFields: __esri.FieldProperties[];
   defaultLayerProps: __esri.FeatureLayerProperties;
   defaultTableProps: any;

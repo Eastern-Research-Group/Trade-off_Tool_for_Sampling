@@ -1,4 +1,5 @@
 import { JsonDownloadType } from 'contexts/Sketch';
+import { CalculateResultsDataType } from 'types/CalculateResults';
 import { AddedFrom, LayerTypeName, PublishStatus } from 'types/Layer';
 import { AttributesType } from 'types/Publish';
 
@@ -61,6 +62,11 @@ export type CalculateSettingsBaseType = {
 export type CalculateSettingsType = {
   current: CalculateSettingsBaseType;
   published?: CalculateSettingsBaseType;
+};
+
+export type CalculateResultsType = {
+  current: CalculateResultsDataType;
+  published: CalculateResultsDataType;
 };
 
 export type LayerAoiAnalysisEditsType = {
@@ -187,6 +193,7 @@ export type ScenarioEditsType = {
     resultsTable: JsonDownloadType[];
   };
   calculateSettings: CalculateSettingsType;
+  calculateResultsPublished: CalculateResultsDataType | null;
   importedAoiLayer?: LayerEditsType | null;
   aoiLayerMode?: '' | 'draw' | 'file';
   gsgFile?: any;
