@@ -418,7 +418,7 @@ export async function fetchBuildingData(
 
     iaResponses.push(
       await geoprocessorFetch({
-        url: `${services.totsTestGPServer}/Classify%20AOI`,
+        url: `${services.totsGPServer}/Classify%20AOI`,
         inputParameters: props,
       }),
     );

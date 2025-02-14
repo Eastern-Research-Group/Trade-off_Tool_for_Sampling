@@ -415,7 +415,7 @@ function CharacterizeAOI({
       }
 
       const gsgFileUploaded: any = await fetchPostFile(
-        `${services.totsTestGPServer}/uploads/upload`,
+        `${services.totsGPServer}/uploads/upload`,
         {
           f: 'json',
         },
@@ -438,7 +438,7 @@ function CharacterizeAOI({
 
       if (gsgParam) {
         await fetchPost(
-          `${services.totsTestGPServer}/uploads/${gsgParam.itemID}/delete`,
+          `${services.totsGPServer}/uploads/${gsgParam.itemID}/delete`,
           {
             f: 'json',
           },
