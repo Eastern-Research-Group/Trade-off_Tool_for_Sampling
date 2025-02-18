@@ -622,27 +622,27 @@ function ConfigureOutput({ appType }: Props) {
                         getColumns={(_tableWidth: any) => {
                           return [
                             {
-                              Header: 'ID',
-                              accessor: 'ID',
-                              width: 0,
+                              header: 'ID',
+                              accessorKey: 'ID',
+                              size: 0,
                               show: false,
                             },
                             {
-                              Header: 'Field',
-                              accessor: 'label',
-                              width: 128,
+                              header: 'Field',
+                              accessorKey: 'label',
+                              size: 128,
                             },
                             {
-                              Header: 'Type',
-                              accessor: 'dataType',
-                              width: 50,
+                              header: 'Type',
+                              accessorKey: 'dataType',
+                              size: 50,
                             },
                             {
-                              Header: () => null,
+                              header: () => null,
                               id: 'edit-column',
                               renderCell: true,
-                              width: 34,
-                              Cell: ({ row }: { row: any }) => {
+                              size: 34,
+                              cell: ({ row }: { row: any }) => {
                                 if (row.index <= 10) return <span></span>;
 
                                 return (
@@ -1298,21 +1298,21 @@ function EditAttributePopup({
                     getColumns={(_tableWidth: any) => {
                       return [
                         {
-                          Header: 'ID',
-                          accessor: 'ID',
-                          width: 0,
+                          header: 'ID',
+                          accessorKey: 'ID',
+                          size: 0,
                           show: false,
                         },
                         {
-                          Header: 'Label',
-                          accessor: 'label',
-                          width: 189,
+                          header: 'Label',
+                          accessorKey: 'label',
+                          size: 189,
                           editType: 'input',
                         },
                         {
-                          Header: 'Value',
-                          accessor: 'value',
-                          width: 189,
+                          header: 'Value',
+                          accessorKey: 'value',
+                          size: 189,
                           editType: 'input',
                         },
                       ];

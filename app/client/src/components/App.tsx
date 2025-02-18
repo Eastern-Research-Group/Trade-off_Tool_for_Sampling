@@ -685,15 +685,11 @@ function App({ appType }: Props) {
                                 desc: false,
                               },
                               {
-                                id: 'cbfips',
+                                id: 'OCC_CLS',
                                 desc: false,
                               },
                               {
-                                id: 'bldgtype',
-                                desc: false,
-                              },
-                              {
-                                id: 'bid',
+                                id: 'PRIM_OCC',
                                 desc: false,
                               },
                             ]
@@ -726,11 +722,10 @@ function App({ appType }: Props) {
 
                         return [
                           {
-                            Header: () => null,
+                            header: () => null,
                             id: 'zoom-button',
-                            renderCell: true,
-                            width: 30,
-                            Cell: ({ row }: { row: any }) => (
+                            size: 30,
+                            cell: ({ row }: { row: any }) => (
                               <div css={zoomButtonContainerStyles}>
                                 <button
                                   css={zoomButtonStyles}

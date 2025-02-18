@@ -1933,52 +1933,52 @@ function CalculateResultsPopup({
           getColumns={(_tableWidth: any) => {
             return [
               {
-                Header: 'Contamination Scenario',
-                accessor: 'contaminationScenario',
-                width: 190,
+                header: 'Contamination Scenario',
+                accessorKey: 'contaminationScenario',
+                size: 190,
               },
               {
-                Header: 'Selected Decontamination Technology',
-                accessor: 'decontaminationTechnology',
-                width: 190,
+                header: 'Selected Decontamination Technology',
+                accessorKey: 'decontaminationTechnology',
+                size: 190,
               },
               {
-                Header: 'Solid Waste (m³)',
-                accessor: 'solidWasteVolumeM3',
-                width: baseWidth,
+                header: 'Solid Waste (m³)',
+                accessorKey: 'solidWasteVolumeM3',
+                size: baseWidth,
               },
               {
-                Header: 'Liquid Waste (m³)',
-                accessor: 'liquidWasteVolumeM3',
-                width: baseWidth,
+                header: 'Liquid Waste (m³)',
+                accessorKey: 'liquidWasteVolumeM3',
+                size: baseWidth,
               },
               {
-                Header: 'Decontamination Cost ($) [Setup and Operational]',
-                accessor: 'decontaminationCost',
-                width: 175,
+                header: 'Decontamination Cost ($) [Setup and Operational]',
+                accessorKey: 'decontaminationCost',
+                size: 175,
               },
               {
-                Header:
+                header:
                   'Decontamination Time (days) [Application and Residence]',
-                accessor: 'decontaminationTimeDays',
-                width: 170,
+                accessorKey: 'decontaminationTimeDays',
+                size: 170,
               },
               {
-                Header: 'Average Initial Contamination (CFUs/m²)',
-                accessor: 'averageInitialContamination',
-                width: 110,
+                header: 'Average Initial Contamination (CFUs/m²)',
+                accessorKey: 'averageInitialContamination',
+                size: 110,
                 show: devMode && trainingMode,
               },
               {
-                Header: 'Average Final Contamination (CFUs/m²)',
-                accessor: 'averageFinalContamination',
-                width: 110,
+                header: 'Average Final Contamination (CFUs/m²)',
+                accessorKey: 'averageFinalContamination',
+                size: 110,
                 show: devMode && trainingMode,
               },
               {
-                Header: 'Above/Below Detection Limit',
-                accessor: 'aboveDetectionLimit',
-                width: 110,
+                header: 'Above/Below Detection Limit',
+                accessorKey: 'aboveDetectionLimit',
+                size: 110,
                 show: devMode && trainingMode,
               },
             ];
@@ -2060,53 +2060,53 @@ function CalculateResultsPopup({
                 getColumns={(_tableWidth: any) => {
                   return [
                     {
-                      Header: 'Contamination Scenario',
-                      accessor: 'contaminationScenario',
-                      width: 190,
+                      header: 'Contamination Scenario',
+                      accessorKey: 'contaminationScenario',
+                      size: 190,
                     },
                     {
-                      Header: 'Selected Decontamination Technology',
-                      accessor: 'decontaminationTechnology',
-                      width: 190,
+                      header: 'Selected Decontamination Technology',
+                      accessorKey: 'decontaminationTechnology',
+                      size: 190,
                     },
                     {
-                      Header: 'Solid Waste (m³)',
-                      accessor: 'solidWasteVolumeM3',
-                      width: baseWidth,
+                      header: 'Solid Waste (m³)',
+                      accessorKey: 'solidWasteVolumeM3',
+                      size: baseWidth,
                     },
                     {
-                      Header: 'Liquid Waste (m³)',
-                      accessor: 'liquidWasteVolumeM3',
-                      width: baseWidth,
+                      header: 'Liquid Waste (m³)',
+                      accessorKey: 'liquidWasteVolumeM3',
+                      size: baseWidth,
                     },
                     {
-                      Header:
+                      header:
                         'Decontamination Cost ($) [Setup and Operational]',
-                      accessor: 'decontaminationCost',
-                      width: 175,
+                      accessorKey: 'decontaminationCost',
+                      size: 175,
                     },
                     {
-                      Header:
+                      header:
                         'Decontamination Time (days) [Application and Residence]',
-                      accessor: 'decontaminationTimeDays',
-                      width: 170,
+                      accessorKey: 'decontaminationTimeDays',
+                      size: 170,
                     },
                     {
-                      Header: 'Average Initial Contamination (CFUs/m²)',
-                      accessor: 'averageInitialContamination',
-                      width: 110,
+                      header: 'Average Initial Contamination (CFUs/m²)',
+                      accessorKey: 'averageInitialContamination',
+                      size: 110,
                       show: devMode && trainingMode,
                     },
                     {
-                      Header: 'Average Final Contamination (CFUs/m²)',
-                      accessor: 'averageFinalContamination',
-                      width: 110,
+                      header: 'Average Final Contamination (CFUs/m²)',
+                      accessorKey: 'averageFinalContamination',
+                      size: 110,
                       show: devMode && trainingMode,
                     },
                     {
-                      Header: 'Above/Below Detection Limit',
-                      accessor: 'aboveDetectionLimit',
-                      width: 110,
+                      header: 'Above/Below Detection Limit',
+                      accessorKey: 'aboveDetectionLimit',
+                      size: 110,
                       show: devMode && trainingMode,
                     },
                   ];

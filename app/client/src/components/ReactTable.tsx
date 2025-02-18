@@ -10,18 +10,36 @@ import React, {
   useState,
 } from 'react';
 import { css } from '@emotion/react';
+// import {
+//   useExpanded,
+//   useTable,
+//   useSortBy,
+//   useResizeColumns,
+//   useBlockLayout,
+//   useFlexLayout,
+//   useFilters,
+//   useRowSelect,
+//   Row,
+//   HeaderGroup,
+// } from 'react-table';
 import {
-  useExpanded,
-  useTable,
-  useSortBy,
-  useResizeColumns,
-  useBlockLayout,
-  useFlexLayout,
-  useFilters,
-  useRowSelect,
+  useReactTable,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  getPaginationRowModel,
+  flexRender,
+  getExpandedRowModel,
   Row,
-  HeaderGroup,
-} from 'react-table';
+  Table,
+  SortingState,
+  CellContext,
+} from '@tanstack/react-table';
+import {
+  useVirtualizer,
+  VirtualItem,
+  Virtualizer,
+} from '@tanstack/react-virtual';
 import { VariableSizeList } from 'react-window';
 import { useWindowSize } from '@reach/window-size';
 // components
@@ -81,11 +99,9 @@ function generateFilterInput({
 
 // --- styles ---
 const tableStyles = ({
-  tableWidth,
   height,
   hideHeader,
 }: {
-  tableWidth: number;
   height?: number;
   hideHeader: boolean;
 }) => css`
@@ -98,37 +114,38 @@ const tableStyles = ({
   /* These styles are required for a horizontaly scrollable table overflow */
   overflow: auto;
 
-  .rt-table {
+  table {
     border-spacing: 0;
     border: 1px solid rgba(0, 0, 0, 0.1);
-    width: ${tableWidth}px;
+    width: 100%;
+    margin: 0;
 
-    .rt-thead {
+    thead {
       color: #57585a;
       background-color: #f1f1f1;
       font-size: 0.85em;
 
-      .rt-tr {
+      tr {
         border-bottom: 1px solid rgba(0, 0, 0, 0.05);
       }
     }
 
-    .rt-tbody {
-      .rt-tr {
+    tbody {
+      tr {
         border-bottom: 1px solid rgba(0, 0, 0, 0.02);
       }
 
-      .rt-tr.rt-striped.-even {
+      tr.rt-striped.-even {
         background-color: rgba(0, 0, 0, 0.03);
       }
 
-      .rt-tr.rt-selected {
+      tr.rt-selected {
         background-color: #b4daf5 !important;
       }
     }
 
-    .rt-th,
-    .rt-td {
+    th,
+    td {
       margin: 0;
       overflow: hidden;
 
@@ -140,7 +157,7 @@ const tableStyles = ({
       }
     }
 
-    .rt-th {
+    th {
       padding: 5px;
       font-weight: normal;
       border-right: 1px solid rgba(0, 0, 0, 0.05);
@@ -150,13 +167,13 @@ const tableStyles = ({
       }
     }
 
-    .rt-td {
+    td {
       padding: 7px 5px;
       border-right: 1px solid rgba(0, 0, 0, 0.02);
       font-size: 0.78em;
     }
 
-    .rt-tr:last-child .rt-td {
+    tr:last-child td {
       border-bottom: 0;
     }
 
@@ -184,7 +201,7 @@ const tableStyles = ({
       padding-top: 10px;
     }
 
-    ${hideHeader ? '.rt-th { display: none !important; }' : ''}
+    ${hideHeader ? 'th { display: none !important; }' : ''}
   }
 `;
 
@@ -212,279 +229,220 @@ export function ReactTable({
   onSelectionChange,
   sortBy,
 }: Props) {
-  // Initializes the column widths based on the table width
+  console.log('data: ', data);
   const [tableWidth, setTableWidth] = useState(0);
-  const columns = useMemo(() => {
-    return getColumns(tableWidth);
-  }, [tableWidth, getColumns]);
-
-  // default column settings
-  const defaultColumn = useMemo(
-    () => ({
-      // When using the useFlexLayout:
-      minWidth: 50, // minWidth is only used as a limit for resizing
-      width: 150, // width is used for both the flex-basis and flex-grow
-      maxWidth: 1000, // maxWidth is only used as a limit for resizing
-      Filter: generateFilterInput,
-    }),
-    [],
+  const columns = useMemo(
+    () => getColumns(tableWidth).filter((c) => c.show !== false),
+    [tableWidth, getColumns],
   );
+  console.log('columns1: ', getColumns(tableWidth));
+  console.log('columns2: ', columns);
 
-  const {
-    getTableProps,
-    getTableBodyProps,
-    headerGroups,
-    rows,
-    prepareRow,
-    state: { selectedRowIds },
-    totalColumnsWidth,
-  }: {
-    getTableProps: any;
-    getTableBodyProps: any;
-    headerGroups: HeaderGroup<Object>[];
-    rows: Row<Object>[];
-    prepareRow: (row: Row<Object>) => void;
-    selectedFlatRows: any;
-    state: any;
-    totalColumnsWidth: number;
-  } = useTable(
-    {
-      autoResetSortBy: false,
-      columns,
-      data,
-      defaultColumn,
-      initialState: {
-        selectedRowIds: initialSelectedRowIds?.ids || {},
-        sortBy: sortBy || [],
-      } as any,
-    } as any,
-    useResizeColumns,
-    useBlockLayout,
-    useFlexLayout,
-    useFilters,
-    useSortBy,
-    useRowSelect,
-  ) as any;
+  const [sorting, setSorting] = React.useState<SortingState>(sortBy || []);
 
-  // measures the table width
-  const measuredTableRef = useCallback((node: HTMLDivElement) => {
-    if (!node) return;
-    setTableWidth(node.getBoundingClientRect().width);
-  }, []);
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onSortingChange: setSorting,
+    state: {
+      sorting,
+    },
+    enableRowSelection: true,
+  });
 
-  const [scrollToRow, setScrollToRow] = useState(-1);
+  // const measuredTableRef = useCallback((node) => {
+  //   if (node) setTableWidth(node.getBoundingClientRect().width);
+  //   return node;
+  // }, []);
+
+  const measuredTableRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // don't scroll for row clicks
-    const ids = Object.keys(initialSelectedRowIds?.ids || {});
-    if (
-      ids.length === 0 ||
-      initialSelectedRowIds.selectionMethod === 'row-click'
-    ) {
-      setScrollToRow(-1);
-      return;
+    if (!measuredTableRef?.current) return;
+    setTableWidth(measuredTableRef.current.getBoundingClientRect().width);
+  }, [measuredTableRef]);
+
+  const listRef = useRef(null);
+  const sizeMap = useRef({});
+  const setSize = useCallback((index, size) => {
+    sizeMap.current[index] = size;
+    listRef.current?.resetAfterIndex(index);
+  }, []);
+
+  const getSize = (index) => sizeMap.current[index] || 50;
+  const rows = table.getRowModel().rows;
+
+  useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollToItem(-1, 'center');
     }
-    const firstRowId = ids[0] as any;
+  }, [initialSelectedRowIds]);
 
-    const index = rows.findIndex(
-      (row: any) => row.original.PERMANENT_IDENTIFIER === firstRowId,
-    );
-
-    setScrollToRow(index);
-  }, [initialSelectedRowIds, data, id, rows]);
-
-  function RowVirtualized({
-    index,
-    setSize,
-    windowWidth,
-  }: {
-    index: number;
-    setSize: (index: number, size: number) => void;
-    windowWidth: number;
-  }) {
-    // cast as any to workaround toggleRowSelected not being on the type
-    const row = rows[index] as any;
-
+  function RowVirtualized({ index, setSize }) {
+    const row = rows[index];
     const rowRef = useRef(null);
-
-    const selected = Object.keys(selectedRowIds).includes(
-      row.original.PERMANENT_IDENTIFIER,
-    );
+    const selected = row.getIsSelected();
     const isEven = index % 2 === 0;
 
-    // keep track of the height of the rows to autosize rows
     useEffect(() => {
-      if (!rowRef?.current) return;
+      if (rowRef.current) {
+        setSize(index, rowRef.current.getBoundingClientRect().height);
+      }
+    }, [setSize, index]);
 
-      setSize(
-        index,
-        (rowRef.current as HTMLDivElement).getBoundingClientRect().height,
-      );
-    }, [setSize, index, windowWidth]);
-
-    prepareRow(row);
-
-    const { key: keyRow, ...restRowProps } = row.getRowProps();
     return (
-      <div
-        id={row.original[idColumn]}
-        className={`rt-tr ${striped ? 'rt-striped' : ''} ${
-          isEven ? '-odd' : '-even'
-        } ${selected ? 'rt-selected' : ''}`}
-        role="row"
-        key={keyRow}
-        {...restRowProps}
-        onClick={() => {
-          row.toggleRowSelected(!selected);
-
-          if (!onSelectionChange) return;
-
-          onSelectionChange(row);
-        }}
+      <tr
         ref={rowRef}
+        onClick={() => {
+          row.toggleSelected();
+          if (onSelectionChange) onSelectionChange(row);
+        }}
       >
-        {row.cells.map((cell: any) => {
-          const column: any = cell.column;
-          if (typeof column.show === 'boolean' && !column.show) {
-            return null;
-          }
-
-          const { key: keyCell, ...restCellProps } = cell.getCellProps();
-          return (
-            <div
-              className="rt-td"
-              role="gridcell"
-              key={keyCell}
-              {...restCellProps}
-            >
-              {cell.render('Cell')}
-            </div>
-          );
-        })}
-      </div>
+        {row.getVisibleCells().map((cell) => (
+          <td key={cell.id}>
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+          </td>
+        ))}
+      </tr>
     );
   }
 
-  const listRef = useRef<any>(null);
-  const sizeMap = useRef({});
-  const setSize = useCallback((index: number, size: number) => {
-    sizeMap.current = { ...sizeMap.current, [index]: size };
-    listRef.current.resetAfterIndex(index);
-  }, []);
-  const getSize = (index: number) =>
-    ((sizeMap as any).current[index] as any) || 50;
-  const { width } = useWindowSize();
-
-  // scroll to a specific row
-  useEffect(() => {
-    if (!listRef?.current) return;
-    listRef.current.scrollToItem(scrollToRow, 'center');
-  }, [scrollToRow]);
-
-  const { key: keyTable, ...restTableProps } = getTableProps();
-  const { key: keyTableBody, ...restTableBodyProps } = getTableBodyProps();
   return (
     <div
       id={id}
       ref={measuredTableRef}
       className="ReactTable"
       css={tableStyles({
-        tableWidth: totalColumnsWidth,
         height,
         hideHeader: false,
       })}
     >
-      <div className="rt-table" role="grid" key={keyTable} {...restTableProps}>
-        <div className="rt-thead">
-          {headerGroups.map((headerGroup) => {
-            const { key: keyHeaderGroup, ...restHeaderGroupProps } =
-              headerGroup.getHeaderGroupProps();
-            return (
-              <div
-                className="rt-tr"
-                role="row"
-                key={keyHeaderGroup}
-                {...restHeaderGroupProps}
-              >
-                {headerGroup.headers.map((column: any) => {
-                  if (typeof column.show === 'boolean' && !column.show) {
-                    return null;
-                  }
-
-                  const { key: keyHeader, ...restHeaderProps } =
-                    column.getHeaderProps(column.getSortByToggleProps());
-                  const { key: keyResizer, ...restResizerProps } =
-                    column.getResizerProps();
-                  return (
-                    <div
-                      className="rt-th"
-                      role="columnheader"
-                      key={keyHeader}
-                      {...restHeaderProps}
-                    >
-                      <div>
-                        <div className="rt-col-title">
-                          {column.render('Header')}
-                          <span>
-                            {column.isSorted ? (
-                              column.isSortedDesc ? (
-                                <i className="fas fa-arrow-down" />
-                              ) : (
-                                <i className="fas fa-arrow-up" />
-                              )
-                            ) : (
-                              ''
-                            )}
-                          </span>
-                        </div>
-                        {column.filterable && (
-                          <div className="rt-filter">
-                            {column.render('Filter')}
-                          </div>
-                        )}
-                      </div>
-                      {column.canResize && (
-                        <div
-                          key={keyResizer}
-                          {...restResizerProps}
-                          className={`rt-resizer ${
-                            column.isResizing ? 'isResizing' : ''
-                          }`}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-        <div className="rt-tbody" key={keyTableBody} {...restTableBodyProps}>
-          <VariableSizeList
-            height={(height ?? 400) - 97}
-            itemCount={rows.length}
-            itemSize={getSize}
-            width="100%"
-            ref={listRef}
-          >
-            {({ index, style }) => (
-              <div
-                style={{
-                  ...style,
-                  overflowX: 'hidden',
-                }}
-              >
-                <RowVirtualized
-                  index={index}
-                  setSize={setSize}
-                  windowWidth={width}
-                />
-              </div>
-            )}
-          </VariableSizeList>
-        </div>
-      </div>
+      <table style={{ display: 'grid' }}>
+        <thead
+          style={{
+            display: 'grid',
+            position: 'sticky',
+            top: 0,
+            zIndex: 1,
+          }}
+        >
+          {table.getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id} style={{ display: 'flex', width: '100%' }}>
+              {headerGroup.headers.map((header) => (
+                <th
+                  key={header.id}
+                  style={{ display: 'flex', width: header.getSize() }}
+                >
+                  <div
+                    {...{
+                      className: header.column.getCanSort()
+                        ? 'cursor-pointer select-none'
+                        : '',
+                      onClick: header.column.getToggleSortingHandler(),
+                    }}
+                  >
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext(),
+                    )}
+                    {{
+                      asc: <i className="fas fa-arrow-up" />,
+                      desc: <i className="fas fa-arrow-down" />,
+                    }[header.column.getIsSorted() as string] ?? null}
+                  </div>
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+        <TableBody table={table} tableContainerRef={measuredTableRef} />
+      </table>
     </div>
+  );
+}
+
+interface TableBodyProps {
+  table: Table<any>;
+  tableContainerRef: React.RefObject<HTMLDivElement>;
+}
+
+function TableBody({ table, tableContainerRef }: TableBodyProps) {
+  const { rows } = table.getRowModel();
+
+  // Important: Keep the row virtualizer in the lowest component possible to avoid unnecessary re-renders.
+  const rowVirtualizer = useVirtualizer<HTMLDivElement, HTMLTableRowElement>({
+    count: rows.length,
+    estimateSize: () => 33, //estimate row height for accurate scrollbar dragging
+    getScrollElement: () => tableContainerRef.current,
+    //measure dynamic row height, except in firefox because it measures table border height incorrectly
+    measureElement:
+      typeof window !== 'undefined' &&
+      navigator.userAgent.indexOf('Firefox') === -1
+        ? (element) => element?.getBoundingClientRect().height
+        : undefined,
+    overscan: 5,
+  });
+
+  return (
+    <tbody
+      style={{
+        display: 'grid',
+        height: `${rowVirtualizer.getTotalSize()}px`, //tells scrollbar how big the table is
+        position: 'relative', //needed for absolute positioning of rows
+      }}
+    >
+      {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+        const row = rows[virtualRow.index] as Row<any>;
+        return (
+          <TableBodyRow
+            key={row.id}
+            row={row}
+            virtualRow={virtualRow}
+            rowVirtualizer={rowVirtualizer}
+          />
+        );
+      })}
+    </tbody>
+  );
+}
+
+interface TableBodyRowProps {
+  row: Row<any>;
+  virtualRow: VirtualItem;
+  rowVirtualizer: Virtualizer<HTMLDivElement, HTMLTableRowElement>;
+}
+
+function TableBodyRow({ row, virtualRow, rowVirtualizer }: TableBodyRowProps) {
+  return (
+    <tr
+      data-index={virtualRow.index} //needed for dynamic row height measurement
+      ref={(node) => rowVirtualizer.measureElement(node)} //measure dynamic row height
+      key={row.id}
+      style={{
+        display: 'flex',
+        position: 'absolute',
+        transform: `translateY(${virtualRow.start}px)`, //this should always be a `style` as it changes on scroll
+        width: '100%',
+      }}
+    >
+      {row.getVisibleCells().map((cell) => {
+        return (
+          <td
+            key={cell.id}
+            style={{
+              display: 'flex',
+              width: cell.column.getSize(),
+            }}
+          >
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+          </td>
+        );
+      })}
+    </tr>
   );
 }
 
@@ -511,301 +469,179 @@ export function ReactTableEditable({
   onDataChange,
   expandable = false,
 }: EditableProps) {
-  // Initializes the column widths based on the table width
   const [tableWidth, setTableWidth] = useState(0);
-  const columns = useMemo(() => {
-    return getColumns(tableWidth);
-  }, [tableWidth, getColumns]);
-
-  // default column settings
-  const defaultColumn = useMemo(
-    () => ({
-      // When using the useFlexLayout:
-      minWidth: 50, // minWidth is only used as a limit for resizing
-      width: 150, // width is used for both the flex-basis and flex-grow
-      maxWidth: 1000, // maxWidth is only used as a limit for resizing
-      Filter: generateFilterInput,
-      Cell: ReactTableEditableCell,
-    }),
-    [],
+  const columns = useMemo(
+    () => getColumns(tableWidth).filter((c) => c.show !== false),
+    [tableWidth, getColumns],
   );
+  console.log('columns1: ', getColumns(tableWidth));
+  console.log('columns2: ', columns);
+
+  const [expanded, setExpanded] = React.useState<ExpandedState>({});
+
+  // const [tableData, setTableData] = useState(data);
 
   // const updateMyData = (rowIndex, columnId, value) => {
-  //   if (!onDataChange) return;
-  //   const row = rows[rowIndex]; // Get the row at this index
-  //   console.log('row: ', row);
-  //   onDataChange(rowIndex, {
-  //     ...row.original,
-  //     ...row.values,
-  //     subRows: row.subRows.map((sub) => {
-  //       return {
-  //         ...sub.original,
-  //         ...sub.values,
-  //       };
-  //     }),
-  //   });
+  //   setTableData((prev) =>
+  //     prev.map((row, index) =>
+  //       index === rowIndex ? { ...row, [columnId]: value } : row,
+  //     ),
+  //   );
   // };
 
-  const {
-    getTableProps,
-    getTableBodyProps,
-    headerGroups,
-    rows,
-    prepareRow,
-    totalColumnsWidth,
-  }: {
-    getTableProps: any;
-    getTableBodyProps: any;
-    headerGroups: HeaderGroup<Object>[];
-    rows: Row<Object>[];
-    prepareRow: (row: Row<Object>) => void;
-    selectedFlatRows: any;
-    state: any;
-    totalColumnsWidth: number;
-  } = useTable(
-    {
-      autoResetSortBy: false,
-      columns,
-      data,
-      defaultColumn,
-      updateMyData: onDataChange,
-    } as any,
-    useResizeColumns,
-    useBlockLayout,
-    useFlexLayout,
-    useFilters,
-    useExpanded,
-  ) as any;
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getExpandedRowModel: expandable ? getExpandedRowModel() : undefined,
+    onExpandedChange: setExpanded,
+    // getSubRows: (row) => row.subRows,
+    getRowCanExpand: (row) => !!row.original.subRows,
+    state: { expanded },
+    meta: { updateMyData: onDataChange },
+  });
 
-  // measures the table width
-  const measuredTableRef = useCallback((node: HTMLDivElement) => {
-    if (!node) return;
-    setTableWidth(node.getBoundingClientRect().width);
+  const measuredTableRef = useCallback((node) => {
+    if (node) setTableWidth(node.getBoundingClientRect().width);
   }, []);
 
-  const { keyTable, restTableProps } = getTableProps();
-  const { keyTableBody, restTableBodyProps } = getTableBodyProps();
   return (
     <div
       id={id}
       ref={measuredTableRef}
       className="ReactTable"
-      css={tableStyles({ tableWidth: totalColumnsWidth, height, hideHeader })}
+      style={{ height }}
+      css={tableStyles({ height, hideHeader })}
     >
-      <div className="rt-table" role="grid" key={keyTable} {...restTableProps}>
-        <div className="rt-thead">
-          {headerGroups.map((headerGroup) => {
-            const { key: keyHeaderGroup, ...restHeaderGroupProps } =
-              headerGroup.getHeaderGroupProps();
+      <table>
+        {!hideHeader && (
+          <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {expandable && <th />}
+                {headerGroup.headers.map((header) => (
+                  <th role="columnheader" key={header.id}>
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext(),
+                    )}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+        )}
+        <tbody>
+          {table.getRowModel().rows.map((row, i) => {
+            console.log('row: ', row);
             return (
-              <div
-                className="rt-tr"
-                role="row"
-                key={keyHeaderGroup}
-                {...restHeaderGroupProps}
-              >
-                {headerGroup.headers.map((column: any) => {
-                  if (typeof column.show === 'boolean' && !column.show) {
-                    return null;
-                  }
-
-                  const { key: keyHeader, ...restHeaderProps } =
-                    column.getHeaderProps();
-                  const { key: keyResizer, ...restResizerProps } =
-                    column.getResizerProps();
-                  return (
-                    <div
-                      className="rt-th"
-                      role="columnheader"
-                      key={keyHeader}
-                      {...restHeaderProps}
-                    >
-                      <div>
-                        <div className="rt-col-title">
-                          {column.render('Header')}
-                          <span>
-                            {column.isSorted ? (
-                              column.isSortedDesc ? (
-                                <i className="fas fa-arrow-down" />
-                              ) : (
-                                <i className="fas fa-arrow-up" />
-                              )
-                            ) : (
-                              ''
-                            )}
-                          </span>
-                        </div>
-                        {column.filterable && (
-                          <div className="rt-filter">
-                            {column.render('Filter')}
-                          </div>
-                        )}
-                      </div>
-                      {column.canResize && (
-                        <div
-                          key={keyResizer}
-                          {...restResizerProps}
-                          className={`rt-resizer ${
-                            column.isResizing ? 'isResizing' : ''
-                          }`}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-        <div className="rt-tbody" key={keyTableBody} {...restTableBodyProps}>
-          {rows.map((row, i) => {
-            // cast as any to workaround toggleRowSelected not being on the type
-            const tempRow = row as any;
-
-            const isEven = i % 2 === 0;
-            prepareRow(row);
-
-            const { key: keyRow, ...restRowProps } = row.getRowProps();
-            if (expandable) console.log('row: ', row);
-            return (
-              <Fragment key={keyRow}>
-                <div
-                  id={tempRow.original[idColumn]}
-                  className={`rt-tr ${striped ? 'rt-striped' : ''} ${
-                    isEven ? '-odd' : '-even'
-                  }`}
-                  role="row"
-                  {...restRowProps}
+              <Fragment key={row.id}>
+                <tr
+                  className={`${striped ? (i % 2 === 0 ? '-odd' : '-even') : ''}`}
                 >
-                  {expandable && (row as any).depth === 0 ? (
-                    <div
-                      className="rt-td"
-                      role="gridcell"
-                      {...(row as any).getToggleRowExpandedProps()}
-                    >
-                      <button onClick={() => (row as any).toggleRowExpanded()}>
-                        {(row as any).isExpanded ? '▼' : '▶'}
+                  {expandable && row.getCanExpand() && (
+                    <td>
+                      <button onClick={row.getToggleExpandedHandler()}>
+                        {row.getIsExpanded() ? '▼' : '▶'}
                       </button>
-                    </div>
-                  ) : (
-                    <div
-                      css={css`
-                        width: 53.6094px;
-                      `}
-                    />
+                    </td>
                   )}
-                  {row.cells.map((cell) => {
-                    const column: any = cell.column;
-                    if (typeof column.show === 'boolean' && !column.show) {
-                      return null;
-                    }
-
-                    const { key: keyCell, ...restCellProps } =
-                      cell.getCellProps();
-                    return (
-                      <div
-                        className="rt-td"
-                        role="gridcell"
-                        key={keyCell}
-                        {...restCellProps}
-                      >
-                        {cell.render('Cell')}
-                      </div>
-                    );
-                  })}
-                </div>
-                {expandable &&
-                  (row as any).isExpanded &&
-                  (row.original as any).subRows && (
-                    <div role="row">
-                      <div role="gridcell" data-colspan={columns.length}>
-                        <ReactTableEditable
-                          id={generateUUID()}
-                          data={(row.original as any).subRows}
-                          getColumns={getColumns}
-                          idColumn={idColumn}
-                          striped={striped}
-                          hideHeader={true}
-                          onDataChange={(
-                            rowIndex: any,
-                            columnId: any,
-                            value: any,
-                          ) => {
-                            onDataChange?.(i, columnId, value, rowIndex);
-
-                            // const newTable = buildingDeconSelections.map(
-                            //   (row: any, index: number) => {
-                            //     // update the row if it is the row in focus and the data has changed
-                            //     if (index === rowIndex && row[columnId] !== value) {
-                            //       return {
-                            //         ...buildingDeconSelections[rowIndex],
-                            //         [columnId]: value,
-                            //       };
-                            //     }
-                            //     return row;
-                            //   },
-                            // );
-
-                            // setBuildingDeconSelections(newTable);
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </td>
+                  ))}
+                </tr>
+                {expandable && row.getIsExpanded() && (
+                  <tr>
+                    <td />
+                    <td colSpan={columns.length}>
+                      <ReactTableEditable
+                        id={`${id}-sub-${row.id}`}
+                        data={row.original.subRows || []}
+                        getColumns={getColumns}
+                        idColumn={idColumn}
+                        striped={striped}
+                        hideHeader={true}
+                        onDataChange={onDataChange}
+                        expandable={expandable}
+                      />
+                    </td>
+                  </tr>
+                )}
+                {/* isExpanded: {row.getIsExpanded().toString()}
+                subRows: {row.subRows.toString()}
+                {row.getIsExpanded() &&
+                  row.subRows.map((subRow) => (
+                    <tr key={subRow.id} className="sub-row">
+                      <td />
+                      {subRow.getVisibleCells().map((cell) => (
+                        <td key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))} */}
               </Fragment>
             );
           })}
-        </div>
-      </div>
+        </tbody>
+      </table>
     </div>
   );
 }
 
 type EditableCellProps = {
-  value: any;
-  row: any;
-  column: any;
-  updateMyData: any;
+  getValue: () => any;
+  row: CellContext<any, any>['row'];
+  column: CellContext<any, any>['column'];
+  table: Table<any>;
 };
 
 export function ReactTableEditableCell({
-  value: initialValue,
+  getValue,
   row,
   column,
-  updateMyData, // This is a custom function that we supplied to our table instance
+  table,
 }: EditableCellProps) {
-  // We need to keep and update the state of the cell normally
-  const [value, setValue] = useState(initialValue);
+  // State to manage input values
+  const [value, setValue] = useState(getValue());
 
+  // Get necessary properties
   const index = row.index;
   const id = column.id;
-  const editType: 'checkbox' | 'input' | 'select' | null | undefined =
-    column.editType;
-  const options: { label: string; value: string }[] = column.options;
+  const editType = column.columnDef.editType;
+  const options = column.columnDef.options;
 
-  const onChange = (e: any) => {
+  const updateMyData = table.options.meta?.updateMyData; // Get update function from table meta
+
+  const onChange = (e) => {
     if (editType === 'checkbox') setValue(e.target.checked);
     else setValue(e.target.value);
   };
 
-  // We'll only update the external data when the input is blurred
   const onBlur = () => {
     updateMyData(index, id, value);
   };
 
-  const onKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+  const onKeyDown = (event) => {
     if (event.key === 'Enter') {
       updateMyData(index, id, value);
     }
   };
 
-  // If the initialValue is changed external, sync it up with our state
   useEffect(() => {
-    setValue(initialValue);
-  }, [initialValue]);
+    setValue(getValue());
+  }, [getValue]);
 
   if (editType === 'checkbox') {
-    if (row.original.media.includes('Exterior')) return undefined;
+    if (row.original.media?.includes('Exterior')) return null;
     return (
       <div css={checkboxStyles}>
         <input
@@ -836,12 +672,12 @@ export function ReactTableEditableCell({
         styles={{
           menuPortal: (base) => ({ ...base, fontSize: '0.78em', zIndex: 9999 }),
         }}
-        value={value}
+        value={options.find((option) => option.value === value)}
         options={options}
         menuPortalTarget={document.body}
-        onChange={(ev) => {
-          setValue(ev as any);
-          updateMyData(index, id, ev);
+        onChange={(selectedOption) => {
+          setValue(selectedOption?.value || '');
+          updateMyData(index, id, selectedOption?.value || '');
         }}
         isClearable={true}
       />
