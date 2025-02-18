@@ -94,21 +94,28 @@ export type LayerAoiAnalysisEditsType = {
   };
   aoiSummary: {
     totalAoiSqM: number;
+    totalBuildingExtSqM: number;
+    totalBuildingIntSqM: number;
+    totalBuildingVolumeCubM: number;
     totalBuildingExtWallsSqM: number;
     totalBuildingFloorsSqM: number;
     totalBuildingFootprintSqM: number;
     totalBuildingIntWallsSqM: number;
     totalBuildingRoofSqM: number;
     totalBuildingSqM: number;
-    areaByMedia: {
-      id: number;
-      media: string;
-      pctAoi: number;
-      surfaceArea: number;
-    }[];
+    areaByMedia: AreaByMediaType[];
   };
   deconTechSelections: any[];
   gsgFile?: any;
+};
+
+export type AreaByMediaType = {
+  id: string;
+  media: string;
+  pctAoi: number;
+  surfaceArea: number;
+  volume: number;
+  subMedia: AreaByMediaType[];
 };
 
 export type LayerDeconEditsType = {

@@ -12,6 +12,7 @@ import { css } from '@emotion/react';
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import CharacterizeAOI, { SaveStatusType } from 'components/CharacterizeAOI';
 import { EditScenario } from 'components/EditLayerMetaData';
+import InfoIcon from 'components/InfoIcon';
 import LoadingSpinner from 'components/LoadingSpinner';
 import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
@@ -20,7 +21,7 @@ import Select from 'components/Select';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 import { NavigationContext } from 'contexts/Navigation';
-import { SketchContext, hazardousOptions } from 'contexts/Sketch';
+import { SketchContext } from 'contexts/Sketch';
 // types
 import {
   EditsType,
@@ -41,7 +42,7 @@ import {
 } from 'utils/sketchUtils';
 import { formatNumber, getNewName, getScenarioName } from 'utils/utils';
 // styles
-import { colors, reactSelectStyles } from 'styles';
+import { colors, infoIconStyles, reactSelectStyles } from 'styles';
 import { DialogContent, DialogOverlay } from '@reach/dialog';
 
 type ShapeTypeSelect = {
@@ -660,7 +661,7 @@ function CreateDeconPlan({ appType }: Props) {
                 <div css={iconButtonContainerStyles}>
                   <div css={verticalCenterTextStyles}>
                     <label htmlFor="scenario-select-input">
-                      Decon Operation
+                      Decon Operation(s)
                     </label>
                   </div>
                   <div css={layerButtonContainerStyles}>
@@ -1147,7 +1148,11 @@ function CreateDeconPlan({ appType }: Props) {
                                     resultsTable: [],
                                   },
                                   deconSummaryResults: {},
-                                  deconTechSelections: defaultDeconSelections,
+                                  deconTechSelections:
+                                    defaultDeconSelections.map((tech) => ({
+                                      ...tech,
+                                      id: generateUUID(),
+                                    })),
                                 } as LayerDeconEditsType,
                               ],
                             };
@@ -1258,12 +1263,14 @@ function CreateDeconPlan({ appType }: Props) {
 
 type DeconSelectionProps = {
   defaultDeconSelections: any[];
+  advanced?: boolean;
   editable?: boolean;
   performUpdate?: boolean;
 };
 
 function DeconSelectionTable({
   defaultDeconSelections,
+  advanced = false,
   editable = false,
   performUpdate = false,
 }: DeconSelectionProps) {
@@ -1348,6 +1355,7 @@ function DeconSelectionTable({
     }
   }, [calculateResultsDecon, deconOperation, edits, hasUpdatedSelections]);
 
+  // saves data out
   const updateEdits = useCallback(
     (newTable: any[] | null = null) => {
       if (!deconOperation) return;
@@ -1390,6 +1398,7 @@ function DeconSelectionTable({
     ],
   );
 
+  // allows parent to trigger save
   const [updateEditsRan, setUpdateEditsRan] = useState(false);
   useEffect(() => {
     if (!performUpdate || updateEditsRan) return;
@@ -1471,24 +1480,11 @@ function DeconSelectionTable({
             options: allSampleOptions,
           },
           {
-            Header: 'Number of Applications',
-            accessor: 'numApplications',
-            width: 0,
-            editType: editable ? 'input' : undefined,
-            show: false,
-          },
-          {
-            Header: 'Number of Concurrent Applications',
-            accessor: 'numConcurrentApplications',
+            Header: 'Number of Decon Iterations',
+            accessor: 'numIterativeApplications',
             width: 97,
             editType: editable ? 'input' : undefined,
-          },
-          {
-            Header: 'Percent Decontaminated',
-            accessor: 'pctDeconed',
-            width: 0,
-            editType: editable ? 'input' : undefined,
-            show: false,
+            show: advanced,
           },
           {
             Header: 'Average Final Contamination (CFUs/m²)',
@@ -1501,14 +1497,6 @@ function DeconSelectionTable({
             accessor: 'aboveDetectionLimit',
             width: 97,
             show: devMode && trainingMode,
-          },
-          {
-            Header: 'Is Hazardous',
-            accessor: 'isHazardous',
-            width: 0,
-            editType: editable ? 'select' : undefined,
-            options: hazardousOptions,
-            show: false,
           },
         ];
       }}
@@ -1569,6 +1557,65 @@ const buttonContainerStyles = css`
   margin-top: 1rem;
 `;
 
+const radioGroupStyles = css`
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1rem;
+`;
+
+const radioContainerStyles = (
+  selected: boolean,
+  disabled: boolean = false,
+) => css`
+  align-self: stretch;
+  ${selected ? 'background-color: #E5EFF6;' : ''}
+  ${disabled ? 'opacity: 0.5;' : ''}
+  border: 2px solid ${selected ? '#004B97' : '#C6C6C6'};
+  border-radius: 3px;
+  flex-basis: 0;
+  flex-grow: 1;
+  padding: 0.5rem;
+
+  div {
+    display: flex;
+    gap: 0.25rem;
+  }
+`;
+
+const radioSubTitleStyles = css`
+  display: block;
+  font-size: 0.825rem;
+  margin: 0 1.125rem 0.75rem;
+`;
+
+const infoIconStylesModified = css`
+  ${infoIconStyles}
+  margin-right: 1rem;
+`;
+
+const dividerStyles = css`
+  border-top: solid #4472c4;
+  border-width: 3px 0 0;
+`;
+
+function isOutside(media: string) {
+  return [
+    'Soil/Vegetation',
+    'Streets - Asphalt',
+    'Streets/Sidewalks - Concrete',
+  ].includes(media);
+}
+
+const lookup: { [key: string]: string[] } = {
+  'Building Exteriors': ['Building Exterior Walls', 'Building Roofs'],
+  'Building Interiors': ['Building Interior Walls', 'Building Interior Floors'],
+};
+
+type ApproachTypes = 'basic' | 'advanced' | 'experimental';
+
+type BuildingApproachTypes = 'material-composition' | 'structural';
+
 type DeconSelectionPopupProps = {
   defaultDeconSelections: any[];
   isOpen: boolean;
@@ -1580,9 +1627,57 @@ function DeconSelectionPopup({
   isOpen,
   onClose,
 }: DeconSelectionPopupProps) {
-  const { edits, deconOperation } = useContext(SketchContext);
-  const { calculateResultsDecon } = useContext(CalculateContext);
+  const { calculateResultsDecon, setCalculateResultsDecon } =
+    useContext(CalculateContext);
+  const { trainingMode } = useContext(NavigationContext);
+  const { allSampleOptions, deconOperation, edits, setEdits } =
+    useContext(SketchContext);
   const [performUpdate, setPerformUpdate] = useState(false);
+
+  const options: {
+    value: ApproachTypes;
+    label: string;
+    description: string;
+  }[] = [
+    {
+      value: 'basic',
+      label: 'Basic',
+      description: 'Define broad decontamination strategies',
+    },
+    {
+      value: 'advanced',
+      label: 'Advanced',
+      description:
+        'Define decontamination strategies by structural or material composition',
+    },
+    {
+      value: 'experimental',
+      label: 'Experimental',
+      description:
+        'Include decontamination estimates for building interior contents',
+    },
+  ];
+  const [selectedApproach, setSelectedApproach] =
+    useState<ApproachTypes>('basic');
+
+  const buildingApproachOptions: {
+    value: BuildingApproachTypes;
+    label: string;
+    description: string;
+  }[] = [
+    {
+      value: 'structural',
+      label: 'Building Structural Component',
+      description: '',
+    },
+    {
+      value: 'material-composition',
+      label: 'Building Primary Material Composition',
+      description: '',
+    },
+  ];
+  const [selectedBuildingApproach, setSelectedBuildingApproach] =
+    useState<BuildingApproachTypes>('structural');
 
   const selectedDeconOp = edits.edits.find(
     (e) => e.type === 'layer-decon' && e.layerId === deconOperation?.layerId,
@@ -1598,15 +1693,152 @@ function DeconSelectionPopup({
     const aoiLayer = edits.edits.find(
       (e) => e.layerId === selectedDeconOp.analysisLayerId,
     ) as LayerAoiAnalysisEditsType;
-    if (!aoiLayer) return;
 
-    area += aoiLayer.aoiSummary.totalAoiSqM;
-    buildingFootprintArea += aoiLayer.aoiSummary.totalBuildingFootprintSqM;
-    cost += selectedDeconOp.deconLayerResults.cost;
-    time += selectedDeconOp.deconLayerResults.time;
-    wasteVolume += selectedDeconOp.deconLayerResults.wasteVolume;
-    wasteMass += selectedDeconOp.deconLayerResults.wasteMass;
+    if (aoiLayer) {
+      area += aoiLayer.aoiSummary.totalAoiSqM;
+      buildingFootprintArea += aoiLayer.aoiSummary.totalBuildingFootprintSqM;
+      cost += selectedDeconOp.deconLayerResults.cost;
+      time += selectedDeconOp.deconLayerResults.time;
+      wasteVolume += selectedDeconOp.deconLayerResults.wasteVolume;
+      wasteMass += selectedDeconOp.deconLayerResults.wasteMass;
+    }
   }
+
+  const [basicDeconSelections, setBasicDeconSelections] = useState(
+    defaultDeconSelections,
+  );
+  const [buildingDeconSelections, setBuildingDeconSelections] = useState(
+    defaultDeconSelections,
+  );
+
+  // initialize decon selections
+  useEffect(() => {
+    if (!deconOperation) {
+      setBasicDeconSelections([]);
+      return;
+    }
+
+    const selectedDeconOp = edits.edits.find(
+      (e) => e.type === 'layer-decon' && e.layerId === deconOperation?.layerId,
+    ) as LayerDeconEditsType;
+    let baseDeconSelections: any[] = [];
+    if (
+      selectedDeconOp.deconTechSelections &&
+      selectedDeconOp.deconTechSelections.length > 0
+    ) {
+      baseDeconSelections = [...selectedDeconOp.deconTechSelections];
+    } else {
+      baseDeconSelections = [...defaultDeconSelections];
+
+      setEdits((edits) => {
+        const index = edits.edits.findIndex(
+          (item) =>
+            item.type === 'layer-decon' &&
+            item.layerId === deconOperation?.layerId,
+        );
+
+        if (index === -1) return edits;
+
+        const editedOp = edits.edits[index] as LayerDeconEditsType;
+        editedOp.deconTechSelections = [...defaultDeconSelections];
+
+        return {
+          count: edits.count + 1,
+          edits: [
+            ...edits.edits.slice(0, index),
+            editedOp,
+            ...edits.edits.slice(index + 1),
+          ],
+        };
+      });
+    }
+
+    function addMedia(key: string, buildingDeconObject: any, deconTech: any) {
+      if (Object.prototype.hasOwnProperty.call(buildingDeconObject, key)) {
+        buildingDeconObject[key].surfaceArea += deconTech.surfaceArea;
+      } else {
+        buildingDeconObject[key] = {
+          ...deconTech,
+          media: key,
+          removeContents:
+            key === 'Building Interiors' ? deconTech.removeContents : undefined,
+        };
+      }
+    }
+
+    const basicDeconSelections: any[] = [];
+    const buildingDeconObject: any = {};
+    baseDeconSelections.forEach((deconTech) => {
+      if (isOutside(deconTech.media)) {
+        basicDeconSelections.push(deconTech);
+        return;
+      }
+
+      if (selectedApproach === 'basic')
+        addMedia(
+          'Buildings (Interior and Exterior)',
+          buildingDeconObject,
+          deconTech,
+        );
+      if (
+        selectedApproach === 'advanced' &&
+        selectedBuildingApproach === 'structural'
+      ) {
+        deconTech.subRows?.forEach((deconTech: any) => {
+          addMedia(deconTech.media, buildingDeconObject, deconTech);
+        });
+      }
+      if (
+        selectedApproach === 'advanced' &&
+        selectedBuildingApproach === 'material-composition'
+      ) {
+        addMedia(deconTech.media, buildingDeconObject, deconTech);
+      }
+    });
+
+    setBasicDeconSelections(
+      selectedApproach === 'basic'
+        ? [...basicDeconSelections, ...Object.values(buildingDeconObject)]
+        : basicDeconSelections,
+    );
+    setBuildingDeconSelections(Object.values(buildingDeconObject));
+  }, [
+    deconOperation,
+    defaultDeconSelections,
+    edits,
+    selectedApproach,
+    selectedBuildingApproach,
+    setEdits,
+  ]);
+
+  useEffect(() => {
+    console.log('basicDeconSelections: ', basicDeconSelections);
+  }, [basicDeconSelections]);
+  useEffect(() => {
+    console.log('buildingDeconSelections: ', buildingDeconSelections);
+  }, [buildingDeconSelections]);
+
+  function handleApproachChange(selection: ApproachTypes) {
+    setSelectedApproach(selection);
+  }
+
+  function handleBuildingApproachChange(selection: BuildingApproachTypes) {
+    setSelectedBuildingApproach(selection);
+  }
+
+  const setNestedValue = (obj: any, path: string, value: any) => {
+    const keys = path.split('.');
+    let current = obj;
+
+    keys.slice(0, -1).forEach((key) => {
+      if (!current[key]) current[key] = {}; // Create nested objects if missing
+      current = current[key];
+    });
+
+    current[keys[keys.length - 1]] = value;
+  };
+
+  const devMode = window.location.search.includes('devMode=true');
 
   return (
     <DialogOverlay
@@ -1616,22 +1848,9 @@ function DeconSelectionPopup({
     >
       <DialogContent css={dialogStyles} aria-label="Edit Attribute">
         <h1 css={headingStyles}>
-          Specify Decon Strategies for Contamination Scenarios{' '}
+          Specify Decontamination Strategies for Contamination Scenarios{' '}
           {deconOperation ? `in ${deconOperation?.label}` : ''}
         </h1>
-
-        <p>
-          For each contamination scenario listed, choose a decontamination
-          method from the drop-down menu. An{' '}
-          <a
-            href="https://www.epa.gov/emergency-response-research/analysis-coastal-operational-resiliency"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            overview of available technologies and applicable considerations
-          </a>{' '}
-          is also available to review.
-        </p>
 
         <div css={resourceTallyContainerStyles}>
           <div>
@@ -1678,20 +1897,582 @@ function DeconSelectionPopup({
           </div>
         </div>
 
-        <DeconSelectionTable
+        <strong>Select estimation approach:</strong>
+
+        <div css={radioGroupStyles}>
+          {options.map((option) => (
+            <div
+              key={option.value}
+              css={radioContainerStyles(
+                option.value === selectedApproach,
+                option.value === 'experimental',
+              )}
+              onClick={() => {
+                if (option.value === 'experimental') return;
+                handleApproachChange(option.value);
+              }}
+            >
+              <div>
+                <input
+                  id={`${option.value}-approach`}
+                  type="radio"
+                  name="decon-approach"
+                  value={option.value}
+                  checked={option.value === selectedApproach}
+                  disabled={option.value === 'experimental'}
+                  onChange={(_ev) => handleApproachChange(option.value)}
+                />
+                <label htmlFor={`${option.value}-approach`}>
+                  {option.label}
+                </label>
+              </div>
+              <span css={radioSubTitleStyles}>{option.description}</span>
+            </div>
+          ))}
+        </div>
+
+        <p>
+          For each contamination scenario listed, choose a decontamination
+          method from the drop-down menu. An{' '}
+          <a
+            href="https://www.epa.gov/emergency-response-research/analysis-coastal-operational-resiliency"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            overview of available technologies and applicable considerations
+          </a>{' '}
+          is also available to review.
+        </p>
+
+        {/* <DeconSelectionTable
           defaultDeconSelections={defaultDeconSelections}
+          advanced={selectedApproach === 'advanced'}
           editable={true}
           performUpdate={performUpdate}
+        /> */}
+
+        <ReactTableEditable
+          id={generateUUID()}
+          data={basicDeconSelections.map((sel) => {
+            return {
+              ...sel,
+              deconTech: sel.deconTech,
+              isHazardous: sel.deconTech,
+              pctAoi: sel.pctAoi ? `${formatNumber(sel.pctAoi)}%` : '',
+              surfaceArea: `${formatNumber(sel.surfaceArea)} m²`,
+              volume: `${formatNumber(sel.volume)} m³`,
+              avgCfu: formatNumber(sel.avgCfu),
+              avgFinalContamination: formatNumber(sel.avgFinalContamination, 2),
+              aboveDetectionLimit: sel.aboveDetectionLimit ? 'Above' : 'Below',
+            };
+          })}
+          idColumn={'ID'}
+          striped={true}
+          hideHeader={false}
+          height={-1}
+          onDataChange={(rowIndex: any, columnId: any, value: any) => {
+            const newTable = basicDeconSelections.map(
+              (row: any, index: number) => {
+                // update the row if it is the row in focus and the data has changed
+                if (index === rowIndex && row[columnId] !== value) {
+                  return {
+                    ...basicDeconSelections[rowIndex],
+                    [columnId]: value,
+                  };
+                }
+                return row;
+              },
+            );
+
+            setBasicDeconSelections(newTable);
+          }}
+          getColumns={(_tableWidth: any) => {
+            return [
+              {
+                Header: 'ID',
+                accessor: 'ID',
+                width: 0,
+                show: false,
+              },
+              {
+                Header: 'Contamination Scenario',
+                accessor: 'media',
+                width: 118,
+              },
+              {
+                Header: 'Percent of AOI',
+                accessor: 'pctAoi',
+                width: 75,
+              },
+              {
+                Header: 'Surface Area',
+                accessor: 'surfaceArea',
+                width: 75,
+              },
+              {
+                Header: 'Average Initial Contamination (CFUs/m²)',
+                accessor: 'avgCfu',
+                width: 97,
+                show: devMode && trainingMode,
+              },
+              {
+                Header: 'Biological Decon Technology',
+                accessor: 'deconTech',
+                width: 150,
+                editType: 'select',
+                options: allSampleOptions,
+              },
+              {
+                Header: 'Number of Decon Iterations',
+                accessor: 'numIterativeApplications',
+                width: 75,
+                editType: 'input',
+                show: selectedApproach === 'advanced',
+              },
+              {
+                Header: 'Average Final Contamination (CFUs/m²)',
+                accessor: 'avgFinalContamination',
+                width: 97,
+                show: devMode && trainingMode,
+              },
+              {
+                Header: 'Above/Below Detection Limit',
+                accessor: 'aboveDetectionLimit',
+                width: 97,
+                show: devMode && trainingMode,
+              },
+            ];
+          }}
         />
+
+        {selectedApproach === 'advanced' && (
+          <Fragment>
+            <hr css={dividerStyles} />
+
+            <div css={radioGroupStyles}>
+              {buildingApproachOptions.map((option) => (
+                <div
+                  key={option.value}
+                  css={radioContainerStyles(
+                    option.value === selectedBuildingApproach,
+                  )}
+                  onClick={() => handleBuildingApproachChange(option.value)}
+                >
+                  <div>
+                    <input
+                      id={`${option.value}-approach`}
+                      type="radio"
+                      name="building-approach"
+                      value={option.value}
+                      checked={option.value === selectedBuildingApproach}
+                      onChange={(_ev) =>
+                        handleBuildingApproachChange(option.value)
+                      }
+                    />
+                    <label htmlFor={`${option.value}-approach`}>
+                      {option.label}
+                    </label>
+                  </div>
+                </div>
+              ))}
+
+              <InfoIcon
+                id="advanced-info-icon"
+                cssStyles={infoIconStylesModified}
+                tooltip="placeholder..."
+              />
+            </div>
+
+            {/* <DeconSelectionTable
+              advanced={true}
+              defaultDeconSelections={defaultDeconSelections}
+              editable={true}
+              performUpdate={performUpdate}
+            /> */}
+
+            {selectedBuildingApproach === 'structural' && (
+              <ReactTableEditable
+                id={generateUUID()}
+                data={buildingDeconSelections.map((sel) => {
+                  return {
+                    ...sel,
+                    deconTech: sel.deconTech,
+                    isHazardous: sel.deconTech,
+                    pctAoi: sel.pctAoi ? `${formatNumber(sel.pctAoi)}%` : '',
+                    surfaceArea: `${formatNumber(sel.surfaceArea)} m²`,
+                    volume: `${formatNumber(sel.volume)} m³`,
+                    avgCfu: formatNumber(sel.avgCfu),
+                    avgFinalContamination: formatNumber(
+                      sel.avgFinalContamination,
+                      2,
+                    ),
+                    aboveDetectionLimit: sel.aboveDetectionLimit
+                      ? 'Above'
+                      : 'Below',
+                  };
+                })}
+                idColumn={'ID'}
+                striped={true}
+                hideHeader={false}
+                height={-1}
+                onDataChange={(rowIndex: any, columnId: any, value: any) => {
+                  const newTable = buildingDeconSelections.map(
+                    (row: any, index: number) => {
+                      // update the row if it is the row in focus and the data has changed
+                      if (index === rowIndex && row[columnId] !== value) {
+                        return {
+                          ...buildingDeconSelections[rowIndex],
+                          [columnId]: value,
+                        };
+                      }
+                      return row;
+                    },
+                  );
+
+                  setBuildingDeconSelections(newTable);
+                }}
+                getColumns={(_tableWidth: any) => {
+                  return [
+                    {
+                      Header: 'ID',
+                      accessor: 'ID',
+                      width: 0,
+                      show: false,
+                    },
+                    {
+                      Header: 'Contamination Scenario',
+                      accessor: 'media',
+                      width: 118,
+                    },
+                    {
+                      Header: 'Volume',
+                      accessor: 'volume',
+                      width: 75,
+                    },
+                    {
+                      Header: 'Surface Area',
+                      accessor: 'surfaceArea',
+                      width: 75,
+                    },
+                    {
+                      Header: 'Average Initial Contamination (CFUs/m²)',
+                      accessor: 'avgCfu',
+                      width: 97,
+                      show: devMode && trainingMode,
+                    },
+                    {
+                      Header: 'Biological Decon Technology',
+                      accessor: 'deconTech',
+                      width: 150,
+                      editType: 'select',
+                      options: allSampleOptions,
+                    },
+                    {
+                      Header: 'Remove Bldg Contents After Decon?',
+                      accessor: 'removeContents',
+                      width: 50,
+                      editType: 'checkbox',
+                    },
+                    {
+                      Header: 'Number of Decon Iterations',
+                      accessor: 'numIterativeApplications',
+                      width: 75,
+                      editType: 'input',
+                      show: selectedApproach === 'advanced',
+                    },
+                    {
+                      Header: 'Average Final Contamination (CFUs/m²)',
+                      accessor: 'avgFinalContamination',
+                      width: 97,
+                      show: devMode && trainingMode,
+                    },
+                    {
+                      Header: 'Above/Below Detection Limit',
+                      accessor: 'aboveDetectionLimit',
+                      width: 97,
+                      show: devMode && trainingMode,
+                    },
+                  ];
+                }}
+              />
+            )}
+            {selectedBuildingApproach === 'material-composition' && (
+              <ReactTableEditable
+                id={generateUUID()}
+                expandable={true}
+                data={buildingDeconSelections.map((sel) => {
+                  return {
+                    ...sel,
+                    deconTech: sel.deconTech,
+                    isHazardous: sel.deconTech,
+                    pctAoi: sel.pctAoi ? `${formatNumber(sel.pctAoi)}%` : '',
+                    surfaceArea: `${formatNumber(sel.surfaceArea)} m²`,
+                    volume: `${formatNumber(sel.volume)} m³`,
+                    avgCfu: formatNumber(sel.avgCfu),
+                    avgFinalContamination: formatNumber(
+                      sel.avgFinalContamination,
+                      2,
+                    ),
+                    aboveDetectionLimit: sel.aboveDetectionLimit
+                      ? 'Above'
+                      : 'Below',
+                    subRows: sel.subRows?.map((sub: any) => {
+                      return {
+                        ...sub,
+                        deconTech: sub.deconTech,
+                        isHazardous: sub.deconTech,
+                        pctAoi: sub.pctAoi
+                          ? `${formatNumber(sub.pctAoi)}%`
+                          : '',
+                        surfaceArea: `${formatNumber(sub.surfaceArea)} m²`,
+                        volume: `${formatNumber(sub.volume)} m³`,
+                        avgCfu: formatNumber(sub.avgCfu),
+                        avgFinalContamination: formatNumber(
+                          sub.avgFinalContamination,
+                          2,
+                        ),
+                        aboveDetectionLimit: sub.aboveDetectionLimit
+                          ? 'Above'
+                          : 'Below',
+                      };
+                    }),
+                  };
+                })}
+                idColumn={'ID'}
+                striped={true}
+                hideHeader={false}
+                height={-1}
+                onDataChange={(
+                  rowIndex: any,
+                  columnId: any,
+                  value: any,
+                  subRowIndex: any,
+                ) => {
+                  console.log('rowIndex; ', rowIndex);
+                  console.log('columnId; ', columnId);
+                  console.log('value; ', value);
+                  console.log('subRowIndex; ', subRowIndex);
+                  const newTable = buildingDeconSelections.map(
+                    (row: any, index: number) => {
+                      // update the row if it is the row in focus and the data has changed
+                      if (index === rowIndex) {
+                        if (subRowIndex > -1) {
+                          return {
+                            ...buildingDeconSelections[rowIndex],
+                            subRows: row.subRows?.map(
+                              (sub: any, subIndex: number) => {
+                                if (
+                                  subIndex === subRowIndex &&
+                                  sub[columnId] !== value
+                                ) {
+                                  return {
+                                    ...row.subRows[subRowIndex],
+                                    [columnId]: value,
+                                  };
+                                }
+                                return sub;
+                              },
+                            ),
+                          };
+                        } else if (row[columnId] !== value) {
+                          return {
+                            ...buildingDeconSelections[rowIndex],
+                            [columnId]: value,
+                          };
+                        }
+                      }
+                      return row;
+                    },
+                  );
+
+                  setBuildingDeconSelections(newTable);
+                }}
+                // onDataChange={(rowIndex: any, value: any) => {
+                //   console.log('rowIndex: ', rowIndex);
+                //   console.log('value: ', value);
+                //   const newTable = buildingDeconSelections.map(
+                //     (row: any, index: number) => {
+                //       // update the row if it is the row in focus and the data has changed
+                //       // if (index === rowIndex && row[columnId] !== value) {
+                //       if (index === rowIndex) {
+                //         return value;
+                //       }
+                //       // if (index === rowIndex) {
+                //       //   const updatedRow = JSON.parse(JSON.stringify(row));
+                //       //   setNestedValue(updatedRow, columnId, value);
+                //       //   return updatedRow;
+                //       // }
+                //       return row;
+                //     },
+                //   );
+
+                //   setBuildingDeconSelections(newTable);
+                // }}
+                getColumns={(_tableWidth: any) => {
+                  return [
+                    {
+                      Header: 'ID',
+                      accessor: 'ID',
+                      width: 0,
+                      show: false,
+                    },
+                    {
+                      Header: 'Contamination Scenario',
+                      accessor: 'media',
+                      width: 118,
+                    },
+                    {
+                      Header: 'Volume',
+                      accessor: 'volume',
+                      width: 75,
+                    },
+                    {
+                      Header: 'Surface Area',
+                      accessor: 'surfaceArea',
+                      width: 75,
+                    },
+                    {
+                      Header: 'Average Initial Contamination (CFUs/m²)',
+                      accessor: 'avgCfu',
+                      width: 97,
+                      show: devMode && trainingMode,
+                    },
+                    {
+                      Header: 'Biological Decon Technology',
+                      accessor: 'deconTech',
+                      width: 150,
+                      editType: 'select',
+                      options: allSampleOptions,
+                    },
+                    {
+                      Header: 'Remove Bldg Contents After Decon?',
+                      accessor: 'removeContents',
+                      width: 50,
+                      editType: 'checkbox',
+                    },
+                    {
+                      Header: 'Number of Decon Iterations',
+                      accessor: 'numIterativeApplications',
+                      width: 75,
+                      editType: 'input',
+                      show: selectedApproach === 'advanced',
+                    },
+                    {
+                      Header: 'Average Final Contamination (CFUs/m²)',
+                      accessor: 'avgFinalContamination',
+                      width: 97,
+                      show: devMode && trainingMode,
+                    },
+                    {
+                      Header: 'Above/Below Detection Limit',
+                      accessor: 'aboveDetectionLimit',
+                      width: 97,
+                      show: devMode && trainingMode,
+                    },
+                  ];
+                }}
+              />
+            )}
+          </Fragment>
+        )}
+
         <div css={buttonContainerStyles}>
           <button
             css={saveAttributesButtonStyles}
             onClick={() => {
-              setPerformUpdate(true);
+              if (!deconOperation) return;
+
+              const index = edits.edits.findIndex(
+                (item) =>
+                  item.type === 'layer-decon' &&
+                  item.layerId === deconOperation.layerId,
+              );
+              setEdits((edits) => {
+                if (index === -1) return edits;
+
+                const editsCopy = deepCopyObject(edits);
+                const editedOp = editsCopy.edits[index] as LayerDeconEditsType;
+                const newDeconTechSelections: any[] = [];
+
+                basicDeconSelections.forEach((decon) => {
+                  if (isOutside(decon.media))
+                    newDeconTechSelections.push({
+                      ...decon,
+                      numIterativeApplications:
+                        selectedApproach === 'basic'
+                          ? 1
+                          : decon.numIterativeApplications,
+                      removeContents:
+                        selectedApproach === 'basic'
+                          ? false
+                          : decon.removeContents,
+                    });
+
+                  if (decon.media === 'Buildings (Interior and Exterior)') {
+                    editedOp.deconTechSelections.forEach((subDecon) => {
+                      if (isOutside(subDecon.media)) return;
+                      newDeconTechSelections.push({
+                        ...subDecon,
+                        deconTech: decon.deconTech,
+                        numIterativeApplications:
+                          selectedApproach === 'basic'
+                            ? 1
+                            : decon.numIterativeApplications
+                              ? parseInt(decon.numIterativeApplications)
+                              : decon.numIterativeApplications,
+                        removeContents:
+                          selectedApproach === 'basic'
+                            ? false
+                            : decon.removeContents,
+                      });
+                    });
+                  }
+                });
+
+                buildingDeconSelections.forEach((decon) => {
+                  if (decon.media === 'Buildings (Interior and Exterior)')
+                    return;
+
+                  editedOp.deconTechSelections.forEach((subDecon) => {
+                    if (isOutside(subDecon.media)) return;
+                    if (decon.media !== subDecon.media) return;
+
+                    console.log('decon: ', decon);
+                    console.log('subDecon: ', subDecon);
+                    newDeconTechSelections.push({
+                      ...subDecon,
+                      deconTech: decon.deconTech,
+                      numIterativeApplications:
+                        selectedApproach === 'basic'
+                          ? 1
+                          : decon.numIterativeApplications
+                            ? parseInt(decon.numIterativeApplications)
+                            : decon.numIterativeApplications,
+                      removeContents:
+                        selectedApproach === 'basic'
+                          ? false
+                          : decon.removeContents,
+                    });
+                  });
+                });
+
+                editedOp.deconTechSelections = newDeconTechSelections;
+
+                return {
+                  count: editsCopy.count + 1,
+                  edits: editsCopy.edits,
+                };
+              });
 
               setTimeout(() => {
-                setPerformUpdate(false);
-              }, 500);
+                setCalculateResultsDecon((calculateResultsDecon) => {
+                  return {
+                    status: 'fetching',
+                    panelOpen: calculateResultsDecon.panelOpen,
+                    data: null,
+                  };
+                });
+              }, 100);
             }}
           >
             Save

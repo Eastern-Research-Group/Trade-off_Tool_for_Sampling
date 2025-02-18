@@ -134,6 +134,15 @@
                     "defaultCalculateSettingsTableFields": {
                       "type": "object"
                     },
+                    "defaultDeconCalculationResultsTableFields": {
+                      "type": "object"
+                    },
+                    "defaultDeconOperationDetailsTableFields": {
+                      "type": "object"
+                    },
+                    "defaultDeconOperationSettingsTableFields": {
+                      "type": "object"
+                    },
                     "defaultFields": {
                       "type": "object"
                     },

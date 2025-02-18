@@ -2485,6 +2485,9 @@ export function createScenarioDeconLayer(
       aoiSummary: {
         areaByMedia: [],
         totalAoiSqM: 0,
+        totalBuildingExtSqM: 0,
+        totalBuildingIntSqM: 0,
+        totalBuildingVolumeCubM: 0,
         totalBuildingExtWallsSqM: 0,
         totalBuildingFloorsSqM: 0,
         totalBuildingFootprintSqM: 0,
@@ -2492,7 +2495,10 @@ export function createScenarioDeconLayer(
         totalBuildingRoofSqM: 0,
         totalBuildingSqM: 0,
       },
-      deconTechSelections: defaultDeconSelections,
+      deconTechSelections: defaultDeconSelections.map((tech) => ({
+        ...tech,
+        id: generateUUID(),
+      })),
       gsgFile: null,
     } as LayerAoiAnalysisEditsType,
     layerDecon: {
@@ -2517,7 +2523,10 @@ export function createScenarioDeconLayer(
         resultsTable: [],
       },
       deconSummaryResults: {},
-      deconTechSelections: defaultDeconSelections,
+      deconTechSelections: defaultDeconSelections.map((tech) => ({
+        ...tech,
+        id: generateUUID(),
+      })),
     } as LayerDeconEditsType,
     tempDeconLayer: {
       id: -1,

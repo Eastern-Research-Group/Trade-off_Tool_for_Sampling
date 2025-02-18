@@ -189,10 +189,9 @@ export function processScenario(
   const {
     totalAoiSqM,
     totalBuildingFootprintSqM,
-    totalBuildingFloorsSqM,
-    totalBuildingExtWallsSqM,
-    totalBuildingIntWallsSqM,
-    totalBuildingRoofSqM,
+    totalBuildingExtSqM,
+    totalBuildingIntSqM,
+    totalBuildingVolumeCubM,
   } = planGraphics.summary;
 
   if (isScenario && layer.aoiSummary) {
@@ -200,29 +199,80 @@ export function processScenario(
     layer.aoiSummary.totalBuildingFootprintSqM = totalBuildingFootprintSqM;
   }
 
-  const curDeconTechSelections =
+  const materialMapping: { [key: string]: string } = {
+    'Single Family Dwelling': 'Wood Buildings',
+    Unclassified: 'Wood Buildings',
+    Agriculture: 'Metal Buildings',
+    'Retail Trade': 'Concrete Buildings',
+  };
+
+  // TODO add code here to get a list of building materials
+  //      and update the curDeconTechSelections...
+  const buildingMaterialOptions: string[] = [];
+  planGraphics.graphics.forEach((building) => {
+    const material = materialMapping[building.attributes.PRIM_OCC];
+    if (buildingMaterialOptions.includes(material)) return;
+    buildingMaterialOptions.push(material);
+  });
+
+  let curDeconTechSelections =
     deconTechSelections && deconTechSelections.length > 0
       ? deconTechSelections
       : defaultDeconSelections;
+  curDeconTechSelections = curDeconTechSelections.filter(
+    (d) => !d.media.includes('Building'),
+  );
+  planGraphics.summary.areaByMedia.forEach((category) => {
+    curDeconTechSelections.push({
+      aboveDetectionLimit: 0,
+      avgCfu: 0,
+      avgFinalContamination: null,
+      deconTech: null,
+      isHazardous: { label: 'Non-Hazardous', value: 'non-hazardous' },
+      numIterativeApplications: 1,
+      pctDeconed: 100,
+      removeContents: false,
+      id: category.id,
+      media: category.media,
+      pctAoi: category.pctAoi,
+      surfaceArea: category.surfaceArea,
+      volume: category.volume,
+      subRows: category.subMedia.map((sub) => ({
+        aboveDetectionLimit: 0,
+        avgCfu: 0,
+        avgFinalContamination: null,
+        deconTech: null,
+        isHazardous: { label: 'Non-Hazardous', value: 'non-hazardous' },
+        numIterativeApplications: 1,
+        pctDeconed: 100,
+        removeContents: false,
+        id: sub.id ?? generateUUID(),
+        media: sub.media,
+        pctAoi: sub.pctAoi,
+        surfaceArea: sub.surfaceArea,
+        volume: sub.volume,
+      })),
+    });
+  });
+
   const newDeconTechSelections: any[] = [];
   curDeconTechSelections.forEach((sel) => {
     // find decon settings
     const media = sel.media;
 
     let surfaceArea = 0;
+    // let volume = 0;
     let avgCfu = 0;
     let pctAoi = 0;
-    if (media.includes('Building ')) {
-      avgCfu =
-        (planBuildingCfu[scenarioId] ?? 0) * (partitionFactors[media] ?? 1);
-
-      if (media === 'Building Exterior Walls')
-        surfaceArea = totalBuildingExtWallsSqM;
-      if (media === 'Building Interior Walls')
-        surfaceArea = totalBuildingIntWallsSqM;
-      if (media === 'Building Interior Floors')
-        surfaceArea = totalBuildingFloorsSqM;
-      if (media === 'Building Roofs') surfaceArea = totalBuildingRoofSqM;
+    if (media.includes('Building')) {
+      // avgCfu =
+      //   (planBuildingCfu[scenarioId] ?? 0) * (partitionFactors[media] ?? 1);
+      // if (media === 'Building Exteriors') surfaceArea = totalBuildingExtSqM;
+      // if (media === 'Building Interiors') {
+      //   surfaceArea = totalBuildingIntSqM;
+      //   volume = totalBuildingVolumeCubM;
+      // }
+      newDeconTechSelections.push(sel);
     } else {
       pctAoi = (planGraphics.aoiPercentages as any)[
         (mediaToBeepEnum as any)[sel.media]
@@ -258,14 +308,15 @@ export function processScenario(
       }
 
       avgCfu = !totalCfu && !totalArea ? 0 : totalCfu / totalArea;
-    }
 
-    newDeconTechSelections.push({
-      ...sel,
-      pctAoi,
-      surfaceArea,
-      avgCfu,
-    });
+      newDeconTechSelections.push({
+        ...sel,
+        pctAoi,
+        surfaceArea,
+        volume: 0,
+        avgCfu,
+      });
+    }
   });
 
   return newDeconTechSelections;
@@ -292,10 +343,20 @@ export async function fetchBuildingData(
     );
   });
 
+  const materialMapping: { [key: string]: string } = {
+    'Single Family Dwelling': 'Wood Buildings',
+    Unclassified: 'Wood Buildings',
+    Agriculture: 'Metal Buildings',
+    'Retail Trade': 'Concrete Buildings',
+  };
+
   const responses = await Promise.all(requests);
   responses.forEach((results, index) => {
-    results.features.forEach((feature: any) => {
-      const { HEIGHT, SQFEET, SQMETERS } = feature.attributes;
+    const planId = responseIndexes[index];
+    const buildingMaterialOptions: { [key: string]: any } = {};
+
+    results.features.forEach((feature: any, index: number) => {
+      const { HEIGHT, PRIM_OCC, SQFEET, SQMETERS } = feature.attributes;
 
       // if (buildingFilter.includes(bid)) return;
 
@@ -313,6 +374,28 @@ export async function fetchBuildingData(
       const floorsSqM = numStory * footprintSqM;
       const extWallsSqM = Math.sqrt(footprintSqM) * heightM * 4;
       const intWallsSqM = extWallsSqM * 3;
+      const extSqM = extWallsSqM + footprintSqM;
+      const intSqM = intWallsSqM + floorsSqM;
+      const volumeCubM = heightM * footprintSqM;
+
+      // TODO add code here to get a list of building materials
+      //      and update the curDeconTechSelections...
+      const material = materialMapping[index === 0 ? 'Retail Trade' : PRIM_OCC];
+      if (
+        Object.prototype.hasOwnProperty.call(buildingMaterialOptions, material)
+      ) {
+        buildingMaterialOptions[material].exteriorSurfaceArea += extSqM;
+        buildingMaterialOptions[material].interiorSurfaceArea += intSqM;
+        buildingMaterialOptions[material].exteriorVolume += 0;
+        buildingMaterialOptions[material].interiorVolume += volumeCubM;
+      } else {
+        buildingMaterialOptions[material] = {
+          exteriorSurfaceArea: extSqM,
+          interiorSurfaceArea: intSqM,
+          exteriorVolume: 0,
+          interiorVolume: volumeCubM,
+        };
+      }
 
       const actions = new Collection<any>();
       actions.add({
@@ -321,7 +404,6 @@ export async function fetchBuildingData(
         className: 'esri-icon-table',
       });
 
-      const planId = responseIndexes[index];
       const permId = generateUUID();
       const occCls = feature.attributes.OCC_CLS;
       const prodDate = feature.attributes.PROD_DATE;
@@ -371,12 +453,50 @@ export async function fetchBuildingData(
         }),
       );
 
+      console.log('planId: ', planId);
+      console.log('heightM: ', heightM);
+      console.log('footprintSqM: ', footprintSqM);
+      console.log('volumeCubM: ', heightM * footprintSqM);
+      planGraphics[planId].summary.totalBuildingExtSqM += extSqM;
+      planGraphics[planId].summary.totalBuildingIntSqM += intSqM;
       planGraphics[planId].summary.totalBuildingFootprintSqM += footprintSqM;
       planGraphics[planId].summary.totalBuildingFloorsSqM += floorsSqM;
-      planGraphics[planId].summary.totalBuildingSqM += floorsSqM;
+      planGraphics[planId].summary.totalBuildingVolumeCubM += volumeCubM;
+      planGraphics[planId].summary.totalBuildingSqM += extSqM + intSqM;
       planGraphics[planId].summary.totalBuildingExtWallsSqM += extWallsSqM;
       planGraphics[planId].summary.totalBuildingIntWallsSqM += intWallsSqM;
       planGraphics[planId].summary.totalBuildingRoofSqM += footprintSqM;
+    });
+
+    console.log('buildingMaterialOptions: ', buildingMaterialOptions);
+    Object.entries(buildingMaterialOptions).forEach(([key, value]) => {
+      if (!planGraphics[planId].summary.areaByMedia)
+        planGraphics[planId].summary.areaByMedia = [];
+      planGraphics[planId].summary.areaByMedia.push({
+        id: generateUUID(),
+        media: key,
+        pctAoi: 0,
+        surfaceArea: value.exteriorSurfaceArea + value.interiorSurfaceArea,
+        volume: value.interiorVolume,
+        subMedia: [
+          {
+            id: generateUUID(),
+            media: 'Building Exteriors',
+            pctAoi: 0,
+            surfaceArea: value.exteriorSurfaceArea,
+            volume: 0,
+            subMedia: [],
+          },
+          {
+            id: generateUUID(),
+            media: 'Building Interiors',
+            pctAoi: 0,
+            surfaceArea: value.interiorSurfaceArea,
+            volume: value.interiorVolume,
+            subMedia: [],
+          },
+        ],
+      });
     });
   });
 
@@ -1512,27 +1632,29 @@ export function useCalculateDeconPlan() {
           // calculate final contamination
           const contamLeftFactor = 1 - contaminationRemovalFactor;
           const avgFinalContam =
-            sel.avgCfu * Math.pow(contamLeftFactor, sel.numApplications);
+            sel.avgCfu *
+            Math.pow(contamLeftFactor, sel.numIterativeApplications);
           sel.avgFinalContamination = avgFinalContam;
           sel.aboveDetectionLimit = avgFinalContam >= detectionLimit;
 
           const areaDeconApplied =
-            sel.surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications;
+            sel.surfaceArea *
+            (sel.pctDeconed * 0.01) *
+            sel.numIterativeApplications;
           const solidWasteM3 = areaDeconApplied * solidWasteVolume;
           const solidWasteMass = areaDeconApplied * solidWasteM;
           const liquidWasteM3 = areaDeconApplied * liquidWasteVolume;
           const liquidWasteMass = areaDeconApplied * liquidWasteM;
 
           const deconCost =
-            setupCost * sel.numApplications + areaDeconApplied * costM2;
+            setupCost * sel.numIterativeApplications +
+            areaDeconApplied * costM2;
           const sumApplicationTime =
             (areaDeconApplied * applicationTimeHrs) /
             24 /
-            sel.numConcurrentApplications;
+            sel.numIterativeApplications;
           const sumResidenceTime =
-            (residenceTimeHrs * sel.numApplications) /
-            24 /
-            sel.numConcurrentApplications;
+            (residenceTimeHrs * sel.numIterativeApplications) / 24;
           const deconTime = sumApplicationTime + sumResidenceTime;
 
           const jsonItem = {

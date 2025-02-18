@@ -297,6 +297,7 @@ function App({ appType }: Props) {
   const sampleData: any[] = [];
   if (isDecon()) {
     if (selectedScenario && selectedScenario.type === 'scenario-decon') {
+      const aoiLayersProcessed: string[] = [];
       selectedScenario.linkedLayerIds.forEach((layerId) => {
         const deconLayer = edits.edits.find(
           (l) => l.type === 'layer-decon' && l.layerId === layerId,
@@ -317,7 +318,9 @@ function App({ appType }: Props) {
             l.layerId === aoiAssessed?.layerId,
         );
         if (!aoiAssessedLayer) return;
+        if (aoiLayersProcessed.includes(aoiAssessedLayer.layerId)) return;
 
+        aoiLayersProcessed.push(aoiAssessedLayer.layerId);
         (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
           (sample) => {
             sampleData.push({

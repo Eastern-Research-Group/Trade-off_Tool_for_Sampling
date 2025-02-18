@@ -1,6 +1,7 @@
 /** @jsxImportSource @emotion/react */
 
 import React, {
+  Fragment,
   KeyboardEvent as ReactKeyboardEvent,
   useCallback,
   useEffect,
@@ -10,6 +11,7 @@ import React, {
 } from 'react';
 import { css } from '@emotion/react';
 import {
+  useExpanded,
   useTable,
   useSortBy,
   useResizeColumns,
@@ -24,8 +26,9 @@ import { VariableSizeList } from 'react-window';
 import { useWindowSize } from '@reach/window-size';
 // components
 import Select from 'components/Select';
+import { generateUUID } from 'utils/sketchUtils';
 
-const inputStyles = css`
+const baseInputStyles = css`
   width: 100%;
   border: 1px solid rgba(0, 0, 0, 0.1);
   background: #fff;
@@ -35,6 +38,21 @@ const inputStyles = css`
   font-weight: 400;
   outline-width: 0;
   height: 38px;
+`;
+
+const checkboxStyles = css`
+  align-items: center;
+  display: flex;
+  height: 100%;
+
+  input {
+    ${baseInputStyles}
+    height: 24px;
+  }
+`;
+
+const inputStyles = css`
+  ${baseInputStyles}
 `;
 
 function generateFilterInput({
@@ -479,6 +497,7 @@ type EditableProps = {
   striped?: boolean;
   height?: number;
   onDataChange?: Function;
+  expandable?: boolean;
 };
 
 export function ReactTableEditable({
@@ -490,6 +509,7 @@ export function ReactTableEditable({
   hideHeader = false,
   height,
   onDataChange,
+  expandable = false,
 }: EditableProps) {
   // Initializes the column widths based on the table width
   const [tableWidth, setTableWidth] = useState(0);
@@ -509,6 +529,22 @@ export function ReactTableEditable({
     }),
     [],
   );
+
+  // const updateMyData = (rowIndex, columnId, value) => {
+  //   if (!onDataChange) return;
+  //   const row = rows[rowIndex]; // Get the row at this index
+  //   console.log('row: ', row);
+  //   onDataChange(rowIndex, {
+  //     ...row.original,
+  //     ...row.values,
+  //     subRows: row.subRows.map((sub) => {
+  //       return {
+  //         ...sub.original,
+  //         ...sub.values,
+  //       };
+  //     }),
+  //   });
+  // };
 
   const {
     getTableProps,
@@ -538,6 +574,7 @@ export function ReactTableEditable({
     useBlockLayout,
     useFlexLayout,
     useFilters,
+    useExpanded,
   ) as any;
 
   // measures the table width
@@ -629,36 +666,93 @@ export function ReactTableEditable({
             prepareRow(row);
 
             const { key: keyRow, ...restRowProps } = row.getRowProps();
+            if (expandable) console.log('row: ', row);
             return (
-              <div
-                id={tempRow.original[idColumn]}
-                className={`rt-tr ${striped ? 'rt-striped' : ''} ${
-                  isEven ? '-odd' : '-even'
-                }`}
-                role="row"
-                key={keyRow}
-                {...restRowProps}
-              >
-                {row.cells.map((cell) => {
-                  const column: any = cell.column;
-                  if (typeof column.show === 'boolean' && !column.show) {
-                    return null;
-                  }
-
-                  const { key: keyCell, ...restCellProps } =
-                    cell.getCellProps();
-                  return (
+              <Fragment key={keyRow}>
+                <div
+                  id={tempRow.original[idColumn]}
+                  className={`rt-tr ${striped ? 'rt-striped' : ''} ${
+                    isEven ? '-odd' : '-even'
+                  }`}
+                  role="row"
+                  {...restRowProps}
+                >
+                  {expandable && (row as any).depth === 0 ? (
                     <div
                       className="rt-td"
                       role="gridcell"
-                      key={keyCell}
-                      {...restCellProps}
+                      {...(row as any).getToggleRowExpandedProps()}
                     >
-                      {cell.render('Cell')}
+                      <button onClick={() => (row as any).toggleRowExpanded()}>
+                        {(row as any).isExpanded ? '▼' : '▶'}
+                      </button>
                     </div>
-                  );
-                })}
-              </div>
+                  ) : (
+                    <div
+                      css={css`
+                        width: 53.6094px;
+                      `}
+                    />
+                  )}
+                  {row.cells.map((cell) => {
+                    const column: any = cell.column;
+                    if (typeof column.show === 'boolean' && !column.show) {
+                      return null;
+                    }
+
+                    const { key: keyCell, ...restCellProps } =
+                      cell.getCellProps();
+                    return (
+                      <div
+                        className="rt-td"
+                        role="gridcell"
+                        key={keyCell}
+                        {...restCellProps}
+                      >
+                        {cell.render('Cell')}
+                      </div>
+                    );
+                  })}
+                </div>
+                {expandable &&
+                  (row as any).isExpanded &&
+                  (row.original as any).subRows && (
+                    <div role="row">
+                      <div role="gridcell" data-colspan={columns.length}>
+                        <ReactTableEditable
+                          id={generateUUID()}
+                          data={(row.original as any).subRows}
+                          getColumns={getColumns}
+                          idColumn={idColumn}
+                          striped={striped}
+                          hideHeader={true}
+                          onDataChange={(
+                            rowIndex: any,
+                            columnId: any,
+                            value: any,
+                          ) => {
+                            onDataChange?.(i, columnId, value, rowIndex);
+
+                            // const newTable = buildingDeconSelections.map(
+                            //   (row: any, index: number) => {
+                            //     // update the row if it is the row in focus and the data has changed
+                            //     if (index === rowIndex && row[columnId] !== value) {
+                            //       return {
+                            //         ...buildingDeconSelections[rowIndex],
+                            //         [columnId]: value,
+                            //       };
+                            //     }
+                            //     return row;
+                            //   },
+                            // );
+
+                            // setBuildingDeconSelections(newTable);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+              </Fragment>
             );
           })}
         </div>
@@ -685,11 +779,13 @@ export function ReactTableEditableCell({
 
   const index = row.index;
   const id = column.id;
-  const editType: 'input' | 'select' | null | undefined = column.editType;
+  const editType: 'checkbox' | 'input' | 'select' | null | undefined =
+    column.editType;
   const options: { label: string; value: string }[] = column.options;
 
   const onChange = (e: any) => {
-    setValue(e.target.value);
+    if (editType === 'checkbox') setValue(e.target.checked);
+    else setValue(e.target.value);
   };
 
   // We'll only update the external data when the input is blurred
@@ -707,6 +803,21 @@ export function ReactTableEditableCell({
   useEffect(() => {
     setValue(initialValue);
   }, [initialValue]);
+
+  if (editType === 'checkbox') {
+    if (row.original.media.includes('Exterior')) return undefined;
+    return (
+      <div css={checkboxStyles}>
+        <input
+          type="checkbox"
+          checked={value}
+          onChange={onChange}
+          onBlur={onBlur}
+          onKeyDown={onKeyDown}
+        />
+      </div>
+    );
+  }
 
   if (editType === 'input')
     return (

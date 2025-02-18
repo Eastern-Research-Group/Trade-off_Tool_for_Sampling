@@ -15,6 +15,7 @@ import {
   activateSketchButton,
   calculateArea,
   createScenarioDeconLayer,
+  generateUUID,
   getDefaultSamplingMaskLayer,
   getScenariosDecon,
   updateLayerEdits,
@@ -386,6 +387,9 @@ function CharacterizeAOI({
         buildingFootprint: 0,
         summary: {
           totalAoiSqM: planAoiArea,
+          totalBuildingExtSqM: 0,
+          totalBuildingIntSqM: 0,
+          totalBuildingVolumeCubM: 0,
           totalBuildingFootprintSqM: 0,
           totalBuildingFloorsSqM: 0,
           totalBuildingSqM: 0,
@@ -456,6 +460,7 @@ function CharacterizeAOI({
         {},
         defaultDeconSelections,
       );
+      console.log('newDeconTechSelections: ', newDeconTechSelections);
 
       // Figure out what to add graphics to
       const aoiAssessed = deconSketchLayer.layers.find(
@@ -538,6 +543,9 @@ function CharacterizeAOI({
           };
           aoiAnalysis.aoiSummary = {
             totalAoiSqM: planData.summary.totalAoiSqM,
+            totalBuildingExtSqM: planData.summary.totalBuildingExtSqM,
+            totalBuildingIntSqM: planData.summary.totalBuildingIntSqM,
+            totalBuildingVolumeCubM: planData.summary.totalBuildingVolumeCubM,
             totalBuildingExtWallsSqM: planData.summary.totalBuildingExtWallsSqM,
             totalBuildingFloorsSqM: planData.summary.totalBuildingFloorsSqM,
             totalBuildingFootprintSqM:
@@ -551,6 +559,17 @@ function CharacterizeAOI({
                 media: media.media,
                 pctAoi: media.pctAoi,
                 surfaceArea: media.surfaceArea,
+                volume: media.volume,
+                subMedia: media.subRows
+                  ? media.subRows.map((r) => ({
+                      id: r.id ?? generateUUID(),
+                      media: r.media,
+                      pctAoi: r.pctAoi,
+                      surfaceArea: r.surfaceArea,
+                      volume: r.volume,
+                      subMedia: [],
+                    }))
+                  : [],
               };
             }),
           };
@@ -562,22 +581,47 @@ function CharacterizeAOI({
             )
               return;
 
-            edit.deconTechSelections = edit.deconTechSelections.map((tech) => {
-              const media = newDeconTechSelections.find(
+            edit.deconTechSelections = newDeconTechSelections.map((tech) => {
+              const media = edit.deconTechSelections.find(
                 (a) => a.media === tech.media,
               );
 
-              let pctAoi = tech.pctAoi;
-              let surfaceArea = tech.surfaceArea;
-              if (media) {
-                pctAoi = media.pctAoi;
-                surfaceArea = media.surfaceArea;
-              }
+              // let pctAoi = tech.pctAoi;
+              // let surfaceArea = tech.surfaceArea;
+              // let volume = tech.volume;
+              // if (media) {
+              //   pctAoi = media.pctAoi;
+              //   surfaceArea = media.surfaceArea;
+              //   volume = media.volume;
+              // }
 
               return {
                 ...tech,
-                pctAoi,
-                surfaceArea,
+                deconTech: media?.deconTech ?? tech.deconTech,
+                isHazardous: media?.isHazardous ?? tech.isHazardous,
+                numIterativeApplications:
+                  media?.numIterativeApplications ??
+                  tech.numIterativeApplications,
+                removeContents: media?.removeContents ?? tech.removeContents,
+                subRows: tech.subRows?.map((sub: any) => {
+                  const mediaSubRow = media?.subRows?.find(
+                    (s: any) => s.media === sub.media,
+                  );
+                  return {
+                    ...sub,
+                    id: sub.id ?? generateUUID(),
+                    deconTech: mediaSubRow?.deconTech ?? sub.deconTech,
+                    isHazardous: mediaSubRow?.isHazardous ?? sub.isHazardous,
+                    numIterativeApplications:
+                      mediaSubRow?.numIterativeApplications ??
+                      sub.numIterativeApplications,
+                    removeContents:
+                      mediaSubRow?.removeContents ?? sub.removeContents,
+                  };
+                }),
+                // pctAoi,
+                // surfaceArea,
+                // volume,
               };
             });
           });
@@ -1045,6 +1089,7 @@ function CharacterizeAOI({
 
                           return {
                             ...tech,
+                            id: generateUUID(),
                             pctAoi,
                             surfaceArea,
                           };

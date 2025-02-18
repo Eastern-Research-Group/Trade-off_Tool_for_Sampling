@@ -9,6 +9,9 @@ export type LayerProps = {
   defaultReferenceTableFields: __esri.FieldProperties[];
   defaultCalculateSettingsTableFields: __esri.FieldProperties[];
   defaultCalculateResultsTableFields: __esri.FieldProperties[];
+  defaultDeconCalculationResultsTableFields: __esri.FieldProperties[];
+  defaultDeconOperationDetailsTableFields: __esri.FieldProperties[];
+  defaultDeconOperationSettingsTableFields: __esri.FieldProperties[];
   defaultLayerProps: __esri.FeatureLayerProperties;
   defaultTableProps: any;
   webMapFieldProps: any;
