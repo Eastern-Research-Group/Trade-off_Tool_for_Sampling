@@ -450,26 +450,6 @@ function App({ appType }: Props) {
     tablePanelWidth += 500;
   }
 
-  // determine which rows of the table should be selected
-  const ids: { [key: string]: boolean } = {};
-  let selectionMethod: 'row-click' | 'sample-click' = 'sample-click';
-  sampleData.forEach((sample) => {
-    const selectedIndex = selectedSampleIds.findIndex(
-      (item) => item.PERMANENT_IDENTIFIER === sample.PERMANENT_IDENTIFIER,
-    );
-    const selectedItem = selectedSampleIds.find(
-      (item) => item.PERMANENT_IDENTIFIER === sample.PERMANENT_IDENTIFIER,
-    );
-    if (selectedItem && selectedIndex !== -1) {
-      ids[selectedItem.PERMANENT_IDENTIFIER] = true;
-      selectionMethod = selectedSampleIds[selectedIndex].selection_method;
-    }
-  });
-  const initialSelectedRowIds = {
-    selectionMethod,
-    ids,
-  };
-
   return (
     <div className="tots" ref={totsRef}>
       {appType === 'sampling' && <SplashScreen />}
@@ -632,12 +612,9 @@ function App({ appType }: Props) {
                     <ReactTable
                       id="tots-samples-table"
                       data={sampleData}
-                      idColumn={
-                        appType === 'decon' ? 'bid' : 'PERMANENT_IDENTIFIER'
-                      }
                       striped={true}
                       height={tablePanelHeight - resizerHeight - 30}
-                      initialSelectedRowIds={initialSelectedRowIds}
+                      initialSelectedRowIds={selectedSampleIds}
                       onSelectionChange={(row: any) => {
                         const PERMANENT_IDENTIFIER =
                           row.original.PERMANENT_IDENTIFIER;
@@ -700,10 +677,6 @@ function App({ appType }: Props) {
                               },
                               {
                                 id: 'TYPE',
-                                desc: false,
-                              },
-                              {
-                                id: 'PERMANENT_IDENTIFIER',
                                 desc: false,
                               },
                             ]

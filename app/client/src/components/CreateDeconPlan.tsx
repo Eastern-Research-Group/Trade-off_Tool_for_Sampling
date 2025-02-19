@@ -1428,7 +1428,6 @@ function DeconSelectionTable({
           aboveDetectionLimit: sel.aboveDetectionLimit ? 'Above' : 'Below',
         };
       })}
-      idColumn={'ID'}
       striped={true}
       hideHeader={false}
       height={-1}
@@ -1971,7 +1970,6 @@ function DeconSelectionPopup({
               aboveDetectionLimit: sel.aboveDetectionLimit ? 'Above' : 'Below',
             };
           })}
-          idColumn={'ID'}
           striped={true}
           hideHeader={false}
           height={-1}
@@ -2118,7 +2116,6 @@ function DeconSelectionPopup({
                       : 'Below',
                   };
                 })}
-                idColumn={'ID'}
                 striped={true}
                 hideHeader={false}
                 height={-1}
@@ -2248,7 +2245,6 @@ function DeconSelectionPopup({
                     }),
                   };
                 })}
-                idColumn={'ID'}
                 striped={true}
                 hideHeader={false}
                 height={-1}

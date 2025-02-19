@@ -8,7 +8,11 @@ import { AccordionList, AccordionItem } from 'components/Accordion';
 import { EditCustomSampleTypesTable } from 'components/EditLayerMetaData';
 import InfoIcon from 'components/InfoIcon';
 import NavigationButton from 'components/NavigationButton';
-import { ReactTable, ReactTableEditable } from 'components/ReactTable';
+import {
+  ReactTable,
+  ReactTableEditable,
+  ReactTableEditableCell,
+} from 'components/ReactTable';
 import Select from 'components/Select';
 import ShowLessMore from 'components/ShowLessMore';
 import Switch from 'components/Switch';
@@ -69,7 +73,7 @@ const sectionContainer = css`
 
 const tableContainer = css`
   margin-bottom: 10px;
-  padding: 0 5px;
+  padding: 0 2px;
 `;
 
 const layerInfo = css`
@@ -143,7 +147,7 @@ const nextInstructionStyles = css`
 `;
 
 const nestedAccordionStyles = css`
-  margin: 20px 20px 10px 20px;
+  margin: 20px 15px 10px;
 `;
 
 // --- components (ConfigureOutput) ---
@@ -615,18 +619,9 @@ function ConfigureOutput({ appType }: Props) {
                             ? selectedScenario.customAttributes
                             : []),
                         ]}
-                        idColumn={'ID'}
                         striped={true}
-                        initialSelectedRowIds={{ ids: [] }}
-                        sortBy={[{ id: 'ID', desc: false }]}
                         getColumns={(_tableWidth: any) => {
                           return [
-                            {
-                              header: 'ID',
-                              accessorKey: 'ID',
-                              size: 0,
-                              show: false,
-                            },
                             {
                               header: 'Field',
                               accessorKey: 'label',
@@ -641,7 +636,7 @@ function ConfigureOutput({ appType }: Props) {
                               header: () => null,
                               id: 'edit-column',
                               renderCell: true,
-                              size: 34,
+                              size: 70,
                               cell: ({ row }: { row: any }) => {
                                 if (row.index <= 10) return <span></span>;
 
@@ -902,6 +897,8 @@ const hiddenInput = css`
   margin-top: -15px;
 `;
 
+const emptyCodeRow = { id: -1, label: '', value: '' };
+
 // --- components (GettingStarted) ---
 type EditAttributeProps = {
   isOpen: boolean;
@@ -932,9 +929,7 @@ function EditAttributePopup({
   const [domainTypeOptions, setDomainTypeOptions] = useState<DataType[]>([]);
   const [min, setMin] = useState(0);
   const [max, setMax] = useState(0);
-  const [codes, setCodes] = useState<CodedValue[]>([
-    { id: -1, label: '', value: '' },
-  ]);
+  const [codes, setCodes] = useState<CodedValue[]>([emptyCodeRow]);
 
   useEffect(() => {
     if (selectedIndex === -1 || attributes.length <= selectedIndex) {
@@ -945,7 +940,7 @@ function EditAttributePopup({
       setDomainType(null);
       setMin(0);
       setMax(0);
-      setCodes([{ id: -1, label: '', value: '' }]);
+      setCodes([emptyCodeRow]);
       return;
     }
 
@@ -966,7 +961,7 @@ function EditAttributePopup({
         setMax(0);
 
         if (thisAttributes.domain?.codedValues) {
-          setCodes(thisAttributes.domain.codedValues);
+          setCodes([...thisAttributes.domain.codedValues, emptyCodeRow]);
         }
       }
       if (thisAttributes.domain.type === 'range') {
@@ -978,7 +973,7 @@ function EditAttributePopup({
       setDomainType(null);
       setMin(0);
       setMax(0);
-      setCodes([{ id: -1, label: '', value: '' }]);
+      setCodes([emptyCodeRow]);
     }
   }, [attributes, selectedIndex]);
 
@@ -1002,7 +997,7 @@ function EditAttributePopup({
       const hasNeg1 = newTable.findIndex((row) => row.id === -1) > -1;
 
       // add a new blank row if there isn't one already
-      if (value && !hasNeg1) newTable.push({ id: -1, label: '', value: '' });
+      if (value && !hasNeg1) newTable.push(emptyCodeRow);
       else {
         // remove any extra blank rows
         newTable = newTable.filter(
@@ -1291,28 +1286,23 @@ function EditAttributePopup({
                   <ReactTableEditable
                     id="tots-survey123-attributes-table"
                     data={codes}
-                    idColumn={'ID'}
                     striped={true}
                     hideHeader={false}
                     onDataChange={onDataChange}
                     getColumns={(_tableWidth: any) => {
                       return [
                         {
-                          header: 'ID',
-                          accessorKey: 'ID',
-                          size: 0,
-                          show: false,
-                        },
-                        {
                           header: 'Label',
                           accessorKey: 'label',
                           size: 189,
+                          cell: ReactTableEditableCell,
                           editType: 'input',
                         },
                         {
                           header: 'Value',
                           accessorKey: 'value',
                           size: 189,
+                          cell: ReactTableEditableCell,
                           editType: 'input',
                         },
                       ];

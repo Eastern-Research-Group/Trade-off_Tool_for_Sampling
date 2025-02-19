@@ -1927,7 +1927,6 @@ function CalculateResultsPopup({
         <ReactTableEditable
           id={tableId}
           data={tableData}
-          idColumn={'contaminationScenario'}
           striped={true}
           height={-1}
           getColumns={(_tableWidth: any) => {
@@ -2054,7 +2053,6 @@ function CalculateResultsPopup({
               <ReactTableEditable
                 id={tableId + index}
                 data={tableData}
-                idColumn={'contaminationScenario'}
                 striped={true}
                 height={-1}
                 getColumns={(_tableWidth: any) => {

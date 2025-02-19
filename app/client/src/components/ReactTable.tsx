@@ -10,24 +10,10 @@ import React, {
   useState,
 } from 'react';
 import { css } from '@emotion/react';
-// import {
-//   useExpanded,
-//   useTable,
-//   useSortBy,
-//   useResizeColumns,
-//   useBlockLayout,
-//   useFlexLayout,
-//   useFilters,
-//   useRowSelect,
-//   Row,
-//   HeaderGroup,
-// } from 'react-table';
 import {
   useReactTable,
   getCoreRowModel,
-  getFilteredRowModel,
   getSortedRowModel,
-  getPaginationRowModel,
   flexRender,
   getExpandedRowModel,
   Row,
@@ -40,11 +26,8 @@ import {
   VirtualItem,
   Virtualizer,
 } from '@tanstack/react-virtual';
-import { VariableSizeList } from 'react-window';
-import { useWindowSize } from '@reach/window-size';
 // components
 import Select from 'components/Select';
-import { generateUUID } from 'utils/sketchUtils';
 
 const baseInputStyles = css`
   width: 100%;
@@ -72,30 +55,6 @@ const checkboxStyles = css`
 const inputStyles = css`
   ${baseInputStyles}
 `;
-
-function generateFilterInput({
-  column: { filterValue, setFilter },
-}: {
-  column: {
-    filterValue: any;
-    preFilteredRows: any;
-    setFilter: any;
-  };
-}) {
-  return (
-    <input
-      css={inputStyles}
-      type="text"
-      placeholder="Filter column..."
-      value={filterValue ? filterValue : ''}
-      onClick={(event) => event.stopPropagation()}
-      onChange={
-        (event) => setFilter(event.target.value || undefined) // Set undefined to remove the filter entirely
-      }
-      aria-label="Filter column..."
-    />
-  );
-}
 
 // --- styles ---
 const tableStyles = ({
@@ -136,7 +95,7 @@ const tableStyles = ({
       }
 
       tr.rt-striped.-even {
-        background-color: rgba(0, 0, 0, 0.03);
+        background-color: rgba(0, 0, 0, 0.02);
       }
 
       tr.rt-selected {
@@ -170,6 +129,7 @@ const tableStyles = ({
     td {
       padding: 7px 5px;
       border-right: 1px solid rgba(0, 0, 0, 0.02);
+      border-bottom: none;
       font-size: 0.78em;
     }
 
@@ -210,7 +170,6 @@ type Props = {
   id: string;
   data: Array<any>;
   getColumns: Function;
-  idColumn: string;
   striped?: boolean;
   height?: number;
   initialSelectedRowIds?: any;
@@ -222,42 +181,70 @@ export function ReactTable({
   id,
   data,
   getColumns,
-  idColumn,
   striped = false,
   height,
   initialSelectedRowIds,
   onSelectionChange,
   sortBy,
 }: Props) {
-  console.log('data: ', data);
   const [tableWidth, setTableWidth] = useState(0);
   const columns = useMemo(
     () => getColumns(tableWidth).filter((c) => c.show !== false),
     [tableWidth, getColumns],
   );
-  console.log('columns1: ', getColumns(tableWidth));
-  console.log('columns2: ', columns);
 
+  const [rowSelection, setRowSelection] = React.useState({});
+  const [rowSelectionType, setRowSelectionType] = React.useState({});
   const [sorting, setSorting] = React.useState<SortingState>(sortBy || []);
 
   const table = useReactTable({
     data,
     columns,
+    columnResizeMode: 'onChange',
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
     state: {
+      rowSelection,
       sorting,
     },
-    enableRowSelection: true,
+    enableMultiRowSelection: false,
+    enableRowSelection: onSelectionChange ? true : false,
   });
 
-  // const measuredTableRef = useCallback((node) => {
-  //   if (node) setTableWidth(node.getBoundingClientRect().width);
-  //   return node;
-  // }, []);
+  useEffect(() => {
+    if (!onSelectionChange) return;
+    if (
+      initialSelectedRowIds.length === 0 &&
+      rowSelection &&
+      Object.keys(rowSelection).length > 0
+    ) {
+      setRowSelection({});
+      setRowSelectionType({});
+      return;
+    }
+
+    const rows = table.getRowModel().rows;
+    const newSelections: any = {};
+    const newSelectionsType: any = {};
+    initialSelectedRowIds.forEach((item: any) => {
+      const index = rows.findIndex(
+        (r) =>
+          r.original.DECISIONUNITUUID === item.DECISIONUNITUUID &&
+          r.original.PERMANENT_IDENTIFIER === item.PERMANENT_IDENTIFIER,
+      );
+
+      if (index !== -1) {
+        newSelections[index] = true;
+        newSelectionsType[index] = item.selection_method;
+      }
+    });
+
+    if (JSON.stringify(rowSelection) !== JSON.stringify(newSelections)) {
+      setRowSelection(newSelections);
+      setRowSelectionType(newSelectionsType);
+    }
+  }, [initialSelectedRowIds, rowSelection, table]);
 
   const measuredTableRef = useRef<HTMLDivElement>(null);
 
@@ -265,51 +252,6 @@ export function ReactTable({
     if (!measuredTableRef?.current) return;
     setTableWidth(measuredTableRef.current.getBoundingClientRect().width);
   }, [measuredTableRef]);
-
-  const listRef = useRef(null);
-  const sizeMap = useRef({});
-  const setSize = useCallback((index, size) => {
-    sizeMap.current[index] = size;
-    listRef.current?.resetAfterIndex(index);
-  }, []);
-
-  const getSize = (index) => sizeMap.current[index] || 50;
-  const rows = table.getRowModel().rows;
-
-  useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollToItem(-1, 'center');
-    }
-  }, [initialSelectedRowIds]);
-
-  function RowVirtualized({ index, setSize }) {
-    const row = rows[index];
-    const rowRef = useRef(null);
-    const selected = row.getIsSelected();
-    const isEven = index % 2 === 0;
-
-    useEffect(() => {
-      if (rowRef.current) {
-        setSize(index, rowRef.current.getBoundingClientRect().height);
-      }
-    }, [setSize, index]);
-
-    return (
-      <tr
-        ref={rowRef}
-        onClick={() => {
-          row.toggleSelected();
-          if (onSelectionChange) onSelectionChange(row);
-        }}
-      >
-        {row.getVisibleCells().map((cell) => (
-          <td key={cell.id}>
-            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-          </td>
-        ))}
-      </tr>
-    );
-  }
 
   return (
     <div
@@ -344,22 +286,47 @@ export function ReactTable({
                         : '',
                       onClick: header.column.getToggleSortingHandler(),
                     }}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                    }}
                   >
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )}
-                    {{
-                      asc: <i className="fas fa-arrow-up" />,
-                      desc: <i className="fas fa-arrow-down" />,
-                    }[header.column.getIsSorted() as string] ?? null}
+                    <span>
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                    </span>
+                    <span>
+                      {{
+                        asc: <i className="fas fa-arrow-up" />,
+                        desc: <i className="fas fa-arrow-down" />,
+                      }[header.column.getIsSorted() as string] ?? null}
+                    </span>
                   </div>
+                  <div
+                    {...{
+                      onDoubleClick: () => header.column.resetSize(),
+                      onMouseDown: header.getResizeHandler(),
+                      onTouchStart: header.getResizeHandler(),
+                      className: `rt-resizer ${
+                        table.options.columnResizeDirection
+                      } ${header.column.getIsResizing() ? 'isResizing' : ''}`,
+                    }}
+                  />
                 </th>
               ))}
             </tr>
           ))}
         </thead>
-        <TableBody table={table} tableContainerRef={measuredTableRef} />
+        <TableBody
+          table={table}
+          tableContainerRef={measuredTableRef}
+          rowSelection={rowSelectionType}
+          onSelectionChange={onSelectionChange}
+          striped={striped}
+        />
       </table>
     </div>
   );
@@ -368,15 +335,24 @@ export function ReactTable({
 interface TableBodyProps {
   table: Table<any>;
   tableContainerRef: React.RefObject<HTMLDivElement>;
+  rowSelection: any;
+  striped: boolean;
+  onSelectionChange?: Function;
 }
 
-function TableBody({ table, tableContainerRef }: TableBodyProps) {
+function TableBody({
+  table,
+  tableContainerRef,
+  rowSelection,
+  striped = false,
+  onSelectionChange,
+}: TableBodyProps) {
   const { rows } = table.getRowModel();
 
   // Important: Keep the row virtualizer in the lowest component possible to avoid unnecessary re-renders.
   const rowVirtualizer = useVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
-    estimateSize: () => 33, //estimate row height for accurate scrollbar dragging
+    estimateSize: () => 38, //estimate row height for accurate scrollbar dragging
     getScrollElement: () => tableContainerRef.current,
     //measure dynamic row height, except in firefox because it measures table border height incorrectly
     measureElement:
@@ -386,6 +362,21 @@ function TableBody({ table, tableContainerRef }: TableBodyProps) {
         : undefined,
     overscan: 5,
   });
+
+  useEffect(() => {
+    if (!Object.keys(rowSelection).length) return;
+
+    const [selectedRowId, value] = Object.entries(rowSelection)[0];
+    if (value === 'row-click') return;
+
+    const selectedRowIndex = table
+      .getRowModel()
+      .rows.findIndex((row) => row.id === selectedRowId);
+
+    if (selectedRowIndex !== -1) {
+      rowVirtualizer.scrollToIndex(selectedRowIndex, { align: 'start' });
+    }
+  }, [rowSelection, table, rowVirtualizer]);
 
   return (
     <tbody
@@ -403,6 +394,8 @@ function TableBody({ table, tableContainerRef }: TableBodyProps) {
             row={row}
             virtualRow={virtualRow}
             rowVirtualizer={rowVirtualizer}
+            onSelectionChange={onSelectionChange}
+            striped={striped}
           />
         );
       })}
@@ -414,19 +407,32 @@ interface TableBodyRowProps {
   row: Row<any>;
   virtualRow: VirtualItem;
   rowVirtualizer: Virtualizer<HTMLDivElement, HTMLTableRowElement>;
+  onSelectionChange?: Function;
+  striped: boolean;
 }
 
-function TableBodyRow({ row, virtualRow, rowVirtualizer }: TableBodyRowProps) {
+function TableBodyRow({
+  row,
+  virtualRow,
+  rowVirtualizer,
+  onSelectionChange,
+  striped = false,
+}: TableBodyRowProps) {
   return (
     <tr
       data-index={virtualRow.index} //needed for dynamic row height measurement
       ref={(node) => rowVirtualizer.measureElement(node)} //measure dynamic row height
       key={row.id}
+      className={`rt-striped ${striped ? (virtualRow.index % 2 === 0 ? '-odd' : '-even') : ''} ${row.getIsSelected() ? 'rt-selected' : ''}`}
       style={{
         display: 'flex',
         position: 'absolute',
         transform: `translateY(${virtualRow.start}px)`, //this should always be a `style` as it changes on scroll
         width: '100%',
+      }}
+      onClick={() => {
+        if (!onSelectionChange) return;
+        onSelectionChange(row);
       }}
     >
       {row.getVisibleCells().map((cell) => {
@@ -450,7 +456,6 @@ type EditableProps = {
   id: string;
   data: Array<any>;
   getColumns: Function;
-  idColumn: string;
   hideHeader?: boolean;
   striped?: boolean;
   height?: number;
@@ -462,7 +467,6 @@ export function ReactTableEditable({
   id,
   data,
   getColumns,
-  idColumn,
   striped = false,
   hideHeader = false,
   height,
@@ -474,8 +478,6 @@ export function ReactTableEditable({
     () => getColumns(tableWidth).filter((c) => c.show !== false),
     [tableWidth, getColumns],
   );
-  console.log('columns1: ', getColumns(tableWidth));
-  console.log('columns2: ', columns);
 
   const [expanded, setExpanded] = React.useState<ExpandedState>({});
 
@@ -492,6 +494,7 @@ export function ReactTableEditable({
   const table = useReactTable({
     data,
     columns,
+    columnResizeMode: 'onChange',
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: expandable ? getExpandedRowModel() : undefined,
     onExpandedChange: setExpanded,
@@ -520,11 +523,23 @@ export function ReactTableEditable({
               <tr key={headerGroup.id}>
                 {expandable && <th />}
                 {headerGroup.headers.map((header) => (
-                  <th role="columnheader" key={header.id}>
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )}
+                  <th key={header.id} style={{ width: header.getSize() }}>
+                    <div>
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                    </div>
+                    <div
+                      {...{
+                        onDoubleClick: () => header.column.resetSize(),
+                        onMouseDown: header.getResizeHandler(),
+                        onTouchStart: header.getResizeHandler(),
+                        className: `rt-resizer ${
+                          table.options.columnResizeDirection
+                        } ${header.column.getIsResizing() ? 'isResizing' : ''}`,
+                      }}
+                    />
                   </th>
                 ))}
               </tr>
@@ -533,11 +548,10 @@ export function ReactTableEditable({
         )}
         <tbody>
           {table.getRowModel().rows.map((row, i) => {
-            console.log('row: ', row);
             return (
               <Fragment key={row.id}>
                 <tr
-                  className={`${striped ? (i % 2 === 0 ? '-odd' : '-even') : ''}`}
+                  className={`rt-striped ${striped ? (i % 2 === 0 ? '-odd' : '-even') : ''}`}
                 >
                   {expandable && row.getCanExpand() && (
                     <td>
@@ -563,7 +577,6 @@ export function ReactTableEditable({
                         id={`${id}-sub-${row.id}`}
                         data={row.original.subRows || []}
                         getColumns={getColumns}
-                        idColumn={idColumn}
                         striped={striped}
                         hideHeader={true}
                         onDataChange={onDataChange}
@@ -630,7 +643,7 @@ export function ReactTableEditableCell({
     updateMyData(index, id, value);
   };
 
-  const onKeyDown = (event) => {
+  const onKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       updateMyData(index, id, value);
     }
@@ -672,12 +685,12 @@ export function ReactTableEditableCell({
         styles={{
           menuPortal: (base) => ({ ...base, fontSize: '0.78em', zIndex: 9999 }),
         }}
-        value={options.find((option) => option.value === value)}
+        value={options.find((option: any) => option.value === value)}
         options={options}
         menuPortalTarget={document.body}
         onChange={(selectedOption) => {
           setValue(selectedOption?.value || '');
-          updateMyData(index, id, selectedOption?.value || '');
+          updateMyData(index, id, selectedOption || '');
         }}
         isClearable={true}
       />
