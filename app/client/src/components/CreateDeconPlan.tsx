@@ -1941,11 +1941,63 @@ function DeconSelectionPopup({
                   const newTable = buildingDeconSelections.map(
                     (row: any, index: number) => {
                       // update the row if it is the row in focus and the data has changed
-                      if (index === rowIndex && row[columnId] !== value) {
-                        return {
-                          ...buildingDeconSelections[rowIndex],
-                          [columnId]: value,
-                        };
+                      if (index === rowIndex) {
+                        // if the edited column is subRows, sync the parent row with the subRows
+                        // otherwise just update the row like normal
+                        if (columnId === 'subRows') {
+                          let deconTech =
+                            row.deconTech?.value === 'multiple'
+                              ? undefined
+                              : row.deconTech;
+                          let anyDifferentDeconTech = false;
+                          let removeContents = row.removeContents;
+                          let numIterativeApplications = 1;
+                          value.forEach((subRow: any) => {
+                            if (deconTech === undefined)
+                              deconTech = subRow.deconTech;
+
+                            if (deconTech?.value !== subRow.deconTech?.value)
+                              anyDifferentDeconTech = true;
+                            if (subRow.media === 'Building Interiors') {
+                              removeContents = subRow.removeContents;
+                            }
+                            if (
+                              subRow.numIterativeApplications >
+                              numIterativeApplications
+                            ) {
+                              numIterativeApplications =
+                                subRow.numIterativeApplications;
+                            }
+                          });
+
+                          return {
+                            ...buildingDeconSelections[rowIndex],
+                            [columnId]: value,
+                            deconTech: anyDifferentDeconTech
+                              ? {
+                                  label: 'Multiple Selected...',
+                                  value: 'multiple',
+                                }
+                              : deconTech,
+                            removeContents: removeContents,
+                            numIterativeApplications: numIterativeApplications,
+                          };
+                        } else {
+                          return {
+                            ...buildingDeconSelections[rowIndex],
+                            [columnId]: value,
+                            subRows: row.subRows.map((subRow: any) => {
+                              return {
+                                ...subRow,
+                                [columnId]:
+                                  subRow.media === 'Building Exteriors' &&
+                                  columnId === 'removeContents'
+                                    ? false
+                                    : value,
+                              };
+                            }),
+                          };
+                        }
                       }
                       return row;
                     },
