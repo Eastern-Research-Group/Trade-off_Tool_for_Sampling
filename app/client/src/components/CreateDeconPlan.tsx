@@ -8,6 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { css } from '@emotion/react';
+import { CellContext } from '@tanstack/react-table';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import CharacterizeAOI, { SaveStatusType } from 'components/CharacterizeAOI';
@@ -1416,18 +1417,7 @@ function DeconSelectionTable({
   return (
     <ReactTableEditable
       id={tableId}
-      data={deconSelections.map((sel) => {
-        return {
-          ...sel,
-          deconTech: editable ? sel.deconTech : sel.deconTech?.label,
-          isHazardous: editable ? sel.deconTech : sel.deconTech?.label,
-          pctAoi: sel.pctAoi ? `${formatNumber(sel.pctAoi)}%` : '',
-          surfaceArea: `${formatNumber(sel.surfaceArea)} m²`,
-          avgCfu: formatNumber(sel.avgCfu),
-          avgFinalContamination: formatNumber(sel.avgFinalContamination, 2),
-          aboveDetectionLimit: sel.aboveDetectionLimit ? 'Above' : 'Below',
-        };
-      })}
+      data={deconSelections}
       striped={true}
       hideHeader={false}
       height={-1}
@@ -1462,16 +1452,30 @@ function DeconSelectionTable({
             header: 'Percent of AOI',
             accessorKey: 'pctAoi',
             size: 97,
+            cell: (info: CellContext<any, any>) =>
+              `${formatNumber(info.getValue())}%`,
+          },
+          {
+            header: 'Volume',
+            accessorKey: 'volume',
+            size: 75,
+            cell: (info: CellContext<any, any>) =>
+              `${formatNumber(info.getValue())} m³`,
+            show: devMode && trainingMode,
           },
           {
             header: 'Surface Area',
             accessorKey: 'surfaceArea',
             size: 97,
+            cell: (info: CellContext<any, any>) =>
+              `${formatNumber(info.getValue())} m²`,
           },
           {
             header: 'Average Initial Contamination (CFUs/m²)',
             accessorKey: 'avgCfu',
             size: 97,
+            cell: (info: CellContext<any, any>) =>
+              formatNumber(info.getValue()),
             show: devMode && trainingMode,
           },
           {
@@ -1494,12 +1498,16 @@ function DeconSelectionTable({
             header: 'Average Final Contamination (CFUs/m²)',
             accessorKey: 'avgFinalContamination',
             size: 97,
+            cell: (info: CellContext<any, any>) =>
+              formatNumber(info.getValue(), 2),
             show: devMode && trainingMode,
           },
           {
             header: 'Above/Below Detection Limit',
             accessorKey: 'aboveDetectionLimit',
             size: 97,
+            cell: (info: CellContext<any, any>) =>
+              info.getValue() ? 'Above' : 'Below',
             show: devMode && trainingMode,
           },
         ];
@@ -1830,18 +1838,6 @@ function DeconSelectionPopup({
     setSelectedBuildingApproach(selection);
   }
 
-  const setNestedValue = (obj: any, path: string, value: any) => {
-    const keys = path.split('.');
-    let current = obj;
-
-    keys.slice(0, -1).forEach((key) => {
-      if (!current[key]) current[key] = {}; // Create nested objects if missing
-      current = current[key];
-    });
-
-    current[keys[keys.length - 1]] = value;
-  };
-
   const devMode = window.location.search.includes('devMode=true');
 
   return (
@@ -1957,19 +1953,7 @@ function DeconSelectionPopup({
 
         <ReactTableEditable
           id={generateUUID()}
-          data={basicDeconSelections.map((sel) => {
-            return {
-              ...sel,
-              deconTech: sel.deconTech,
-              isHazardous: sel.deconTech,
-              pctAoi: sel.pctAoi ? `${formatNumber(sel.pctAoi)}%` : '',
-              surfaceArea: `${formatNumber(sel.surfaceArea)} m²`,
-              volume: `${formatNumber(sel.volume)} m³`,
-              avgCfu: formatNumber(sel.avgCfu),
-              avgFinalContamination: formatNumber(sel.avgFinalContamination, 2),
-              aboveDetectionLimit: sel.aboveDetectionLimit ? 'Above' : 'Below',
-            };
-          })}
+          data={basicDeconSelections}
           striped={true}
           hideHeader={false}
           height={-1}
@@ -2006,16 +1990,22 @@ function DeconSelectionPopup({
                 header: 'Percent of AOI',
                 accessorKey: 'pctAoi',
                 size: 75,
+                cell: (info: CellContext<any, any>) =>
+                  `${formatNumber(info.getValue())}%`,
               },
               {
                 header: 'Surface Area',
                 accessorKey: 'surfaceArea',
                 size: 75,
+                cell: (info: CellContext<any, any>) =>
+                  `${formatNumber(info.getValue())} m²`,
               },
               {
                 header: 'Average Initial Contamination (CFUs/m²)',
                 accessorKey: 'avgCfu',
                 size: 97,
+                cell: (info: CellContext<any, any>) =>
+                  formatNumber(info.getValue()),
                 show: devMode && trainingMode,
               },
               {
@@ -2038,12 +2028,16 @@ function DeconSelectionPopup({
                 header: 'Average Final Contamination (CFUs/m²)',
                 accessorKey: 'avgFinalContamination',
                 size: 97,
+                cell: (info: CellContext<any, any>) =>
+                  formatNumber(info.getValue()),
                 show: devMode && trainingMode,
               },
               {
                 header: 'Above/Below Detection Limit',
                 accessorKey: 'aboveDetectionLimit',
                 size: 97,
+                cell: (info: CellContext<any, any>) =>
+                  info.getValue() ? 'Above' : 'Below',
                 show: devMode && trainingMode,
               },
             ];
@@ -2098,24 +2092,7 @@ function DeconSelectionPopup({
             {selectedBuildingApproach === 'structural' && (
               <ReactTableEditable
                 id={generateUUID()}
-                data={buildingDeconSelections.map((sel) => {
-                  return {
-                    ...sel,
-                    deconTech: sel.deconTech,
-                    isHazardous: sel.deconTech,
-                    pctAoi: sel.pctAoi ? `${formatNumber(sel.pctAoi)}%` : '',
-                    surfaceArea: `${formatNumber(sel.surfaceArea)} m²`,
-                    volume: `${formatNumber(sel.volume)} m³`,
-                    avgCfu: formatNumber(sel.avgCfu),
-                    avgFinalContamination: formatNumber(
-                      sel.avgFinalContamination,
-                      2,
-                    ),
-                    aboveDetectionLimit: sel.aboveDetectionLimit
-                      ? 'Above'
-                      : 'Below',
-                  };
-                })}
+                data={buildingDeconSelections}
                 striped={true}
                 hideHeader={false}
                 height={-1}
@@ -2152,16 +2129,23 @@ function DeconSelectionPopup({
                       header: 'Volume',
                       accessorKey: 'volume',
                       size: 75,
+                      cell: (info: CellContext<any, any>) =>
+                        `${formatNumber(info.getValue())} m³`,
+                      show: devMode && trainingMode,
                     },
                     {
                       header: 'Surface Area',
                       accessorKey: 'surfaceArea',
                       size: 75,
+                      cell: (info: CellContext<any, any>) =>
+                        `${formatNumber(info.getValue())} m²`,
                     },
                     {
                       header: 'Average Initial Contamination (CFUs/m²)',
                       accessorKey: 'avgCfu',
                       size: 97,
+                      cell: (info: CellContext<any, any>) =>
+                        formatNumber(info.getValue()),
                       show: devMode && trainingMode,
                     },
                     {
@@ -2191,12 +2175,16 @@ function DeconSelectionPopup({
                       header: 'Average Final Contamination (CFUs/m²)',
                       accessorKey: 'avgFinalContamination',
                       size: 97,
+                      cell: (info: CellContext<any, any>) =>
+                        formatNumber(info.getValue()),
                       show: devMode && trainingMode,
                     },
                     {
                       header: 'Above/Below Detection Limit',
                       accessorKey: 'aboveDetectionLimit',
                       size: 97,
+                      cell: (info: CellContext<any, any>) =>
+                        info.getValue() ? 'Above' : 'Below',
                       show: devMode && trainingMode,
                     },
                   ];
@@ -2207,85 +2195,20 @@ function DeconSelectionPopup({
               <ReactTableEditable
                 id={generateUUID()}
                 expandable={true}
-                data={buildingDeconSelections.map((sel) => {
-                  return {
-                    ...sel,
-                    deconTech: sel.deconTech,
-                    isHazardous: sel.deconTech,
-                    pctAoi: sel.pctAoi ? `${formatNumber(sel.pctAoi)}%` : '',
-                    surfaceArea: `${formatNumber(sel.surfaceArea)} m²`,
-                    volume: `${formatNumber(sel.volume)} m³`,
-                    avgCfu: formatNumber(sel.avgCfu),
-                    avgFinalContamination: formatNumber(
-                      sel.avgFinalContamination,
-                      2,
-                    ),
-                    aboveDetectionLimit: sel.aboveDetectionLimit
-                      ? 'Above'
-                      : 'Below',
-                    subRows: sel.subRows?.map((sub: any) => {
-                      return {
-                        ...sub,
-                        deconTech: sub.deconTech,
-                        isHazardous: sub.deconTech,
-                        pctAoi: sub.pctAoi
-                          ? `${formatNumber(sub.pctAoi)}%`
-                          : '',
-                        surfaceArea: `${formatNumber(sub.surfaceArea)} m²`,
-                        volume: `${formatNumber(sub.volume)} m³`,
-                        avgCfu: formatNumber(sub.avgCfu),
-                        avgFinalContamination: formatNumber(
-                          sub.avgFinalContamination,
-                          2,
-                        ),
-                        aboveDetectionLimit: sub.aboveDetectionLimit
-                          ? 'Above'
-                          : 'Below',
-                      };
-                    }),
-                  };
-                })}
+                resizable={false}
+                data={buildingDeconSelections}
                 striped={true}
                 hideHeader={false}
                 height={-1}
-                onDataChange={(
-                  rowIndex: any,
-                  columnId: any,
-                  value: any,
-                  subRowIndex: any,
-                ) => {
-                  console.log('rowIndex; ', rowIndex);
-                  console.log('columnId; ', columnId);
-                  console.log('value; ', value);
-                  console.log('subRowIndex; ', subRowIndex);
+                onDataChange={(rowIndex: any, columnId: any, value: any) => {
                   const newTable = buildingDeconSelections.map(
                     (row: any, index: number) => {
                       // update the row if it is the row in focus and the data has changed
-                      if (index === rowIndex) {
-                        if (subRowIndex > -1) {
-                          return {
-                            ...buildingDeconSelections[rowIndex],
-                            subRows: row.subRows?.map(
-                              (sub: any, subIndex: number) => {
-                                if (
-                                  subIndex === subRowIndex &&
-                                  sub[columnId] !== value
-                                ) {
-                                  return {
-                                    ...row.subRows[subRowIndex],
-                                    [columnId]: value,
-                                  };
-                                }
-                                return sub;
-                              },
-                            ),
-                          };
-                        } else if (row[columnId] !== value) {
-                          return {
-                            ...buildingDeconSelections[rowIndex],
-                            [columnId]: value,
-                          };
-                        }
+                      if (index === rowIndex && row[columnId] !== value) {
+                        return {
+                          ...buildingDeconSelections[rowIndex],
+                          [columnId]: value,
+                        };
                       }
                       return row;
                     },
@@ -2293,27 +2216,6 @@ function DeconSelectionPopup({
 
                   setBuildingDeconSelections(newTable);
                 }}
-                // onDataChange={(rowIndex: any, value: any) => {
-                //   console.log('rowIndex: ', rowIndex);
-                //   console.log('value: ', value);
-                //   const newTable = buildingDeconSelections.map(
-                //     (row: any, index: number) => {
-                //       // update the row if it is the row in focus and the data has changed
-                //       // if (index === rowIndex && row[columnId] !== value) {
-                //       if (index === rowIndex) {
-                //         return value;
-                //       }
-                //       // if (index === rowIndex) {
-                //       //   const updatedRow = JSON.parse(JSON.stringify(row));
-                //       //   setNestedValue(updatedRow, columnId, value);
-                //       //   return updatedRow;
-                //       // }
-                //       return row;
-                //     },
-                //   );
-
-                //   setBuildingDeconSelections(newTable);
-                // }}
                 getColumns={(_tableWidth: any) => {
                   return [
                     {
@@ -2331,16 +2233,23 @@ function DeconSelectionPopup({
                       header: 'Volume',
                       accessorKey: 'volume',
                       size: 75,
+                      cell: (info: CellContext<any, any>) =>
+                        `${formatNumber(info.getValue())} m³`,
+                      show: devMode && trainingMode,
                     },
                     {
                       header: 'Surface Area',
                       accessorKey: 'surfaceArea',
                       size: 75,
+                      cell: (info: CellContext<any, any>) =>
+                        `${formatNumber(info.getValue())} m²`,
                     },
                     {
                       header: 'Average Initial Contamination (CFUs/m²)',
                       accessorKey: 'avgCfu',
                       size: 97,
+                      cell: (info: CellContext<any, any>) =>
+                        formatNumber(info.getValue()),
                       show: devMode && trainingMode,
                     },
                     {
@@ -2410,7 +2319,9 @@ function DeconSelectionPopup({
                       numIterativeApplications:
                         selectedApproach === 'basic'
                           ? 1
-                          : decon.numIterativeApplications,
+                          : decon.numIterativeApplications
+                            ? parseInt(decon.numIterativeApplications)
+                            : decon.numIterativeApplications,
                       removeContents:
                         selectedApproach === 'basic'
                           ? false
@@ -2426,44 +2337,75 @@ function DeconSelectionPopup({
                         numIterativeApplications:
                           selectedApproach === 'basic'
                             ? 1
-                            : decon.numIterativeApplications
-                              ? parseInt(decon.numIterativeApplications)
-                              : decon.numIterativeApplications,
+                            : decon.numIterativeApplications,
                         removeContents:
                           selectedApproach === 'basic'
                             ? false
                             : decon.removeContents,
+                        subRows: subDecon.subRows.map((subRow: any) => {
+                          return {
+                            ...subRow,
+                            deconTech: decon.deconTech,
+                            numIterativeApplications:
+                              selectedApproach === 'basic'
+                                ? 1
+                                : decon.numIterativeApplications,
+                            removeContents:
+                              selectedApproach === 'basic'
+                                ? false
+                                : decon.removeContents,
+                          };
+                        }),
                       });
                     });
                   }
                 });
 
+                const buildingSectionSettings: any = {};
                 buildingDeconSelections.forEach((decon) => {
                   if (decon.media === 'Buildings (Interior and Exterior)')
                     return;
 
+                  if (
+                    ['Building Interiors', 'Building Exteriors'].includes(
+                      decon.media,
+                    )
+                  ) {
+                    buildingSectionSettings[decon.media] = {
+                      ...decon,
+                    };
+                    return;
+                  }
+
                   editedOp.deconTechSelections.forEach((subDecon) => {
                     if (isOutside(subDecon.media)) return;
                     if (decon.media !== subDecon.media) return;
-
-                    console.log('decon: ', decon);
-                    console.log('subDecon: ', subDecon);
-                    newDeconTechSelections.push({
-                      ...subDecon,
-                      deconTech: decon.deconTech,
-                      numIterativeApplications:
-                        selectedApproach === 'basic'
-                          ? 1
-                          : decon.numIterativeApplications
-                            ? parseInt(decon.numIterativeApplications)
-                            : decon.numIterativeApplications,
-                      removeContents:
-                        selectedApproach === 'basic'
-                          ? false
-                          : decon.removeContents,
-                    });
+                    newDeconTechSelections.push(decon);
                   });
                 });
+
+                if (Object.keys(buildingSectionSettings).length > 0) {
+                  editedOp.deconTechSelections.forEach((subDecon) => {
+                    if (isOutside(subDecon.media)) return;
+
+                    newDeconTechSelections.push({
+                      ...subDecon,
+                      deconTech: null,
+                      numIterativeApplications: 1,
+                      removeContents: undefined,
+                      subRows: subDecon.subRows.map((subRow: any) => {
+                        const decon = buildingSectionSettings[subRow.media];
+                        return {
+                          ...subRow,
+                          deconTech: decon.deconTech,
+                          numIterativeApplications:
+                            decon.numIterativeApplications,
+                          removeContents: decon.removeContents,
+                        };
+                      }),
+                    });
+                  });
+                }
 
                 editedOp.deconTechSelections = newDeconTechSelections;
 

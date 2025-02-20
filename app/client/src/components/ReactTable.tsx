@@ -20,6 +20,7 @@ import {
   Table,
   SortingState,
   CellContext,
+  ExpandedState,
 } from '@tanstack/react-table';
 import {
   useVirtualizer,
@@ -65,7 +66,7 @@ const tableStyles = ({
   hideHeader: boolean;
 }) => css`
   ${height === -1 ? '' : height ? `height: ${height}px;` : 'max-height: 400px;'}
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: ${hideHeader ? 'none' : '1px solid rgba(0, 0, 0, 0.1)'};
 
   /* These styles are suggested for the table fill all available space in its containing element */
   display: block;
@@ -85,11 +86,20 @@ const tableStyles = ({
       font-size: 0.85em;
 
       tr {
+        ${hideHeader ? 'border: none !important;' : ''}
         border-bottom: 1px solid rgba(0, 0, 0, 0.05);
       }
     }
 
     tbody {
+      tr:first-of-type {
+        ${hideHeader ? 'border: none !important;' : ''}
+
+        td {
+          ${hideHeader ? 'border: none !important;' : ''}
+        }
+      }
+
       tr {
         border-bottom: 1px solid rgba(0, 0, 0, 0.02);
       }
@@ -120,6 +130,7 @@ const tableStyles = ({
       padding: 5px;
       font-weight: normal;
       border-right: 1px solid rgba(0, 0, 0, 0.05);
+      ${hideHeader ? 'border: none;' : ''}
 
       span {
         float: right;
@@ -161,7 +172,10 @@ const tableStyles = ({
       padding-top: 10px;
     }
 
-    ${hideHeader ? 'th { display: none !important; }' : ''}
+    .rt-full-width {
+      padding: 0 !important;
+      border: none;
+    }
   }
 `;
 
@@ -452,6 +466,8 @@ function TableBodyRow({
   );
 }
 
+const expandableColumnWidth = '20px';
+
 type EditableProps = {
   id: string;
   data: Array<any>;
@@ -461,6 +477,7 @@ type EditableProps = {
   height?: number;
   onDataChange?: Function;
   expandable?: boolean;
+  resizable?: boolean;
 };
 
 export function ReactTableEditable({
@@ -472,6 +489,7 @@ export function ReactTableEditable({
   height,
   onDataChange,
   expandable = false,
+  resizable = true,
 }: EditableProps) {
   const [tableWidth, setTableWidth] = useState(0);
   const columns = useMemo(
@@ -481,24 +499,14 @@ export function ReactTableEditable({
 
   const [expanded, setExpanded] = React.useState<ExpandedState>({});
 
-  // const [tableData, setTableData] = useState(data);
-
-  // const updateMyData = (rowIndex, columnId, value) => {
-  //   setTableData((prev) =>
-  //     prev.map((row, index) =>
-  //       index === rowIndex ? { ...row, [columnId]: value } : row,
-  //     ),
-  //   );
-  // };
-
   const table = useReactTable({
     data,
     columns,
     columnResizeMode: 'onChange',
+    enableColumnResizing: resizable,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: expandable ? getExpandedRowModel() : undefined,
     onExpandedChange: setExpanded,
-    // getSubRows: (row) => row.subRows,
     getRowCanExpand: (row) => !!row.original.subRows,
     state: { expanded },
     meta: { updateMyData: onDataChange },
@@ -516,20 +524,25 @@ export function ReactTableEditable({
       style={{ height }}
       css={tableStyles({ height, hideHeader })}
     >
-      <table>
-        {!hideHeader && (
-          <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {expandable && <th />}
-                {headerGroup.headers.map((header) => (
-                  <th key={header.id} style={{ width: header.getSize() }}>
-                    <div>
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                    </div>
+      <table
+        style={{
+          tableLayout: 'fixed',
+          width: '100%',
+          borderCollapse: 'collapse',
+        }}
+      >
+        <thead style={hideHeader ? { visibility: 'hidden' } : {}}>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id}>
+              {expandable && <th style={{ width: expandableColumnWidth }} />}
+              {headerGroup.headers.map((header) => (
+                <th key={header.id} style={{ width: header.getSize() }}>
+                  {!hideHeader &&
+                    flexRender(
+                      header.column.columnDef.header,
+                      header.getContext(),
+                    )}
+                  {resizable && (
                     <div
                       {...{
                         onDoubleClick: () => header.column.resetSize(),
@@ -540,12 +553,12 @@ export function ReactTableEditable({
                         } ${header.column.getIsResizing() ? 'isResizing' : ''}`,
                       }}
                     />
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-        )}
+                  )}
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
         <tbody>
           {table.getRowModel().rows.map((row, i) => {
             return (
@@ -554,10 +567,20 @@ export function ReactTableEditable({
                   className={`rt-striped ${striped ? (i % 2 === 0 ? '-odd' : '-even') : ''}`}
                 >
                   {expandable && row.getCanExpand() && (
-                    <td>
-                      <button onClick={row.getToggleExpandedHandler()}>
-                        {row.getIsExpanded() ? '▼' : '▶'}
-                      </button>
+                    <td
+                      style={{ width: expandableColumnWidth }}
+                      onClick={row.getToggleExpandedHandler()}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-around',
+                        }}
+                      >
+                        <i
+                          className={`fas fa-${row.getIsExpanded() ? 'minus' : 'plus'}`}
+                        />
+                      </div>
                     </td>
                   )}
                   {row.getVisibleCells().map((cell) => (
@@ -572,35 +595,44 @@ export function ReactTableEditable({
                 {expandable && row.getIsExpanded() && (
                   <tr>
                     <td />
-                    <td colSpan={columns.length}>
+                    <td colSpan={columns.length} className="rt-full-width">
                       <ReactTableEditable
+                        resizable={resizable}
                         id={`${id}-sub-${row.id}`}
                         data={row.original.subRows || []}
                         getColumns={getColumns}
                         striped={striped}
                         hideHeader={true}
-                        onDataChange={onDataChange}
-                        expandable={expandable}
+                        onDataChange={(
+                          rowIndex: any,
+                          columnId: any,
+                          value: any,
+                        ) => {
+                          if (!onDataChange) return;
+
+                          const originalSubRows = row.original.subRows || [];
+                          const newSubRows = originalSubRows.map(
+                            (row: any, index: number) => {
+                              // update the row if it is the row in focus and the data has changed
+                              if (
+                                index === rowIndex &&
+                                row[columnId] !== value
+                              ) {
+                                return {
+                                  ...originalSubRows[rowIndex],
+                                  [columnId]: value,
+                                };
+                              }
+                              return row;
+                            },
+                          );
+                          onDataChange(i, 'subRows', newSubRows);
+                        }}
+                        expandable={false}
                       />
                     </td>
                   </tr>
                 )}
-                {/* isExpanded: {row.getIsExpanded().toString()}
-                subRows: {row.subRows.toString()}
-                {row.getIsExpanded() &&
-                  row.subRows.map((subRow) => (
-                    <tr key={subRow.id} className="sub-row">
-                      <td />
-                      {subRow.getVisibleCells().map((cell) => (
-                        <td key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))} */}
               </Fragment>
             );
           })}
@@ -633,19 +665,22 @@ export function ReactTableEditableCell({
   const options = column.columnDef.options;
 
   const updateMyData = table.options.meta?.updateMyData; // Get update function from table meta
-
   const onChange = (e) => {
     if (editType === 'checkbox') setValue(e.target.checked);
     else setValue(e.target.value);
   };
 
   const onBlur = () => {
-    updateMyData(index, id, value);
+    const newValue =
+      typeof row.original[id] === 'number' ? parseFloat(value) : value;
+    updateMyData(index, id, newValue);
   };
 
   const onKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
-      updateMyData(index, id, value);
+      const newValue =
+        typeof row.original[id] === 'number' ? parseFloat(value) : value;
+      updateMyData(index, id, newValue);
     }
   };
 
@@ -685,7 +720,7 @@ export function ReactTableEditableCell({
         styles={{
           menuPortal: (base) => ({ ...base, fontSize: '0.78em', zIndex: 9999 }),
         }}
-        value={options.find((option: any) => option.value === value)}
+        value={value}
         options={options}
         menuPortalTarget={document.body}
         onChange={(selectedOption) => {
