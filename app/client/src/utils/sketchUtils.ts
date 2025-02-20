@@ -2509,6 +2509,8 @@ export function createScenarioDeconLayer(
       name: deconLayerName,
       label: deconLayerName,
       value: deconUuid,
+      approach: 'Basic',
+      buildingApproach: null,
       layerType: 'Decon',
       status: 'added',
       editType: 'add',

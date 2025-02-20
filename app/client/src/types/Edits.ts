@@ -118,6 +118,11 @@ export type AreaByMediaType = {
   subMedia: AreaByMediaType[];
 };
 
+export type ApproachTypes = 'Basic' | 'Advanced' | 'Experimental';
+export type BuildingApproachTypes =
+  | 'Building Structural Component'
+  | 'Building Primary Material Composition';
+
 export type LayerDeconEditsType = {
   type: 'layer-decon';
   id: number; // scenario layer id
@@ -126,6 +131,8 @@ export type LayerDeconEditsType = {
   name: string; // layer/scenario name
   label: string; // layer/scenario label
   value: string; // layer/scenario value for React-Select
+  approach: ApproachTypes;
+  buildingApproach: BuildingApproachTypes | null;
   layerType: LayerTypeName; // type of tots layer (sample, contamination, etc.)
   status: PublishStatus; // publish status
   editType: EditType; // edit type

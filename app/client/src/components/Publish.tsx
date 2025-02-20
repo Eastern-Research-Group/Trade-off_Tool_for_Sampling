@@ -2201,8 +2201,8 @@ function Publish({ appType }: Props) {
         BUILDING_AREA_EXTERIOR: aoiLayer.aoiSummary.totalBuildingExtSqM,
         BUILDING_AREA_INTERIOR: aoiLayer.aoiSummary.totalBuildingIntSqM,
         AOI_AREA: aoiLayer.aoiSummary.totalAoiSqM,
-        DECON_EST_APPROACH: 'basic',
-        DECON_BLDG_EST_APPROACH: null,
+        DECON_EST_APPROACH: linkedLayer.approach,
+        DECON_BLDG_EST_APPROACH: linkedLayer.buildingApproach,
         NOTES: '',
       });
 
@@ -2929,7 +2929,6 @@ function Publish({ appType }: Props) {
       // verify service name availbility if changed
       (sampleTypesNameCheck.status === 'none' ||
         sampleTypesNameCheck.status === 'success'));
-
 
   let appName = '';
   if (appType === 'sampling') appName = 'TOTS';
