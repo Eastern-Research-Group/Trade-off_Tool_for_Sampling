@@ -48,6 +48,7 @@ import {
   FeatureEditsType,
   LayerAoiAnalysisEditsType,
   LayerEditsType,
+  ScenarioDeconEditsType,
   ScenarioEditsType,
 } from 'types/Edits';
 import { LayerType } from 'types/Layer';
@@ -285,7 +286,11 @@ function Publish({ appType }: Props) {
       fullPlanIndex = requests.length - 1;
     }
     if (!partialPlanNameChecked && selectedScenario) {
-      setPublishPartialResponse({
+      const setter =
+        appType === 'decon'
+          ? setPublishDeconPlanResponse
+          : setPublishPartialResponse;
+      setter({
         status: 'fetching',
         summary: { success: '', failed: '' },
         rawData: null,
@@ -1076,7 +1081,6 @@ function Publish({ appType }: Props) {
       }
     });
     const publishLayers: LayerType[] = publishLayer ? [publishLayer] : [];
-    console.log('publishLayers; ', publishLayers);
 
     // build the layerEdits
     const layerEdits: LayerEditsType = {
@@ -1101,7 +1105,6 @@ function Publish({ appType }: Props) {
       deletes: [],
       published: [],
     };
-    console.log('layerEdits; ', layerEdits);
 
     // get the attributes to be published
     const attributesToInclude = [
@@ -1191,7 +1194,6 @@ function Publish({ appType }: Props) {
         });
       });
     });
-    console.log('layerEdits2; ', layerEdits);
 
     setPublishPartialResponse({
       status: 'fetching',
@@ -1199,11 +1201,6 @@ function Publish({ appType }: Props) {
       rawData: null,
     });
 
-    console.log('publishLayers2; ', publishLayers);
-    console.log('layerEdits3; ', layerEdits);
-    console.log('editsScenario; ', editsScenario);
-    console.log('layerProps; ', layerProps);
-    console.log('attributesToInclude; ', attributesToInclude);
     publish({
       portal,
       map,
@@ -1983,8 +1980,6 @@ function Publish({ appType }: Props) {
       edits.edits,
       selectedScenario.layerId,
     );
-    console.log('scenarioIndex: ', scenarioIndex);
-    console.log('editsScenario: ', editsScenario);
 
     // exit early if the scenario was not found
     if (
@@ -2002,178 +1997,13 @@ function Publish({ appType }: Props) {
       return;
     }
 
-    // const originalLayers = layers.filter(
-    //   (layer) =>
-    //     editsScenario.layers.findIndex(
-    //       (childLayer) => childLayer.layerId === layer.layerId,
-    //     ) !== -1,
-    // );
-
-    // // make the layer publish layer
-    // const graphicsLayer = new GraphicsLayer({
-    //   title: selectedScenario.scenarioName,
-    //   visible: false,
-    //   listMode: 'hide',
-    // });
-    // const pointsLayer = new GraphicsLayer({
-    //   title: selectedScenario.scenarioName + '-points',
-    //   visible: false,
-    //   listMode: 'hide',
-    // });
-
-    // let publishLayer: LayerType | null = null;
-    // originalLayers.forEach((layer, index) => {
-    //   if (index === 0) {
-    //     publishLayer = {
-    //       ...layer,
-    //       label: selectedScenario.scenarioName,
-    //       layerId: selectedScenario.layerId,
-    //       layerType: 'Samples',
-    //       name: selectedScenario.scenarioName,
-    //       sketchLayer: graphicsLayer,
-    //       pointsLayer,
-    //       value: selectedScenario.scenarioName,
-    //     };
-    //   }
-
-    //   if (
-    //     !publishLayer ||
-    //     publishLayer.sketchLayer.type !== 'graphics' ||
-    //     layer.sketchLayer.type !== 'graphics'
-    //   ) {
-    //     return;
-    //   }
-
-    //   const clonedGraphics = layer.sketchLayer.graphics.clone();
-    //   publishLayer.sketchLayer.addMany(clonedGraphics.toArray());
-
-    //   if (layer.pointsLayer && publishLayer.pointsLayer) {
-    //     const clonedPoints = layer.pointsLayer.graphics.clone();
-    //     publishLayer.pointsLayer.addMany(clonedPoints.toArray());
-    //   }
-    // });
-    // const publishLayers: LayerType[] = publishLayer ? [publishLayer] : [];
-
-    // // build the layerEdits
-    // const layerEdits: LayerEditsType = {
-    //   type: 'layer',
-    //   id: editsScenario.id,
-    //   pointsId: editsScenario.pointsId,
-    //   uuid: '', // no need for a uuid since this is combining layers into one
-    //   layerId: editsScenario.layerId,
-    //   portalId: editsScenario.portalId,
-    //   name: editsScenario.name,
-    //   label: editsScenario.label,
-    //   layerType: editsScenario.layerType,
-    //   addedFrom: editsScenario.addedFrom,
-    //   hasContaminationRan: editsScenario.hasContaminationRan,
-    //   status: editsScenario.status,
-    //   editType: editsScenario.editType,
-    //   visible: editsScenario.visible,
-    //   listMode: editsScenario.listMode,
-    //   sort: 0, // no need for a uuid since this is combining layers into one
-    //   adds: [],
-    //   updates: [],
-    //   deletes: [],
-    //   published: [],
-    // };
-
-    // get the attributes to be published
-    // TODO this should be different
-    // const attributesToInclude = [
-    //   ...defaultPlanAttributes,
-    //   ...(trainingMode ? trainingModePlanAttributes : []),
-    // ];
-    // attributesToInclude.forEach((item, index) => {
-    //   item.id = index + 1;
-    // });
-
-    // // add graphics to the layer to publish while also setting
-    // // the DECISIONUNIT, DECISIONUNITUUID and DECISIONUNITSORT attributes
-    // editsScenario.layers.forEach((layer) => {
-    //   layerEdits.published = layerEdits.published.concat(layer.published);
-
-    //   layer.adds.forEach((item) => {
-    //     let attributes: any = {};
-    //     if (publishLayer?.sketchLayer.type === 'graphics') {
-    //       const graphic = publishLayer.sketchLayer.graphics.find(
-    //         (graphic) =>
-    //           graphic.attributes.PERMANENT_IDENTIFIER ===
-    //           item.attributes.PERMANENT_IDENTIFIER,
-    //       );
-
-    //       attributes['GLOBALID'] = graphic.attributes['GLOBALID'];
-    //       attributes['OBJECTID'] = graphic.attributes['OBJECTID'];
-
-    //       // attributesToInclude.forEach((attribute) => {
-    //       //   attributes[attribute.name] =
-    //       //     graphic.attributes[attribute.name] || null;
-    //       // });
-    //     }
-
-    //     if (attributes.length === 0) {
-    //       attributes = { ...item.attributes };
-    //     }
-
-    //     layerEdits.adds.push({
-    //       ...item,
-    //       attributes,
-    //     });
-    //   });
-
-    //   const combinedUpdates = [...layer.updates, ...layer.published];
-    //   combinedUpdates.forEach((item) => {
-    //     let attributes: any = {};
-    //     if (publishLayer?.sketchLayer.type === 'graphics') {
-    //       const graphic = publishLayer.sketchLayer.graphics.find(
-    //         (graphic) =>
-    //           graphic.attributes.PERMANENT_IDENTIFIER ===
-    //           item.attributes.PERMANENT_IDENTIFIER,
-    //       );
-
-    //       if (graphic) {
-    //         attributes['GLOBALID'] = graphic.attributes['GLOBALID'];
-    //         attributes['OBJECTID'] = graphic.attributes['OBJECTID'];
-
-    //         // attributesToInclude.forEach((attribute) => {
-    //         //   attributes[attribute.name] =
-    //         //     graphic.attributes[attribute.name] || null;
-    //         // });
-    //       }
-    //     }
-
-    //     if (attributes.length === 0) {
-    //       attributes = { ...item.attributes };
-    //     }
-
-    //     const inDeletes =
-    //       layer.deletes.findIndex(
-    //         (feat) =>
-    //           feat.PERMANENT_IDENTIFIER ===
-    //           item.attributes.PERMANENT_IDENTIFIER,
-    //       ) !== -1;
-    //     if (!inDeletes) {
-    //       layerEdits.updates.push({
-    //         ...item,
-    //         attributes,
-    //       });
-    //     }
-    //   });
-    //   layer.deletes.forEach((item) => {
-    //     layerEdits.deletes.push({
-    //       ...item,
-    //       DECISIONUNITUUID: layer.uuid,
-    //     });
-    //   });
-    // });
-
     const linkedLayers = edits.edits.filter(
       (edit) =>
         editsScenario.linkedLayerIds.includes(edit.layerId) &&
         edit.type === 'layer-decon',
     );
 
-    // TODO build outputs for: operationSettings, operationDetails, calculationResults
+    // build outputs for: operationSettings, operationDetails, calculationResults
     const operationSettings: any[] = [];
     const operationDetails: any[] = [];
     let calculationResults: any[] = [];
@@ -2366,399 +2196,132 @@ function Publish({ appType }: Props) {
     })
       .then((res: any) => {
         console.log('res: ', res);
-        // TODO bring back what's necessary from below
+        const portalId = res.portalId;
 
-        // const portalId = res.portalId;
+        // get totals
+        const totals = {
+          added: 0,
+          updated: 0,
+          deleted: 0,
+          failed: 0,
+        };
+        const changes: PublishResults = {};
 
-        // // get totals
-        // const totals = {
-        //   added: 0,
-        //   updated: 0,
-        //   deleted: 0,
-        //   failed: 0,
-        // };
-        // const changes: PublishResults = {};
+        res.edits.forEach((layerRes: any) => {
+          if (layerRes.id !== 0) return;
 
-        // res.edits.forEach((layerRes: any) => {
-        //   if (layerRes.id !== 0) return;
+          // need to loop through each array and check the success flag
+          if (layerRes.addResults) {
+            layerRes.addResults.forEach((item: any) => {
+              if (item.success) totals.added += 1;
+              else totals.failed += 1;
+            });
+          }
+          if (layerRes.updateResults) {
+            layerRes.updateResults.forEach((item: any) => {
+              if (item.success) totals.updated += 1;
+              else totals.failed += 1;
+            });
+          }
+          if (layerRes.deleteResults) {
+            layerRes.deleteResults.forEach((item: any) => {
+              if (item.success) totals.deleted += 1;
+              else totals.failed += 1;
+            });
+          }
+        });
 
-        //   // need to loop through each array and check the success flag
-        //   if (layerRes.addResults) {
-        //     layerRes.addResults.forEach((item: any, index: number) => {
-        //       if (item.success) totals.added += 1;
-        //       else totals.failed += 1;
+        // create the message string for each type of change (add, update and delete)
+        const successParts = [];
+        if (totals.added) {
+          successParts.push(`${totals.added} item(s) added`);
+        }
+        if (totals.updated) {
+          successParts.push(`${totals.updated} item(s) updated`);
+        }
+        if (totals.deleted) {
+          successParts.push(`${totals.deleted} item(s) deleted`);
+        }
 
-        //       // update the edits arrays
-        //       const origItem = layerEdits.adds[index];
-        //       const decisionUUID = origItem.attributes.DECISIONUNITUUID;
-        //       const permanentId = origItem.attributes.PERMANENT_IDENTIFIER;
-        //       if (item.success) {
-        //         const type = origItem.attributes.TYPE;
-        //         origItem.attributes = { ...sampleAttributes[type] };
-        //         origItem.attributes.DECISIONUNITUUID = decisionUUID;
-        //         origItem.attributes.PERMANENT_IDENTIFIER = permanentId;
-        //         origItem.attributes.OBJECTID = item.objectId;
-        //         origItem.attributes.GLOBALID = item.globalId;
+        // combine the messages
+        let success = '';
+        if (successParts.length === 1) {
+          success = successParts[0];
+        }
+        if (successParts.length > 1) {
+          success =
+            successParts.slice(0, -1).join(', ') +
+            ' and ' +
+            successParts.slice(-1);
+        }
 
-        //         // update the published for this layer
-        //         if (
-        //           Object.prototype.hasOwnProperty.call(changes, decisionUUID)
-        //         ) {
-        //           const exist =
-        //             changes[decisionUUID].published.findIndex(
-        //               (x) =>
-        //                 x.attributes.PERMANENT_IDENTIFIER ===
-        //                 origItem.attributes.PERMANENT_IDENTIFIER,
-        //             ) > -1;
-        //           if (!exist) changes[decisionUUID].published.push(origItem);
-        //         } else {
-        //           changes[decisionUUID] = {
-        //             adds: [],
-        //             updates: [],
-        //             deletes: [],
-        //             published: [origItem],
-        //           };
-        //         }
+        // create the failed status message
+        const failed = totals.failed
+          ? `${totals.failed} item(s) failed to publish. Check the console log for details.`
+          : '';
+        if (failed) console.error('Some items failed to publish: ', res);
 
-        //         // find the tots layer
-        //         const mapLayer = layers.find(
-        //           (layer) => layer.uuid === decisionUUID,
-        //         );
+        setPublishDeconPlanResponse({
+          status: 'success',
+          summary: { success, failed },
+          rawData: res,
+        });
 
-        //         // update the graphic on the map
-        //         if (mapLayer && mapLayer.sketchLayer.type === 'graphics') {
-        //           const graphic = mapLayer.sketchLayer.graphics.find(
-        //             (graphic) =>
-        //               graphic.attributes.PERMANENT_IDENTIFIER ===
-        //               origItem.attributes.PERMANENT_IDENTIFIER,
-        //           );
+        // make a copy of the edits context variable
+        // update the edits state
+        setEdits((edits) => {
+          const editsScenario = edits.edits[
+            scenarioIndex
+          ] as ScenarioDeconEditsType;
+          editsScenario.status = 'published';
+          editsScenario.portalId = portalId;
 
-        //           if (graphic) {
-        //             graphic.attributes.OBJECTID = item.objectId;
-        //             graphic.attributes.GLOBALID = item.globalId;
-        //           }
-        //         }
-        //       } else {
-        //         // update the adds for this layer
-        //         if (
-        //           Object.prototype.hasOwnProperty.call(changes, decisionUUID)
-        //         ) {
-        //           changes[decisionUUID].adds.push(origItem);
-        //         } else {
-        //           changes[decisionUUID] = {
-        //             adds: [origItem],
-        //             updates: [],
-        //             deletes: [],
-        //             published: [],
-        //           };
-        //         }
-        //       }
-        //     });
-        //   }
-        //   if (layerRes.updateResults) {
-        //     layerRes.updateResults.forEach((item: any, index: number) => {
-        //       if (item.success) totals.updated += 1;
-        //       else totals.failed += 1;
+          editsScenario.linkedLayerIds.forEach((linkedLayerId) => {
+            const linkedLayer = edits.edits.find(
+              (edit) => edit.layerId === linkedLayerId,
+            );
+            if (!linkedLayer) return;
+            linkedLayer.status = 'published';
+            linkedLayer.portalId = portalId;
+          });
 
-        //       // update the edits arrays
-        //       const origItem = layerEdits.updates[index];
-        //       const decisionUUID = origItem.attributes.DECISIONUNITUUID;
-        //       if (
-        //         item.success &&
-        //         Object.prototype.hasOwnProperty.call(changes, decisionUUID)
-        //       ) {
-        //         const type = origItem.attributes.TYPE;
-        //         origItem.attributes = { ...sampleAttributes[type] };
-        //         origItem.attributes.DECISIONUNITUUID = decisionUUID;
-        //         origItem.attributes.OBJECTID = item.objectId;
-        //         origItem.attributes.GLOBALID = item.globalId;
+          return {
+            count: edits.count + 1,
+            edits: [
+              ...edits.edits.slice(0, scenarioIndex),
+              editsScenario,
+              ...edits.edits.slice(scenarioIndex + 1),
+            ],
+          };
+        });
 
-        //         // get the publish items for this layer
-        //         const layerNewPublished = changes[decisionUUID].published;
+        // updated the edited layer
+        setLayers((layers) =>
+          // TODO need to look up layers linked to selectedScenario
+          //      this only applys to layerType=Decon
+          layers.map((layer) => {
+            const editsLayer = edits.edits.find(
+              (edit) =>
+                edit.layerId === layer.layerId && edit.type === 'layer-decon',
+            );
+            if (!editsLayer) return layer;
 
-        //         // find the item in published
-        //         const index = layerNewPublished.findIndex(
-        //           (pubItem) =>
-        //             pubItem.attributes.PERMANENT_IDENTIFIER ===
-        //             origItem.attributes.PERMANENT_IDENTIFIER,
-        //         );
+            const updatedLayer: LayerType = {
+              ...layer,
+              status: 'published',
+              portalId,
+            };
+            return updatedLayer;
+          }),
+        );
 
-        //         // update the item in newPublished
-        //         if (index > -1) {
-        //           changes[decisionUUID].published = [
-        //             ...layerNewPublished.slice(0, index),
-        //             origItem,
-        //             ...layerNewPublished.slice(index + 1),
-        //           ];
-        //         }
+        setSelectedScenario((selectedScenario) => {
+          if (!selectedScenario) return selectedScenario;
 
-        //         // find the tots layer
-        //         const mapLayer = layers.find(
-        //           (layer) => layer.uuid === decisionUUID,
-        //         );
-
-        //         // update the graphic on the map
-        //         if (mapLayer && mapLayer.sketchLayer.type === 'graphics') {
-        //           const graphic = mapLayer.sketchLayer.graphics.find(
-        //             (graphic) =>
-        //               graphic.attributes.PERMANENT_IDENTIFIER ===
-        //               origItem.attributes.PERMANENT_IDENTIFIER,
-        //           );
-
-        //           if (graphic) {
-        //             graphic.attributes.OBJECTID = item.objectId;
-        //             graphic.attributes.GLOBALID = item.globalId;
-        //           }
-        //         }
-        //       } else {
-        //         // update the updates for this layer
-        //         if (
-        //           Object.prototype.hasOwnProperty.call(changes, decisionUUID)
-        //         ) {
-        //           changes[decisionUUID].updates.push(origItem);
-        //         } else {
-        //           changes[decisionUUID] = {
-        //             adds: [],
-        //             updates: [origItem],
-        //             deletes: [],
-        //             published: [],
-        //           };
-        //         }
-        //       }
-        //     });
-        //   }
-        //   if (layerRes.deleteResults) {
-        //     layerRes.deleteResults.forEach((item: any, index: number) => {
-        //       if (item.success) totals.deleted += 1;
-        //       else totals.failed += 1;
-
-        //       // update the edits delete array
-        //       const origItem = layerEdits.deletes[index];
-        //       const decisionUUID = origItem.DECISIONUNITUUID;
-        //       if (
-        //         item.success &&
-        //         Object.prototype.hasOwnProperty.call(changes, decisionUUID)
-        //       ) {
-        //         // get the publish items for this layer
-        //         const layerNewPublished = changes[decisionUUID].published;
-
-        //         // find the item in published
-        //         const pubIndex = layerNewPublished.findIndex(
-        //           (pubItem) =>
-        //             pubItem.attributes.PERMANENT_IDENTIFIER ===
-        //             origItem.PERMANENT_IDENTIFIER,
-        //         );
-
-        //         // update the item in newPublished
-        //         if (pubIndex > -1) {
-        //           changes[decisionUUID].published = [
-        //             ...layerNewPublished.slice(0, pubIndex),
-        //             ...layerNewPublished.slice(pubIndex + 1),
-        //           ];
-        //         }
-        //       } else {
-        //         // update the updates for this layer
-        //         if (
-        //           Object.prototype.hasOwnProperty.call(changes, decisionUUID)
-        //         ) {
-        //           changes[decisionUUID].deletes.push(origItem);
-        //         } else {
-        //           changes[decisionUUID] = {
-        //             adds: [],
-        //             updates: [],
-        //             deletes: [origItem],
-        //             published: [],
-        //           };
-        //         }
-        //       }
-        //     });
-        //   }
-        // });
-
-        // // create the message string for each type of change (add, update and delete)
-        // const successParts = [];
-        // if (totals.added) {
-        //   successParts.push(`${totals.added} item(s) added`);
-        // }
-        // if (totals.updated) {
-        //   successParts.push(`${totals.updated} item(s) updated`);
-        // }
-        // if (totals.deleted) {
-        //   successParts.push(`${totals.deleted} item(s) deleted`);
-        // }
-
-        // // combine the messages
-        // let success = '';
-        // if (successParts.length === 1) {
-        //   success = successParts[0];
-        // }
-        // if (successParts.length > 1) {
-        //   success =
-        //     successParts.slice(0, -1).join(', ') +
-        //     ' and ' +
-        //     successParts.slice(-1);
-        // }
-
-        // // create the failed status message
-        // const failed = totals.failed
-        //   ? `${totals.failed} item(s) failed to publish. Check the console log for details.`
-        //   : '';
-        // if (failed) console.error('Some items failed to publish: ', res);
-
-        // setPublishDeconPlanResponse({
-        //   status: 'success',
-        //   summary: { success, failed },
-        //   rawData: res,
-        // });
-
-        // // make a copy of the edits context variable
-        // // update the edits state
-        // setEdits((edits) => {
-        //   const editsScenario = edits.edits[scenarioIndex] as ScenarioEditsType;
-        //   editsScenario.status = 'published';
-        //   editsScenario.portalId = portalId;
-
-        //   editsScenario.layers.forEach((editedLayer) => {
-        //     // update the ids
-        //     if (
-        //       Object.prototype.hasOwnProperty.call(
-        //         res.idMapping,
-        //         editedLayer.uuid,
-        //       )
-        //     ) {
-        //       editedLayer.portalId = portalId;
-        //       editedLayer.id = res.idMapping[editedLayer.uuid].id;
-        //       editedLayer.pointsId = res.idMapping[editedLayer.uuid].pointsId;
-        //       editsScenario.id = editedLayer.id;
-        //       editsScenario.pointsId = editedLayer.pointsId;
-        //     }
-
-        //     const edits = changes[editedLayer.uuid];
-        //     if (edits) {
-        //       const oldPublished = editedLayer.published.filter((x) => {
-        //         const idx = editedLayer.deletes.findIndex(
-        //           (y) =>
-        //             y.PERMANENT_IDENTIFIER ===
-        //             x.attributes.PERMANENT_IDENTIFIER,
-        //         );
-        //         const idx2 = edits.published.findIndex(
-        //           (y) =>
-        //             y.attributes.PERMANENT_IDENTIFIER ===
-        //             x.attributes.PERMANENT_IDENTIFIER,
-        //         );
-        //         return idx === -1 && idx2 === -1;
-        //       });
-
-        //       editedLayer.adds = edits.adds;
-        //       editedLayer.updates = edits.updates;
-        //       editedLayer.published = [...oldPublished, ...edits.published];
-        //       editedLayer.deletes = edits.deletes;
-        //     }
-        //   });
-        //   editsScenario.table = res.table;
-
-        //   // find the response for the calculateSettings applyEdits response
-        //   const calcId = res.calculateSettings.id;
-        //   const calcRes = res.edits.find((l: any) => l.id === calcId)
-        //     ?.addResults?.[0];
-
-        //   if (calcRes) {
-        //     editsScenario.calculateSettings.current = {
-        //       ...editsScenario.calculateSettings.current,
-        //       OBJECTID: calcRes.objectId,
-        //       GLOBALID: calcRes.globalId,
-        //     };
-        //   }
-
-        //   editsScenario.calculateSettings.published =
-        //     editsScenario.calculateSettings.current;
-
-        //   // find the response for the calculateResults applyEdits response
-        //   const calcResultsId = res.calculateResults.id;
-        //   const calcResultsRes = res.edits.find(
-        //     (l: any) => l.id === calcResultsId,
-        //   )?.addResults?.[0];
-
-        //   if (calculateResultsDecon.data) {
-        //     editsScenario.calculateResultsPublished = {
-        //       ...calculateResultsDecon.data,
-        //       OBJECTID: calcResultsRes?.objectId ?? -1,
-        //       GLOBALID: calcResultsRes?.globalId,
-        //     };
-        //   }
-
-        //   return {
-        //     count: edits.count + 1,
-        //     edits: [
-        //       ...edits.edits.slice(0, scenarioIndex),
-        //       editsScenario,
-        //       ...edits.edits.slice(scenarioIndex + 1),
-        //     ],
-        //   };
-        // });
-
-        // // updated the edited layer
-        // setLayers((layers) =>
-        //   layers.map((layer) => {
-        //     if (!Object.prototype.hasOwnProperty.call(changes, layer.uuid))
-        //       return layer;
-
-        //     const updatedLayer: LayerType = {
-        //       ...layer,
-        //       status: 'published',
-        //       portalId,
-        //     };
-
-        //     // update the ids
-        //     if (
-        //       Object.prototype.hasOwnProperty.call(res.idMapping, layer.uuid)
-        //     ) {
-        //       updatedLayer.id = res.idMapping[layer.uuid].id;
-        //       updatedLayer.pointsId = res.idMapping[layer.uuid].pointsId;
-        //     }
-
-        //     return updatedLayer;
-        //   }),
-        // );
-
-        // setSelectedScenario((selectedScenario) => {
-        //   if (!selectedScenario) return selectedScenario;
-
-        //   selectedScenario.status = 'published';
-        //   selectedScenario.portalId = portalId;
-
-        //   // find the response for the calculateSettings applyEdits response
-        //   const calcId = res.calculateSettings.id;
-        //   const calcRes = res.edits.find((l: any) => l.id === calcId)
-        //     ?.addResults?.[0];
-
-        //   if (calcRes) {
-        //     selectedScenario.calculateSettings.current = {
-        //       ...selectedScenario.calculateSettings.current,
-        //       OBJECTID: calcRes.objectId,
-        //       GLOBALID: calcRes.globalId,
-        //     };
-        //   }
-
-        //   selectedScenario.calculateSettings.published =
-        //     selectedScenario.calculateSettings.current;
-
-        //   // find the response for the calculateSettings applyEdits response
-        //   const calcResultsId = res.calculateResults.id;
-        //   const calcResultsRes = res.edits.find(
-        //     (l: any) => l.id === calcResultsId,
-        //   )?.addResults?.[0];
-
-        //   if (calculateResultsDecon.data) {
-        //     selectedScenario.calculateResultsPublished = {
-        //       ...calculateResultsDecon.data,
-        //       OBJECTID: calcResultsRes?.objectId ?? -1,
-        //       GLOBALID: calcResultsRes?.globalId,
-        //     };
-        //   }
-
-        //   return selectedScenario;
-        // });
+          selectedScenario.status = 'published';
+          selectedScenario.portalId = portalId;
+          return selectedScenario;
+        });
       })
       .catch((err) => {
         console.error('isServiceNameAvailable error', err);
@@ -2775,19 +2338,17 @@ function Publish({ appType }: Props) {
         window.logErrorToGa(err);
       });
   }, [
+    calculateResultsDecon.data,
     edits,
     includePartialPlanWebMap,
     includePartialPlanWebScene,
-    layers,
     layerProps,
     map,
     portal,
-    sampleAttributes,
     selectedScenario,
     setEdits,
     setLayers,
     setSelectedScenario,
-    trainingMode,
     webMapReferenceLayerSelections,
     webSceneReferenceLayerSelections,
   ]);
@@ -3168,10 +2729,8 @@ function Publish({ appType }: Props) {
         (includeFullPlan && publishResponse.status === 'success')) &&
         (!includePartialPlan ||
           (includePartialPlan &&
-            publishPartialResponse.status === 'success')) &&
-        (!includePartialPlan ||
-          (includePartialPlan &&
-            publishDeconPlanResponse.status === 'success')) &&
+            (publishPartialResponse.status === 'success' ||
+              publishDeconPlanResponse.status === 'success'))) &&
         (!includeCustomSampleTypes ||
           (includeCustomSampleTypes &&
             publishSamplesResponse.status === 'success')) &&

@@ -2086,36 +2086,6 @@ function ResultCard({ appType, result }: ResultCardProps) {
       setStatus('');
     }
 
-    // Updates the pointIds on the layers and edits objects
-    function updatePointIds(
-      layerFeatures: any,
-      layerDetails: any,
-      layersToAdd: LayerType[],
-      editsCopy: EditsType,
-    ) {
-      // get the layer uuid from the first feature
-      layerFeatures.features.forEach((feature: any) => {
-        const uuid = feature.attributes?.DECISIONUNITUUID;
-        if (!uuid) return;
-
-        // find the layer in layersToAdd and update the id
-        const layer = layersToAdd.find((l) => l.layerId === uuid);
-        if (layer) layer.pointsId = layerDetails.id;
-
-        // find the layer in editsCopy and update the id
-        const editsLayer = editsCopy.edits.find(
-          (l) => l.portalId === layerDetails.serviceItemId,
-        ) as ScenarioDeconEditsType;
-        if (editsLayer) {
-          // const editsLayerTemp = editsLayer as ScenarioDeconEditsType;
-          // if (editsLayerTemp?.layers) {
-          //   const sublayer = editsLayerTemp.layers.find((s) => s.uuid === uuid);
-          //   if (sublayer) sublayer.pointsId = layerDetails.id;
-          // }
-        }
-      });
-    }
-
     function addUserDefinedType(
       graphic: any,
       newUserSampleTypes: SampleSelectType[],
@@ -2238,38 +2208,39 @@ function ResultCard({ appType, result }: ResultCardProps) {
       const layerPromises: Promise<any>[] = [];
 
       // ensure -points layer calls are done last
-      const resPolys: any[] = [];
-      const resPoints: any[] = [];
+      const resLayers: any[] = [];
       featureLayersRes.layers.forEach((layer: any) => {
-        if (layer.geometryType === 'esriGeometryPoint') {
-          resPoints.push(layer);
-        } else {
-          resPolys.push(layer);
-        }
+        resLayers.push(layer);
       });
 
-      const resSampleTypes: any[] = [];
+      const resOperationSettings: any[] = [];
+      const resOperationDetails: any[] = [];
+      const resCalculationResults: any[] = [];
+      // const resDeconTypes: any[] = [];
       const resRefLayersTypes: any[] = [];
-      const resCalculateSettings: any[] = [];
       featureLayersRes.tables.forEach((table: any) => {
-        if (table.name.endsWith('-sample-types')) {
-          resSampleTypes.push(table);
+        if (table.name.endsWith('-operation-settings')) {
+          resOperationSettings.push(table);
+        }
+        if (table.name.endsWith('-operation-details')) {
+          resOperationDetails.push(table);
         }
         if (table.name.endsWith('-reference-layers')) {
           resRefLayersTypes.push(table);
         }
-        if (table.name.endsWith('-calculate-settings')) {
-          resCalculateSettings.push(table);
+        if (table.name.endsWith('-calculation-results')) {
+          resCalculationResults.push(table);
         }
       });
 
       // fire off the calls with the points layers last
       const resCombined = [
-        ...resCalculateSettings,
+        ...resCalculationResults,
         ...resRefLayersTypes,
-        ...resSampleTypes,
-        ...resPolys,
-        ...resPoints,
+        ...resOperationDetails,
+        ...resOperationSettings,
+        // ...resDeconTypes,
+        ...resLayers,
       ];
       resCombined.forEach((layer: any) => {
         // get the layer details promise
@@ -2310,17 +2281,10 @@ function ResultCard({ appType, result }: ResultCardProps) {
         referenceLayers: [],
       };
 
-      let isSampleLayer = false;
-      let isVspLayer = false;
-      let isPointsSampleLayer = false;
-      let isVspPointsSampleLayer = false;
+      // TODO this might need to be swapped out for updated contamination map
+      let isDeconLayer = false;
       const typesLoop = (type: __esri.FeatureType) => {
-        if (type.id === 'epa-tots-vsp-layer') isVspLayer = true;
-        if (type.id === 'epa-tods-decon-layer') isSampleLayer = true;
-        if (type.id === 'epa-tods-decon-points-layer')
-          isPointsSampleLayer = true;
-        if (type.id === 'epa-tots-vsp-points-layer')
-          isVspPointsSampleLayer = true;
+        if (type.id === 'epa-tods-decon-layer') isDeconLayer = true;
       };
 
       let fields: __esri.Field[] = [];
@@ -2338,8 +2302,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
         const scenarioName = layerDetails.name;
 
         // figure out if this layer is a sample layer or not
-        isSampleLayer = false;
-        isVspLayer = false;
+        isDeconLayer = false;
         if (layerDetails?.types) {
           layerDetails.types.forEach(typesLoop);
         }
@@ -2408,11 +2371,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
           layerDetails.name.endsWith('-calculate-settings')
         ) {
           // do nothing
-        } else if (isPointsSampleLayer || isVspPointsSampleLayer) {
-          if (layerFeatures.features?.length > 0) {
-            updatePointIds(layerFeatures, layerDetails, layersToAdd, editsCopy);
-          }
-        } else if (isSampleLayer || isVspLayer) {
+        } else if (isDeconLayer) {
           let newSymbolsAdded = false;
           const newDefaultSymbols: DefaultSymbolsType = {
             editCount: defaultSymbols.editCount + 1,
@@ -2557,7 +2516,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
             name: scenarioName,
             label: scenarioName,
             value: groupLayer.id,
-            layerType: isVspLayer ? 'VSP' : 'Samples',
+            layerType: 'Samples',
             addedFrom: 'tots',
             status: 'published',
             editType: 'add',
@@ -2635,7 +2594,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
               value: layerName,
               name: layerName,
               label: layerName,
-              layerType: isVspLayer ? 'VSP' : 'Samples',
+              layerType: 'Samples',
               editType: 'add',
               visible: true,
               listMode: 'show',
