@@ -233,7 +233,7 @@ function CharacterizeAOI({
     setSelectedScenario,
     sketchVM,
   } = useContext(SketchContext);
-  const { defaultGsg, services } = useLookupFiles().data;
+  const { defaultGsg, technologyTypes, services } = useLookupFiles().data;
 
   // Initializes the aoi layer for performance reasons
   useEffect(() => {
@@ -390,12 +390,14 @@ function CharacterizeAOI({
           totalBuildingExtSqM: 0,
           totalBuildingIntSqM: 0,
           totalBuildingVolumeCubM: 0,
+          totalBuildingVolumeContentsCubM: 0,
           totalBuildingFootprintSqM: 0,
           totalBuildingFloorsSqM: 0,
           totalBuildingSqM: 0,
           totalBuildingExtWallsSqM: 0,
           totalBuildingIntWallsSqM: 0,
           totalBuildingRoofSqM: 0,
+          totalBuildingCeilingsSqM: 0,
         },
         aoiPercentages: {
           numAois: 0,
@@ -438,6 +440,7 @@ function CharacterizeAOI({
         gsgParam,
         sceneViewForArea,
         true,
+        technologyTypes,
       );
 
       if (gsgParam) {
@@ -546,12 +549,15 @@ function CharacterizeAOI({
             totalBuildingExtSqM: planData.summary.totalBuildingExtSqM,
             totalBuildingIntSqM: planData.summary.totalBuildingIntSqM,
             totalBuildingVolumeCubM: planData.summary.totalBuildingVolumeCubM,
+            totalBuildingVolumeContentsCubM:
+              planData.summary.totalBuildingVolumeContentsCubM,
             totalBuildingExtWallsSqM: planData.summary.totalBuildingExtWallsSqM,
             totalBuildingFloorsSqM: planData.summary.totalBuildingFloorsSqM,
             totalBuildingFootprintSqM:
               planData.summary.totalBuildingFootprintSqM,
             totalBuildingIntWallsSqM: planData.summary.totalBuildingIntWallsSqM,
             totalBuildingRoofSqM: planData.summary.totalBuildingRoofSqM,
+            totalBuildingCeilingsSqM: planData.summary.totalBuildingCeilingsSqM,
             totalBuildingSqM: planData.summary.totalBuildingSqM,
             areaByMedia: newDeconTechSelections.map((media: any) => {
               return {
@@ -619,9 +625,6 @@ function CharacterizeAOI({
                       mediaSubRow?.removeContents ?? sub.removeContents,
                   };
                 }),
-                // pctAoi,
-                // surfaceArea,
-                // volume,
               };
             });
           });

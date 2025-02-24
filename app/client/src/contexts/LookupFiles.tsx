@@ -233,9 +233,23 @@ export type SampleTypes = SampleTypesS3 & {
   sampleSelectOptions: SampleSelectType[];
 };
 
-type SampleTypesS3 = {
+export type DeconBuildingFactorsType = {
+  [key: string]: {
+    PRIM_OCC: string;
+    OCC_Class: string;
+    SOC: string;
+    Brick: number;
+    Concrete: number;
+    Steel: number;
+    Wood: number;
+    Other: number;
+  };
+};
+
+export type SampleTypesS3 = {
   areaTolerance: number;
   attributesToCheck: string[];
   deconAttributes: AttributesType;
+  deconBuildingFactors: DeconBuildingFactorsType;
   sampleAttributes: AttributesType;
 };

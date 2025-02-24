@@ -32,7 +32,7 @@ import {
 import { LayerType } from 'types/Layer';
 import { AppType } from 'types/Navigation';
 // utils
-import { useStartOver } from 'utils/hooks';
+import { summarizedBuildingSurfaceTypes, useStartOver } from 'utils/hooks';
 import {
   deepCopyObject,
   findLayerInEdits,
@@ -1516,6 +1516,14 @@ function DeconSelectionPopup({
     }
 
     function addMedia(key: string, buildingDeconObject: any, deconTech: any) {
+      // don't add the deconTech if there is no data for it
+      if (
+        deconTech.surfaceArea === 0 &&
+        deconTech.volume === 0 &&
+        deconTech.volumeContents === 0
+      )
+        return;
+
       if (Object.prototype.hasOwnProperty.call(buildingDeconObject, key)) {
         buildingDeconObject[key].surfaceArea += deconTech.surfaceArea;
       } else {
@@ -1531,30 +1539,29 @@ function DeconSelectionPopup({
     const basicDeconSelections: any[] = [];
     const buildingDeconObject: any = {};
     baseDeconSelections.forEach((deconTech) => {
-      if (isOutside(deconTech.media)) {
+      const media = deconTech.media;
+      if (isOutside(media)) {
         basicDeconSelections.push(deconTech);
         return;
       }
 
-      if (selectedApproach === 'Basic')
-        addMedia(
-          'Buildings (Interior and Exterior)',
-          buildingDeconObject,
-          deconTech,
-        );
       if (
-        selectedApproach === 'Advanced' &&
-        selectedBuildingApproach === 'Building Structural Component'
+        selectedApproach === 'Basic' &&
+        media === 'Buildings (Interior and Exterior)'
       ) {
-        deconTech.subRows?.forEach((deconTech: any) => {
-          addMedia(deconTech.media, buildingDeconObject, deconTech);
-        });
-      }
-      if (
+        addMedia(media, buildingDeconObject, deconTech);
+      } else if (
         selectedApproach === 'Advanced' &&
-        selectedBuildingApproach === 'Building Primary Material Composition'
+        selectedBuildingApproach === 'Building Structural Component' &&
+        ['Building Exteriors', 'Building Interiors'].includes(media)
       ) {
-        addMedia(deconTech.media, buildingDeconObject, deconTech);
+        addMedia(media, buildingDeconObject, deconTech);
+      } else if (
+        selectedApproach === 'Advanced' &&
+        selectedBuildingApproach === 'Building Primary Material Composition' &&
+        !summarizedBuildingSurfaceTypes.includes(media)
+      ) {
+        addMedia(media, buildingDeconObject, deconTech);
       }
     });
 
@@ -1744,6 +1751,14 @@ function DeconSelectionPopup({
                   `${formatNumber(info.getValue())} m²`,
               },
               {
+                header: 'Volume',
+                accessorKey: 'volume',
+                size: 75,
+                cell: (info: CellContext<any, any>) =>
+                  `${formatNumber(info.getValue())} m³`,
+                show: devMode,
+              },
+              {
                 header: 'Average Initial Contamination (CFUs/m²)',
                 accessorKey: 'avgCfu',
                 size: 97,
@@ -1862,19 +1877,27 @@ function DeconSelectionPopup({
                       size: 118,
                     },
                     {
-                      header: 'Volume',
-                      accessorKey: 'volume',
-                      size: 75,
-                      cell: (info: CellContext<any, any>) =>
-                        `${formatNumber(info.getValue())} m³`,
-                      show: devMode && trainingMode,
-                    },
-                    {
                       header: 'Surface Area',
                       accessorKey: 'surfaceArea',
                       size: 75,
                       cell: (info: CellContext<any, any>) =>
                         `${formatNumber(info.getValue())} m²`,
+                    },
+                    {
+                      header: 'Volume',
+                      accessorKey: 'volume',
+                      size: 75,
+                      cell: (info: CellContext<any, any>) =>
+                        `${formatNumber(info.getValue())} m³`,
+                      show: devMode,
+                    },
+                    {
+                      header: 'Volume Contents',
+                      accessorKey: 'volumeContents',
+                      size: 75,
+                      cell: (info: CellContext<any, any>) =>
+                        `${formatNumber(info.getValue())} m³`,
+                      show: devMode,
                     },
                     {
                       header: 'Average Initial Contamination (CFUs/m²)',
@@ -2019,19 +2042,27 @@ function DeconSelectionPopup({
                       size: 118,
                     },
                     {
-                      header: 'Volume',
-                      accessorKey: 'volume',
-                      size: 75,
-                      cell: (info: CellContext<any, any>) =>
-                        `${formatNumber(info.getValue())} m³`,
-                      show: devMode && trainingMode,
-                    },
-                    {
                       header: 'Surface Area',
                       accessorKey: 'surfaceArea',
                       size: 75,
                       cell: (info: CellContext<any, any>) =>
                         `${formatNumber(info.getValue())} m²`,
+                    },
+                    {
+                      header: 'Volume',
+                      accessorKey: 'volume',
+                      size: 75,
+                      cell: (info: CellContext<any, any>) =>
+                        `${formatNumber(info.getValue())} m³`,
+                      show: devMode,
+                    },
+                    {
+                      header: 'Volume Contents',
+                      accessorKey: 'volumeContents',
+                      size: 75,
+                      cell: (info: CellContext<any, any>) =>
+                        `${formatNumber(info.getValue())} m³`,
+                      show: devMode,
                     },
                     {
                       header: 'Average Initial Contamination (CFUs/m²)',

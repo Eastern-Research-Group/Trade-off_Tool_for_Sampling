@@ -561,14 +561,19 @@ export function buildingMapPopup(feature: any) {
     { label: 'Building Occupancy Classification', fieldName: 'OCC_CLS' },
     { label: 'Primary Occupancy', fieldName: 'PRIM_OCC' },
     { label: 'Secondary Occupancy', fieldName: 'SEC_OCC' },
+    { label: 'Model Building Type Code', fieldName: 'SOC' },
     { label: 'Address', fieldName: 'PROP_ADDR' },
     { label: 'City', fieldName: 'PROP_CITY' },
     { label: 'State', fieldName: 'PROP_ST' },
     { label: 'ZIP Code', fieldName: 'PROP_ZIP' },
     { label: 'Outbuilding or Non-Primary Structure', fieldName: 'OUTBLDG' },
     { label: 'Height (meters)', fieldName: 'HEIGHT', format: 'number' },
-    { label: 'Square Meters', fieldName: 'SQMETERS', format: 'number' },
-    { label: 'Square Feet', fieldName: 'SQFEET', format: 'number' },
+    {
+      label: 'Footprint Square Meters',
+      fieldName: 'SQMETERS',
+      format: 'number',
+    },
+    { label: 'Footprint Square Feet', fieldName: 'SQFEET', format: 'number' },
     {
       label: 'Highest Ground Elevation (meters)',
       fieldName: 'H_ADJ_ELEV',
@@ -605,13 +610,23 @@ export function buildingMapPopup(feature: any) {
       fieldName: 'STATE_FIPS',
     },
     {
-      label: 'Footprint Area (square meters)',
-      fieldName: 'footprintSqM',
+      label: 'Ext Area (square meters)',
+      fieldName: 'extSqM',
       format: 'number',
     },
     {
-      label: 'Floors Area (square meters)',
-      fieldName: 'floorsSqM',
+      label: 'Ext Area (square feet)',
+      fieldName: 'extSqFt',
+      format: 'number',
+    },
+    {
+      label: 'Int Area (square meters)',
+      fieldName: 'intSqM',
+      format: 'number',
+    },
+    {
+      label: 'Int Area (square feet)',
+      fieldName: 'intSqFt',
       format: 'number',
     },
     {
@@ -620,60 +635,364 @@ export function buildingMapPopup(feature: any) {
       format: 'number',
     },
     {
-      label: 'Ext Walls Area (square meters)',
-      fieldName: 'extWallsSqM',
-      format: 'number',
-    },
-    {
-      label: 'Int Walls Area (square meters)',
-      fieldName: 'intWallsSqM',
-      format: 'number',
-    },
-    {
-      label: 'Roof Area (square meters)',
-      fieldName: 'roofSqM',
-      format: 'number',
-    },
-    {
-      label: 'Footprint Area (square feet)',
-      fieldName: 'footprintSqFt',
-      format: 'number',
-    },
-    {
-      label: 'Floors Area (square feet)',
-      fieldName: 'floorsSqFt',
-      format: 'number',
-    },
-    {
       label: 'Total Area (square feet)',
       fieldName: 'totalSqFt',
-      format: 'number',
-    },
-    {
-      label: 'Ext Walls Area (square feet)',
-      fieldName: 'extWallsSqFt',
-      format: 'number',
-    },
-    {
-      label: 'Int Walls Area (square feet)',
-      fieldName: 'intWallsSqFt',
-      format: 'number',
-    },
-    {
-      label: 'Roof Area (square feet)',
-      fieldName: 'roofSqFt',
       format: 'number',
     },
   ];
 
   if (window.location.search.includes('devMode=true')) {
-    fieldInfos.push({ label: 'Contamination Type', fieldName: 'CONTAMTYPE' });
-    fieldInfos.push({
-      label: 'Activity (Initial)',
-      fieldName: 'CONTAMVALINITIAL',
-    });
-    fieldInfos.push({ label: 'Activity (Final)', fieldName: 'CONTAMVAL' });
-    fieldInfos.push({ label: 'Unit of Measure', fieldName: 'CONTAMUNIT' });
+    fieldInfos.push(
+      ...[
+        {
+          label: 'Roof Area (square meters)',
+          fieldName: 'roofSqM',
+          format: 'number',
+        },
+        {
+          label: 'Footprint Area (square meters)',
+          fieldName: 'footprintSqM',
+          format: 'number',
+        },
+        {
+          label: 'Floors Area (square meters)',
+          fieldName: 'floorsSqM',
+          format: 'number',
+        },
+        {
+          label: 'Ceilings Area (square meters)',
+          fieldName: 'ceilingsSqM',
+          format: 'number',
+        },
+        {
+          label: 'Ext Walls Area (square meters)',
+          fieldName: 'extWallsSqM',
+          format: 'number',
+        },
+        {
+          label: 'Int Walls Area (square meters)',
+          fieldName: 'intWallsSqM',
+          format: 'number',
+        },
+        {
+          label: 'Ext Volume (cubic meters)',
+          fieldName: 'extVolumeCubM',
+          format: 'number',
+        },
+        {
+          label: 'Int Volume (cubic meters)',
+          fieldName: 'intVolumeCubM',
+          format: 'number',
+        },
+        {
+          label: 'Int Contents Volume (cubic meters)',
+          fieldName: 'intVolumeContentsCubM',
+          format: 'number',
+        },
+        {
+          label: 'Roof Area (square feet)',
+          fieldName: 'roofSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Footprint Area (square feet)',
+          fieldName: 'footprintSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Floors Area (square feet)',
+          fieldName: 'floorsSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Ceilings Area (square feet)',
+          fieldName: 'ceilingsSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Ext Walls Area (square feet)',
+          fieldName: 'extWallsSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Walls Area (square feet)',
+          fieldName: 'intWallsSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Ext Volume (cubic feet)',
+          fieldName: 'extVolumeCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Volume (cubic feet)',
+          fieldName: 'intVolumeCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Contents Volume (cubic feet)',
+          fieldName: 'intVolumeContentsCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Ext Brick Area (square meters)',
+          fieldName: 'extBrickSqM',
+          format: 'number',
+        },
+        {
+          label: 'Int Brick Area (square meters)',
+          fieldName: 'intBrickSqM',
+          format: 'number',
+        },
+        {
+          label: 'Ext Volume Brick (cubic meters)',
+          fieldName: 'extVolumeBrickCubM',
+          format: 'number',
+        },
+        {
+          label: 'Int Volume Brick (cubic meters)',
+          fieldName: 'intVolumeBrickCubM',
+          format: 'number',
+        },
+        {
+          label: 'Int Contents Volume Brick (cubic meters)',
+          fieldName: 'intVolumeBrickContentsCubM',
+          format: 'number',
+        },
+        {
+          label: 'Ext Concrete Area (square meters)',
+          fieldName: 'extConcreteSqM',
+          format: 'number',
+        },
+        {
+          label: 'Int Concrete Area (square meters)',
+          fieldName: 'intConcreteSqM',
+          format: 'number',
+        },
+        {
+          label: 'Ext Volume Concrete (cubic meters)',
+          fieldName: 'extVolumeConcreteCubM',
+          format: 'number',
+        },
+        {
+          label: 'Int Volume Concrete (cubic meters)',
+          fieldName: 'intVolumeConcreteCubM',
+          format: 'number',
+        },
+        {
+          label: 'Int Contents Volume Concrete (cubic meters)',
+          fieldName: 'intVolumeConcreteContentsCubM',
+          format: 'number',
+        },
+        {
+          label: 'Ext Steel Area (square meters)',
+          fieldName: 'extSteelSqM',
+          format: 'number',
+        },
+        {
+          label: 'Int Steel Area (square meters)',
+          fieldName: 'intSteelSqM',
+          format: 'number',
+        },
+        {
+          label: 'Ext Volume Steel (cubic meters)',
+          fieldName: 'extVolumeSteelCubM',
+          format: 'number',
+        },
+        {
+          label: 'Int Volume Steel (cubic meters)',
+          fieldName: 'intVolumeSteelCubM',
+          format: 'number',
+        },
+        {
+          label: 'Int Contents Volume Steel (cubic meters)',
+          fieldName: 'intVolumeSteelContentsCubM',
+          format: 'number',
+        },
+        {
+          label: 'Ext Wood Area (square meters)',
+          fieldName: 'extWoodSqM',
+          format: 'number',
+        },
+        {
+          label: 'Int Wood Area (square meters)',
+          fieldName: 'intWoodSqM',
+          format: 'number',
+        },
+        {
+          label: 'Ext Volume Wood (cubic meters)',
+          fieldName: 'extVolumeWoodCubM',
+          format: 'number',
+        },
+        {
+          label: 'Int Volume Wood (cubic meters)',
+          fieldName: 'intVolumeWoodCubM',
+          format: 'number',
+        },
+        {
+          label: 'Int Contents Volume Wood (cubic meters)',
+          fieldName: 'intVolumeWoodContentsCubM',
+          format: 'number',
+        },
+        {
+          label: 'Ext Other Area (square meters)',
+          fieldName: 'extOtherSqM',
+          format: 'number',
+        },
+        {
+          label: 'Int Other Area (square meters)',
+          fieldName: 'intOtherSqM',
+          format: 'number',
+        },
+        {
+          label: 'Ext Volume Other (cubic meters)',
+          fieldName: 'extVolumeOtherCubM',
+          format: 'number',
+        },
+        {
+          label: 'Int Volume Other (cubic meters)',
+          fieldName: 'intVolumeOtherCubM',
+          format: 'number',
+        },
+        {
+          label: 'Int Contents Volume Other (cubic meters)',
+          fieldName: 'intVolumeOtherContentsCubM',
+          format: 'number',
+        },
+        {
+          label: 'Ext Brick Area (square feet)',
+          fieldName: 'extBrickSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Brick Area (square feet)',
+          fieldName: 'intBrickSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Ext Volume Brick (cubic feet)',
+          fieldName: 'extVolumeBrickCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Volume Brick (cubic feet)',
+          fieldName: 'intVolumeBrickCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Contents Volume Brick (cubic feet)',
+          fieldName: 'intVolumeBrickContentsCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Ext Concrete Area (square feet)',
+          fieldName: 'extConcreteSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Concrete Area (square feet)',
+          fieldName: 'intConcreteSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Ext Volume Concrete (cubic feet)',
+          fieldName: 'extVolumeConcreteCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Volume Concrete (cubic feet)',
+          fieldName: 'intVolumeConcreteCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Contents Volume Concrete (cubic feet)',
+          fieldName: 'intVolumeConcreteContentsCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Ext Steel Area (square feet)',
+          fieldName: 'extSteelSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Steel Area (square feet)',
+          fieldName: 'intSteelSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Ext Volume Steel (cubic feet)',
+          fieldName: 'extVolumeSteelCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Volume Steel (cubic feet)',
+          fieldName: 'intVolumeSteelCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Contents Volume Steel (cubic feet)',
+          fieldName: 'intVolumeSteelContentsCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Ext Wood Area (square feet)',
+          fieldName: 'extWoodSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Wood Area (square feet)',
+          fieldName: 'intWoodSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Ext Volume Wood (cubic feet)',
+          fieldName: 'extVolumeWoodCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Volume Wood (cubic feet)',
+          fieldName: 'intVolumeWoodCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Contents Volume Wood (cubic feet)',
+          fieldName: 'intVolumeWoodContentsCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Ext Other Area (square feet)',
+          fieldName: 'extOtherSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Other Area (square feet)',
+          fieldName: 'intOtherSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Ext Volume Other (cubic feet)',
+          fieldName: 'extVolumeOtherCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Volume Other (cubic feet)',
+          fieldName: 'intVolumeOtherCubFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Contents Volume Other (cubic feet)',
+          fieldName: 'intVolumeOtherContentsCubFt',
+          format: 'number',
+        },
+        { label: 'Contamination Type', fieldName: 'CONTAMTYPE' },
+        {
+          label: 'Activity (Initial)',
+          fieldName: 'CONTAMVALINITIAL',
+        },
+        { label: 'Activity (Final)', fieldName: 'CONTAMVAL' },
+        { label: 'Unit of Measure', fieldName: 'CONTAMUNIT' },
+      ],
+    );
   }
 
   const content = <MapPopupSimple feature={feature} fieldInfos={fieldInfos} />;

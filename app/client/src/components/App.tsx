@@ -294,7 +294,7 @@ function App({ appType }: Props) {
   }, [contentHeight, height, offset, totsDiv, width]);
 
   // count the number of samples
-  const sampleData: any[] = [];
+  const tableData: any[] = [];
   if (isDecon()) {
     if (selectedScenario && selectedScenario.type === 'scenario-decon') {
       const aoiLayersProcessed: string[] = [];
@@ -322,95 +322,411 @@ function App({ appType }: Props) {
 
         aoiLayersProcessed.push(aoiAssessedLayer.layerId);
         (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
-          (sample) => {
-            sampleData.push({
-              graphic: sample,
-              ...sample.attributes,
+          (building) => {
+            tableData.push({
+              graphic: building,
+              ...building.attributes,
               layerName:
                 aoiAssessedLayer.parentLayer?.title ?? aoiAssessedLayer.label,
               H_ADJ_ELEV:
                 parseSmallFloat(
-                  sample.attributes.H_ADJ_ELEV,
+                  building.attributes.H_ADJ_ELEV,
                   2,
                 )?.toLocaleString() ?? '',
               L_ADJ_ELEV:
                 parseSmallFloat(
-                  sample.attributes.L_ADJ_ELEV,
+                  building.attributes.L_ADJ_ELEV,
                   2,
                 )?.toLocaleString() ?? '',
               HEIGHT:
                 parseSmallFloat(
-                  sample.attributes.HEIGHT,
+                  building.attributes.HEIGHT,
                   2,
                 )?.toLocaleString() ?? '',
               SQMETERS:
                 parseSmallFloat(
-                  sample.attributes.SQMETERS,
+                  building.attributes.SQMETERS,
                   2,
                 )?.toLocaleString() ?? '',
               footprintSqM:
                 parseSmallFloat(
-                  sample.attributes.footprintSqM,
+                  building.attributes.footprintSqM,
                   2,
                 )?.toLocaleString() ?? '',
               floorsSqM:
                 parseSmallFloat(
-                  sample.attributes.floorsSqM,
+                  building.attributes.floorsSqM,
                   2,
                 )?.toLocaleString() ?? '',
               totalSqM:
                 parseSmallFloat(
-                  sample.attributes.totalSqM,
+                  building.attributes.totalSqM,
                   2,
                 )?.toLocaleString() ?? '',
               extWallsSqM:
                 parseSmallFloat(
-                  sample.attributes.extWallsSqM,
+                  building.attributes.extWallsSqM,
                   2,
                 )?.toLocaleString() ?? '',
               intWallsSqM:
                 parseSmallFloat(
-                  sample.attributes.intWallsSqM,
+                  building.attributes.intWallsSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              extSqM:
+                parseSmallFloat(
+                  building.attributes.extSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intSqM:
+                parseSmallFloat(
+                  building.attributes.intSqM,
                   2,
                 )?.toLocaleString() ?? '',
               roofSqM:
                 parseSmallFloat(
-                  sample.attributes.roofSqM,
+                  building.attributes.roofSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              ceilingsSqM:
+                parseSmallFloat(
+                  building.attributes.ceilingsSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              extVolumeCubM:
+                parseSmallFloat(
+                  building.attributes.extVolumeCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeCubM:
+                parseSmallFloat(
+                  building.attributes.intVolumeCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeContentsCubM:
+                parseSmallFloat(
+                  building.attributes.intVolumeContentsCubM,
                   2,
                 )?.toLocaleString() ?? '',
               footprintSqFt:
                 parseSmallFloat(
-                  sample.attributes.footprintSqFt,
+                  building.attributes.footprintSqFt,
                   2,
                 )?.toLocaleString() ?? '',
               SQFEET:
                 parseSmallFloat(
-                  sample.attributes.SQFEET,
+                  building.attributes.SQFEET,
+                  2,
+                )?.toLocaleString() ?? '',
+              heightFt:
+                parseSmallFloat(
+                  building.attributes.heightFt,
                   2,
                 )?.toLocaleString() ?? '',
               floorsSqFt:
                 parseSmallFloat(
-                  sample.attributes.floorsSqFt,
+                  building.attributes.floorsSqFt,
                   2,
                 )?.toLocaleString() ?? '',
               totalSqFt:
                 parseSmallFloat(
-                  sample.attributes.totalSqFt,
+                  building.attributes.totalSqFt,
                   2,
                 )?.toLocaleString() ?? '',
               extWallsSqFt:
                 parseSmallFloat(
-                  sample.attributes.extWallsSqFt,
+                  building.attributes.extWallsSqFt,
                   2,
                 )?.toLocaleString() ?? '',
               intWallsSqFt:
                 parseSmallFloat(
-                  sample.attributes.intWallsSqFt,
+                  building.attributes.intWallsSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              extSqFt:
+                parseSmallFloat(
+                  building.attributes.extSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intSqFt:
+                parseSmallFloat(
+                  building.attributes.intSqFt,
                   2,
                 )?.toLocaleString() ?? '',
               roofSqFt:
                 parseSmallFloat(
-                  sample.attributes.roofSqFt,
+                  building.attributes.roofSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              ceilingsSqFt:
+                parseSmallFloat(
+                  building.attributes.ceilingsSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              extVolumeCubFt:
+                parseSmallFloat(
+                  building.attributes.extVolumeCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeCubFt:
+                parseSmallFloat(
+                  building.attributes.intVolumeCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeContentsCubFt:
+                parseSmallFloat(
+                  building.attributes.intVolumeContentsCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intBrickSqM:
+                parseSmallFloat(
+                  building.attributes.intBrickSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              extBrickSqM:
+                parseSmallFloat(
+                  building.attributes.extBrickSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              extVolumeBrickCubM:
+                parseSmallFloat(
+                  building.attributes.extVolumeBrickCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeBrickCubM:
+                parseSmallFloat(
+                  building.attributes.intVolumeBrickCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeBrickContentsCubM:
+                parseSmallFloat(
+                  building.attributes.intVolumeBrickContentsCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intConcreteSqM:
+                parseSmallFloat(
+                  building.attributes.intConcreteSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              extConcreteSqM:
+                parseSmallFloat(
+                  building.attributes.extConcreteSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              extVolumeConcreteCubM:
+                parseSmallFloat(
+                  building.attributes.extVolumeConcreteCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeConcreteCubM:
+                parseSmallFloat(
+                  building.attributes.intVolumeConcreteCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeConcreteContentsCubM:
+                parseSmallFloat(
+                  building.attributes.intVolumeConcreteContentsCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intSteelSqM:
+                parseSmallFloat(
+                  building.attributes.intSteelSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              extSteelSqM:
+                parseSmallFloat(
+                  building.attributes.extSteelSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              extVolumeSteelCubM:
+                parseSmallFloat(
+                  building.attributes.extVolumeSteelCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeSteelCubM:
+                parseSmallFloat(
+                  building.attributes.intVolumeSteelCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeSteelContentsCubM:
+                parseSmallFloat(
+                  building.attributes.intVolumeSteelContentsCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intWoodSqM:
+                parseSmallFloat(
+                  building.attributes.intWoodSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              extWoodSqM:
+                parseSmallFloat(
+                  building.attributes.extWoodSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              extVolumeWoodCubM:
+                parseSmallFloat(
+                  building.attributes.extVolumeWoodCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeWoodCubM:
+                parseSmallFloat(
+                  building.attributes.intVolumeWoodCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeWoodContentsCubM:
+                parseSmallFloat(
+                  building.attributes.intVolumeWoodContentsCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intOtherSqM:
+                parseSmallFloat(
+                  building.attributes.intOtherSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              extOtherSqM:
+                parseSmallFloat(
+                  building.attributes.extOtherSqM,
+                  2,
+                )?.toLocaleString() ?? '',
+              extVolumeOtherCubM:
+                parseSmallFloat(
+                  building.attributes.extVolumeOtherCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeOtherCubM:
+                parseSmallFloat(
+                  building.attributes.intVolumeOtherCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeOtherContentsCubM:
+                parseSmallFloat(
+                  building.attributes.intVolumeOtherContentsCubM,
+                  2,
+                )?.toLocaleString() ?? '',
+
+              intBrickSqFt:
+                parseSmallFloat(
+                  building.attributes.intBrickSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              extBrickSqFt:
+                parseSmallFloat(
+                  building.attributes.extBrickSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              extVolumeBrickCubFt:
+                parseSmallFloat(
+                  building.attributes.extVolumeBrickCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeBrickCubFt:
+                parseSmallFloat(
+                  building.attributes.intVolumeBrickCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeBrickContentsCubFt:
+                parseSmallFloat(
+                  building.attributes.intVolumeBrickContentsCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intConcreteSqFt:
+                parseSmallFloat(
+                  building.attributes.intConcreteSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              extConcreteSqFt:
+                parseSmallFloat(
+                  building.attributes.extConcreteSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              extVolumeConcreteCubFt:
+                parseSmallFloat(
+                  building.attributes.extVolumeConcreteCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeConcreteCubFt:
+                parseSmallFloat(
+                  building.attributes.intVolumeConcreteCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeConcreteContentsCubFt:
+                parseSmallFloat(
+                  building.attributes.intVolumeConcreteContentsCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intSteelSqFt:
+                parseSmallFloat(
+                  building.attributes.intSteelSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              extSteelSqFt:
+                parseSmallFloat(
+                  building.attributes.extSteelSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              extVolumeSteelCubFt:
+                parseSmallFloat(
+                  building.attributes.extVolumeSteelCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeSteelCubFt:
+                parseSmallFloat(
+                  building.attributes.intVolumeSteelCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeSteelContentsCubFt:
+                parseSmallFloat(
+                  building.attributes.intVolumeSteelContentsCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intWoodSqFt:
+                parseSmallFloat(
+                  building.attributes.intWoodSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              extWoodSqFt:
+                parseSmallFloat(
+                  building.attributes.extWoodSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              extVolumeWoodCubFt:
+                parseSmallFloat(
+                  building.attributes.extVolumeWoodCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeWoodCubFt:
+                parseSmallFloat(
+                  building.attributes.intVolumeWoodCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeWoodContentsCubFt:
+                parseSmallFloat(
+                  building.attributes.intVolumeWoodContentsCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intOtherSqFt:
+                parseSmallFloat(
+                  building.attributes.intOtherSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              extOtherSqFt:
+                parseSmallFloat(
+                  building.attributes.extOtherSqFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              extVolumeOtherCubFt:
+                parseSmallFloat(
+                  building.attributes.extVolumeOtherCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeOtherCubFt:
+                parseSmallFloat(
+                  building.attributes.intVolumeOtherCubFt,
+                  2,
+                )?.toLocaleString() ?? '',
+              intVolumeOtherContentsCubFt:
+                parseSmallFloat(
+                  building.attributes.intVolumeOtherContentsCubFt,
                   2,
                 )?.toLocaleString() ?? '',
             });
@@ -430,7 +746,7 @@ function App({ appType }: Props) {
           ),
         );
         graphics.forEach((sample) => {
-          sampleData.push({
+          tableData.push({
             graphic: sample,
             ...sample.attributes,
           });
@@ -483,7 +799,7 @@ function App({ appType }: Props) {
               )}
             </div>
           </div>
-          {sampleData.length > 0 && (
+          {tableData.length > 0 && (
             <div
               id="tots-table-button-div"
               css={floatButtonPanelStyles({
@@ -605,13 +921,13 @@ function App({ appType }: Props) {
                   <div css={tablePanelHeaderStyles}>
                     <span css={sampleTableHeaderStyles}>
                       {appType === 'decon' ? 'Buildings' : 'Samples'} (Count:{' '}
-                      {sampleData.length})
+                      {tableData.length})
                     </span>
                   </div>
                   <div>
                     <ReactTable
                       id="tots-samples-table"
-                      data={sampleData}
+                      data={tableData}
                       striped={true}
                       height={tablePanelHeight - resizerHeight - 30}
                       initialSelectedRowIds={selectedSampleIds}

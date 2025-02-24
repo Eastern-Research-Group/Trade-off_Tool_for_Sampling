@@ -221,6 +221,428 @@
       "DECISIONUNITSORT": 0
     }
   },
+  "deconBuildingFactors": {
+    "Agriculture": {
+      "PRIM_OCC": "Agriculture",
+      "OCC_CLS": "Agriculture",
+      "SOC": "AGR1",
+      "Brick": 21,
+      "Concrete": 16.8,
+      "Steel": 29.5,
+      "Wood": 32,
+      "Other": 0.7
+    },
+    "Aviation": {
+      "PRIM_OCC": "Aviation",
+      "OCC_CLS": "Utility and Misc",
+      "SOC": "COM6",
+      "Brick": 23,
+      "Concrete": 40.2,
+      "Steel": 25.1,
+      "Wood": 11.8,
+      "Other": 0
+    },
+    "Banks": {
+      "PRIM_OCC": "Banks",
+      "OCC_CLS": "Commercial",
+      "SOC": "COM5",
+      "Brick": 28.5,
+      "Concrete": 18.4,
+      "Steel": 26.7,
+      "Wood": 26.4,
+      "Other": 0
+    },
+    "Colleges/Universities": {
+      "PRIM_OCC": "Colleges/Universities",
+      "OCC_CLS": "Education",
+      "SOC": "EDU2",
+      "Brick": 41.2,
+      "Concrete": 21.9,
+      "Steel": 29,
+      "Wood": 7.8,
+      "Other": 0
+    },
+    "Community Center": {
+      "PRIM_OCC": "Community Center",
+      "OCC_CLS": "Assembly",
+      "SOC": "EDU2",
+      "Brick": 41.2,
+      "Concrete": 21.9,
+      "Steel": 29,
+      "Wood": 7.8,
+      "Other": 0
+    },
+    "Construction": {
+      "PRIM_OCC": "Construction",
+      "OCC_CLS": "Industrial",
+      "SOC": "IND6",
+      "Brick": 20.9,
+      "Concrete": 17.9,
+      "Steel": 35.4,
+      "Wood": 23.8,
+      "Other": 2
+    },
+    "Convention Center": {
+      "PRIM_OCC": "Convention Center",
+      "OCC_CLS": "Assembly",
+      "SOC": "RES4",
+      "Brick": 31.3,
+      "Concrete": 12.1,
+      "Steel": 6.8,
+      "Wood": 49.7,
+      "Other": 0
+    },
+    "Emergency Response": {
+      "PRIM_OCC": "Emergency Response",
+      "OCC_CLS": "Government",
+      "SOC": "GOV2",
+      "Brick": 27.6,
+      "Concrete": 18.3,
+      "Steel": 32.4,
+      "Wood": 21.7,
+      "Other": 0
+    },
+    "Energy Control Monitoring": {
+      "PRIM_OCC": "Energy Control Monitoring",
+      "OCC_CLS": "Utility and Misc",
+      "SOC": "COM4",
+      "Brick": 29.3,
+      "Concrete": 17.6,
+      "Steel": 22.9,
+      "Wood": 30.2,
+      "Other": 0
+    },
+    "Entertainment and Recreation": {
+      "PRIM_OCC": "Entertainment and Recreation",
+      "OCC_CLS": "Commercial",
+      "SOC": "COM8",
+      "Brick": 30.4,
+      "Concrete": 14.3,
+      "Steel": 38.2,
+      "Wood": 17.1,
+      "Other": 0
+    },
+    "Food/Drug/Chemicals": {
+      "PRIM_OCC": "Food/Drug/Chemicals",
+      "OCC_CLS": "Industrial",
+      "SOC": "IND3",
+      "Brick": 22,
+      "Concrete": 30.6,
+      "Steel": 41.2,
+      "Wood": 6.1,
+      "Other": 0
+    },
+    "General Services": {
+      "PRIM_OCC": "General Services",
+      "OCC_CLS": "Government",
+      "SOC": "GOV1",
+      "Brick": 25.9,
+      "Concrete": 23.8,
+      "Steel": 40.2,
+      "Wood": 10.1,
+      "Other": 0
+    },
+    "Ground": {
+      "PRIM_OCC": "Ground",
+      "OCC_CLS": "Commercial",
+      "SOC": "COM4",
+      "Brick": 29.3,
+      "Concrete": 17.6,
+      "Steel": 22.9,
+      "Wood": 30.2,
+      "Other": 0
+    },
+    "Heavy": {
+      "PRIM_OCC": "Heavy",
+      "OCC_CLS": "Industrial",
+      "SOC": "IND1",
+      "Brick": 11.8,
+      "Concrete": 22.4,
+      "Steel": 59.9,
+      "Wood": 5.4,
+      "Other": 0.3
+    },
+    "High Technology": {
+      "PRIM_OCC": "High Technology",
+      "OCC_CLS": "Industrial",
+      "SOC": "IND5",
+      "Brick": 20.3,
+      "Concrete": 35.3,
+      "Steel": 38.8,
+      "Wood": 5.2,
+      "Other": 0.4
+    },
+    "Hospital": {
+      "PRIM_OCC": "Hospital",
+      "OCC_CLS": "Commercial",
+      "SOC": "COM6",
+      "Brick": 23,
+      "Concrete": 40.2,
+      "Steel": 25.1,
+      "Wood": 11.8,
+      "Other": 0
+    },
+    "Indoor Arena": {
+      "PRIM_OCC": "Indoor Arena",
+      "OCC_CLS": "Assembly",
+      "SOC": "RES4",
+      "Brick": 31.3,
+      "Concrete": 12.1,
+      "Steel": 6.8,
+      "Wood": 49.7,
+      "Other": 0
+    },
+    "Institutional Dormitory": {
+      "PRIM_OCC": "Institutional Dormitory",
+      "OCC_CLS": "Residential",
+      "SOC": "RES5",
+      "Brick": 31.5,
+      "Concrete": 38,
+      "Steel": 9.8,
+      "Wood": 20.7,
+      "Other": 0
+    },
+    "Light": {
+      "PRIM_OCC": "Light",
+      "OCC_CLS": "Industrial",
+      "SOC": "IND2",
+      "Brick": 22.8,
+      "Concrete": 33.4,
+      "Steel": 36.3,
+      "Wood": 7.4,
+      "Other": 0
+    },
+    "Manufactured Home": {
+      "PRIM_OCC": "Manufactured Home",
+      "OCC_CLS": "Residential",
+      "SOC": "RES2",
+      "Brick": 0,
+      "Concrete": 0,
+      "Steel": 0,
+      "Wood": 0,
+      "Other": 100
+    },
+    "Marine": {
+      "PRIM_OCC": "Marine",
+      "OCC_CLS": "Utility and Misc",
+      "SOC": "COM4",
+      "Brick": 29.3,
+      "Concrete": 17.6,
+      "Steel": 22.9,
+      "Wood": 30.2,
+      "Other": 0
+    },
+    "Medical Office/Clinic": {
+      "PRIM_OCC": "Medical Office/Clinic",
+      "OCC_CLS": "Commercial",
+      "SOC": "COM7",
+      "Brick": 25.8,
+      "Concrete": 10.9,
+      "Steel": 29.5,
+      "Wood": 33.9,
+      "Other": 0
+    },
+    "Metals/Minerals Processing": {
+      "PRIM_OCC": "Metals/Minerals Processing",
+      "OCC_CLS": "Industrial",
+      "SOC": "IND4",
+      "Brick": 13.1,
+      "Concrete": 21.9,
+      "Steel": 62.5,
+      "Wood": 2.5,
+      "Other": 0
+    },
+    "Multi - Family Dwelling": {
+      "PRIM_OCC": "Multi - Family Dwelling",
+      "OCC_CLS": "Residential",
+      "SOC": "RES3",
+      "Brick": 21.2,
+      "Concrete": 4.8,
+      "Steel": 2.7,
+      "Wood": 69.7,
+      "Other": 1.6
+    },
+    "Non-Civilian Structures": {
+      "PRIM_OCC": "Non-Civilian Structures",
+      "OCC_CLS": "Government",
+      "SOC": "COM4",
+      "Brick": 29.3,
+      "Concrete": 17.6,
+      "Steel": 22.9,
+      "Wood": 30.2,
+      "Other": 0
+    },
+    "Nursing Home": {
+      "PRIM_OCC": "Nursing Home",
+      "OCC_CLS": "Residential",
+      "SOC": "RES6",
+      "Brick": 20.2,
+      "Concrete": 10.2,
+      "Steel": 8,
+      "Wood": 61.6,
+      "Other": 0
+    },
+    "Other Educational Buildings": {
+      "PRIM_OCC": "Other Educational Buildings",
+      "OCC_CLS": "Education",
+      "SOC": "EDU2",
+      "Brick": 41.2,
+      "Concrete": 21.9,
+      "Steel": 29,
+      "Wood": 7.8,
+      "Other": 0
+    },
+    "Parking": {
+      "PRIM_OCC": "Parking",
+      "OCC_CLS": "Commercial",
+      "SOC": "COM10",
+      "Brick": 4.7,
+      "Concrete": 69.6,
+      "Steel": 25.6,
+      "Wood": 0.1,
+      "Other": 0
+    },
+    "Personal and Repair Services": {
+      "PRIM_OCC": "Personal and Repair Services",
+      "OCC_CLS": "Commercial",
+      "SOC": "COM3",
+      "Brick": 34.9,
+      "Concrete": 20.9,
+      "Steel": 22.1,
+      "Wood": 22.1,
+      "Other": 0
+    },
+    "Pre-K - 12 Schools": {
+      "PRIM_OCC": "Pre-K - 12 Schools",
+      "OCC_CLS": "Education",
+      "SOC": "EDU1",
+      "Brick": 39.4,
+      "Concrete": 18.7,
+      "Steel": 26,
+      "Wood": 15.8,
+      "Other": 0
+    },
+    "Professional/Technical Services": {
+      "PRIM_OCC": "Professional/Technical Services",
+      "OCC_CLS": "Commercial",
+      "SOC": "COM4",
+      "Brick": 29.3,
+      "Concrete": 17.6,
+      "Steel": 22.9,
+      "Wood": 30.2,
+      "Other": 0
+    },
+    "Rail": {
+      "PRIM_OCC": "Rail",
+      "OCC_CLS": "Utility and Misc",
+      "SOC": "COM4",
+      "Brick": 29.3,
+      "Concrete": 17.6,
+      "Steel": 22.9,
+      "Wood": 30.2,
+      "Other": 0
+    },
+    "Religious": {
+      "PRIM_OCC": "Religious",
+      "OCC_CLS": "Assembly",
+      "SOC": "REL1",
+      "Brick": 38.2,
+      "Concrete": 16.7,
+      "Steel": 16.4,
+      "Wood": 28.8,
+      "Other": 0
+    },
+    "Retail Trade": {
+      "PRIM_OCC": "Retail Trade",
+      "OCC_CLS": "Commercial",
+      "SOC": "COM1",
+      "Brick": 25.7,
+      "Concrete": 19.5,
+      "Steel": 31.3,
+      "Wood": 23.6,
+      "Other": 0
+    },
+    "Single Family Dwelling": {
+      "PRIM_OCC": "Single Family Dwelling",
+      "OCC_CLS": "Residential",
+      "SOC": "RES1",
+      "Brick": 13.9,
+      "Concrete": 0.9,
+      "Steel": 0,
+      "Wood": 85.1,
+      "Other": 0
+    },
+    "Stadium": {
+      "PRIM_OCC": "Stadium",
+      "OCC_CLS": "Assembly",
+      "SOC": "COM9",
+      "Brick": 21.8,
+      "Concrete": 26.1,
+      "Steel": 48.8,
+      "Wood": 3.4,
+      "Other": 0
+    },
+    "Temporary Lodging": {
+      "PRIM_OCC": "Temporary Lodging",
+      "OCC_CLS": "Residential",
+      "SOC": "RES4",
+      "Brick": 31.3,
+      "Concrete": 12.1,
+      "Steel": 6.8,
+      "Wood": 49.7,
+      "Other": 0
+    },
+    "Theaters": {
+      "PRIM_OCC": "Theaters",
+      "OCC_CLS": "Commercial",
+      "SOC": "COM9",
+      "Brick": 21.8,
+      "Concrete": 26.1,
+      "Steel": 48.8,
+      "Wood": 3.4,
+      "Other": 0
+    },
+    "Unclassified-Residential": {
+      "PRIM_OCC": "Unclassified",
+      "OCC_CLS": "Residential",
+      "SOC": "RES1",
+      "Brick": 13.9,
+      "Concrete": 0.9,
+      "Steel": 0,
+      "Wood": 85.1,
+      "Other": 0
+    },
+    "Unclassified-Unclassified": {
+      "PRIM_OCC": "Unclassified",
+      "OCC_CLS": "Unclassified",
+      "SOC": "COM4",
+      "Brick": 29.3,
+      "Concrete": 17.6,
+      "Steel": 22.9,
+      "Wood": 30.2,
+      "Other": 0
+    },
+    "Veterinary/Pet": {
+      "PRIM_OCC": "Veterinary/Pet",
+      "OCC_CLS": "Commercial",
+      "SOC": "COM7",
+      "Brick": 25.8,
+      "Concrete": 10.9,
+      "Steel": 29.5,
+      "Wood": 33.9,
+      "Other": 0
+    },
+    "Wholesale Trade": {
+      "PRIM_OCC": "Wholesale Trade",
+      "OCC_CLS": "Commercial",
+      "SOC": "COM2",
+      "Brick": 25.2,
+      "Concrete": 33.5,
+      "Steel": 32,
+      "Wood": 9.2,
+      "Other": 0
+    }
+  },
   "sampleAttributes": {
     "Sponge": {
       "POINT_STYLE": "circle"

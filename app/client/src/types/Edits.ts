@@ -97,11 +97,13 @@ export type LayerAoiAnalysisEditsType = {
     totalBuildingExtSqM: number;
     totalBuildingIntSqM: number;
     totalBuildingVolumeCubM: number;
+    totalBuildingVolumeContentsCubM: number;
     totalBuildingExtWallsSqM: number;
     totalBuildingFloorsSqM: number;
     totalBuildingFootprintSqM: number;
     totalBuildingIntWallsSqM: number;
     totalBuildingRoofSqM: number;
+    totalBuildingCeilingsSqM: number;
     totalBuildingSqM: number;
     areaByMedia: AreaByMediaType[];
   };
@@ -115,6 +117,7 @@ export type AreaByMediaType = {
   pctAoi: number;
   surfaceArea: number;
   volume: number;
+  volumeContents: number;
   subMedia: AreaByMediaType[];
 };
 

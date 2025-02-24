@@ -87,12 +87,14 @@ export type PlanGraphics = {
       totalBuildingExtSqM: number;
       totalBuildingIntSqM: number;
       totalBuildingVolumeCubM: number;
+      totalBuildingVolumeContentsCubM: number;
       totalBuildingFootprintSqM: number;
       totalBuildingFloorsSqM: number;
       totalBuildingSqM: number;
       totalBuildingExtWallsSqM: number;
       totalBuildingIntWallsSqM: number;
       totalBuildingRoofSqM: number;
+      totalBuildingCeilingsSqM: number;
     };
     aoiPercentages: {
       numAois: number;
@@ -477,6 +479,7 @@ export function SketchProvider({ children }: Props) {
         pctAoi: 0,
         surfaceArea: 0,
         volume: 0,
+        volumeContents: 0,
         removeContents: false,
         avgCfu: 0,
         totalCfu: 0,
@@ -493,6 +496,7 @@ export function SketchProvider({ children }: Props) {
         pctAoi: 0,
         surfaceArea: 0,
         volume: 0,
+        volumeContents: 0,
         removeContents: false,
         avgCfu: 0,
         totalCfu: 0,
@@ -509,6 +513,7 @@ export function SketchProvider({ children }: Props) {
         pctAoi: 0,
         surfaceArea: 0,
         volume: 0,
+        volumeContents: 0,
         removeContents: false,
         avgCfu: 0,
         totalCfu: 0,
@@ -525,6 +530,7 @@ export function SketchProvider({ children }: Props) {
         pctAoi: 0,
         surfaceArea: 0,
         volume: 0,
+        volumeContents: 0,
         removeContents: false,
         avgCfu: 0,
         totalCfu: 0,
@@ -542,6 +548,7 @@ export function SketchProvider({ children }: Props) {
         pctAoi: 0,
         surfaceArea: 0,
         volume: 0,
+        volumeContents: 0,
         removeContents: false,
         avgCfu: 0,
         totalCfu: 0,

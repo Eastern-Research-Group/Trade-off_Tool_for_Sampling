@@ -2050,6 +2050,7 @@ function Publish({ appType }: Props) {
           PCT_DECONED: tech.pctDeconed,
           SURFACE_AREA: tech.surfaceArea,
           VOLUME: tech.volume,
+          VOLUME_CONTENTS: tech.volumeContents,
           REMOVE_BLDG_CONTENTS: tech.removeBuildingContents,
           NOTES: '',
         });
@@ -2073,6 +2074,7 @@ function Publish({ appType }: Props) {
             PCT_DECONED: sub.pctDeconed,
             SURFACE_AREA: sub.surfaceArea,
             VOLUME: sub.volume,
+            VOLUME_CONTENTS: sub.volumeContents,
             REMOVE_BLDG_CONTENTS: sub.removeBuildingContents,
             NOTES: '',
           });
