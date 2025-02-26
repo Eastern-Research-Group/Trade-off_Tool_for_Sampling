@@ -582,8 +582,10 @@ function CharacterizeAOI({
 
           editsCopy.edits.forEach((edit) => {
             if (
-              edit.type !== 'layer-decon' ||
-              edit.analysisLayerId !== aoiAnalysis?.layerId
+              (edit.type !== 'layer-decon' ||
+                edit.analysisLayerId !== aoiAnalysis?.layerId) &&
+              (edit.type !== 'layer-aoi-analysis' ||
+                edit.layerId !== aoiAnalysis?.layerId)
             )
               return;
 
@@ -591,15 +593,6 @@ function CharacterizeAOI({
               const media = edit.deconTechSelections.find(
                 (a) => a.media === tech.media,
               );
-
-              // let pctAoi = tech.pctAoi;
-              // let surfaceArea = tech.surfaceArea;
-              // let volume = tech.volume;
-              // if (media) {
-              //   pctAoi = media.pctAoi;
-              //   surfaceArea = media.surfaceArea;
-              //   volume = media.volume;
-              // }
 
               return {
                 ...tech,
@@ -862,7 +855,8 @@ function CharacterizeAOI({
             edit.layerId === deconOperation?.layerId,
         ) as LayerDeconEditsType | undefined;
         if (selectedOp) {
-          selectedOp.analysisLayerId = layerAoiAnalysis.layerId;
+          if (!selectedOp.analysisLayerId)
+            selectedOp.analysisLayerId = layerAoiAnalysis.layerId;
           selectedOp.deconTechSelections = selectedOp.deconTechSelections.map(
             (tech) => {
               return {
@@ -1081,20 +1075,39 @@ function CharacterizeAOI({
                     return {
                       ...edit,
                       analysisLayerId: newLayer.layerId,
-                      deconTechSelections: edit.deconTechSelections.map(
+                      deconTechSelections: newLayer.deconTechSelections.map(
                         (tech) => {
-                          const media = newLayer.aoiSummary.areaByMedia.find(
-                            (a) => a.media === tech.media,
+                          const editTech = edit.deconTechSelections.find(
+                            (e) => e.media === tech.media,
                           );
-
-                          const pctAoi = media?.pctAoi ?? 0;
-                          const surfaceArea = media?.surfaceArea ?? 0;
-
                           return {
                             ...tech,
-                            id: generateUUID(),
-                            pctAoi,
-                            surfaceArea,
+                            deconTech: editTech?.deconTech ?? tech.deconTech,
+                            numIterativeApplications:
+                              editTech?.numIterativeApplications ??
+                              tech.numIterativeApplications,
+                            removeContents:
+                              editTech?.removeContents ?? tech.removeContents,
+                            subRows:
+                              editTech?.subRows?.map((subTech: any) => {
+                                const subEditTech = editTech
+                                  ? editTech.subRows.find(
+                                      (e: any) => e.media === tech.media,
+                                    )
+                                  : null;
+
+                                return {
+                                  ...subTech,
+                                  deconTech:
+                                    subEditTech?.deconTech ?? subTech.deconTech,
+                                  numIterativeApplications:
+                                    subEditTech?.numIterativeApplications ??
+                                    subTech.numIterativeApplications,
+                                  removeContents:
+                                    subEditTech?.removeContents ??
+                                    subTech.removeContents,
+                                };
+                              }) ?? tech.subRows,
                           };
                         },
                       ),

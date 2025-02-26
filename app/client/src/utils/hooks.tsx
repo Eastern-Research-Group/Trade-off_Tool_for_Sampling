@@ -114,6 +114,113 @@ export const summarizedBuildingSurfaceTypes = [
   'Building Exteriors',
 ];
 
+const outsideMedia = [
+  'Soil',
+  'Soil/Vegetation',
+  'Streets - Asphalt',
+  'Streets/Sidewalks - Concrete',
+];
+const mediaLookup: { [key: string]: string[] } = {
+  Basic: [...outsideMedia, 'Buildings (Interior and Exterior)'],
+  'Advanced - Building Structural Component': [
+    ...outsideMedia,
+    'Building Exteriors',
+    'Building Interiors',
+  ],
+  'Advanced - Building Primary Material Composition': [
+    ...outsideMedia,
+    'Brick Buildings',
+    'Concrete Buildings',
+    'Steel Buildings',
+    'Wood Buildings',
+    'Other Buildings',
+  ],
+};
+
+function performBasicDeconCalculations(
+  deconTech: string,
+  sel: any,
+  deconAttributes: any,
+  jsonDownload: any[],
+  parentMedia?: string,
+  removeBuildingContentsOverride?: boolean,
+) {
+  const {
+    APPLICATION_METHOD,
+    FIXED_COSTS,
+    SIZE_BASED_COSTS,
+    SETUP_TIME,
+    BREAKDOWN_TIME,
+    APPLICATION_TIME,
+    RESIDENCE_TIME,
+    MATERIAL_SPECIFIC_PARAMS,
+    SURFACE_SPECIFIC_PARAMS,
+  } = deconAttributes;
+
+  const { CONTAM_REMOVAL_FACTOR, SOLID_WASTE_VOLUME, AQUEOUS_WASTE_VOLUME } =
+    SURFACE_SPECIFIC_PARAMS[sel.media];
+
+  // calculate final contamination
+  const contamRemovalFactor = parentMedia
+    ? MATERIAL_SPECIFIC_PARAMS[parentMedia.replace(' Buildings', '')]
+        .CONTAM_REMOVAL_FACTOR
+    : CONTAM_REMOVAL_FACTOR;
+  const contamLeftFactor = 1 - contamRemovalFactor;
+  const avgFinalContam =
+    sel.avgCfu * Math.pow(contamLeftFactor, sel.numIterativeApplications);
+  sel.avgFinalContamination = avgFinalContam;
+  sel.aboveDetectionLimit = avgFinalContam >= detectionLimit;
+
+  const removeBldContents =
+    removeBuildingContentsOverride !== undefined
+      ? removeBuildingContentsOverride
+      : sel.removeBldContents;
+
+  const areaDeconApplied = sel.surfaceArea * (sel.pctDeconed * 0.01);
+  const volumeDeconApplied = sel.volume;
+
+  const liquidWasteM3 = areaDeconApplied * AQUEOUS_WASTE_VOLUME;
+  let solidWasteM3 = areaDeconApplied * SOLID_WASTE_VOLUME;
+  if (sel.media === 'Building Interiors' && removeBldContents) {
+    const pctVolumeDeconed = sel.pctDeconed * 0.01 * sel.volumeContents;
+    if (APPLICATION_METHOD === 'Surface') solidWasteM3 -= pctVolumeDeconed;
+    else solidWasteM3 += pctVolumeDeconed;
+  }
+
+  const deconCost =
+    APPLICATION_METHOD === 'Surface'
+      ? FIXED_COSTS +
+        areaDeconApplied * SIZE_BASED_COSTS * sel.numIterativeApplications
+      : FIXED_COSTS +
+        volumeDeconApplied * SIZE_BASED_COSTS * sel.numIterativeApplications;
+  const deconTime =
+    SETUP_TIME / 24 +
+    BREAKDOWN_TIME / 24 +
+    (areaDeconApplied * APPLICATION_TIME * sel.numIterativeApplications) / 24 +
+    RESIDENCE_TIME / 24;
+
+  jsonDownload.push({
+    contaminationScenario: parentMedia
+      ? `${parentMedia} - ${sel.media}`
+      : sel.media,
+    decontaminationTechnology: deconTech,
+    solidWasteVolumeM3: solidWasteM3,
+    liquidWasteVolumeM3: liquidWasteM3,
+    decontaminationCost: deconCost,
+    decontaminationTimeDays: deconTime,
+    averageInitialContamination: sel.avgCfu,
+    averageFinalContamination: sel.avgFinalContamination,
+    aboveDetectionLimit: sel.aboveDetectionLimit,
+  });
+
+  return {
+    deconCost,
+    deconTime,
+    solidWasteM3,
+    liquidWasteM3,
+  };
+}
+
 export const backupImagerySymbol = new SimpleFillSymbol({
   color: [0, 0, 0, 0],
   outline: {
@@ -981,6 +1088,7 @@ export async function fetchBuildingData(
 
 // Hook that allows the user to easily start over without
 // having to manually start a new session.
+// TODO fix this for decon
 export function useStartOver() {
   const { resetCalculateContext } = useContext(CalculateContext);
   const { setOptions } = useContext(DialogContext);
@@ -1504,9 +1612,9 @@ export function useCalculatePlan(appType: AppType) {
       TTA: totals.tta,
       ALC: totals.alc,
       AMC: totals.amc,
-      WASTE_VOLUME_SOLID: totals.wvps / 1000, // convert liters to m3
+      WASTE_VOLUME_TOTAL: totals.wvps / 1000, // convert liters to m3
       WASTE_VOLUME_SOLID_LITERS: totals.wvps,
-      WASTE_WEIGHT_SOLID: totals.wwps / 2.2046226218, // convert lbs to kg
+      WASTE_WEIGHT_TOTAL: totals.wwps / 2.2046226218, // convert lbs to kg
       WASTE_WEIGHT_SOLID_POUNDS: totals.wwps,
 
       // spatial items
@@ -1735,6 +1843,7 @@ export function useCalculateDeconPlan() {
                 return;
               }
 
+              // TODO this doesn't seem correct
               const { CONTAMVAL, ROOFS, FLOORS, EXTWALLS, INTWALLS } =
                 contamGraphic.attributes;
 
@@ -1771,11 +1880,11 @@ export function useCalculateDeconPlan() {
                     return;
                   }
 
-                  const { LOD_NON: contaminationRemovalFactor } =
+                  const { CONTAM_REMOVAL_FACTOR } =
                     sampleAttributesDecon[tech.deconTech.value];
 
                   const reductionFactor = parseSmallFloat(
-                    1 - contaminationRemovalFactor,
+                    1 - CONTAM_REMOVAL_FACTOR,
                   );
                   const newMediaCfu = mediaCfu * reductionFactor;
                   newCfu += newMediaCfu;
@@ -1901,14 +2010,14 @@ export function useCalculateDeconPlan() {
       // perform calculations off percentAOI stuff
       let totalSolidWasteM3 = 0;
       let totalLiquidWasteM3 = 0;
-      let totalSolidWasteMass = 0;
-      let totalLiquidWasteMass = 0;
       let totalDeconCost = 0;
-      let totalApplicationTime = 0;
-      let totalResidenceTime = 0;
       let totalDeconTime = 0;
       linkedDeconOperations.forEach((deconOp) => {
         if (!deconOp.deconLayerResults) return;
+
+        const approach = deconOp.approach;
+        const buildingApproach = deconOp.buildingApproach;
+        const jsonDownloadOpLevel: JsonDownloadType[] = [];
         deconOp.deconLayerResults.resultsTable = [];
         deconOp.deconLayerResults.cost = 0;
         deconOp.deconLayerResults.time = 0;
@@ -1921,6 +2030,7 @@ export function useCalculateDeconPlan() {
         curDeconTechSelections.forEach((sel) => {
           // find decon settings
           const deconTech = sel.deconTech?.value;
+
           const media = sel.media;
           if (!deconTech) {
             sel.avgFinalContamination = sel.avgCfu;
@@ -1928,80 +2038,82 @@ export function useCalculateDeconPlan() {
             return;
           }
 
-          // need to lookup stuff from sampleAttributesDecon
-          const {
-            LOD_NON: contaminationRemovalFactor,
-            MCPS: setupCost,
-            TCPS: costM2,
-            WVPS: solidWasteVolume,
-            WWPS: solidWasteM,
-            ALC: liquidWasteVolume,
-            AMC: liquidWasteM,
-            TTC: applicationTimeHrs,
-            TTA: residenceTimeHrs,
-          } = sampleAttributesDecon[deconTech as any];
+          const mediaKey = `${approach}${approach === 'Advanced' ? ` - ${buildingApproach}` : ''}`;
+          if (!mediaLookup[mediaKey].includes(media)) return;
 
-          // calculate final contamination
-          const contamLeftFactor = 1 - contaminationRemovalFactor;
-          const avgFinalContam =
-            sel.avgCfu *
-            Math.pow(contamLeftFactor, sel.numIterativeApplications);
-          sel.avgFinalContamination = avgFinalContam;
-          sel.aboveDetectionLimit = avgFinalContam >= detectionLimit;
+          let deconCost = 0;
+          let deconTime = 0;
+          let solidWasteM3 = 0;
+          let liquidWasteM3 = 0;
+          if (
+            deconOp.approach === 'Basic' &&
+            media === 'Buildings (Interior and Exterior)'
+          ) {
+            const filteredMedia = curDeconTechSelections.filter((media) =>
+              ['Building Exteriors', 'Building Interiors'].includes(
+                media.media,
+              ),
+            );
+            filteredMedia.forEach((mediaSel) => {
+              const calcOutput = performBasicDeconCalculations(
+                deconTech,
+                mediaSel,
+                sampleAttributesDecon[deconTech as any],
+                jsonDownloadOpLevel,
+                undefined,
+                false,
+              );
+              deconCost += calcOutput.deconCost;
+              deconTime += calcOutput.deconTime;
+              solidWasteM3 += calcOutput.solidWasteM3;
+              liquidWasteM3 += calcOutput.liquidWasteM3;
+            });
+          } else if (
+            deconOp.approach === 'Advanced' &&
+            buildingApproach === 'Building Primary Material Composition' &&
+            !outsideMedia.includes(media)
+          ) {
+            sel.subRows.forEach((mediaSel: any) => {
+              const deconTech = mediaSel.deconTech?.value;
+              if (!deconTech) return;
 
-          const areaDeconApplied =
-            sel.surfaceArea *
-            (sel.pctDeconed * 0.01) *
-            sel.numIterativeApplications;
-          const solidWasteM3 = areaDeconApplied * solidWasteVolume;
-          const solidWasteMass = areaDeconApplied * solidWasteM;
-          const liquidWasteM3 = areaDeconApplied * liquidWasteVolume;
-          const liquidWasteMass = areaDeconApplied * liquidWasteM;
-
-          const deconCost =
-            setupCost * sel.numIterativeApplications +
-            areaDeconApplied * costM2;
-          const sumApplicationTime =
-            (areaDeconApplied * applicationTimeHrs) /
-            24 /
-            sel.numIterativeApplications;
-          const sumResidenceTime =
-            (residenceTimeHrs * sel.numIterativeApplications) / 24;
-          const deconTime = sumApplicationTime + sumResidenceTime;
-
-          const jsonItem = {
-            contaminationScenario: media,
-            decontaminationTechnology: deconTech,
-            solidWasteVolumeM3: solidWasteM3,
-            liquidWasteVolumeM3: liquidWasteM3,
-            decontaminationCost: deconCost,
-            decontaminationTimeDays: deconTime,
-            averageInitialContamination: sel.avgCfu,
-            averageFinalContamination: sel.avgFinalContamination,
-            aboveDetectionLimit: sel.aboveDetectionLimit,
-          };
-
-          jsonDownload.push(jsonItem);
+              const calcOutput = performBasicDeconCalculations(
+                deconTech,
+                mediaSel,
+                sampleAttributesDecon[deconTech as any],
+                jsonDownloadOpLevel,
+                media,
+              );
+              deconCost += calcOutput.deconCost;
+              deconTime += calcOutput.deconTime;
+              solidWasteM3 += calcOutput.solidWasteM3;
+              liquidWasteM3 += calcOutput.liquidWasteM3;
+            });
+          } else {
+            ({ deconCost, deconTime, solidWasteM3, liquidWasteM3 } =
+              performBasicDeconCalculations(
+                deconTech,
+                sel,
+                sampleAttributesDecon[deconTech as any],
+                jsonDownloadOpLevel,
+              ));
+          }
 
           if (deconOp.deconLayerResults) {
             deconOp.deconLayerResults.cost += deconCost;
             deconOp.deconLayerResults.time += deconTime;
             deconOp.deconLayerResults.wasteVolume +=
               solidWasteM3 + liquidWasteM3;
-            deconOp.deconLayerResults.wasteMass +=
-              solidWasteMass + liquidWasteMass;
-            deconOp.deconLayerResults.resultsTable.push(jsonItem);
           }
 
           totalSolidWasteM3 += solidWasteM3;
-          totalSolidWasteMass += solidWasteMass;
           totalLiquidWasteM3 += liquidWasteM3;
-          totalLiquidWasteMass += liquidWasteMass;
           totalDeconCost += deconCost;
-          totalApplicationTime += sumApplicationTime;
-          totalResidenceTime += sumResidenceTime;
           totalDeconTime += deconTime;
         });
+
+        deconOp.deconLayerResults.resultsTable = jsonDownloadOpLevel;
+        jsonDownload.push(...jsonDownloadOpLevel);
       });
 
       const jsonDownloadSummarized: JsonDownloadType[] = [];
@@ -2037,34 +2149,15 @@ export function useCalculateDeconPlan() {
       });
 
       const resultObject: CalculateResultsDeconDataType = {
-        // assign input parameters
-        'Total Number of User-Defined Decon Technologies': 0,
-        'User Specified Number of Concurrent Applications': 0,
-
         // assign counts
-        'Total Number of Decon Applications': 0,
-        'Total Decontamination Area': 0,
-        'Total Setup Time': 0,
-        'Total Application Time': totalApplicationTime,
-        'Total Residence Time': totalResidenceTime,
-        'Average Contamination Removal': 0,
-        'Total Setup Cost': 0,
-        'Total Application Cost': 0,
         'Solid Waste Volume': totalSolidWasteM3,
-        'Solid Waste Mass': totalSolidWasteMass,
         'Liquid Waste Volume': totalLiquidWasteM3,
-        'Liquid Waste Mass': totalLiquidWasteMass,
-        WASTE_VOLUME_SOLID: totalSolidWasteM3 + totalLiquidWasteM3,
-        WASTE_WEIGHT_SOLID: totalSolidWasteMass + totalLiquidWasteMass,
+        WASTE_VOLUME_TOTAL: totalSolidWasteM3 + totalLiquidWasteM3,
+        WASTE_WEIGHT_TOTAL: 0,
 
         //totals
         TOTAL_COST: totalDeconCost,
         TOTAL_TIME: Math.round(totalDeconTime * 10) / 10,
-        'Total Contaminated Area': 0,
-        'Total Reduction Area': 0,
-        'Total Remaining Contaminated Area': 0,
-        'Total Decontaminated Area': 0,
-        'Percent Contaminated Remaining': 0,
         'Contamination Type': '',
         resultsTable: jsonDownloadSummarized,
       };
@@ -2276,11 +2369,11 @@ export function useCalculateDeconPlan() {
                   const deconTech = sampleAttributesDecon[sel.deconTech?.value];
                   if (!deconTech) continue;
 
-                  const { LOD_NON: contaminationRemovalFactor } =
+                  const { CONTAM_REMOVAL_FACTOR } =
                     sampleAttributesDecon[sel.deconTech.value];
 
                   const contamReductionFactor = parseSmallFloat(
-                    1 - contaminationRemovalFactor,
+                    1 - CONTAM_REMOVAL_FACTOR,
                   );
                   const avgCfu = mediaCfu * contamReductionFactor;
                   if (sel.media === 'Building Roofs') CONTAMVALROOFS = avgCfu;
@@ -2295,9 +2388,9 @@ export function useCalculateDeconPlan() {
                 surfaceRemovalCount += 1;
                 if (!sel.pctAoi || !sel.deconTech) continue;
 
-                const { LOD_NON: contaminationRemovalFactor } =
+                const { CONTAM_REMOVAL_FACTOR } =
                   sampleAttributesDecon[sel.deconTech.value];
-                totalSurfaceRemovalFactor += contaminationRemovalFactor;
+                totalSurfaceRemovalFactor += CONTAM_REMOVAL_FACTOR;
               }
             }
 

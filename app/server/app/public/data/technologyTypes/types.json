@@ -22,33 +22,88 @@
       "GLOBALID": null,
       "TYPEUUID": "Chlorine Dioxide Gas",
       "TYPE": "Chlorine Dioxide Gas",
-      "ShapeType": "polygon",
-      "POINT_STYLE": "x",
-      "SA": 900,
-      "AA": null,
-      "TTPK": 24,
-      "TTC": 0.0036,
-      "TTA": 30,
-      "TTPS": 0,
-      "LOD_P": 8,
-      "LOD_NON": 0.99999999,
-      "MCPS": 20000,
-      "TCPS": 15.08,
-      "WVPS": 0.242075,
-      "WWPS": 49.33324,
-      "ALC": 0.000442,
-      "AMC": 0.441337,
+      "APPLICATION_MAX_AREA": 900,
+      "APPLICATION_METHOD": "Volumetric",
+      "SETUP_TIME": 12,
+      "BREAKDOWN_TIME": 12,
+      "APPLICATION_TIME": 0.0072,
+      "RESIDENCE_TIME": 60,
+      "FIXED_COSTS": 44680.9264926488,
+      "SIZE_BASED_COSTS": 1.48011350700286,
+      "IC_COST": 5.80578497015511,
       "Notes": "",
-      "CONTAMTYPE": null,
-      "CONTAMVAL": null,
-      "CONTAMUNIT": null,
       "CREATEDDATE": null,
       "UPDATEDDATE": null,
       "USERNAME": null,
-      "ORGANIZATION": null,
-      "DECISIONUNITUUID": null,
-      "DECISIONUNIT": null,
-      "DECISIONUNITSORT": 0
+      "MATERIAL_SPECIFIC_PARAMS": {
+        "Brick": {
+          "LOG_REDUCTION": 8,
+          "CONTAM_REMOVAL_FACTOR": 0.999999983017563,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Concrete": {
+          "LOG_REDUCTION": 7.77,
+          "CONTAM_REMOVAL_FACTOR": 0.999999983017563,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Steel": {
+          "LOG_REDUCTION": 7.84,
+          "CONTAM_REMOVAL_FACTOR": 0.999999985545602,
+          "DESTRUCTIVENESS": "High"
+        },
+        "Wood": {
+          "LOG_REDUCTION": 7,
+          "CONTAM_REMOVAL_FACTOR": 0.999999927556404,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Other": {
+          "LOG_REDUCTION": 5,
+          "CONTAM_REMOVAL_FACTOR": 0.999999969784283,
+          "DESTRUCTIVENESS": "Uncertain"
+        }
+      },
+      "SURFACE_SPECIFIC_PARAMS": {
+        "Building Exteriors": {
+          "CONTAM_REMOVAL_FACTOR": 0.99999999,
+          "LOG_REDUCTION": 8,
+          "SOLID_WASTE_VOLUME": 0.484150075497122,
+          "SOLID_WASTE_MASS": 98.6664716837914,
+          "AQUEOUS_WASTE_VOLUME": 0.000883246917388261,
+          "AQUEOUS_WASTE_MASS": 0.882674626043541
+        },
+        "Building Interiors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999970561974,
+          "LOG_REDUCTION": 7.58,
+          "SOLID_WASTE_VOLUME": 0.484150075497122,
+          "SOLID_WASTE_MASS": 98.6664716837914,
+          "AQUEOUS_WASTE_VOLUME": 0.000883246917388261,
+          "AQUEOUS_WASTE_MASS": 0.882674626043541
+        },
+        "Soil/Vegetation": {
+          "CONTAM_REMOVAL_FACTOR": 0.99999999,
+          "LOG_REDUCTION": 8,
+          "SOLID_WASTE_VOLUME": 0.484150075497122,
+          "SOLID_WASTE_MASS": 98.6664716837914,
+          "AQUEOUS_WASTE_VOLUME": 0.000883246917388261,
+          "AQUEOUS_WASTE_MASS": 0.882674626043541
+        },
+        "Streets - Asphalt": {
+          "CONTAM_REMOVAL_FACTOR": 0.99999999,
+          "LOG_REDUCTION": 8,
+          "SOLID_WASTE_VOLUME": 0.484150075497122,
+          "SOLID_WASTE_MASS": 98.6664716837914,
+          "AQUEOUS_WASTE_VOLUME": 0.000883246917388261,
+          "AQUEOUS_WASTE_MASS": 0.882674626043541
+        },
+        "Streets/Sidewalks - Concrete": {
+          "CONTAM_REMOVAL_FACTOR": 0.99999999,
+          "LOG_REDUCTION": 8,
+          "SOLID_WASTE_VOLUME": 0.484150075497122,
+          "SOLID_WASTE_MASS": 98.6664716837914,
+          "AQUEOUS_WASTE_VOLUME": 0.000883246917388261,
+          "AQUEOUS_WASTE_MASS": 0.882674626043541
+        }
+      }
     },
     "Methyl Bromide": {
       "OBJECTID": "-1",
@@ -56,33 +111,88 @@
       "GLOBALID": null,
       "TYPEUUID": "Methyl Bromide",
       "TYPE": "Methyl Bromide",
-      "ShapeType": "polygon",
-      "POINT_STYLE": "circle",
-      "SA": 900,
-      "AA": null,
-      "TTPK": 24,
-      "TTC": 0.0045,
-      "TTA": 30,
-      "TTPS": 0,
-      "LOD_P": 6.18,
-      "LOD_NON": 0.999999339306552,
-      "MCPS": 20000,
-      "TCPS": 18.85,
-      "WVPS": 0.056958,
-      "WWPS": 17.06407,
-      "ALC": 0.00072,
-      "AMC": 0.719544,
+      "APPLICATION_MAX_AREA": 900,
+      "APPLICATION_METHOD": "Volumetric",
+      "SETUP_TIME": 12,
+      "BREAKDOWN_TIME": 12,
+      "APPLICATION_TIME": 0.009,
+      "RESIDENCE_TIME": 60,
+      "FIXED_COSTS": 36174.039112155,
+      "SIZE_BASED_COSTS": 1.19831185464696,
+      "IC_COST": 5.80578497015511,
       "Notes": "",
-      "CONTAMTYPE": null,
-      "CONTAMVAL": null,
-      "CONTAMUNIT": null,
       "CREATEDDATE": null,
       "UPDATEDDATE": null,
       "USERNAME": null,
-      "ORGANIZATION": null,
-      "DECISIONUNITUUID": null,
-      "DECISIONUNIT": null,
-      "DECISIONUNITSORT": 0
+      "MATERIAL_SPECIFIC_PARAMS": {
+        "Brick": {
+          "LOG_REDUCTION": 6,
+          "CONTAM_REMOVAL_FACTOR": 0.999999,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Concrete": {
+          "LOG_REDUCTION": 6,
+          "CONTAM_REMOVAL_FACTOR": 0.999999,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Steel": {
+          "LOG_REDUCTION": 6.7,
+          "CONTAM_REMOVAL_FACTOR": 0.999999800473768,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Wood": {
+          "LOG_REDUCTION": 6,
+          "CONTAM_REMOVAL_FACTOR": 0.999999,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Other": {
+          "LOG_REDUCTION": 5,
+          "CONTAM_REMOVAL_FACTOR": 0.999999200118442,
+          "DESTRUCTIVENESS": "Uncertain"
+        }
+      },
+      "SURFACE_SPECIFIC_PARAMS": {
+        "Building Exteriors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999339306552,
+          "LOG_REDUCTION": 6.18,
+          "SOLID_WASTE_VOLUME": 0.1139160915182,
+          "SOLID_WASTE_MASS": 34.1281459321425,
+          "AQUEOUS_WASTE_VOLUME": 0.00144002147849261,
+          "AQUEOUS_WASTE_MASS": 1.43908843042629
+        },
+        "Building Interiors": {
+          "CONTAM_REMOVAL_FACTOR": 0.99999945,
+          "LOG_REDUCTION": 6.5,
+          "SOLID_WASTE_VOLUME": 0.1139160915182,
+          "SOLID_WASTE_MASS": 34.1281459321425,
+          "AQUEOUS_WASTE_VOLUME": 0.00144002147849261,
+          "AQUEOUS_WASTE_MASS": 1.43908843042629
+        },
+        "Soil/Vegetation": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999339306552,
+          "LOG_REDUCTION": 6.18,
+          "SOLID_WASTE_VOLUME": 0.1139160915182,
+          "SOLID_WASTE_MASS": 34.1281459321425,
+          "AQUEOUS_WASTE_VOLUME": 0.00144002147849261,
+          "AQUEOUS_WASTE_MASS": 1.43908843042629
+        },
+        "Streets - Asphalt": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999339306552,
+          "LOG_REDUCTION": 6.18,
+          "SOLID_WASTE_VOLUME": 0.1139160915182,
+          "SOLID_WASTE_MASS": 34.1281459321425,
+          "AQUEOUS_WASTE_VOLUME": 0.00144002147849261,
+          "AQUEOUS_WASTE_MASS": 1.43908843042629
+        },
+        "Streets/Sidewalks - Concrete": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999339306552,
+          "LOG_REDUCTION": 6.18,
+          "SOLID_WASTE_VOLUME": 0.1139160915182,
+          "SOLID_WASTE_MASS": 34.1281459321425,
+          "AQUEOUS_WASTE_VOLUME": 0.00144002147849261,
+          "AQUEOUS_WASTE_MASS": 1.43908843042629
+        }
+      }
     },
     "Vaporous Hydrogen Peroxide": {
       "OBJECTID": "-1",
@@ -90,33 +200,88 @@
       "GLOBALID": null,
       "TYPEUUID": "Vaporous Hydrogen Peroxide",
       "TYPE": "Vaporous Hydrogen Peroxide",
-      "ShapeType": "polygon",
-      "POINT_STYLE": "cross",
-      "SA": 900,
-      "AA": null,
-      "TTPK": 24,
-      "TTC": 0.00405,
-      "TTA": 30,
-      "TTPS": 0,
-      "LOD_P": 2.73,
-      "LOD_NON": 0.998137912863337,
-      "MCPS": 20000,
-      "TCPS": 16.965,
-      "WVPS": 0.082066,
-      "WWPS": 22.78749,
-      "ALC": 0.00072,
-      "AMC": 0.719544,
+      "APPLICATION_MAX_AREA": 900,
+      "APPLICATION_METHOD": "Volumetric",
+      "SETUP_TIME": 12,
+      "BREAKDOWN_TIME": 12,
+      "APPLICATION_TIME": 0.0081,
+      "RESIDENCE_TIME": 60,
+      "FIXED_COSTS": 36174.039112155,
+      "SIZE_BASED_COSTS": 1.19831185464696,
+      "IC_COST": 5.80578497015511,
       "Notes": "",
-      "CONTAMTYPE": null,
-      "CONTAMVAL": null,
-      "CONTAMUNIT": null,
       "CREATEDDATE": null,
       "UPDATEDDATE": null,
       "USERNAME": null,
-      "ORGANIZATION": null,
-      "DECISIONUNITUUID": null,
-      "DECISIONUNIT": null,
-      "DECISIONUNITSORT": 0
+      "MATERIAL_SPECIFIC_PARAMS": {
+        "Brick": {
+          "LOG_REDUCTION": 0.75,
+          "CONTAM_REMOVAL_FACTOR": 0.822172058996108,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Concrete": {
+          "LOG_REDUCTION": 0.75,
+          "CONTAM_REMOVAL_FACTOR": 0.822172058996108,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Steel": {
+          "LOG_REDUCTION": 6.5,
+          "CONTAM_REMOVAL_FACTOR": 0.999999683772234,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Wood": {
+          "LOG_REDUCTION": 3.32,
+          "CONTAM_REMOVAL_FACTOR": 0.999521369907677,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Other": {
+          "LOG_REDUCTION": 5,
+          "CONTAM_REMOVAL_FACTOR": 0.910966292918032,
+          "DESTRUCTIVENESS": "Uncertain"
+        }
+      },
+      "SURFACE_SPECIFIC_PARAMS": {
+        "Building Exteriors": {
+          "CONTAM_REMOVAL_FACTOR": 0.998137912863337,
+          "LOG_REDUCTION": 2.73,
+          "SOLID_WASTE_VOLUME": 0.164132042749584,
+          "SOLID_WASTE_MASS": 45.5749897286959,
+          "AQUEOUS_WASTE_VOLUME": 0.00144002147849261,
+          "AQUEOUS_WASTE_MASS": 1.43908843042629
+        },
+        "Building Interiors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999737421310449,
+          "LOG_REDUCTION": 3.59,
+          "SOLID_WASTE_VOLUME": 0.164132042749584,
+          "SOLID_WASTE_MASS": 45.5749897286959,
+          "AQUEOUS_WASTE_VOLUME": 0.00144002147849261,
+          "AQUEOUS_WASTE_MASS": 1.43908843042629
+        },
+        "Soil/Vegetation": {
+          "CONTAM_REMOVAL_FACTOR": 0.998137912863337,
+          "LOG_REDUCTION": 2.73,
+          "SOLID_WASTE_VOLUME": 0.164132042749584,
+          "SOLID_WASTE_MASS": 45.5749897286959,
+          "AQUEOUS_WASTE_VOLUME": 0.00144002147849261,
+          "AQUEOUS_WASTE_MASS": 1.43908843042629
+        },
+        "Streets - Asphalt": {
+          "CONTAM_REMOVAL_FACTOR": 0.998137912863337,
+          "LOG_REDUCTION": 2.73,
+          "SOLID_WASTE_VOLUME": 0.164132042749584,
+          "SOLID_WASTE_MASS": 45.5749897286959,
+          "AQUEOUS_WASTE_VOLUME": 0.00144002147849261,
+          "AQUEOUS_WASTE_MASS": 1.43908843042629
+        },
+        "Streets/Sidewalks - Concrete": {
+          "CONTAM_REMOVAL_FACTOR": 0.998137912863337,
+          "LOG_REDUCTION": 2.73,
+          "SOLID_WASTE_VOLUME": 0.164132042749584,
+          "SOLID_WASTE_MASS": 45.5749897286959,
+          "AQUEOUS_WASTE_VOLUME": 0.00144002147849261,
+          "AQUEOUS_WASTE_MASS": 1.43908843042629
+        }
+      }
     },
     "Low-Conc. Hydrogen Peroxide": {
       "OBJECTID": "-1",
@@ -124,33 +289,355 @@
       "GLOBALID": null,
       "TYPEUUID": "Low-Conc. Hydrogen Peroxide",
       "TYPE": "Low-Conc. Hydrogen Peroxide",
-      "ShapeType": "polygon",
-      "POINT_STYLE": "square",
-      "SA": 4500,
-      "AA": null,
-      "TTPK": 12,
-      "TTC": 0.002025,
-      "TTA": 18,
-      "TTPS": 0,
-      "LOD_P": 7.2,
-      "LOD_NON": 0.999999936904266,
-      "MCPS": 7500,
-      "TCPS": 8.4825,
-      "WVPS": 1.388686,
-      "WWPS": 259.4893,
-      "ALC": 0,
-      "AMC": 0,
+      "APPLICATION_MAX_AREA": 4500,
+      "APPLICATION_METHOD": "Volumetric",
+      "SETUP_TIME": 6,
+      "BREAKDOWN_TIME": 6,
+      "APPLICATION_TIME": 0.0027,
+      "RESIDENCE_TIME": 24,
+      "FIXED_COSTS": 200,
+      "SIZE_BASED_COSTS": 0.1,
+      "IC_COST": 0,
       "Notes": "",
-      "CONTAMTYPE": null,
-      "CONTAMVAL": null,
-      "CONTAMUNIT": null,
       "CREATEDDATE": null,
       "UPDATEDDATE": null,
       "USERNAME": null,
-      "ORGANIZATION": null,
-      "DECISIONUNITUUID": null,
-      "DECISIONUNIT": null,
-      "DECISIONUNITSORT": 0
+      "MATERIAL_SPECIFIC_PARAMS": {
+        "Brick": {
+          "LOG_REDUCTION": 3,
+          "CONTAM_REMOVAL_FACTOR": 0.998137912863337,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Concrete": {
+          "LOG_REDUCTION": 3,
+          "CONTAM_REMOVAL_FACTOR": 0.998137912863337,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Steel": {
+          "LOG_REDUCTION": 7.2,
+          "CONTAM_REMOVAL_FACTOR": 0.999999936904266,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Wood": {
+          "LOG_REDUCTION": 7.2,
+          "CONTAM_REMOVAL_FACTOR": 0.999999936904266,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Other": {
+          "LOG_REDUCTION": 7.2,
+          "CONTAM_REMOVAL_FACTOR": 0.999999937,
+          "DESTRUCTIVENESS": "Low"
+        }
+      },
+      "SURFACE_SPECIFIC_PARAMS": {
+        "Building Exteriors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999936904266,
+          "LOG_REDUCTION": 7.2,
+          "SOLID_WASTE_VOLUME": 1.85158139957283,
+          "SOLID_WASTE_MASS": 345.985675144833,
+          "AQUEOUS_WASTE_VOLUME": 0,
+          "AQUEOUS_WASTE_MASS": 0
+        },
+        "Building Interiors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999887053729,
+          "LOG_REDUCTION": 6.95,
+          "SOLID_WASTE_VOLUME": 1.85158139957283,
+          "SOLID_WASTE_MASS": 345.985675144833,
+          "AQUEOUS_WASTE_VOLUME": 0,
+          "AQUEOUS_WASTE_MASS": 0
+        },
+        "Soil/Vegetation": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999936904266,
+          "LOG_REDUCTION": 7.2,
+          "SOLID_WASTE_VOLUME": 1.85158139957283,
+          "SOLID_WASTE_MASS": 345.985675144833,
+          "AQUEOUS_WASTE_VOLUME": 0,
+          "AQUEOUS_WASTE_MASS": 0
+        },
+        "Streets - Asphalt": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999936904266,
+          "LOG_REDUCTION": 7.2,
+          "SOLID_WASTE_VOLUME": 1.85158139957283,
+          "SOLID_WASTE_MASS": 345.985675144833,
+          "AQUEOUS_WASTE_VOLUME": 0,
+          "AQUEOUS_WASTE_MASS": 0
+        },
+        "Streets/Sidewalks - Concrete": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999936904266,
+          "LOG_REDUCTION": 7.2,
+          "SOLID_WASTE_VOLUME": 1.85158139957283,
+          "SOLID_WASTE_MASS": 345.985675144833,
+          "AQUEOUS_WASTE_VOLUME": 0,
+          "AQUEOUS_WASTE_MASS": 0
+        }
+      }
+    },
+    "Chlorine Dioxide Liquid": {
+      "OBJECTID": "-1",
+      "PERMANENT_IDENTIFIER": null,
+      "GLOBALID": null,
+      "TYPEUUID": "Chlorine Dioxide Liquid",
+      "TYPE": "Chlorine Dioxide Liquid",
+      "APPLICATION_MAX_AREA": 4500,
+      "APPLICATION_METHOD": "Surface",
+      "SETUP_TIME": 6,
+      "BREAKDOWN_TIME": 6,
+      "APPLICATION_TIME": 0.0018,
+      "RESIDENCE_TIME": 24,
+      "FIXED_COSTS": 0,
+      "SIZE_BASED_COSTS": 33.1596114140006,
+      "IC_COST": 6.82072724027929,
+      "Notes": "",
+      "CREATEDDATE": null,
+      "UPDATEDDATE": null,
+      "USERNAME": null,
+      "MATERIAL_SPECIFIC_PARAMS": {
+        "Brick": {
+          "LOG_REDUCTION": 1.7,
+          "CONTAM_REMOVAL_FACTOR": 0.977612788614317,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Concrete": {
+          "LOG_REDUCTION": 1.7,
+          "CONTAM_REMOVAL_FACTOR": 0.977612788614317,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Steel": {
+          "LOG_REDUCTION": 7.55,
+          "CONTAM_REMOVAL_FACTOR": 0.999999971816171,
+          "DESTRUCTIVENESS": "Moderate"
+        },
+        "Wood": {
+          "LOG_REDUCTION": 1.25,
+          "CONTAM_REMOVAL_FACTOR": 0.943114706915616,
+          "DESTRUCTIVENESS": "Moderate"
+        },
+        "Other": {
+          "LOG_REDUCTION": 5,
+          "CONTAM_REMOVAL_FACTOR": 0.974585063990105,
+          "DESTRUCTIVENESS": "Uncertain"
+        }
+      },
+      "SURFACE_SPECIFIC_PARAMS": {
+        "Building Exteriors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999,
+          "LOG_REDUCTION": 3,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Building Interiors": {
+          "CONTAM_REMOVAL_FACTOR": 0.990234597318363,
+          "LOG_REDUCTION": 3.1,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Soil/Vegetation": {
+          "CONTAM_REMOVAL_FACTOR": 0.999,
+          "LOG_REDUCTION": 3,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets - Asphalt": {
+          "CONTAM_REMOVAL_FACTOR": 0.999,
+          "LOG_REDUCTION": 3,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets/Sidewalks - Concrete": {
+          "CONTAM_REMOVAL_FACTOR": 0.999,
+          "LOG_REDUCTION": 3,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        }
+      }
+    },
+    "Aqueous Chlorine Dioxide": {
+      "OBJECTID": "-1",
+      "PERMANENT_IDENTIFIER": null,
+      "GLOBALID": null,
+      "TYPEUUID": "Aqueous Chlorine Dioxide",
+      "TYPE": "Aqueous Chlorine Dioxide",
+      "APPLICATION_MAX_AREA": 4500,
+      "APPLICATION_METHOD": "Surface",
+      "SETUP_TIME": 6,
+      "BREAKDOWN_TIME": 6,
+      "APPLICATION_TIME": 0.0018,
+      "RESIDENCE_TIME": 24,
+      "FIXED_COSTS": 0,
+      "SIZE_BASED_COSTS": 33.1596114140006,
+      "IC_COST": 6.82072724027929,
+      "Notes": "",
+      "CREATEDDATE": null,
+      "UPDATEDDATE": null,
+      "USERNAME": null,
+      "MATERIAL_SPECIFIC_PARAMS": {
+        "Brick": {
+          "LOG_REDUCTION": 2,
+          "CONTAM_REMOVAL_FACTOR": 0.980047376850311,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Concrete": {
+          "LOG_REDUCTION": 1.7,
+          "CONTAM_REMOVAL_FACTOR": 0.980047376850311,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Steel": {
+          "LOG_REDUCTION": 7.89,
+          "CONTAM_REMOVAL_FACTOR": 0.999999987117504,
+          "DESTRUCTIVENESS": "Moderate"
+        },
+        "Wood": {
+          "LOG_REDUCTION": 2.41,
+          "CONTAM_REMOVAL_FACTOR": 0.996109548550057,
+          "DESTRUCTIVENESS": "Moderate"
+        },
+        "Other": {
+          "LOG_REDUCTION": 5,
+          "CONTAM_REMOVAL_FACTOR": 0.989051072342046,
+          "DESTRUCTIVENESS": "Uncertain"
+        }
+      },
+      "SURFACE_SPECIFIC_PARAMS": {
+        "Building Exteriors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999,
+          "LOG_REDUCTION": 3,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Building Interiors": {
+          "CONTAM_REMOVAL_FACTOR": 0.994983820317153,
+          "LOG_REDUCTION": 3.245,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Soil/Vegetation": {
+          "CONTAM_REMOVAL_FACTOR": 0.999,
+          "LOG_REDUCTION": 3,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets - Asphalt": {
+          "CONTAM_REMOVAL_FACTOR": 0.999,
+          "LOG_REDUCTION": 3,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets/Sidewalks - Concrete": {
+          "CONTAM_REMOVAL_FACTOR": 0.999,
+          "LOG_REDUCTION": 3,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        }
+      }
+    },
+    "Bleach Immersion": {
+      "OBJECTID": "-1",
+      "PERMANENT_IDENTIFIER": null,
+      "GLOBALID": null,
+      "TYPEUUID": "Bleach Immersion",
+      "TYPE": "Bleach Immersion",
+      "APPLICATION_MAX_AREA": 4500,
+      "APPLICATION_METHOD": "Surface",
+      "SETUP_TIME": 6,
+      "BREAKDOWN_TIME": 6,
+      "APPLICATION_TIME": 0.0018,
+      "RESIDENCE_TIME": 24,
+      "FIXED_COSTS": 0,
+      "SIZE_BASED_COSTS": 33.1596114140006,
+      "IC_COST": 6.82072724027929,
+      "Notes": "",
+      "CREATEDDATE": null,
+      "UPDATEDDATE": null,
+      "USERNAME": null,
+      "MATERIAL_SPECIFIC_PARAMS": {
+        "Brick": {
+          "LOG_REDUCTION": 8,
+          "CONTAM_REMOVAL_FACTOR": 0.99999999,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Concrete": {
+          "LOG_REDUCTION": 8.02,
+          "CONTAM_REMOVAL_FACTOR": 0.999999990450074,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Steel": {
+          "LOG_REDUCTION": 8,
+          "CONTAM_REMOVAL_FACTOR": 0.99999999,
+          "DESTRUCTIVENESS": "Moderate"
+        },
+        "Wood": {
+          "LOG_REDUCTION": 8,
+          "CONTAM_REMOVAL_FACTOR": 0.99999999,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Other": {
+          "LOG_REDUCTION": 5,
+          "CONTAM_REMOVAL_FACTOR": 0.999999990112518,
+          "DESTRUCTIVENESS": "Uncertain"
+        }
+      },
+      "SURFACE_SPECIFIC_PARAMS": {
+        "Building Exteriors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999990227628,
+          "LOG_REDUCTION": 8.01,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Building Interiors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999984206682,
+          "LOG_REDUCTION": 7.805,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Soil/Vegetation": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999990227628,
+          "LOG_REDUCTION": 8.01,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets - Asphalt": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999990227628,
+          "LOG_REDUCTION": 8.01,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets/Sidewalks - Concrete": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999990227628,
+          "LOG_REDUCTION": 8.01,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        }
+      }
     },
     "Bleach Spray": {
       "OBJECTID": "-1",
@@ -158,67 +645,533 @@
       "GLOBALID": null,
       "TYPEUUID": "Bleach Spray",
       "TYPE": "Bleach Spray",
-      "ShapeType": "polygon",
-      "POINT_STYLE": "diamond",
-      "SA": 4500,
-      "AA": null,
-      "TTPK": 12,
-      "TTC": 0.00135,
-      "TTA": 18,
-      "TTPS": 0,
-      "LOD_P": 6,
-      "LOD_NON": 0.999999,
-      "MCPS": 7500,
-      "TCPS": 5.655,
-      "WVPS": 0.399238,
-      "WWPS": 82.33415,
-      "ALC": 0.001053,
-      "AMC": 1.05276,
+      "APPLICATION_MAX_AREA": 4500,
+      "APPLICATION_METHOD": "Surface",
+      "SETUP_TIME": 6,
+      "BREAKDOWN_TIME": 6,
+      "APPLICATION_TIME": 0.0018,
+      "RESIDENCE_TIME": 24,
+      "FIXED_COSTS": 0,
+      "SIZE_BASED_COSTS": 33.1596114140006,
+      "IC_COST": 6.82072724027929,
       "Notes": "",
-      "CONTAMTYPE": null,
-      "CONTAMVAL": null,
-      "CONTAMUNIT": null,
       "CREATEDDATE": null,
       "UPDATEDDATE": null,
       "USERNAME": null,
-      "ORGANIZATION": null,
-      "DECISIONUNITUUID": null,
-      "DECISIONUNIT": null,
-      "DECISIONUNITSORT": 0
+      "MATERIAL_SPECIFIC_PARAMS": {
+        "Brick": {
+          "LOG_REDUCTION": 7,
+          "CONTAM_REMOVAL_FACTOR": 0.999999876973123,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Concrete": {
+          "LOG_REDUCTION": 6.3,
+          "CONTAM_REMOVAL_FACTOR": 0.999999462968204,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Steel": {
+          "LOG_REDUCTION": 7.73,
+          "CONTAM_REMOVAL_FACTOR": 0.999999981379129,
+          "DESTRUCTIVENESS": "Moderate"
+        },
+        "Wood": {
+          "LOG_REDUCTION": 1.9,
+          "CONTAM_REMOVAL_FACTOR": 0.987410745882058,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Other": {
+          "LOG_REDUCTION": 5,
+          "CONTAM_REMOVAL_FACTOR": 0.996852516800628,
+          "DESTRUCTIVENESS": "Uncertain"
+        }
+      },
+      "SURFACE_SPECIFIC_PARAMS": {
+        "Building Exteriors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999,
+          "LOG_REDUCTION": 6,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Building Interiors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999997882031715,
+          "LOG_REDUCTION": 5.745,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Soil/Vegetation": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999,
+          "LOG_REDUCTION": 6,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets - Asphalt": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999,
+          "LOG_REDUCTION": 6,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets/Sidewalks - Concrete": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999,
+          "LOG_REDUCTION": 6,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        }
+      }
     },
-    "Hydrogen Peroxide PAA": {
+    "Bleach Wash": {
       "OBJECTID": "-1",
       "PERMANENT_IDENTIFIER": null,
       "GLOBALID": null,
-      "TYPEUUID": "Hydrogen Peroxide PAA",
-      "TYPE": "Hydrogen Peroxide PAA",
-      "ShapeType": "polygon",
-      "POINT_STYLE": "triangle",
-      "SA": 4500,
-      "AA": null,
-      "TTPK": 12,
-      "TTC": 0.0027,
-      "TTA": 18,
-      "TTPS": 0,
-      "LOD_P": 5,
-      "LOD_NON": 0.99999,
-      "MCPS": 7500,
-      "TCPS": 11.31,
-      "WVPS": 0.399238,
-      "WWPS": 82.33415,
-      "ALC": 0.001053,
-      "AMC": 1.05276,
+      "TYPEUUID": "Bleach Wash",
+      "TYPE": "Bleach Wash",
+      "APPLICATION_MAX_AREA": 4500,
+      "APPLICATION_METHOD": "Surface",
+      "SETUP_TIME": 6,
+      "BREAKDOWN_TIME": 6,
+      "APPLICATION_TIME": 0.0018,
+      "RESIDENCE_TIME": 24,
+      "FIXED_COSTS": 0,
+      "SIZE_BASED_COSTS": 33.1596114140006,
+      "IC_COST": 6.82072724027929,
       "Notes": "",
-      "CONTAMTYPE": null,
-      "CONTAMVAL": null,
-      "CONTAMUNIT": null,
       "CREATEDDATE": null,
       "UPDATEDDATE": null,
       "USERNAME": null,
-      "ORGANIZATION": null,
-      "DECISIONUNITUUID": null,
-      "DECISIONUNIT": null,
-      "DECISIONUNITSORT": 0
+      "MATERIAL_SPECIFIC_PARAMS": {
+        "Brick": {
+          "LOG_REDUCTION": 7.01,
+          "CONTAM_REMOVAL_FACTOR": 0.999999902276278,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Concrete": {
+          "LOG_REDUCTION": 7.01,
+          "CONTAM_REMOVAL_FACTOR": 0.999999902276278,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Steel": {
+          "LOG_REDUCTION": 7.22,
+          "CONTAM_REMOVAL_FACTOR": 0.999999939744041,
+          "DESTRUCTIVENESS": "Moderate"
+        },
+        "Wood": {
+          "LOG_REDUCTION": 7.22,
+          "CONTAM_REMOVAL_FACTOR": 0.999999939744041,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Other": {
+          "LOG_REDUCTION": 5,
+          "CONTAM_REMOVAL_FACTOR": 0.99999992101016,
+          "DESTRUCTIVENESS": "Uncertain"
+        }
+      },
+      "SURFACE_SPECIFIC_PARAMS": {
+        "Building Exteriors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999924142242,
+          "LOG_REDUCTION": 7.12,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Building Interiors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999937537829,
+          "LOG_REDUCTION": 7.21,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Soil/Vegetation": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999924142242,
+          "LOG_REDUCTION": 7.12,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets - Asphalt": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999924142242,
+          "LOG_REDUCTION": 7.12,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets/Sidewalks - Concrete": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999924142242,
+          "LOG_REDUCTION": 7.12,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        }
+      }
+    },
+    "Hydrogen Peroxide PAA, Oxonia Active": {
+      "OBJECTID": "-1",
+      "PERMANENT_IDENTIFIER": null,
+      "GLOBALID": null,
+      "TYPEUUID": "Hydrogen Peroxide PAA, Oxonia Active",
+      "TYPE": "Hydrogen Peroxide PAA, Oxonia Active",
+      "APPLICATION_MAX_AREA": 4500,
+      "APPLICATION_METHOD": "Surface",
+      "SETUP_TIME": 6,
+      "BREAKDOWN_TIME": 6,
+      "APPLICATION_TIME": 0.0036,
+      "RESIDENCE_TIME": 24,
+      "FIXED_COSTS": 0,
+      "SIZE_BASED_COSTS": 33.1596114140006,
+      "IC_COST": 6.82072724027929,
+      "Notes": "",
+      "CREATEDDATE": null,
+      "UPDATEDDATE": null,
+      "USERNAME": null,
+      "MATERIAL_SPECIFIC_PARAMS": {
+        "Brick": {
+          "LOG_REDUCTION": 4,
+          "CONTAM_REMOVAL_FACTOR": 0.9999,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Concrete": {
+          "LOG_REDUCTION": 1,
+          "CONTAM_REMOVAL_FACTOR": 0.9,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Steel": {
+          "LOG_REDUCTION": 6,
+          "CONTAM_REMOVAL_FACTOR": 0.999999,
+          "DESTRUCTIVENESS": "Moderate"
+        },
+        "Wood": {
+          "LOG_REDUCTION": 6,
+          "CONTAM_REMOVAL_FACTOR": 0.999999,
+          "DESTRUCTIVENESS": "Moderate"
+        },
+        "Other": {
+          "LOG_REDUCTION": 5,
+          "CONTAM_REMOVAL_FACTOR": 0.9749745,
+          "DESTRUCTIVENESS": "Uncertain"
+        }
+      },
+      "SURFACE_SPECIFIC_PARAMS": {
+        "Building Exteriors": {
+          "CONTAM_REMOVAL_FACTOR": 0.9999,
+          "LOG_REDUCTION": 4,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Building Interiors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999,
+          "LOG_REDUCTION": 6,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Soil/Vegetation": {
+          "CONTAM_REMOVAL_FACTOR": 0.9999,
+          "LOG_REDUCTION": 4,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets - Asphalt": {
+          "CONTAM_REMOVAL_FACTOR": 0.9999,
+          "LOG_REDUCTION": 4,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets/Sidewalks - Concrete": {
+          "CONTAM_REMOVAL_FACTOR": 0.9999,
+          "LOG_REDUCTION": 4,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        }
+      }
+    },
+    "Hydrogen Peroxide PAA, Minncare": {
+      "OBJECTID": "-1",
+      "PERMANENT_IDENTIFIER": null,
+      "GLOBALID": null,
+      "TYPEUUID": "Hydrogen Peroxide PAA, Minncare",
+      "TYPE": "Hydrogen Peroxide PAA, Minncare",
+      "APPLICATION_MAX_AREA": 4500,
+      "APPLICATION_METHOD": "Surface",
+      "SETUP_TIME": 6,
+      "BREAKDOWN_TIME": 6,
+      "APPLICATION_TIME": 0.0036,
+      "RESIDENCE_TIME": 24,
+      "FIXED_COSTS": 0,
+      "SIZE_BASED_COSTS": 33.1596114140006,
+      "IC_COST": 6.82072724027929,
+      "Notes": "",
+      "CREATEDDATE": null,
+      "UPDATEDDATE": null,
+      "USERNAME": null,
+      "MATERIAL_SPECIFIC_PARAMS": {
+        "Brick": {
+          "LOG_REDUCTION": 4,
+          "CONTAM_REMOVAL_FACTOR": 0.9999,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Concrete": {
+          "LOG_REDUCTION": 1,
+          "CONTAM_REMOVAL_FACTOR": 0.9,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Steel": {
+          "LOG_REDUCTION": 6,
+          "CONTAM_REMOVAL_FACTOR": 0.999999,
+          "DESTRUCTIVENESS": "Moderate"
+        },
+        "Wood": {
+          "LOG_REDUCTION": 6,
+          "CONTAM_REMOVAL_FACTOR": 0.999999,
+          "DESTRUCTIVENESS": "Moderate"
+        },
+        "Other": {
+          "LOG_REDUCTION": 5,
+          "CONTAM_REMOVAL_FACTOR": 0.9749745,
+          "DESTRUCTIVENESS": "Uncertain"
+        }
+      },
+      "SURFACE_SPECIFIC_PARAMS": {
+        "Building Exteriors": {
+          "CONTAM_REMOVAL_FACTOR": 0.9999,
+          "LOG_REDUCTION": 4,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Building Interiors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999,
+          "LOG_REDUCTION": 6,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Soil/Vegetation": {
+          "CONTAM_REMOVAL_FACTOR": 0.9999,
+          "LOG_REDUCTION": 4,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets - Asphalt": {
+          "CONTAM_REMOVAL_FACTOR": 0.9999,
+          "LOG_REDUCTION": 4,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets/Sidewalks - Concrete": {
+          "CONTAM_REMOVAL_FACTOR": 0.9999,
+          "LOG_REDUCTION": 4,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        }
+      }
+    },
+    "Hydrogen Peroxide PAA, Spor-klenz RTU": {
+      "OBJECTID": "-1",
+      "PERMANENT_IDENTIFIER": null,
+      "GLOBALID": null,
+      "TYPEUUID": "Hydrogen Peroxide PAA, Spor-klenz RTU",
+      "TYPE": "Hydrogen Peroxide PAA, Spor-klenz RTU",
+      "APPLICATION_MAX_AREA": 4500,
+      "APPLICATION_METHOD": "Surface",
+      "SETUP_TIME": 6,
+      "BREAKDOWN_TIME": 6,
+      "APPLICATION_TIME": 0.0036,
+      "RESIDENCE_TIME": 24,
+      "FIXED_COSTS": 0,
+      "SIZE_BASED_COSTS": 33.1596114140006,
+      "IC_COST": 6.82072724027929,
+      "Notes": "",
+      "CREATEDDATE": null,
+      "UPDATEDDATE": null,
+      "USERNAME": null,
+      "MATERIAL_SPECIFIC_PARAMS": {
+        "Brick": {
+          "LOG_REDUCTION": 7,
+          "CONTAM_REMOVAL_FACTOR": 0.99999994629682,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Concrete": {
+          "LOG_REDUCTION": 1,
+          "CONTAM_REMOVAL_FACTOR": 0.904500741397856,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Steel": {
+          "LOG_REDUCTION": 7,
+          "CONTAM_REMOVAL_FACTOR": 0.999999947519254,
+          "DESTRUCTIVENESS": "Moderate"
+        },
+        "Wood": {
+          "LOG_REDUCTION": 6,
+          "CONTAM_REMOVAL_FACTOR": 0.99999912903641,
+          "DESTRUCTIVENESS": "Moderate"
+        },
+        "Other": {
+          "LOG_REDUCTION": 5,
+          "CONTAM_REMOVAL_FACTOR": 0.976124941062585,
+          "DESTRUCTIVENESS": "Uncertain"
+        }
+      },
+      "SURFACE_SPECIFIC_PARAMS": {
+        "Building Exteriors": {
+          "CONTAM_REMOVAL_FACTOR": 0.99999,
+          "LOG_REDUCTION": 5,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Building Interiors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999,
+          "LOG_REDUCTION": 6,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Soil/Vegetation": {
+          "CONTAM_REMOVAL_FACTOR": 0.99999,
+          "LOG_REDUCTION": 5,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets - Asphalt": {
+          "CONTAM_REMOVAL_FACTOR": 0.99999,
+          "LOG_REDUCTION": 5,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets/Sidewalks - Concrete": {
+          "CONTAM_REMOVAL_FACTOR": 0.99999,
+          "LOG_REDUCTION": 5,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        }
+      }
+    },
+    "Hydrogen Peroxide PAA, Peridox RTU": {
+      "OBJECTID": "-1",
+      "PERMANENT_IDENTIFIER": null,
+      "GLOBALID": null,
+      "TYPEUUID": "Hydrogen Peroxide PAA, Peridox RTU",
+      "TYPE": "Hydrogen Peroxide PAA, Peridox RTU",
+      "APPLICATION_MAX_AREA": 4500,
+      "APPLICATION_METHOD": "Surface",
+      "SETUP_TIME": 6,
+      "BREAKDOWN_TIME": 6,
+      "APPLICATION_TIME": 0.0036,
+      "RESIDENCE_TIME": 24,
+      "FIXED_COSTS": 0,
+      "SIZE_BASED_COSTS": 33.1596114140006,
+      "IC_COST": 6.82072724027929,
+      "Notes": "",
+      "CREATEDDATE": null,
+      "UPDATEDDATE": null,
+      "USERNAME": null,
+      "MATERIAL_SPECIFIC_PARAMS": {
+        "Brick": {
+          "LOG_REDUCTION": 4,
+          "CONTAM_REMOVAL_FACTOR": 0.999845118338109,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Concrete": {
+          "LOG_REDUCTION": 1,
+          "CONTAM_REMOVAL_FACTOR": 0.959261972219589,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Steel": {
+          "LOG_REDUCTION": 7,
+          "CONTAM_REMOVAL_FACTOR": 0.999999795826206,
+          "DESTRUCTIVENESS": "High"
+        },
+        "Wood": {
+          "LOG_REDUCTION": 7,
+          "CONTAM_REMOVAL_FACTOR": 0.999999897670701,
+          "DESTRUCTIVENESS": "Moderate"
+        },
+        "Other": {
+          "LOG_REDUCTION": 5,
+          "CONTAM_REMOVAL_FACTOR": 0.989776696013651,
+          "DESTRUCTIVENESS": "Uncertain"
+        }
+      },
+      "SURFACE_SPECIFIC_PARAMS": {
+        "Building Exteriors": {
+          "CONTAM_REMOVAL_FACTOR": 0.99999,
+          "LOG_REDUCTION": 5,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Building Interiors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999999,
+          "LOG_REDUCTION": 6,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Soil/Vegetation": {
+          "CONTAM_REMOVAL_FACTOR": 0.99999,
+          "LOG_REDUCTION": 5,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets - Asphalt": {
+          "CONTAM_REMOVAL_FACTOR": 0.99999,
+          "LOG_REDUCTION": 5,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets/Sidewalks - Concrete": {
+          "CONTAM_REMOVAL_FACTOR": 0.99999,
+          "LOG_REDUCTION": 5,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        }
+      }
     }
   },
   "deconBuildingFactors": {

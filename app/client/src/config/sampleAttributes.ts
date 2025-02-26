@@ -54,6 +54,44 @@ export type AttributeItems = {
   DECISIONUNITSORT: number;
 };
 
+export type DeconAttributeItems = {
+  OBJECTID: number | string | null;
+  PERMANENT_IDENTIFIER: string | null;
+  GLOBALID: string | null;
+  TYPEUUID: string;
+  TYPE: string;
+  APPLICATION_MAX_AREA: number | null;
+  APPLICATION_METHOD: 'Surface' | 'Volumetric';
+  SETUP_TIME: number | null;
+  BREAKDOWN_TIME: number | null;
+  APPLICATION_TIME: number | null;
+  RESIDENCE_TIME: number | null;
+  FIXED_COSTS: number | null;
+  SIZE_BASED_COSTS: number | null;
+  IC_COST: number | null;
+  Notes: string | null;
+  CREATEDDATE: string | null;
+  UPDATEDDATE: null;
+  USERNAME: string | null;
+  MATERIAL_SPECIFIC_PARAMS: {
+    [key: string]: {
+      LOG_REDUCTION: number | null;
+      CONTAM_REMOVAL_FACTOR: number | null;
+      DESTRUCTIVENESS: 'Low' | 'Moderate' | 'High' | 'Uncertain';
+    };
+  };
+  SURFACE_SPECIFIC_PARAMS: {
+    [key: string]: {
+      LOG_REDUCTION: number | null;
+      CONTAM_REMOVAL_FACTOR: number | null;
+      SOLID_WASTE_VOLUME: number | null;
+      SOLID_WASTE_MASS: number | null;
+      AQUEOUS_WASTE_VOLUME: number | null;
+      AQUEOUS_WASTE_MASS: number | null;
+    };
+  };
+};
+
 export type Attributes = {
   [key: string]: {
     status: 'add' | 'edit' | 'delete' | 'published' | 'published-ago';

@@ -1441,7 +1441,7 @@ function DeconSelectionPopup({
     ) as LayerDeconEditsType;
     setSelectedApproach(selectedDeconOp?.approach ?? 'Basic');
     setSelectedBuildingApproach(
-      selectedDeconOp.buildingApproach ?? 'Building Structural Component',
+      selectedDeconOp?.buildingApproach ?? 'Building Structural Component',
     );
   }, [edits, deconOperation]);
 
@@ -1466,17 +1466,25 @@ function DeconSelectionPopup({
     }
   }
 
-  const [basicDeconSelections, setBasicDeconSelections] = useState(
-    defaultDeconSelections,
-  );
-  const [buildingDeconSelections, setBuildingDeconSelections] = useState(
-    defaultDeconSelections,
-  );
+  const [basicBaseDeconSelections, setBasicBaseDeconSelections] = useState<
+    any[]
+  >([]);
+  const [advancedBaseDeconSelections, setAdvancedBaseDeconSelections] =
+    useState<any[]>([]);
+  const [
+    buildingStructuralDeconSelections,
+    setBuildingStructuralDeconSelections,
+  ] = useState<any[]>([]);
+  const [buildingMaterialDeconSelections, setBuildingMaterialDeconSelections] =
+    useState<any[]>([]);
 
   // initialize decon selections
   useEffect(() => {
     if (!deconOperation) {
-      setBasicDeconSelections([]);
+      setBasicBaseDeconSelections([]);
+      setAdvancedBaseDeconSelections([]);
+      setBuildingStructuralDeconSelections([]);
+      setBuildingMaterialDeconSelections([]);
       return;
     }
 
@@ -1536,56 +1544,34 @@ function DeconSelectionPopup({
       }
     }
 
-    const basicDeconSelections: any[] = [];
-    const buildingDeconObject: any = {};
+    const basicBaseDeconSelections: any[] = [];
+    const advancedBaseDeconSelections: any[] = [];
+    const buildingStructuralDeconObject: any = {};
+    const buildingMaterialDeconObject: any = {};
     baseDeconSelections.forEach((deconTech) => {
       const media = deconTech.media;
-      if (isOutside(media)) {
-        basicDeconSelections.push(deconTech);
+      if (isOutside(media) || media === 'Buildings (Interior and Exterior)') {
+        basicBaseDeconSelections.push(deconTech);
+        if (isOutside(media)) advancedBaseDeconSelections.push(deconTech);
         return;
       }
 
-      if (
-        selectedApproach === 'Basic' &&
-        media === 'Buildings (Interior and Exterior)'
-      ) {
-        addMedia(media, buildingDeconObject, deconTech);
-      } else if (
-        selectedApproach === 'Advanced' &&
-        selectedBuildingApproach === 'Building Structural Component' &&
-        ['Building Exteriors', 'Building Interiors'].includes(media)
-      ) {
-        addMedia(media, buildingDeconObject, deconTech);
-      } else if (
-        selectedApproach === 'Advanced' &&
-        selectedBuildingApproach === 'Building Primary Material Composition' &&
-        !summarizedBuildingSurfaceTypes.includes(media)
-      ) {
-        addMedia(media, buildingDeconObject, deconTech);
+      if (['Building Exteriors', 'Building Interiors'].includes(media)) {
+        addMedia(media, buildingStructuralDeconObject, deconTech);
+      } else if (!summarizedBuildingSurfaceTypes.includes(media)) {
+        addMedia(media, buildingMaterialDeconObject, deconTech);
       }
     });
 
-    setBasicDeconSelections(
-      selectedApproach === 'Basic'
-        ? [...basicDeconSelections, ...Object.values(buildingDeconObject)]
-        : basicDeconSelections,
+    setBasicBaseDeconSelections(basicBaseDeconSelections);
+    setAdvancedBaseDeconSelections(advancedBaseDeconSelections);
+    setBuildingStructuralDeconSelections(
+      Object.values(buildingStructuralDeconObject),
     );
-    setBuildingDeconSelections(Object.values(buildingDeconObject));
-  }, [
-    deconOperation,
-    defaultDeconSelections,
-    edits,
-    selectedApproach,
-    selectedBuildingApproach,
-    setEdits,
-  ]);
-
-  useEffect(() => {
-    console.log('basicDeconSelections: ', basicDeconSelections);
-  }, [basicDeconSelections]);
-  useEffect(() => {
-    console.log('buildingDeconSelections: ', buildingDeconSelections);
-  }, [buildingDeconSelections]);
+    setBuildingMaterialDeconSelections(
+      Object.values(buildingMaterialDeconObject),
+    );
+  }, [deconOperation, defaultDeconSelections, edits, setEdits]);
 
   function handleApproachChange(selection: ApproachTypes) {
     setSelectedApproach(selection);
@@ -1703,25 +1689,35 @@ function DeconSelectionPopup({
 
         <ReactTableEditable
           id={generateUUID()}
-          data={basicDeconSelections}
+          data={
+            selectedApproach === 'Advanced'
+              ? advancedBaseDeconSelections
+              : basicBaseDeconSelections
+          }
           striped={true}
           hideHeader={false}
           height={-1}
           onDataChange={(rowIndex: any, columnId: any, value: any) => {
-            const newTable = basicDeconSelections.map(
-              (row: any, index: number) => {
-                // update the row if it is the row in focus and the data has changed
-                if (index === rowIndex && row[columnId] !== value) {
-                  return {
-                    ...basicDeconSelections[rowIndex],
-                    [columnId]: value,
-                  };
-                }
-                return row;
-              },
-            );
+            const selections =
+              selectedApproach === 'Advanced'
+                ? advancedBaseDeconSelections
+                : basicBaseDeconSelections;
+            const newTable = selections.map((row: any, index: number) => {
+              // update the row if it is the row in focus and the data has changed
+              if (index === rowIndex && row[columnId] !== value) {
+                return {
+                  ...selections[rowIndex],
+                  [columnId]: value,
+                };
+              }
+              return row;
+            });
 
-            setBasicDeconSelections(newTable);
+            const setter =
+              selectedApproach === 'Advanced'
+                ? setAdvancedBaseDeconSelections
+                : setBasicBaseDeconSelections;
+            setter(newTable);
           }}
           getColumns={(_tableWidth: any) => {
             return [
@@ -1843,17 +1839,17 @@ function DeconSelectionPopup({
             {selectedBuildingApproach === 'Building Structural Component' && (
               <ReactTableEditable
                 id={generateUUID()}
-                data={buildingDeconSelections}
+                data={buildingStructuralDeconSelections}
                 striped={true}
                 hideHeader={false}
                 height={-1}
                 onDataChange={(rowIndex: any, columnId: any, value: any) => {
-                  const newTable = buildingDeconSelections.map(
+                  const newTable = buildingStructuralDeconSelections.map(
                     (row: any, index: number) => {
                       // update the row if it is the row in focus and the data has changed
                       if (index === rowIndex && row[columnId] !== value) {
                         return {
-                          ...buildingDeconSelections[rowIndex],
+                          ...buildingStructuralDeconSelections[rowIndex],
                           [columnId]: value,
                         };
                       }
@@ -1861,7 +1857,7 @@ function DeconSelectionPopup({
                     },
                   );
 
-                  setBuildingDeconSelections(newTable);
+                  setBuildingStructuralDeconSelections(newTable);
                 }}
                 getColumns={(_tableWidth: any) => {
                   return [
@@ -1956,12 +1952,12 @@ function DeconSelectionPopup({
                 id={generateUUID()}
                 expandable={true}
                 resizable={false}
-                data={buildingDeconSelections}
+                data={buildingMaterialDeconSelections}
                 striped={true}
                 hideHeader={false}
                 height={-1}
                 onDataChange={(rowIndex: any, columnId: any, value: any) => {
-                  const newTable = buildingDeconSelections.map(
+                  const newTable = buildingMaterialDeconSelections.map(
                     (row: any, index: number) => {
                       // update the row if it is the row in focus and the data has changed
                       if (index === rowIndex) {
@@ -1994,7 +1990,7 @@ function DeconSelectionPopup({
                           });
 
                           return {
-                            ...buildingDeconSelections[rowIndex],
+                            ...buildingMaterialDeconSelections[rowIndex],
                             [columnId]: value,
                             deconTech: anyDifferentDeconTech
                               ? {
@@ -2007,7 +2003,7 @@ function DeconSelectionPopup({
                           };
                         } else {
                           return {
-                            ...buildingDeconSelections[rowIndex],
+                            ...buildingMaterialDeconSelections[rowIndex],
                             [columnId]: value,
                             subRows: row.subRows.map((subRow: any) => {
                               return {
@@ -2026,7 +2022,7 @@ function DeconSelectionPopup({
                     },
                   );
 
-                  setBuildingDeconSelections(newTable);
+                  setBuildingMaterialDeconSelections(newTable);
                 }}
                 getColumns={(_tableWidth: any) => {
                   return [
@@ -2132,100 +2128,33 @@ function DeconSelectionPopup({
                 const editedOp = editsCopy.edits[index] as LayerDeconEditsType;
                 const newDeconTechSelections: any[] = [];
 
-                basicDeconSelections.forEach((decon) => {
-                  if (isOutside(decon.media))
-                    newDeconTechSelections.push({
-                      ...decon,
-                      numIterativeApplications:
-                        selectedApproach === 'Basic'
-                          ? 1
-                          : decon.numIterativeApplications
-                            ? parseInt(decon.numIterativeApplications)
-                            : decon.numIterativeApplications,
-                      removeContents:
-                        selectedApproach === 'Basic'
-                          ? false
-                          : decon.removeContents,
-                    });
+                const basicDeconSelections =
+                  selectedApproach === 'Advanced'
+                    ? advancedBaseDeconSelections
+                    : basicBaseDeconSelections;
+                const buildingDeconSelections =
+                  selectedBuildingApproach ===
+                  'Building Primary Material Composition'
+                    ? buildingMaterialDeconSelections
+                    : buildingStructuralDeconSelections;
 
-                  if (decon.media === 'Buildings (Interior and Exterior)') {
-                    editedOp.deconTechSelections.forEach((subDecon) => {
-                      if (isOutside(subDecon.media)) return;
-                      newDeconTechSelections.push({
-                        ...subDecon,
-                        deconTech: decon.deconTech,
-                        numIterativeApplications:
-                          selectedApproach === 'Basic'
-                            ? 1
-                            : decon.numIterativeApplications,
-                        removeContents:
-                          selectedApproach === 'Basic'
-                            ? false
-                            : decon.removeContents,
-                        subRows: subDecon.subRows.map((subRow: any) => {
-                          return {
-                            ...subRow,
-                            deconTech: decon.deconTech,
-                            numIterativeApplications:
-                              selectedApproach === 'Basic'
-                                ? 1
-                                : decon.numIterativeApplications,
-                            removeContents:
-                              selectedApproach === 'Basic'
-                                ? false
-                                : decon.removeContents,
-                          };
-                        }),
-                      });
-                    });
-                  }
-                });
-
-                const buildingSectionSettings: any = {};
-                buildingDeconSelections.forEach((decon) => {
-                  if (decon.media === 'Buildings (Interior and Exterior)')
-                    return;
-
-                  if (
-                    ['Building Interiors', 'Building Exteriors'].includes(
-                      decon.media,
-                    )
-                  ) {
-                    buildingSectionSettings[decon.media] = {
-                      ...decon,
-                    };
+                // build new deconTech selections
+                editedOp.deconTechSelections.forEach((originalTech) => {
+                  const basicDeconSel = basicDeconSelections.find(
+                    (t) => t.id === originalTech.id,
+                  );
+                  const bldgDeconSel = buildingDeconSelections.find(
+                    (t) => t.id === originalTech.id,
+                  );
+                  if (!basicDeconSel && !bldgDeconSel) {
+                    newDeconTechSelections.push(originalTech);
                     return;
                   }
 
-                  editedOp.deconTechSelections.forEach((subDecon) => {
-                    if (isOutside(subDecon.media)) return;
-                    if (decon.media !== subDecon.media) return;
-                    newDeconTechSelections.push(decon);
-                  });
+                  if (basicDeconSel) newDeconTechSelections.push(basicDeconSel);
+
+                  if (bldgDeconSel) newDeconTechSelections.push(bldgDeconSel);
                 });
-
-                if (Object.keys(buildingSectionSettings).length > 0) {
-                  editedOp.deconTechSelections.forEach((subDecon) => {
-                    if (isOutside(subDecon.media)) return;
-
-                    newDeconTechSelections.push({
-                      ...subDecon,
-                      deconTech: null,
-                      numIterativeApplications: 1,
-                      removeContents: undefined,
-                      subRows: subDecon.subRows.map((subRow: any) => {
-                        const decon = buildingSectionSettings[subRow.media];
-                        return {
-                          ...subRow,
-                          deconTech: decon.deconTech,
-                          numIterativeApplications:
-                            decon.numIterativeApplications,
-                          removeContents: decon.removeContents,
-                        };
-                      }),
-                    });
-                  });
-                }
 
                 editedOp.deconTechSelections = newDeconTechSelections;
                 editedOp.approach = selectedApproach;

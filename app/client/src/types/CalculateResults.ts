@@ -26,9 +26,9 @@ export type CalculateResultsDataType = {
   ALC: number;
   AMC: number;
   TOTAL_LAB_COST: number;
-  WASTE_VOLUME_SOLID: number;
+  WASTE_VOLUME_TOTAL: number;
   WASTE_VOLUME_SOLID_LITERS: number;
-  WASTE_WEIGHT_SOLID: number;
+  WASTE_WEIGHT_TOTAL: number;
   WASTE_WEIGHT_SOLID_POUNDS: number;
   'User Specified Total AOI': number | null;
   'User Specified Number of Available Teams for Sampling': number;
@@ -42,29 +42,12 @@ export type CalculateResultsDataType = {
 };
 
 export type CalculateResultsDeconDataType = {
-  'Total Number of User-Defined Decon Technologies': number;
-  'User Specified Number of Concurrent Applications': number;
-  'Total Number of Decon Applications': number;
   TOTAL_COST: number;
   TOTAL_TIME: number;
-  'Total Decontamination Area': number;
-  'Total Setup Time': number;
-  'Total Application Time': number;
-  'Total Setup Cost': number;
-  'Total Application Cost': number;
-  'Total Residence Time': number;
-  'Average Contamination Removal': number;
   'Solid Waste Volume': number;
-  'Solid Waste Mass': number;
   'Liquid Waste Volume': number;
-  'Liquid Waste Mass': number;
-  WASTE_VOLUME_SOLID: number;
-  WASTE_WEIGHT_SOLID: number;
-  'Total Contaminated Area': number;
-  'Total Decontaminated Area': number;
-  'Total Reduction Area': number;
-  'Total Remaining Contaminated Area': number;
-  'Percent Contaminated Remaining': number;
+  WASTE_VOLUME_TOTAL: number;
+  WASTE_WEIGHT_TOTAL: number;
   'Contamination Type': string;
   resultsTable: JsonDownloadType[];
 };

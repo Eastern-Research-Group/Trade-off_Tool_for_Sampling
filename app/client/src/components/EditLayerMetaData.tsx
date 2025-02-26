@@ -447,25 +447,7 @@ function EditScenario({
 
         if (aoiLayer) {
           deconLayerEdits.analysisLayerId = aoiLayer.layerId;
-          deconLayerEdits.deconTechSelections =
-            deconLayerEdits.deconTechSelections.map((tech) => {
-              const media = aoiLayer.aoiSummary.areaByMedia.find(
-                (a) => a.media === tech.media,
-              );
-
-              let pctAoi = tech.pctAoi;
-              let surfaceArea = tech.surfaceArea;
-              if (media) {
-                pctAoi = media.pctAoi;
-                surfaceArea = media.surfaceArea;
-              }
-
-              return {
-                ...tech,
-                pctAoi,
-                surfaceArea,
-              };
-            });
+          deconLayerEdits.deconTechSelections = aoiLayer.deconTechSelections;
         }
       }
 

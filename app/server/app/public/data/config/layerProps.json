@@ -997,7 +997,7 @@
       "defaultValue": null
     },
     {
-      "name": "WASTE_VOLUME_SOLID",
+      "name": "WASTE_VOLUME_TOTAL",
       "alias": "Solid Waste Volume (m3)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
@@ -1019,7 +1019,7 @@
       "defaultValue": null
     },
     {
-      "name": "WASTE_WEIGHT_SOLID",
+      "name": "WASTE_WEIGHT_TOTAL",
       "alias": "Solid Waste Weight (kg)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
