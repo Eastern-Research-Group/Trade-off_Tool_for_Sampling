@@ -1490,11 +1490,11 @@ function DeconSelectionPopup({
 
     const selectedDeconOp = edits.edits.find(
       (e) => e.type === 'layer-decon' && e.layerId === deconOperation?.layerId,
-    ) as LayerDeconEditsType;
+    ) as LayerDeconEditsType | undefined;
     let baseDeconSelections: any[] = [];
     if (
-      selectedDeconOp.deconTechSelections &&
-      selectedDeconOp.deconTechSelections.length > 0
+      selectedDeconOp?.deconTechSelections &&
+      selectedDeconOp?.deconTechSelections.length > 0
     ) {
       baseDeconSelections = [...selectedDeconOp.deconTechSelections];
     } else {
