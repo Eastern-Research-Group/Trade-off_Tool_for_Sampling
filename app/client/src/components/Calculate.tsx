@@ -23,6 +23,7 @@ import Select from 'components/Select';
 import ShowLessMore from 'components/ShowLessMore';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
+import { useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // types
@@ -1018,6 +1019,7 @@ const baseWidth = 97;
 type DownloadStatus =
   | 'none'
   | 'fetching'
+  | 'fetching-contam-map'
   | 'success'
   | 'screenshot-failure'
   | 'base64-failure'
@@ -1047,6 +1049,7 @@ function CalculateResultsPopup({
     sceneView,
     selectedScenario,
   } = useContext(SketchContext);
+  const { services } = useLookupFiles().data;
 
   const [tableId] = useState(
     `tots-decon-results-selectionstable-${generateUUID()}`,
@@ -2447,6 +2450,7 @@ function CalculateResultsPopup({
         })}
 
         {downloadStatus === 'fetching' && <LoadingSpinner />}
+        {downloadStatus === 'fetching-contam-map' && <LoadingSpinner />}
         {downloadStatus === 'screenshot-failure' && screenshotFailureMessage}
         {downloadStatus === 'base64-failure' && base64FailureMessage}
         {downloadStatus === 'excel-failure' && excelFailureMessage}
@@ -2476,7 +2480,7 @@ function CalculateResultsPopup({
             <button
               css={saveAttributesButtonStyles}
               onClick={async () => {
-                setDownloadStatus('fetching');
+                setDownloadStatus('fetching-contam-map');
                 const contaminationLayer =
                   contamMapUpdated as __esri.GraphicsLayer;
 
@@ -2566,7 +2570,7 @@ function CalculateResultsPopup({
                 appendEnvironmentObjectParam(params);
 
                 const response = await geoprocessorFetch({
-                  url: `https://ags.erg.com/arcgis/rest/services/ORD/ExportShape/GPServer/ExportShape`,
+                  url: `${services.totsGPServer}/Export ShapeFile`,
                   inputParameters: params,
                 });
 
