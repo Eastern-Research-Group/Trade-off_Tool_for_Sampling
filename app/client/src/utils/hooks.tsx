@@ -299,35 +299,12 @@ export function processScenario(
   const planGraphics = aoiCharacterizationData.planGraphics[scenarioId];
   if (!planGraphics) return [];
 
-  const {
-    totalAoiSqM,
-    totalBuildingFootprintSqM,
-    totalBuildingExtSqM,
-    totalBuildingIntSqM,
-    totalBuildingVolumeCubM,
-    totalBuildingVolumeContentsCubM,
-  } = planGraphics.summary;
+  const { totalAoiSqM, totalBuildingFootprintSqM } = planGraphics.summary;
 
   if (isScenario && layer.aoiSummary) {
     layer.aoiSummary.totalAoiSqM = planGraphics.aoiArea;
     layer.aoiSummary.totalBuildingFootprintSqM = totalBuildingFootprintSqM;
   }
-
-  const materialMapping: { [key: string]: string } = {
-    'Single Family Dwelling': 'Wood Buildings',
-    Unclassified: 'Wood Buildings',
-    Agriculture: 'Metal Buildings',
-    'Retail Trade': 'Concrete Buildings',
-  };
-
-  // TODO add code here to get a list of building materials
-  //      and update the curDeconTechSelections...
-  const buildingMaterialOptions: string[] = [];
-  planGraphics.graphics.forEach((building) => {
-    const material = materialMapping[building.attributes.PRIM_OCC];
-    if (buildingMaterialOptions.includes(material)) return;
-    buildingMaterialOptions.push(material);
-  });
 
   let curDeconTechSelections =
     deconTechSelections && deconTechSelections.length > 0
