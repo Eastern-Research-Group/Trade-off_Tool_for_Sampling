@@ -1337,14 +1337,14 @@ function CalculateResultsPopup({
       summarySheet.getCell(10, 2).font = defaultFont;
       summarySheet.getCell(10, 2).alignment = rightAlignment;
       summarySheet.getCell(10, 2).value = Math.round(
-        calculateResultsDecon.data['WASTE_VOLUME_SOLID'],
+        calculateResultsDecon.data['WASTE_VOLUME_TOTAL'],
       ).toLocaleString();
       summarySheet.getCell(11, 1).font = labelFont;
       summarySheet.getCell(11, 1).value = 'Total Waste Mass (kg)';
       summarySheet.getCell(11, 2).font = defaultFont;
       summarySheet.getCell(11, 2).alignment = rightAlignment;
       summarySheet.getCell(11, 2).value = Math.round(
-        calculateResultsDecon.data['WASTE_WEIGHT_SOLID'],
+        calculateResultsDecon.data['WASTE_WEIGHT_TOTAL'],
       ).toLocaleString();
 
       summarySheet.mergeCells(14, 3, 14, 4);
@@ -1642,13 +1642,23 @@ function CalculateResultsPopup({
         { label: 'Remarks', fieldName: 'REMARKS' },
         { label: 'State FIPS', fieldName: 'STATE_FIPS' },
         {
-          label: 'Footprint Area (square meters)',
-          fieldName: 'footprintSqM',
+          label: 'Ext Area (square meters)',
+          fieldName: 'extSqM',
           format: 'number',
         },
         {
-          label: 'Floors Area (square meters)',
-          fieldName: 'floorsSqM',
+          label: 'Ext Area (square feet)',
+          fieldName: 'extSqFt',
+          format: 'number',
+        },
+        {
+          label: 'Int Area (square meters)',
+          fieldName: 'intSqM',
+          format: 'number',
+        },
+        {
+          label: 'Int Area (square feet)',
+          fieldName: 'intSqFt',
           format: 'number',
         },
         {
@@ -1657,60 +1667,371 @@ function CalculateResultsPopup({
           format: 'number',
         },
         {
-          label: 'Ext Walls Area (square meters)',
-          fieldName: 'extWallsSqM',
-          format: 'number',
-        },
-        {
-          label: 'Int Walls Area (square meters)',
-          fieldName: 'intWallsSqM',
-          format: 'number',
-        },
-        {
-          label: 'Roof Area (square meters)',
-          fieldName: 'roofSqM',
-          format: 'number',
-        },
-        {
-          label: 'Footprint Area (square feet)',
-          fieldName: 'footprintSqFt',
-          format: 'number',
-        },
-        {
-          label: 'Floors Area (square feet)',
-          fieldName: 'floorsSqFt',
-          format: 'number',
-        },
-        {
           label: 'Total Area (square feet)',
           fieldName: 'totalSqFt',
           format: 'number',
         },
-        {
-          label: 'Ext Walls Area (square feet)',
-          fieldName: 'extWallsSqFt',
-          format: 'number',
-        },
-        {
-          label: 'Int Walls Area (square feet)',
-          fieldName: 'intWallsSqFt',
-          format: 'number',
-        },
-        {
-          label: 'Roof Area (square feet)',
-          fieldName: 'roofSqFt',
-          format: 'number',
-        },
       ];
 
-      if (devMode && trainingMode) {
-        cols.push({ label: 'Contamination Type', fieldName: 'CONTAMTYPE' });
-        cols.push({
-          label: 'Activity (Initial)',
-          fieldName: 'CONTAMVALINITIAL',
-        });
-        cols.push({ label: 'Activity (Final)', fieldName: 'CONTAMVAL' });
-        cols.push({ label: 'Unit of Measure', fieldName: 'CONTAMUNIT' });
+      if (devMode) {
+        cols.push(
+          ...[
+            {
+              label: 'Roof Area (square meters)',
+              fieldName: 'roofSqM',
+              format: 'number',
+            },
+            {
+              label: 'Footprint Area (square meters)',
+              fieldName: 'footprintSqM',
+              format: 'number',
+            },
+            {
+              label: 'Floors Area (square meters)',
+              fieldName: 'floorsSqM',
+              format: 'number',
+            },
+            {
+              label: 'Ceilings Area (square meters)',
+              fieldName: 'ceilingsSqM',
+              format: 'number',
+            },
+            {
+              label: 'Ext Walls Area (square meters)',
+              fieldName: 'extWallsSqM',
+              format: 'number',
+            },
+            {
+              label: 'Int Walls Area (square meters)',
+              fieldName: 'intWallsSqM',
+              format: 'number',
+            },
+            {
+              label: 'Ext Volume (cubic meters)',
+              fieldName: 'extVolumeCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Volume (cubic meters)',
+              fieldName: 'intVolumeCubM',
+              format: 'number',
+            },
+            {
+              label: 'Interior Contents Volume (cubic meters)',
+              fieldName: 'intVolumeContentsCubM',
+              format: 'number',
+            },
+            {
+              label: 'Roof Area (square feet)',
+              fieldName: 'roofSqFt',
+              format: 'number',
+            },
+            {
+              label: 'Footprint Area (square feet)',
+              fieldName: 'footprintSqFt',
+              format: 'number',
+            },
+            {
+              label: 'Floors Area (square feet)',
+              fieldName: 'floorsSqFt',
+              format: 'number',
+            },
+            {
+              label: 'Ceilings Area (square feet)',
+              fieldName: 'ceilingsSqFt',
+              format: 'number',
+            },
+            {
+              label: 'Ext Walls Area (square feet)',
+              fieldName: 'extWallsSqFt',
+              format: 'number',
+            },
+            {
+              label: 'Int Walls Area (square feet)',
+              fieldName: 'intWallsSqFt',
+              format: 'number',
+            },
+            {
+              label: 'Ext Volume (cubic feet)',
+              fieldName: 'extVolumeCubFt',
+              format: 'number',
+            },
+            {
+              label: 'Int Volume (cubic feet)',
+              fieldName: 'intVolumeCubFt',
+              format: 'number',
+            },
+            {
+              label: 'Int Contents Volume (cubic feet)',
+              fieldName: 'intVolumeContentsCubFt',
+              format: 'number',
+            },
+            {
+              label: 'Ext Brick Area (square meters)',
+              fieldName: 'extBrickSqM',
+              format: 'number',
+            },
+            {
+              label: 'Int Brick Area (square meters)',
+              fieldName: 'intBrickSqM',
+              format: 'number',
+            },
+            {
+              label: 'Ext Volume Brick (cubic meters)',
+              fieldName: 'extVolumeBrickCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Volume Brick (cubic meters)',
+              fieldName: 'intVolumeBrickCubM',
+              format: 'number',
+            },
+            {
+              label: 'Interior Contents Volume Brick (cubic meters)',
+              fieldName: 'intVolumeBrickContentCubM',
+              format: 'number',
+            },
+            {
+              label: 'Ext Concrete Area (square meters)',
+              fieldName: 'extConcreteSqM',
+              format: 'number',
+            },
+            {
+              label: 'Int Concrete Area (square meters)',
+              fieldName: 'intConcreteSqM',
+              format: 'number',
+            },
+            {
+              label: 'Ext Volume Concrete (cubic meters)',
+              fieldName: 'extVolumeConcreteCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Volume Concrete (cubic meters)',
+              fieldName: 'IntVolumeConcreteCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Contents Volume Concrete (cubic meters)',
+              fieldName: 'intVolumeConcreteContentCubM',
+              format: 'number',
+            },
+            {
+              label: 'Ext Steel Area (square meters)',
+              fieldName: 'extSteelSqM',
+              format: 'number',
+            },
+            {
+              label: 'Int Steel Area (square meters)',
+              fieldName: 'intSteelSqM',
+              format: 'number',
+            },
+            {
+              label: 'Int Volume Steel (cubic meters)',
+              fieldName: 'intVolumeSteelCubM',
+              format: 'number',
+            },
+            {
+              label: 'Ext Volume Steel (cubic meters)',
+              fieldName: 'extVolumeSteelCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Contents Volume Steel (cubic meters)',
+              fieldName: 'intVolumeSteelContentCubM',
+              format: 'number',
+            },
+            {
+              label: 'Ext Wood Area (square meters)',
+              fieldName: 'extWoodSqM',
+              format: 'number',
+            },
+            {
+              label: 'Int Wood Area (square meters)',
+              fieldName: 'intWoodSqM',
+              format: 'number',
+            },
+            {
+              label: 'Ext Volume Wood (cubic meters)',
+              fieldName: 'extVolumeWoodCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Volume Wood (cubic meters)',
+              fieldName: 'intVolumeWoodCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Contents Volume Wood (cubic meters)',
+              fieldName: 'intVolumeWoodContentCubM',
+              format: 'number',
+            },
+            {
+              label: 'Ext Other Area (square meters)',
+              fieldName: 'extOtherSqM',
+              format: 'number',
+            },
+            {
+              label: 'Int Other Area (square meters)',
+              fieldName: 'intOtherSqM',
+              format: 'number',
+            },
+            {
+              label: 'Ext Volume Other (cubic meters)',
+              fieldName: 'extVolumeOtherCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Volume Other (cubic meters)',
+              fieldName: 'IntVolumeOtherCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Contents Volume Other (cubic meters)',
+              fieldName: 'intVolumeOtherContentCubM',
+              format: 'number',
+            },
+            {
+              label: 'Ext Brick Area (square feet)',
+              fieldName: 'extBrickSqFt',
+              format: 'number',
+            },
+            {
+              label: 'Int Brick Area (square feet)',
+              fieldName: 'intBrickSqFt',
+              format: 'number',
+            },
+            {
+              label: 'Ext Volume Brick (cubic feet)',
+              fieldName: 'extVolumeBrickCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Volume Brick (cubic feet)',
+              fieldName: 'intVolumeBrickCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Contents Volume Brick (cubic feet)',
+              fieldName: 'intVolumeBrickContentCubM',
+              format: 'number',
+            },
+            {
+              label: 'Ext Concrete Area (square feet)',
+              fieldName: 'extConcreteSqFt',
+              format: 'number',
+            },
+            {
+              label: 'Int Concrete Area (square feet)',
+              fieldName: 'intConcreteSqFt',
+              format: 'number',
+            },
+            {
+              label: 'Ext Volume Concrete (cubic feet)',
+              fieldName: 'extVolumeConcreteCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Volume Concrete (cubic feet)',
+              fieldName: 'intVolumeConcreteCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Contents Volume Concrete (cubic feet)',
+              fieldName: 'intVolumeConcreteContentCubM',
+              format: 'number',
+            },
+            {
+              label: 'Ext Steel Area (square feet)',
+              fieldName: 'extSteelSqFt',
+              format: 'number',
+            },
+            {
+              label: 'Int Steel Area (square feet)',
+              fieldName: 'intSteelSqFt',
+              format: 'number',
+            },
+            {
+              label: 'Ext Volume Steel (cubic feet)',
+              fieldName: 'extVolumeSteelCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Volume Steel (cubic feet)',
+              fieldName: 'intVolumeSteelCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Contents Volume Steel (cubic feet)',
+              fieldName: 'intVolumeSteelContentCubM',
+              format: 'number',
+            },
+            {
+              label: 'Ext Wood Area (square feet)',
+              fieldName: 'extWoodSqFt',
+              format: 'number',
+            },
+            {
+              label: 'Int Wood Area (square feet)',
+              fieldName: 'intWoodSqFt',
+              format: 'number',
+            },
+            {
+              label: 'Ext Volume Wood (cubic feet)',
+              fieldName: 'extVolumeWoodCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Volume Wood (cubic feet)',
+              fieldName: 'intVolumeWoodCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Contents Volume Wood (cubic feet)',
+              fieldName: 'intVolumeWoodContentCubM',
+              format: 'number',
+            },
+            {
+              label: 'Ext Other Area (square feet)',
+              fieldName: 'extOtherSqFt',
+              format: 'number',
+            },
+            {
+              label: 'Int Other Area (square feet)',
+              fieldName: 'intOtherSqFt',
+              format: 'number',
+            },
+            {
+              label: 'Ext Volume Other (cubic feet)',
+              fieldName: 'extVolumeOtherCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Volume Other (cubic feet)',
+              fieldName: 'intVolumeOtherCubM',
+              format: 'number',
+            },
+            {
+              label: 'Int Contents Volume Other (cubic feet)',
+              fieldName: 'intVolumeOtherContentCubM',
+              format: 'number',
+            },
+          ],
+        );
+
+        if (trainingMode) {
+          cols.push(
+            ...[
+              { label: 'Contamination Type', fieldName: 'CONTAMTYPE' },
+              {
+                label: 'Activity (Initial)',
+                fieldName: 'CONTAMVALINITIAL',
+              },
+              { label: 'Activity (Final)', fieldName: 'CONTAMVAL' },
+              { label: 'Unit of Measure', fieldName: 'CONTAMUNIT' },
+            ],
+          );
+        }
       }
 
       let curRow = 3;
@@ -1822,51 +2143,6 @@ function CalculateResultsPopup({
     trainingMode,
   ]);
 
-  let totalSolidWasteVolume = 0;
-  let totalLiquidWasteVolume = 0;
-  let totalDeconCost = 0;
-  let totalDeconTime = 0;
-  let totalInitialContamination = 0;
-  let totalFinalContamination = 0;
-  const tableData =
-    jsonDownload?.map((d) => {
-      totalSolidWasteVolume += parseSmallFloat(d.solidWasteVolumeM3, 0);
-      totalLiquidWasteVolume += parseSmallFloat(d.liquidWasteVolumeM3, 0);
-      totalDeconCost += parseSmallFloat(d.decontaminationCost, 2);
-      totalDeconTime += parseSmallFloat(d.decontaminationTimeDays, 1);
-      totalInitialContamination += parseSmallFloat(
-        d.averageInitialContamination,
-        0,
-      );
-      totalFinalContamination += parseSmallFloat(
-        d.averageFinalContamination,
-        2,
-      );
-      return {
-        ...d,
-        solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3),
-        liquidWasteVolumeM3: formatNumber(d.liquidWasteVolumeM3),
-        decontaminationCost: formatNumber(d.decontaminationCost, 2),
-        decontaminationTimeDays: formatNumber(d.decontaminationTimeDays, 1),
-        averageInitialContamination: formatNumber(
-          d.averageInitialContamination,
-        ),
-        averageFinalContamination: formatNumber(d.averageFinalContamination, 2),
-        aboveDetectionLimit: d.aboveDetectionLimit ? 'Above' : 'Below',
-      };
-    }) ?? [];
-  tableData.push({
-    contaminationScenario: 'TOTALS',
-    decontaminationTechnology: '',
-    solidWasteVolumeM3: formatNumber(totalSolidWasteVolume, -1),
-    liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume, -1),
-    decontaminationCost: formatNumber(totalDeconCost, -1),
-    decontaminationTimeDays: formatNumber(totalDeconTime, -1),
-    averageInitialContamination: formatNumber(totalInitialContamination, -1),
-    averageFinalContamination: formatNumber(totalFinalContamination, -1),
-    aboveDetectionLimit: '',
-  });
-
   const contamMapUpdated = map?.layers.find(
     (l) => l.id === 'contaminationMapUpdated',
   );
@@ -1879,6 +2155,67 @@ function CalculateResultsPopup({
         selectedScenario.linkedLayerIds.includes(e.layerId),
     ) as LayerDeconEditsType[];
   }
+
+  let totalSolidWasteVolume = 0;
+  let totalLiquidWasteVolume = 0;
+  let totalDeconCost = 0;
+  let totalDeconTime = 0;
+  let totalInitialContamination = 0;
+  let totalFinalContamination = 0;
+  const tableData = [];
+  linkedDeconOps.forEach((layer) => {
+    let totalOpSolidWasteVolume = 0;
+    let totalOpLiquidWasteVolume = 0;
+    let totalOpDeconCost = 0;
+    let totalOpDeconTime = 0;
+    let totalOpInitialContamination = 0;
+    let totalOpFinalContamination = 0;
+    layer.deconLayerResults?.resultsTable.forEach((d) => {
+      totalOpSolidWasteVolume += parseSmallFloat(d.solidWasteVolumeM3, 0);
+      totalOpLiquidWasteVolume += parseSmallFloat(d.liquidWasteVolumeM3, 0);
+      totalOpDeconCost += parseSmallFloat(d.decontaminationCost, 2);
+      totalOpDeconTime += parseSmallFloat(d.decontaminationTimeDays, 1);
+      totalOpInitialContamination += parseSmallFloat(
+        d.averageInitialContamination,
+        0,
+      );
+      totalOpFinalContamination += parseSmallFloat(
+        d.averageFinalContamination,
+        2,
+      );
+    });
+
+    totalSolidWasteVolume += totalOpSolidWasteVolume;
+    totalLiquidWasteVolume += totalOpLiquidWasteVolume;
+    totalDeconCost += totalOpDeconCost;
+    totalDeconTime += totalOpDeconTime;
+    totalInitialContamination += totalOpInitialContamination;
+    totalFinalContamination += totalOpFinalContamination;
+
+    tableData.push({
+      operationName: layer.name,
+      solidWasteVolumeM3: formatNumber(totalOpSolidWasteVolume, -1),
+      liquidWasteVolumeM3: formatNumber(totalOpLiquidWasteVolume, -1),
+      decontaminationCost: formatNumber(totalOpDeconCost, -1),
+      decontaminationTimeDays: formatNumber(totalOpDeconTime, -1),
+      averageInitialContamination: formatNumber(
+        totalOpInitialContamination,
+        -1,
+      ),
+      averageFinalContamination: formatNumber(totalOpFinalContamination, -1),
+      aboveDetectionLimit: '',
+    });
+  });
+  tableData.push({
+    operationName: 'TOTALS',
+    solidWasteVolumeM3: formatNumber(totalSolidWasteVolume, -1),
+    liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume, -1),
+    decontaminationCost: formatNumber(totalDeconCost, -1),
+    decontaminationTimeDays: formatNumber(totalDeconTime, -1),
+    averageInitialContamination: formatNumber(totalInitialContamination, -1),
+    averageFinalContamination: formatNumber(totalFinalContamination, -1),
+    aboveDetectionLimit: '',
+  });
 
   return (
     <DialogOverlay
@@ -1909,13 +2246,13 @@ function CalculateResultsPopup({
                     Total Waste Volume (m<sup>3</sup>):
                   </strong>{' '}
                   {Math.round(
-                    calculateResultsDecon.data['WASTE_VOLUME_SOLID'],
+                    calculateResultsDecon.data['WASTE_VOLUME_TOTAL'],
                   ).toLocaleString()}
                 </div>
                 <div>
                   <strong>Total Waste Mass (kg):</strong>{' '}
                   {Math.round(
-                    calculateResultsDecon.data['WASTE_WEIGHT_SOLID'],
+                    calculateResultsDecon.data['WASTE_WEIGHT_TOTAL'],
                   ).toLocaleString()}
                 </div>
               </div>
@@ -1927,58 +2264,52 @@ function CalculateResultsPopup({
         <ReactTableEditable
           id={tableId}
           data={tableData}
-          idColumn={'contaminationScenario'}
           striped={true}
           height={-1}
           getColumns={(_tableWidth: any) => {
             return [
               {
-                Header: 'Contamination Scenario',
-                accessor: 'contaminationScenario',
-                width: 190,
+                header: 'Operation',
+                accessorKey: 'operationName',
+                size: 190,
               },
               {
-                Header: 'Selected Decontamination Technology',
-                accessor: 'decontaminationTechnology',
-                width: 190,
+                header: 'Solid Waste (m³)',
+                accessorKey: 'solidWasteVolumeM3',
+                size: baseWidth,
               },
               {
-                Header: 'Solid Waste (m³)',
-                accessor: 'solidWasteVolumeM3',
-                width: baseWidth,
+                header: 'Liquid Waste (m³)',
+                accessorKey: 'liquidWasteVolumeM3',
+                size: baseWidth,
               },
               {
-                Header: 'Liquid Waste (m³)',
-                accessor: 'liquidWasteVolumeM3',
-                width: baseWidth,
+                header: 'Decontamination Cost ($) [Setup and Operational]',
+                accessorKey: 'decontaminationCost',
+                size: 175,
               },
               {
-                Header: 'Decontamination Cost ($) [Setup and Operational]',
-                accessor: 'decontaminationCost',
-                width: 175,
-              },
-              {
-                Header:
+                header:
                   'Decontamination Time (days) [Application and Residence]',
-                accessor: 'decontaminationTimeDays',
-                width: 170,
+                accessorKey: 'decontaminationTimeDays',
+                size: 170,
               },
               {
-                Header: 'Average Initial Contamination (CFUs/m²)',
-                accessor: 'averageInitialContamination',
-                width: 110,
+                header: 'Average Initial Contamination (CFUs/m²)',
+                accessorKey: 'averageInitialContamination',
+                size: 110,
                 show: devMode && trainingMode,
               },
               {
-                Header: 'Average Final Contamination (CFUs/m²)',
-                accessor: 'averageFinalContamination',
-                width: 110,
+                header: 'Average Final Contamination (CFUs/m²)',
+                accessorKey: 'averageFinalContamination',
+                size: 110,
                 show: devMode && trainingMode,
               },
               {
-                Header: 'Above/Below Detection Limit',
-                accessor: 'aboveDetectionLimit',
-                width: 110,
+                header: 'Above/Below Detection Limit',
+                accessorKey: 'aboveDetectionLimit',
+                size: 110,
                 show: devMode && trainingMode,
               },
             ];
@@ -2054,59 +2385,58 @@ function CalculateResultsPopup({
               <ReactTableEditable
                 id={tableId + index}
                 data={tableData}
-                idColumn={'contaminationScenario'}
                 striped={true}
                 height={-1}
                 getColumns={(_tableWidth: any) => {
                   return [
                     {
-                      Header: 'Contamination Scenario',
-                      accessor: 'contaminationScenario',
-                      width: 190,
+                      header: 'Contamination Scenario',
+                      accessorKey: 'contaminationScenario',
+                      size: 190,
                     },
                     {
-                      Header: 'Selected Decontamination Technology',
-                      accessor: 'decontaminationTechnology',
-                      width: 190,
+                      header: 'Selected Decontamination Technology',
+                      accessorKey: 'decontaminationTechnology',
+                      size: 190,
                     },
                     {
-                      Header: 'Solid Waste (m³)',
-                      accessor: 'solidWasteVolumeM3',
-                      width: baseWidth,
+                      header: 'Solid Waste (m³)',
+                      accessorKey: 'solidWasteVolumeM3',
+                      size: baseWidth,
                     },
                     {
-                      Header: 'Liquid Waste (m³)',
-                      accessor: 'liquidWasteVolumeM3',
-                      width: baseWidth,
+                      header: 'Liquid Waste (m³)',
+                      accessorKey: 'liquidWasteVolumeM3',
+                      size: baseWidth,
                     },
                     {
-                      Header:
+                      header:
                         'Decontamination Cost ($) [Setup and Operational]',
-                      accessor: 'decontaminationCost',
-                      width: 175,
+                      accessorKey: 'decontaminationCost',
+                      size: 175,
                     },
                     {
-                      Header:
+                      header:
                         'Decontamination Time (days) [Application and Residence]',
-                      accessor: 'decontaminationTimeDays',
-                      width: 170,
+                      accessorKey: 'decontaminationTimeDays',
+                      size: 170,
                     },
                     {
-                      Header: 'Average Initial Contamination (CFUs/m²)',
-                      accessor: 'averageInitialContamination',
-                      width: 110,
+                      header: 'Average Initial Contamination (CFUs/m²)',
+                      accessorKey: 'averageInitialContamination',
+                      size: 110,
                       show: devMode && trainingMode,
                     },
                     {
-                      Header: 'Average Final Contamination (CFUs/m²)',
-                      accessor: 'averageFinalContamination',
-                      width: 110,
+                      header: 'Average Final Contamination (CFUs/m²)',
+                      accessorKey: 'averageFinalContamination',
+                      size: 110,
                       show: devMode && trainingMode,
                     },
                     {
-                      Header: 'Above/Below Detection Limit',
-                      accessor: 'aboveDetectionLimit',
-                      width: 110,
+                      header: 'Above/Below Detection Limit',
+                      accessorKey: 'aboveDetectionLimit',
+                      size: 110,
                       show: devMode && trainingMode,
                     },
                   ];

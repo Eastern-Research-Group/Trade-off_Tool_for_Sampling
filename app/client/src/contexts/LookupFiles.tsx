@@ -1,4 +1,8 @@
-import { AttributeItems, SampleSelectType } from 'config/sampleAttributes';
+import {
+  AttributeItems,
+  DeconAttributeItems,
+  SampleSelectType,
+} from 'config/sampleAttributes';
 import React, { createContext, ReactNode, useContext } from 'react';
 // utils
 import { fetchCheck } from 'utils/fetchUtils';
@@ -81,7 +85,7 @@ function useLookupFiles() {
           `${baseUrl}/api/lookupFiles`,
         )) as Content;
 
-        let sampleAttributes: AttributesType = {};
+        let sampleAttributes: any = {};
         if (isDecon()) {
           sampleAttributes = data.technologyTypes.deconAttributes;
         } else {
@@ -162,7 +166,7 @@ export { LookupFilesContext, LookupFilesProvider, useLookupFiles };
  * TYPES
  */
 
-type AttributesType = { [key: string]: AttributeItems };
+type AttributesType = { [key: string]: AttributeItems | DeconAttributeItems };
 
 type Content = {
   defaultGsg: string;
@@ -233,9 +237,23 @@ export type SampleTypes = SampleTypesS3 & {
   sampleSelectOptions: SampleSelectType[];
 };
 
-type SampleTypesS3 = {
+export type DeconBuildingFactorsType = {
+  [key: string]: {
+    PRIM_OCC: string;
+    OCC_Class: string;
+    SOC: string;
+    Brick: number;
+    Concrete: number;
+    Steel: number;
+    Wood: number;
+    Other: number;
+  };
+};
+
+export type SampleTypesS3 = {
   areaTolerance: number;
   attributesToCheck: string[];
-  deconAttributes: AttributesType;
+  deconAttributes: DeconAttributeItems;
+  deconBuildingFactors: DeconBuildingFactorsType;
   sampleAttributes: AttributesType;
 };

@@ -94,22 +94,37 @@ export type LayerAoiAnalysisEditsType = {
   };
   aoiSummary: {
     totalAoiSqM: number;
+    totalBuildingExtSqM: number;
+    totalBuildingIntSqM: number;
+    totalBuildingVolumeCubM: number;
+    totalBuildingVolumeContentsCubM: number;
     totalBuildingExtWallsSqM: number;
     totalBuildingFloorsSqM: number;
     totalBuildingFootprintSqM: number;
     totalBuildingIntWallsSqM: number;
     totalBuildingRoofSqM: number;
+    totalBuildingCeilingsSqM: number;
     totalBuildingSqM: number;
-    areaByMedia: {
-      id: number;
-      media: string;
-      pctAoi: number;
-      surfaceArea: number;
-    }[];
+    areaByMedia: AreaByMediaType[];
   };
   deconTechSelections: any[];
   gsgFile?: any;
 };
+
+export type AreaByMediaType = {
+  id: string;
+  media: string;
+  pctAoi: number;
+  surfaceArea: number;
+  volume: number;
+  volumeContents: number;
+  subMedia: AreaByMediaType[];
+};
+
+export type ApproachTypes = 'Basic' | 'Advanced' | 'Experimental';
+export type BuildingApproachTypes =
+  | 'Building Structural Component'
+  | 'Building Primary Material Composition';
 
 export type LayerDeconEditsType = {
   type: 'layer-decon';
@@ -119,6 +134,8 @@ export type LayerDeconEditsType = {
   name: string; // layer/scenario name
   label: string; // layer/scenario label
   value: string; // layer/scenario value for React-Select
+  approach: ApproachTypes;
+  buildingApproach: BuildingApproachTypes | null;
   layerType: LayerTypeName; // type of tots layer (sample, contamination, etc.)
   status: PublishStatus; // publish status
   editType: EditType; // edit type

@@ -36,7 +36,7 @@ import MapPopup, {
 import { AuthenticationContext } from 'contexts/Authentication';
 import { CalculateContext } from 'contexts/Calculate';
 import { DialogContext } from 'contexts/Dialog';
-import { useLookupFiles } from 'contexts/LookupFiles';
+import { SampleTypesS3, useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext } from 'contexts/Publish';
 import {
@@ -107,6 +107,119 @@ const partitionFactors = {
   'Building Interior Floors': 0.7,
   'Building Roofs': 1,
 } as any;
+
+export const summarizedBuildingSurfaceTypes = [
+  'Buildings (Interior and Exterior)',
+  'Building Interiors',
+  'Building Exteriors',
+];
+
+const outsideMedia = [
+  'Soil',
+  'Soil/Vegetation',
+  'Streets - Asphalt',
+  'Streets/Sidewalks - Concrete',
+];
+const mediaLookup: { [key: string]: string[] } = {
+  Basic: [...outsideMedia, 'Buildings (Interior and Exterior)'],
+  'Advanced - Building Structural Component': [
+    ...outsideMedia,
+    'Building Exteriors',
+    'Building Interiors',
+  ],
+  'Advanced - Building Primary Material Composition': [
+    ...outsideMedia,
+    'Brick Buildings',
+    'Concrete Buildings',
+    'Steel Buildings',
+    'Wood Buildings',
+    'Other Buildings',
+  ],
+};
+
+function performBasicDeconCalculations(
+  deconTech: string,
+  sel: any,
+  deconAttributes: any,
+  jsonDownload: any[],
+  parentMedia?: string,
+  removeBuildingContentsOverride?: boolean,
+) {
+  const {
+    APPLICATION_METHOD,
+    FIXED_COSTS,
+    SIZE_BASED_COSTS,
+    SETUP_TIME,
+    BREAKDOWN_TIME,
+    APPLICATION_TIME,
+    RESIDENCE_TIME,
+    MATERIAL_SPECIFIC_PARAMS,
+    SURFACE_SPECIFIC_PARAMS,
+  } = deconAttributes;
+
+  const { CONTAM_REMOVAL_FACTOR, SOLID_WASTE_VOLUME, AQUEOUS_WASTE_VOLUME } =
+    SURFACE_SPECIFIC_PARAMS[sel.media];
+
+  // calculate final contamination
+  const contamRemovalFactor = parentMedia
+    ? MATERIAL_SPECIFIC_PARAMS[parentMedia.replace(' Buildings', '')]
+        .CONTAM_REMOVAL_FACTOR
+    : CONTAM_REMOVAL_FACTOR;
+  const contamLeftFactor = 1 - contamRemovalFactor;
+  const avgFinalContam =
+    sel.avgCfu * Math.pow(contamLeftFactor, sel.numIterativeApplications);
+  sel.avgFinalContamination = avgFinalContam;
+  sel.aboveDetectionLimit = avgFinalContam >= detectionLimit;
+
+  const removeBldContents =
+    removeBuildingContentsOverride !== undefined
+      ? removeBuildingContentsOverride
+      : sel.removeBldContents;
+
+  const areaDeconApplied = sel.surfaceArea * (sel.pctDeconed * 0.01);
+  const volumeDeconApplied = sel.volume;
+
+  const liquidWasteM3 = areaDeconApplied * AQUEOUS_WASTE_VOLUME;
+  let solidWasteM3 = areaDeconApplied * SOLID_WASTE_VOLUME;
+  if (sel.media === 'Building Interiors' && removeBldContents) {
+    const pctVolumeDeconed = sel.pctDeconed * 0.01 * sel.volumeContents;
+    if (APPLICATION_METHOD === 'Surface') solidWasteM3 -= pctVolumeDeconed;
+    else solidWasteM3 += pctVolumeDeconed;
+  }
+
+  const deconCost =
+    APPLICATION_METHOD === 'Surface'
+      ? FIXED_COSTS +
+        areaDeconApplied * SIZE_BASED_COSTS * sel.numIterativeApplications
+      : FIXED_COSTS +
+        volumeDeconApplied * SIZE_BASED_COSTS * sel.numIterativeApplications;
+  const deconTime =
+    SETUP_TIME / 24 +
+    BREAKDOWN_TIME / 24 +
+    (areaDeconApplied * APPLICATION_TIME * sel.numIterativeApplications) / 24 +
+    RESIDENCE_TIME / 24;
+
+  jsonDownload.push({
+    contaminationScenario: parentMedia
+      ? `${parentMedia} - ${sel.media}`
+      : sel.media,
+    decontaminationTechnology: deconTech,
+    solidWasteVolumeM3: solidWasteM3,
+    liquidWasteVolumeM3: liquidWasteM3,
+    decontaminationCost: deconCost,
+    decontaminationTimeDays: deconTime,
+    averageInitialContamination: sel.avgCfu,
+    averageFinalContamination: sel.avgFinalContamination,
+    aboveDetectionLimit: sel.aboveDetectionLimit,
+  });
+
+  return {
+    deconCost,
+    deconTime,
+    solidWasteM3,
+    liquidWasteM3,
+  };
+}
 
 export const backupImagerySymbol = new SimpleFillSymbol({
   color: [0, 0, 0, 0],
@@ -186,43 +299,73 @@ export function processScenario(
   const planGraphics = aoiCharacterizationData.planGraphics[scenarioId];
   if (!planGraphics) return [];
 
-  const {
-    totalAoiSqM,
-    totalBuildingFootprintSqM,
-    totalBuildingFloorsSqM,
-    totalBuildingExtWallsSqM,
-    totalBuildingIntWallsSqM,
-    totalBuildingRoofSqM,
-  } = planGraphics.summary;
+  const { totalAoiSqM, totalBuildingFootprintSqM } = planGraphics.summary;
 
   if (isScenario && layer.aoiSummary) {
     layer.aoiSummary.totalAoiSqM = planGraphics.aoiArea;
     layer.aoiSummary.totalBuildingFootprintSqM = totalBuildingFootprintSqM;
   }
 
-  const curDeconTechSelections =
+  let curDeconTechSelections =
     deconTechSelections && deconTechSelections.length > 0
       ? deconTechSelections
       : defaultDeconSelections;
+  curDeconTechSelections = curDeconTechSelections.filter(
+    (d) => !d.media.includes('Building'),
+  );
+  planGraphics.summary.areaByMedia.forEach((category) => {
+    curDeconTechSelections.push({
+      aboveDetectionLimit: 0,
+      avgCfu: 0,
+      avgFinalContamination: null,
+      deconTech: null,
+      isHazardous: { label: 'Non-Hazardous', value: 'non-hazardous' },
+      numIterativeApplications: 1,
+      pctDeconed: 100,
+      removeContents: false,
+      id: category.id,
+      media: category.media,
+      pctAoi: category.pctAoi,
+      surfaceArea: category.surfaceArea,
+      volume: category.volume,
+      volumeContents: category.volumeContents,
+      subRows: category.subMedia.map((sub) => ({
+        aboveDetectionLimit: 0,
+        avgCfu: 0,
+        avgFinalContamination: null,
+        deconTech: null,
+        isHazardous: { label: 'Non-Hazardous', value: 'non-hazardous' },
+        numIterativeApplications: 1,
+        pctDeconed: 100,
+        removeContents: false,
+        id: sub.id ?? generateUUID(),
+        media: sub.media,
+        pctAoi: sub.pctAoi,
+        surfaceArea: sub.surfaceArea,
+        volume: sub.volume,
+        volumeContents: sub.volumeContents,
+      })),
+    });
+  });
+
   const newDeconTechSelections: any[] = [];
   curDeconTechSelections.forEach((sel) => {
     // find decon settings
     const media = sel.media;
 
     let surfaceArea = 0;
+    // let volume = 0;
     let avgCfu = 0;
     let pctAoi = 0;
-    if (media.includes('Building ')) {
-      avgCfu =
-        (planBuildingCfu[scenarioId] ?? 0) * (partitionFactors[media] ?? 1);
-
-      if (media === 'Building Exterior Walls')
-        surfaceArea = totalBuildingExtWallsSqM;
-      if (media === 'Building Interior Walls')
-        surfaceArea = totalBuildingIntWallsSqM;
-      if (media === 'Building Interior Floors')
-        surfaceArea = totalBuildingFloorsSqM;
-      if (media === 'Building Roofs') surfaceArea = totalBuildingRoofSqM;
+    if (media.includes('Building')) {
+      // avgCfu =
+      //   (planBuildingCfu[scenarioId] ?? 0) * (partitionFactors[media] ?? 1);
+      // if (media === 'Building Exteriors') surfaceArea = totalBuildingExtSqM;
+      // if (media === 'Building Interiors') {
+      //   surfaceArea = totalBuildingIntSqM;
+      //   volume = totalBuildingVolumeCubM;
+      // }
+      newDeconTechSelections.push(sel);
     } else {
       pctAoi = (planGraphics.aoiPercentages as any)[
         (mediaToBeepEnum as any)[sel.media]
@@ -258,17 +401,30 @@ export function processScenario(
       }
 
       avgCfu = !totalCfu && !totalArea ? 0 : totalCfu / totalArea;
-    }
 
-    newDeconTechSelections.push({
-      ...sel,
-      pctAoi,
-      surfaceArea,
-      avgCfu,
-    });
+      newDeconTechSelections.push({
+        ...sel,
+        pctAoi,
+        surfaceArea,
+        volume: surfaceArea,
+        avgCfu,
+      });
+    }
   });
 
   return newDeconTechSelections;
+}
+
+function convertMtoFt(meters: number) {
+  return meters / 0.3048;
+}
+
+function convertSqMtoSqFt(sqMeters: number) {
+  return sqMeters / 0.092903;
+}
+
+function convertCubMtoCubFt(sqMeters: number) {
+  return sqMeters / 0.0283168;
 }
 
 export async function fetchBuildingData(
@@ -279,6 +435,7 @@ export async function fetchBuildingData(
   gsgFile: GsgParam | undefined,
   sceneViewForArea: __esri.SceneView | null,
   cutFootprintsOut: boolean = true,
+  technologyTypes: SampleTypesS3,
   _buildingFilter: string[] = [],
 ) {
   const requests: any[] = [];
@@ -294,25 +451,278 @@ export async function fetchBuildingData(
 
   const responses = await Promise.all(requests);
   responses.forEach((results, index) => {
+    const planId = responseIndexes[index];
+    const buildingMaterialOptions: { [key: string]: any } = {
+      'Buildings (Interior and Exterior)': {
+        surfaceArea: 0,
+        volume: 0,
+        extVolume: 0,
+        intVolume: 0,
+        intVolumeContents: 0,
+        extSurfaceArea: 0,
+        intSurfaceArea: 0,
+      },
+      'Building Exteriors': {
+        surfaceArea: 0,
+        volume: 0,
+        extVolume: 0,
+        intVolume: 0,
+        intVolumeContents: 0,
+        extSurfaceArea: 0,
+        intSurfaceArea: 0,
+      },
+      'Building Interiors': {
+        surfaceArea: 0,
+        volume: 0,
+        extVolume: 0,
+        intVolume: 0,
+        intVolumeContents: 0,
+        extSurfaceArea: 0,
+        intSurfaceArea: 0,
+      },
+      'Brick Buildings': {
+        surfaceArea: 0,
+        volume: 0,
+        extVolume: 0,
+        intVolume: 0,
+        intVolumeContents: 0,
+        extSurfaceArea: 0,
+        intSurfaceArea: 0,
+      },
+      'Concrete Buildings': {
+        surfaceArea: 0,
+        volume: 0,
+        extVolume: 0,
+        intVolume: 0,
+        intVolumeContents: 0,
+        extSurfaceArea: 0,
+        intSurfaceArea: 0,
+      },
+      'Steel Buildings': {
+        surfaceArea: 0,
+        volume: 0,
+        extVolume: 0,
+        intVolume: 0,
+        intVolumeContents: 0,
+        extSurfaceArea: 0,
+        intSurfaceArea: 0,
+      },
+      'Wood Buildings': {
+        surfaceArea: 0,
+        volume: 0,
+        extVolume: 0,
+        intVolume: 0,
+        intVolumeContents: 0,
+        extSurfaceArea: 0,
+        intSurfaceArea: 0,
+      },
+      'Other Buildings': {
+        surfaceArea: 0,
+        volume: 0,
+        extVolume: 0,
+        intVolume: 0,
+        intVolumeContents: 0,
+        extSurfaceArea: 0,
+        intSurfaceArea: 0,
+      },
+    };
+
     results.features.forEach((feature: any) => {
-      const { HEIGHT, SQFEET, SQMETERS } = feature.attributes;
+      const { HEIGHT, OCC_CLS, PRIM_OCC, SQMETERS } = feature.attributes;
 
       // if (buildingFilter.includes(bid)) return;
 
-      // feet
-      const heightM = HEIGHT ?? 4.572; // default to 15 feet if no height is provided
-      const heightFt = heightM * 3.280839895;
-      const footprintSqFt = SQFEET;
-      const numStory = Math.max(heightFt / 15, 1); // floor height assumed to be 15 feet
-      const floorsSqFt = numStory * footprintSqFt;
-      const extWallsSqFt = Math.sqrt(SQFEET) * heightFt * 4;
-      const intWallsSqFt = extWallsSqFt * 3;
+      // defaults
+      const defaultStoryHeightM = 3.6576; // default to 12 feet if no height is provided
+      const interiorMaterialFactor = 0.0740456514;
 
       // meters
+      const heightM = HEIGHT ?? defaultStoryHeightM;
+      const numStory = Math.max(heightM / defaultStoryHeightM, 1);
+      const roofSqM = SQMETERS;
       const footprintSqM = SQMETERS;
       const floorsSqM = numStory * footprintSqM;
+      const ceilingsSqM = floorsSqM;
       const extWallsSqM = Math.sqrt(footprintSqM) * heightM * 4;
-      const intWallsSqM = extWallsSqM * 3;
+      const intWallsSqM = extWallsSqM;
+      const extSqM = extWallsSqM + roofSqM;
+      const intSqM = intWallsSqM + floorsSqM + ceilingsSqM;
+      const totalSqM = extSqM + intSqM;
+      const extVolumeCubM = extSqM;
+      const intVolumeCubM = heightM * footprintSqM;
+      const intVolumeContentsCubM = intSqM * interiorMaterialFactor;
+
+      // feet
+      const heightFt = convertMtoFt(heightM);
+      const roofSqFt = convertSqMtoSqFt(roofSqM);
+      const footprintSqFt = convertSqMtoSqFt(footprintSqM);
+      const floorsSqFt = convertSqMtoSqFt(floorsSqM);
+      const ceilingsSqFt = convertSqMtoSqFt(ceilingsSqM);
+      const extWallsSqFt = convertSqMtoSqFt(extWallsSqM);
+      const intWallsSqFt = convertSqMtoSqFt(intWallsSqM);
+      const extSqFt = convertSqMtoSqFt(extSqM);
+      const intSqFt = convertSqMtoSqFt(intSqM);
+      const totalSqFt = convertSqMtoSqFt(intSqFt);
+      const extVolumeCubFt = convertCubMtoCubFt(extVolumeCubM);
+      const intVolumeCubFt = convertCubMtoCubFt(intVolumeCubM);
+      const intVolumeContentsCubFt = convertCubMtoCubFt(intVolumeContentsCubM);
+
+      // get building material type factors
+      const factorKey =
+        PRIM_OCC === 'Unclassified' ? `${PRIM_OCC}-${OCC_CLS}` : PRIM_OCC;
+      const { SOC, Brick, Concrete, Steel, Wood, Other } =
+        technologyTypes.deconBuildingFactors[factorKey];
+
+      // get surface area per material type sq meters
+      const intBrickSqM = intSqM * (Brick / 100);
+      const extBrickSqM = extSqM * (Brick / 100);
+      const extVolumeBrickCubM = extSqM * (Brick / 100);
+      const intVolumeBrickCubM = intVolumeCubM * (Brick / 100);
+      const intVolumeBrickContentsCubM =
+        intVolumeBrickCubM * interiorMaterialFactor;
+      const intConcreteSqM = intSqM * (Concrete / 100);
+      const extConcreteSqM = extSqM * (Concrete / 100);
+      const extVolumeConcreteCubM = extSqM * (Concrete / 100);
+      const intVolumeConcreteCubM = intVolumeCubM * (Concrete / 100);
+      const intVolumeConcreteContentsCubM =
+        intVolumeConcreteCubM * interiorMaterialFactor;
+      const intSteelSqM = intSqM * (Steel / 100);
+      const extSteelSqM = extSqM * (Steel / 100);
+      const extVolumeSteelCubM = extSqM * (Steel / 100);
+      const intVolumeSteelCubM = intVolumeCubM * (Steel / 100);
+      const intVolumeSteelContentsCubM =
+        intVolumeSteelCubM * interiorMaterialFactor;
+      const intWoodSqM = intSqM * (Wood / 100);
+      const extWoodSqM = extSqM * (Wood / 100);
+      const extVolumeWoodCubM = extSqM * (Wood / 100);
+      const intVolumeWoodCubM = intVolumeCubM * (Wood / 100);
+      const intVolumeWoodContentsCubM =
+        intVolumeWoodCubM * interiorMaterialFactor;
+      const intOtherSqM = intSqM * (Other / 100);
+      const extOtherSqM = extSqM * (Other / 100);
+      const extVolumeOtherCubM = extSqM * (Other / 100);
+      const intVolumeOtherCubM = intVolumeCubM * (Other / 100);
+      const intVolumeOtherContentsCubM =
+        intVolumeOtherCubM * interiorMaterialFactor;
+
+      // get surface area per material type sq feet
+      const intBrickSqFt = convertSqMtoSqFt(intBrickSqM);
+      const extBrickSqFt = convertSqMtoSqFt(extBrickSqM);
+      const extVolumeBrickCubFt = convertCubMtoCubFt(extVolumeBrickCubM);
+      const intVolumeBrickCubFt = convertCubMtoCubFt(intVolumeBrickCubM);
+      const intVolumeBrickContentsCubFt = convertCubMtoCubFt(
+        intVolumeBrickContentsCubM,
+      );
+      const intConcreteSqFt = convertSqMtoSqFt(intConcreteSqM);
+      const extConcreteSqFt = convertSqMtoSqFt(extConcreteSqM);
+      const extVolumeConcreteCubFt = convertCubMtoCubFt(extVolumeConcreteCubM);
+      const intVolumeConcreteCubFt = convertCubMtoCubFt(intVolumeConcreteCubM);
+      const intVolumeConcreteContentsCubFt = convertCubMtoCubFt(
+        intVolumeConcreteContentsCubM,
+      );
+      const intSteelSqFt = convertSqMtoSqFt(intSteelSqM);
+      const extSteelSqFt = convertSqMtoSqFt(extSteelSqM);
+      const extVolumeSteelCubFt = convertCubMtoCubFt(extVolumeSteelCubM);
+      const intVolumeSteelCubFt = convertCubMtoCubFt(intVolumeSteelCubM);
+      const intVolumeSteelContentsCubFt = convertCubMtoCubFt(
+        intVolumeSteelContentsCubM,
+      );
+      const intWoodSqFt = convertSqMtoSqFt(intWoodSqM);
+      const extWoodSqFt = convertSqMtoSqFt(extWoodSqM);
+      const extVolumeWoodCubFt = convertCubMtoCubFt(extVolumeWoodCubM);
+      const intVolumeWoodCubFt = convertCubMtoCubFt(intVolumeWoodCubM);
+      const intVolumeWoodContentsCubFt = convertCubMtoCubFt(
+        intVolumeWoodContentsCubM,
+      );
+      const intOtherSqFt = convertSqMtoSqFt(intOtherSqM);
+      const extOtherSqFt = convertSqMtoSqFt(extOtherSqM);
+      const extVolumeOtherCubFt = convertCubMtoCubFt(extVolumeOtherCubM);
+      const intVolumeOtherCubFt = convertCubMtoCubFt(intVolumeOtherCubM);
+      const intVolumeOtherContentsCubFt = convertCubMtoCubFt(
+        intVolumeOtherContentsCubM,
+      );
+
+      // add up surface area for summary building
+      buildingMaterialOptions[
+        'Buildings (Interior and Exterior)'
+      ].surfaceArea += intSqM + extSqM;
+      buildingMaterialOptions['Buildings (Interior and Exterior)'].volume +=
+        extVolumeCubM + intVolumeCubM;
+
+      buildingMaterialOptions['Building Exteriors'].surfaceArea += extSqM;
+      buildingMaterialOptions['Building Exteriors'].extSurfaceArea += extSqM;
+      buildingMaterialOptions['Building Exteriors'].volume += extVolumeCubM;
+      buildingMaterialOptions['Building Exteriors'].extVolume += extVolumeCubM;
+      buildingMaterialOptions['Building Interiors'].surfaceArea += intSqM;
+      buildingMaterialOptions['Building Interiors'].intSurfaceArea += intSqM;
+      buildingMaterialOptions['Building Interiors'].volume += intVolumeCubM;
+      buildingMaterialOptions['Building Interiors'].intVolume += intVolumeCubM;
+      buildingMaterialOptions['Building Interiors'].intVolumeContents +=
+        intVolumeContentsCubM;
+
+      // add up surface area per building type
+      buildingMaterialOptions['Brick Buildings'].surfaceArea +=
+        intBrickSqM + extBrickSqM;
+      buildingMaterialOptions['Brick Buildings'].intSurfaceArea += intBrickSqM;
+      buildingMaterialOptions['Brick Buildings'].extSurfaceArea += extBrickSqM;
+      buildingMaterialOptions['Brick Buildings'].volume +=
+        intVolumeBrickCubM + extVolumeBrickCubM;
+      buildingMaterialOptions['Brick Buildings'].extVolume +=
+        extVolumeBrickCubM;
+      buildingMaterialOptions['Brick Buildings'].intVolume +=
+        intVolumeBrickCubM;
+      buildingMaterialOptions['Brick Buildings'].intVolumeContents +=
+        intVolumeBrickContentsCubM;
+
+      buildingMaterialOptions['Concrete Buildings'].surfaceArea +=
+        intConcreteSqM + extConcreteSqM;
+      buildingMaterialOptions['Concrete Buildings'].intSurfaceArea +=
+        intConcreteSqM;
+      buildingMaterialOptions['Concrete Buildings'].extSurfaceArea +=
+        extConcreteSqM;
+      buildingMaterialOptions['Concrete Buildings'].extVolume +=
+        extVolumeConcreteCubM;
+      buildingMaterialOptions['Concrete Buildings'].intVolume +=
+        intVolumeConcreteCubM;
+      buildingMaterialOptions['Concrete Buildings'].intVolumeContents +=
+        intVolumeConcreteContentsCubM;
+
+      buildingMaterialOptions['Steel Buildings'].surfaceArea +=
+        intSteelSqM + extSteelSqM;
+      buildingMaterialOptions['Steel Buildings'].intSurfaceArea += intSteelSqM;
+      buildingMaterialOptions['Steel Buildings'].extSurfaceArea += extSteelSqM;
+      buildingMaterialOptions['Steel Buildings'].volume +=
+        extVolumeSteelCubM + intVolumeSteelCubM;
+      buildingMaterialOptions['Steel Buildings'].extVolume +=
+        extVolumeSteelCubM;
+      buildingMaterialOptions['Steel Buildings'].intVolume +=
+        intVolumeSteelCubM;
+      buildingMaterialOptions['Steel Buildings'].intVolumeContents +=
+        intVolumeSteelContentsCubM;
+
+      buildingMaterialOptions['Wood Buildings'].surfaceArea +=
+        intWoodSqM + extWoodSqM;
+      buildingMaterialOptions['Wood Buildings'].intSurfaceArea += intWoodSqM;
+      buildingMaterialOptions['Wood Buildings'].extSurfaceArea += extWoodSqM;
+      buildingMaterialOptions['Wood Buildings'].volume +=
+        extVolumeWoodCubM + intVolumeWoodCubM;
+      buildingMaterialOptions['Wood Buildings'].extVolume += extVolumeWoodCubM;
+      buildingMaterialOptions['Wood Buildings'].intVolume += intVolumeWoodCubM;
+      buildingMaterialOptions['Wood Buildings'].intVolumeContents +=
+        intVolumeWoodContentsCubM;
+
+      buildingMaterialOptions['Other Buildings'].surfaceArea +=
+        intOtherSqM + extOtherSqM;
+      buildingMaterialOptions['Other Buildings'].intSurfaceArea += intOtherSqM;
+      buildingMaterialOptions['Other Buildings'].extSurfaceArea += extOtherSqM;
+      buildingMaterialOptions['Other Buildings'].volume +=
+        extVolumeOtherCubM + intVolumeOtherCubM;
+      buildingMaterialOptions['Other Buildings'].extVolume +=
+        extVolumeOtherCubM;
+      buildingMaterialOptions['Other Buildings'].intVolume +=
+        intVolumeOtherCubM;
+      buildingMaterialOptions['Other Buildings'].intVolumeContents +=
+        intVolumeOtherContentsCubM;
 
       const actions = new Collection<any>();
       actions.add({
@@ -321,7 +731,6 @@ export async function fetchBuildingData(
         className: 'esri-icon-table',
       });
 
-      const planId = responseIndexes[index];
       const permId = generateUUID();
       const occCls = feature.attributes.OCC_CLS;
       const prodDate = feature.attributes.PROD_DATE;
@@ -331,27 +740,91 @@ export async function fetchBuildingData(
           attributes: {
             ...feature.attributes,
             PERMANENT_IDENTIFIER: permId,
-            HEIGHT: heightM,
             PROD_DATE: prodDate ? new Date(prodDate).toLocaleString() : '',
             IMAGE_DATE: imageDate ? new Date(imageDate).toLocaleString() : '',
+            soc: SOC,
             CONTAMTYPE: '',
             CONTAMUNIT: '',
             CONTAMVALPLUME: 0,
             CONTAMVALINITIAL: 0,
             CONTAMVAL: 0,
+            numStory,
+            HEIGHT: heightM,
+            roofSqM,
             footprintSqM,
             floorsSqM,
-            totalSqM: floorsSqM + extWallsSqM + intWallsSqM + footprintSqM,
+            ceilingsSqM,
             extWallsSqM,
             intWallsSqM,
-            roofSqM: footprintSqM,
+            extSqM,
+            intSqM,
+            totalSqM,
+            extVolumeCubM,
+            intVolumeCubM,
+            intVolumeContentsCubM,
+            heightFt,
+            roofSqFt,
             footprintSqFt,
             floorsSqFt,
-            totalSqFt: floorsSqFt,
+            ceilingsSqFt,
             extWallsSqFt,
             intWallsSqFt,
-            roofSqFt: footprintSqFt,
-            numStory,
+            extSqFt,
+            intSqFt,
+            totalSqFt,
+            extVolumeCubFt,
+            intVolumeCubFt,
+            intVolumeContentsCubFt,
+            intBrickSqM,
+            extBrickSqM,
+            extVolumeBrickCubM,
+            intVolumeBrickCubM,
+            intVolumeBrickContentsCubM,
+            intConcreteSqM,
+            extConcreteSqM,
+            extVolumeConcreteCubM,
+            intVolumeConcreteCubM,
+            intVolumeConcreteContentsCubM,
+            intSteelSqM,
+            extSteelSqM,
+            extVolumeSteelCubM,
+            intVolumeSteelCubM,
+            intVolumeSteelContentsCubM,
+            intWoodSqM,
+            extWoodSqM,
+            extVolumeWoodCubM,
+            intVolumeWoodCubM,
+            intVolumeWoodContentsCubM,
+            intOtherSqM,
+            extOtherSqM,
+            extVolumeOtherCubM,
+            intVolumeOtherCubM,
+            intVolumeOtherContentsCubM,
+            intBrickSqFt,
+            extBrickSqFt,
+            extVolumeBrickCubFt,
+            intVolumeBrickCubFt,
+            intVolumeBrickContentsCubFt,
+            intConcreteSqFt,
+            extConcreteSqFt,
+            extVolumeConcreteCubFt,
+            intVolumeConcreteCubFt,
+            intVolumeConcreteContentsCubFt,
+            intSteelSqFt,
+            extSteelSqFt,
+            extVolumeSteelCubFt,
+            intVolumeSteelCubFt,
+            intVolumeSteelContentsCubFt,
+            intWoodSqFt,
+            extWoodSqFt,
+            extVolumeWoodCubFt,
+            intVolumeWoodCubFt,
+            intVolumeWoodContentsCubFt,
+            intOtherSqFt,
+            extOtherSqFt,
+            extVolumeOtherCubFt,
+            intVolumeOtherCubFt,
+            intVolumeOtherContentsCubFt,
           },
           geometry: feature.geometry,
           symbol: new SimpleFillSymbol({
@@ -371,12 +844,55 @@ export async function fetchBuildingData(
         }),
       );
 
+      planGraphics[planId].summary.totalBuildingRoofSqM += roofSqM;
       planGraphics[planId].summary.totalBuildingFootprintSqM += footprintSqM;
       planGraphics[planId].summary.totalBuildingFloorsSqM += floorsSqM;
-      planGraphics[planId].summary.totalBuildingSqM += floorsSqM;
+      planGraphics[planId].summary.totalBuildingCeilingsSqM += ceilingsSqM;
       planGraphics[planId].summary.totalBuildingExtWallsSqM += extWallsSqM;
       planGraphics[planId].summary.totalBuildingIntWallsSqM += intWallsSqM;
-      planGraphics[planId].summary.totalBuildingRoofSqM += footprintSqM;
+      planGraphics[planId].summary.totalBuildingExtSqM += extSqM;
+      planGraphics[planId].summary.totalBuildingIntSqM += intSqM;
+      planGraphics[planId].summary.totalBuildingSqM += totalSqM;
+      planGraphics[planId].summary.totalBuildingVolumeCubM +=
+        intVolumeCubM + extVolumeCubM;
+      planGraphics[planId].summary.totalBuildingVolumeContentsCubM +=
+        intVolumeContentsCubM;
+    });
+
+    console.log('buildingMaterialOptions: ', buildingMaterialOptions);
+    Object.entries(buildingMaterialOptions).forEach(([key, value]) => {
+      if (!planGraphics[planId].summary.areaByMedia)
+        planGraphics[planId].summary.areaByMedia = [];
+      planGraphics[planId].summary.areaByMedia.push({
+        id: generateUUID(),
+        media: key,
+        pctAoi: 0,
+        surfaceArea: value.surfaceArea,
+        volume: value.volume,
+        volumeContents: value.intVolumeContents,
+        subMedia: summarizedBuildingSurfaceTypes.includes(key)
+          ? []
+          : [
+              {
+                id: generateUUID(),
+                media: 'Building Exteriors',
+                pctAoi: 0,
+                surfaceArea: value.extSurfaceArea,
+                volume: 0,
+                volumeContents: 0,
+                subMedia: [],
+              },
+              {
+                id: generateUUID(),
+                media: 'Building Interiors',
+                pctAoi: 0,
+                surfaceArea: value.intSurfaceArea,
+                volume: value.volume,
+                volumeContents: value.intVolumeContents,
+                subMedia: [],
+              },
+            ],
+      });
     });
   });
 
@@ -549,6 +1065,7 @@ export async function fetchBuildingData(
 
 // Hook that allows the user to easily start over without
 // having to manually start a new session.
+// TODO fix this for decon
 export function useStartOver() {
   const { resetCalculateContext } = useContext(CalculateContext);
   const { setOptions } = useContext(DialogContext);
@@ -1072,9 +1589,9 @@ export function useCalculatePlan(appType: AppType) {
       TTA: totals.tta,
       ALC: totals.alc,
       AMC: totals.amc,
-      WASTE_VOLUME_SOLID: totals.wvps / 1000, // convert liters to m3
+      WASTE_VOLUME_TOTAL: totals.wvps / 1000, // convert liters to m3
       WASTE_VOLUME_SOLID_LITERS: totals.wvps,
-      WASTE_WEIGHT_SOLID: totals.wwps / 2.2046226218, // convert lbs to kg
+      WASTE_WEIGHT_TOTAL: totals.wwps / 2.2046226218, // convert lbs to kg
       WASTE_WEIGHT_SOLID_POUNDS: totals.wwps,
 
       // spatial items
@@ -1303,6 +1820,7 @@ export function useCalculateDeconPlan() {
                 return;
               }
 
+              // TODO this doesn't seem correct
               const { CONTAMVAL, ROOFS, FLOORS, EXTWALLS, INTWALLS } =
                 contamGraphic.attributes;
 
@@ -1339,11 +1857,11 @@ export function useCalculateDeconPlan() {
                     return;
                   }
 
-                  const { LOD_NON: contaminationRemovalFactor } =
+                  const { CONTAM_REMOVAL_FACTOR } =
                     sampleAttributesDecon[tech.deconTech.value];
 
                   const reductionFactor = parseSmallFloat(
-                    1 - contaminationRemovalFactor,
+                    1 - CONTAM_REMOVAL_FACTOR,
                   );
                   const newMediaCfu = mediaCfu * reductionFactor;
                   newCfu += newMediaCfu;
@@ -1469,14 +1987,14 @@ export function useCalculateDeconPlan() {
       // perform calculations off percentAOI stuff
       let totalSolidWasteM3 = 0;
       let totalLiquidWasteM3 = 0;
-      let totalSolidWasteMass = 0;
-      let totalLiquidWasteMass = 0;
       let totalDeconCost = 0;
-      let totalApplicationTime = 0;
-      let totalResidenceTime = 0;
       let totalDeconTime = 0;
       linkedDeconOperations.forEach((deconOp) => {
         if (!deconOp.deconLayerResults) return;
+
+        const approach = deconOp.approach;
+        const buildingApproach = deconOp.buildingApproach;
+        const jsonDownloadOpLevel: JsonDownloadType[] = [];
         deconOp.deconLayerResults.resultsTable = [];
         deconOp.deconLayerResults.cost = 0;
         deconOp.deconLayerResults.time = 0;
@@ -1489,6 +2007,7 @@ export function useCalculateDeconPlan() {
         curDeconTechSelections.forEach((sel) => {
           // find decon settings
           const deconTech = sel.deconTech?.value;
+
           const media = sel.media;
           if (!deconTech) {
             sel.avgFinalContamination = sel.avgCfu;
@@ -1496,78 +2015,82 @@ export function useCalculateDeconPlan() {
             return;
           }
 
-          // need to lookup stuff from sampleAttributesDecon
-          const {
-            LOD_NON: contaminationRemovalFactor,
-            MCPS: setupCost,
-            TCPS: costM2,
-            WVPS: solidWasteVolume,
-            WWPS: solidWasteM,
-            ALC: liquidWasteVolume,
-            AMC: liquidWasteM,
-            TTC: applicationTimeHrs,
-            TTA: residenceTimeHrs,
-          } = sampleAttributesDecon[deconTech as any];
+          const mediaKey = `${approach}${approach === 'Advanced' ? ` - ${buildingApproach}` : ''}`;
+          if (!mediaLookup[mediaKey].includes(media)) return;
 
-          // calculate final contamination
-          const contamLeftFactor = 1 - contaminationRemovalFactor;
-          const avgFinalContam =
-            sel.avgCfu * Math.pow(contamLeftFactor, sel.numApplications);
-          sel.avgFinalContamination = avgFinalContam;
-          sel.aboveDetectionLimit = avgFinalContam >= detectionLimit;
+          let deconCost = 0;
+          let deconTime = 0;
+          let solidWasteM3 = 0;
+          let liquidWasteM3 = 0;
+          if (
+            deconOp.approach === 'Basic' &&
+            media === 'Buildings (Interior and Exterior)'
+          ) {
+            const filteredMedia = curDeconTechSelections.filter((media) =>
+              ['Building Exteriors', 'Building Interiors'].includes(
+                media.media,
+              ),
+            );
+            filteredMedia.forEach((mediaSel) => {
+              const calcOutput = performBasicDeconCalculations(
+                deconTech,
+                mediaSel,
+                sampleAttributesDecon[deconTech as any],
+                jsonDownloadOpLevel,
+                undefined,
+                false,
+              );
+              deconCost += calcOutput.deconCost;
+              deconTime += calcOutput.deconTime;
+              solidWasteM3 += calcOutput.solidWasteM3;
+              liquidWasteM3 += calcOutput.liquidWasteM3;
+            });
+          } else if (
+            deconOp.approach === 'Advanced' &&
+            buildingApproach === 'Building Primary Material Composition' &&
+            !outsideMedia.includes(media)
+          ) {
+            sel.subRows.forEach((mediaSel: any) => {
+              const deconTech = mediaSel.deconTech?.value;
+              if (!deconTech) return;
 
-          const areaDeconApplied =
-            sel.surfaceArea * (sel.pctDeconed * 0.01) * sel.numApplications;
-          const solidWasteM3 = areaDeconApplied * solidWasteVolume;
-          const solidWasteMass = areaDeconApplied * solidWasteM;
-          const liquidWasteM3 = areaDeconApplied * liquidWasteVolume;
-          const liquidWasteMass = areaDeconApplied * liquidWasteM;
-
-          const deconCost =
-            setupCost * sel.numApplications + areaDeconApplied * costM2;
-          const sumApplicationTime =
-            (areaDeconApplied * applicationTimeHrs) /
-            24 /
-            sel.numConcurrentApplications;
-          const sumResidenceTime =
-            (residenceTimeHrs * sel.numApplications) /
-            24 /
-            sel.numConcurrentApplications;
-          const deconTime = sumApplicationTime + sumResidenceTime;
-
-          const jsonItem = {
-            contaminationScenario: media,
-            decontaminationTechnology: deconTech,
-            solidWasteVolumeM3: solidWasteM3,
-            liquidWasteVolumeM3: liquidWasteM3,
-            decontaminationCost: deconCost,
-            decontaminationTimeDays: deconTime,
-            averageInitialContamination: sel.avgCfu,
-            averageFinalContamination: sel.avgFinalContamination,
-            aboveDetectionLimit: sel.aboveDetectionLimit,
-          };
-
-          jsonDownload.push(jsonItem);
+              const calcOutput = performBasicDeconCalculations(
+                deconTech,
+                mediaSel,
+                sampleAttributesDecon[deconTech as any],
+                jsonDownloadOpLevel,
+                media,
+              );
+              deconCost += calcOutput.deconCost;
+              deconTime += calcOutput.deconTime;
+              solidWasteM3 += calcOutput.solidWasteM3;
+              liquidWasteM3 += calcOutput.liquidWasteM3;
+            });
+          } else {
+            ({ deconCost, deconTime, solidWasteM3, liquidWasteM3 } =
+              performBasicDeconCalculations(
+                deconTech,
+                sel,
+                sampleAttributesDecon[deconTech as any],
+                jsonDownloadOpLevel,
+              ));
+          }
 
           if (deconOp.deconLayerResults) {
             deconOp.deconLayerResults.cost += deconCost;
             deconOp.deconLayerResults.time += deconTime;
             deconOp.deconLayerResults.wasteVolume +=
               solidWasteM3 + liquidWasteM3;
-            deconOp.deconLayerResults.wasteMass +=
-              solidWasteMass + liquidWasteMass;
-            deconOp.deconLayerResults.resultsTable.push(jsonItem);
           }
 
           totalSolidWasteM3 += solidWasteM3;
-          totalSolidWasteMass += solidWasteMass;
           totalLiquidWasteM3 += liquidWasteM3;
-          totalLiquidWasteMass += liquidWasteMass;
           totalDeconCost += deconCost;
-          totalApplicationTime += sumApplicationTime;
-          totalResidenceTime += sumResidenceTime;
           totalDeconTime += deconTime;
         });
+
+        deconOp.deconLayerResults.resultsTable = jsonDownloadOpLevel;
+        jsonDownload.push(...jsonDownloadOpLevel);
       });
 
       const jsonDownloadSummarized: JsonDownloadType[] = [];
@@ -1603,34 +2126,15 @@ export function useCalculateDeconPlan() {
       });
 
       const resultObject: CalculateResultsDeconDataType = {
-        // assign input parameters
-        'Total Number of User-Defined Decon Technologies': 0,
-        'User Specified Number of Concurrent Applications': 0,
-
         // assign counts
-        'Total Number of Decon Applications': 0,
-        'Total Decontamination Area': 0,
-        'Total Setup Time': 0,
-        'Total Application Time': totalApplicationTime,
-        'Total Residence Time': totalResidenceTime,
-        'Average Contamination Removal': 0,
-        'Total Setup Cost': 0,
-        'Total Application Cost': 0,
         'Solid Waste Volume': totalSolidWasteM3,
-        'Solid Waste Mass': totalSolidWasteMass,
         'Liquid Waste Volume': totalLiquidWasteM3,
-        'Liquid Waste Mass': totalLiquidWasteMass,
-        WASTE_VOLUME_SOLID: totalSolidWasteM3 + totalLiquidWasteM3,
-        WASTE_WEIGHT_SOLID: totalSolidWasteMass + totalLiquidWasteMass,
+        WASTE_VOLUME_TOTAL: totalSolidWasteM3 + totalLiquidWasteM3,
+        WASTE_WEIGHT_TOTAL: 0,
 
         //totals
         TOTAL_COST: totalDeconCost,
         TOTAL_TIME: Math.round(totalDeconTime * 10) / 10,
-        'Total Contaminated Area': 0,
-        'Total Reduction Area': 0,
-        'Total Remaining Contaminated Area': 0,
-        'Total Decontaminated Area': 0,
-        'Percent Contaminated Remaining': 0,
         'Contamination Type': '',
         resultsTable: jsonDownloadSummarized,
       };
@@ -1842,11 +2346,11 @@ export function useCalculateDeconPlan() {
                   const deconTech = sampleAttributesDecon[sel.deconTech?.value];
                   if (!deconTech) continue;
 
-                  const { LOD_NON: contaminationRemovalFactor } =
+                  const { CONTAM_REMOVAL_FACTOR } =
                     sampleAttributesDecon[sel.deconTech.value];
 
                   const contamReductionFactor = parseSmallFloat(
-                    1 - contaminationRemovalFactor,
+                    1 - CONTAM_REMOVAL_FACTOR,
                   );
                   const avgCfu = mediaCfu * contamReductionFactor;
                   if (sel.media === 'Building Roofs') CONTAMVALROOFS = avgCfu;
@@ -1861,9 +2365,9 @@ export function useCalculateDeconPlan() {
                 surfaceRemovalCount += 1;
                 if (!sel.pctAoi || !sel.deconTech) continue;
 
-                const { LOD_NON: contaminationRemovalFactor } =
+                const { CONTAM_REMOVAL_FACTOR } =
                   sampleAttributesDecon[sel.deconTech.value];
-                totalSurfaceRemovalFactor += contaminationRemovalFactor;
+                totalSurfaceRemovalFactor += CONTAM_REMOVAL_FACTOR;
               }
             }
 

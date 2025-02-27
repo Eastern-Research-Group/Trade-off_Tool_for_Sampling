@@ -37,6 +37,7 @@ import {
   getFeatureTables,
   isServiceNameAvailable,
   publish,
+  publishDecon,
   publishTable,
 } from 'utils/arcGisRestUtils';
 import { findLayerInEdits } from 'utils/sketchUtils';
@@ -45,7 +46,9 @@ import { createErrorObject } from 'utils/utils';
 import {
   DeleteFeatureType,
   FeatureEditsType,
+  LayerAoiAnalysisEditsType,
   LayerEditsType,
+  ScenarioDeconEditsType,
   ScenarioEditsType,
 } from 'types/Edits';
 import { LayerType } from 'types/Layer';
@@ -141,7 +144,8 @@ function Publish({ appType }: Props) {
   const { oAuthInfo, portal, setSignedIn, setPortal, signedIn } = useContext(
     AuthenticationContext,
   );
-  const { calculateResults } = useContext(CalculateContext);
+  const { calculateResults, calculateResultsDecon } =
+    useContext(CalculateContext);
   const { goToOptions, setGoToOptions, trainingMode } =
     useContext(NavigationContext);
   const {
@@ -282,7 +286,11 @@ function Publish({ appType }: Props) {
       fullPlanIndex = requests.length - 1;
     }
     if (!partialPlanNameChecked && selectedScenario) {
-      setPublishPartialResponse({
+      const setter =
+        appType === 'decon'
+          ? setPublishDeconPlanResponse
+          : setPublishPartialResponse;
+      setter({
         status: 'fetching',
         summary: { success: '', failed: '' },
         rawData: null,
@@ -341,7 +349,11 @@ function Publish({ appType }: Props) {
           checkResponse(responses[fullPlanIndex], setPublishResponse);
         }
         if (partialPlanIndex > -1) {
-          checkResponse(responses[partialPlanIndex], setPublishPartialResponse);
+          const setter =
+            appType === 'decon'
+              ? setPublishDeconPlanResponse
+              : setPublishPartialResponse;
+          checkResponse(responses[partialPlanIndex], setter);
         }
         if (sampleTypesIndex > -1) {
           checkResponse(responses[sampleTypesIndex], setPublishSamplesResponse);
@@ -366,6 +378,7 @@ function Publish({ appType }: Props) {
         window.logErrorToGa(err);
       });
   }, [
+    appType,
     includeCustomSampleTypes,
     includeFullPlan,
     includePartialPlan,
@@ -398,6 +411,7 @@ function Publish({ appType }: Props) {
     if (
       scenarioIndex === -1 ||
       !editsScenario ||
+      editsScenario.type !== 'scenario' ||
       editsScenario.layers.length === 0
     ) {
       setPublishResponse({
@@ -449,8 +463,8 @@ function Publish({ appType }: Props) {
 
       if (
         !publishLayer ||
-        publishLayer.sketchLayer.type !== 'graphics' ||
-        layer.sketchLayer.type !== 'graphics'
+        publishLayer.sketchLayer?.type !== 'graphics' ||
+        layer.sketchLayer?.type !== 'graphics'
       ) {
         return;
       }
@@ -624,7 +638,7 @@ function Publish({ appType }: Props) {
                 );
 
                 // update the graphic on the map
-                if (mapLayer && mapLayer.sketchLayer.type === 'graphics') {
+                if (mapLayer && mapLayer.sketchLayer?.type === 'graphics') {
                   const graphic = mapLayer.sketchLayer.graphics.find(
                     (graphic) =>
                       graphic.attributes.PERMANENT_IDENTIFIER ===
@@ -693,7 +707,7 @@ function Publish({ appType }: Props) {
                 );
 
                 // update the graphic on the map
-                if (mapLayer && mapLayer.sketchLayer.type === 'graphics') {
+                if (mapLayer && mapLayer.sketchLayer?.type === 'graphics') {
                   const graphic = mapLayer.sketchLayer.graphics.find(
                     (graphic) =>
                       graphic.attributes.PERMANENT_IDENTIFIER ===
@@ -1021,6 +1035,7 @@ function Publish({ appType }: Props) {
           (childLayer) => childLayer.layerId === layer.layerId,
         ) !== -1,
     );
+    console.log('originalLayers; ', originalLayers);
 
     // make the layer publish layer
     const graphicsLayer = new GraphicsLayer({
@@ -1950,6 +1965,396 @@ function Publish({ appType }: Props) {
     setUserDefinedAttributes,
   ]);
 
+  const [publishDeconPlanResponse, setPublishDeconPlanResponse] =
+    useState<PublishType>({
+      status: 'none',
+      summary: { success: '', failed: '' },
+      rawData: null,
+    });
+  // publishes a plan with all of the attributes
+  const publishDeconPlan = useCallback(() => {
+    if (!map || !portal || !selectedScenario || !calculateResultsDecon.data)
+      return;
+
+    const { scenarioIndex, editsScenario } = findLayerInEdits(
+      edits.edits,
+      selectedScenario.layerId,
+    );
+
+    // exit early if the scenario was not found
+    if (
+      scenarioIndex === -1 ||
+      !editsScenario ||
+      editsScenario.type !== 'scenario-decon' ||
+      editsScenario.linkedLayerIds.length === 0
+    ) {
+      setPublishDeconPlanResponse({
+        status: 'fetch-failure',
+        summary: { success: '', failed: '' },
+        error: { error: null, message: 'No data to publish.' },
+        rawData: null,
+      });
+      return;
+    }
+
+    const linkedLayers = edits.edits.filter(
+      (edit) =>
+        editsScenario.linkedLayerIds.includes(edit.layerId) &&
+        edit.type === 'layer-decon',
+    );
+
+    // build outputs for: operationSettings, operationDetails, calculationResults
+    const operationSettings: any[] = [];
+    const operationDetails: any[] = [];
+    let calculationResults: any[] = [];
+    const calculationResultsSummary: any[] = [];
+    const calculationResultsWasteSummary: any[] = [];
+    linkedLayers.forEach((linkedLayer) => {
+      if (linkedLayer.type !== 'layer-decon') return;
+      const aoiLayer = edits.edits.find(
+        (edit) => edit.layerId === linkedLayer.analysisLayerId,
+      ) as LayerAoiAnalysisEditsType;
+
+      let numBuildings = 0;
+      aoiLayer?.layers?.forEach((layer) => {
+        if (layer.layerType !== 'AOI Assessed') return;
+        numBuildings += layer.adds.length + layer.published.length;
+      });
+
+      operationSettings.push({
+        OPERATION_UUID: linkedLayer.layerId,
+        OPERATION_NAME: linkedLayer.name,
+        AOI_LAYER_ID: linkedLayer.analysisLayerId,
+        AOI_VERSION: 1,
+        BUILDING_COUNT: numBuildings,
+        BUILDING_AREA_TOTAL: aoiLayer.aoiSummary.totalBuildingSqM,
+        BUILDING_AREA_EXTERIOR: aoiLayer.aoiSummary.totalBuildingExtSqM,
+        BUILDING_AREA_INTERIOR: aoiLayer.aoiSummary.totalBuildingIntSqM,
+        AOI_AREA: aoiLayer.aoiSummary.totalAoiSqM,
+        DECON_EST_APPROACH: linkedLayer.approach,
+        DECON_BLDG_EST_APPROACH: linkedLayer.buildingApproach,
+        NOTES: '',
+      });
+
+      linkedLayer.deconTechSelections.forEach((tech) => {
+        operationDetails.push({
+          OPERATION_UUID: linkedLayer.layerId,
+          SURFACE_UUID: tech.id,
+          PARENT_SURFACE_UUID: null,
+          SURFACE: tech.media,
+          SURFACE_SUB_CATEGORY: null,
+          DECON_TECH_UUID: tech.deconTech?.value ?? null,
+          DECON_TECH: tech.deconTech?.label ?? null,
+          NUM_ITERATIVE_APPLICATIONS: tech.numIterativeApplications,
+          PCT_AOI: tech.pctAoi,
+          PCT_DECONED: tech.pctDeconed,
+          SURFACE_AREA: tech.surfaceArea,
+          VOLUME: tech.volume,
+          VOLUME_CONTENTS: tech.volumeContents,
+          REMOVE_BLDG_CONTENTS: tech.removeBuildingContents,
+          NOTES: '',
+        });
+
+        tech.subRows?.forEach((sub) => {
+          operationDetails.push({
+            OPERATION_UUID: linkedLayer.layerId,
+            SURFACE_UUID: sub.id,
+            PARENT_SURFACE_UUID: tech.id,
+            SURFACE: tech.media,
+            SURFACE_SUB_CATEGORY: sub.media,
+            // TODO update this to trust what sub provides
+            DECON_TECH_UUID:
+              (sub.deconTech ? sub.deconTech.value : tech.deconTech?.value) ??
+              null,
+            DECON_TECH:
+              (sub.deconTech ? sub.deconTech.label : tech.deconTech?.label) ??
+              null,
+            NUM_ITERATIVE_APPLICATIONS: sub.numIterativeApplications,
+            PCT_AOI: sub.pctAoi,
+            PCT_DECONED: sub.pctDeconed,
+            SURFACE_AREA: sub.surfaceArea,
+            VOLUME: sub.volume,
+            VOLUME_CONTENTS: sub.volumeContents,
+            REMOVE_BLDG_CONTENTS: sub.removeBuildingContents,
+            NOTES: '',
+          });
+        });
+      });
+
+      let totalSolidWaste = 0;
+      let totalLiquidWaste = 0;
+      let totalCost = 0;
+      let totalTime = 0;
+      linkedLayer.deconLayerResults.resultsTable.forEach((tech) => {
+        totalSolidWaste += tech.solidWasteVolumeM3;
+        totalLiquidWaste += tech.liquidWasteVolumeM3;
+        totalCost += tech.decontaminationCost;
+        totalTime += tech.decontaminationTimeDays;
+        calculationResults.push({
+          OPERATION_UUID: linkedLayer.layerId,
+          AGGREGATION_LEVEL: 'RAW',
+          SURFACE: tech.contaminationScenario,
+          SURFACE_SUB_CATEGORY: null,
+          DECON_TECH_UUID: tech.decontaminationTechnology,
+          DECON_TECH: tech.decontaminationTechnology,
+          SOLID_WASTE_M3: tech.solidWasteVolumeM3,
+          AQUEOUS_WASTE_M3: tech.liquidWasteVolumeM3,
+          COST: tech.decontaminationCost,
+          TIME: tech.decontaminationTimeDays,
+        });
+      });
+
+      calculationResultsSummary.push({
+        OPERATION_UUID: linkedLayer.layerId,
+        AGGREGATION_LEVEL: 'SUMMARY',
+        SURFACE: linkedLayer.name,
+        SURFACE_SUB_CATEGORY: null,
+        DECON_TECH_UUID: null,
+        DECON_TECH: null,
+        SOLID_WASTE_M3: totalSolidWaste,
+        AQUEOUS_WASTE_M3: totalLiquidWaste,
+        COST: totalCost,
+        TIME: totalTime,
+      });
+    });
+
+    let totalSolidWaste = 0;
+    let totalLiquidWaste = 0;
+    let totalCost = 0;
+    let totalTime = 0;
+    calculationResultsSummary.forEach((summary) => {
+      totalSolidWaste += summary.SOLID_WASTE_M3;
+      totalLiquidWaste += summary.AQUEOUS_WASTE_M3;
+      totalCost += summary.COST;
+      totalTime += summary.TIME;
+    });
+
+    calculationResultsSummary.push({
+      OPERATION_UUID: null,
+      AGGREGATION_LEVEL: 'SUMMARY_TOTALS',
+      SURFACE: null,
+      SURFACE_SUB_CATEGORY: null,
+      DECON_TECH_UUID: null,
+      DECON_TECH: null,
+      SOLID_WASTE_M3: totalSolidWaste,
+      AQUEOUS_WASTE_M3: totalLiquidWaste,
+      COST: totalCost,
+      TIME: totalTime,
+    });
+
+    calculateResultsDecon.data.resultsTable.forEach((tech) => {
+      calculationResultsWasteSummary.push({
+        OPERATION_UUID: null,
+        AGGREGATION_LEVEL: 'WASTE_SUMMARY',
+        SURFACE: tech.contaminationScenario,
+        SURFACE_SUB_CATEGORY: null,
+        DECON_TECH_UUID: tech.decontaminationTechnology,
+        DECON_TECH: tech.decontaminationTechnology,
+        SOLID_WASTE_M3: tech.solidWasteVolumeM3,
+        AQUEOUS_WASTE_M3: tech.liquidWasteVolumeM3,
+        COST: tech.decontaminationCost,
+        TIME: tech.decontaminationTimeDays,
+      });
+    });
+
+    calculationResults = [
+      ...calculationResultsSummary,
+      ...calculationResultsWasteSummary,
+      ...calculationResults,
+    ];
+
+    console.log('operationSettings: ', operationSettings);
+    console.log('operationDetails: ', operationDetails);
+    console.log('calculationResults: ', calculationResults);
+
+    setPublishDeconPlanResponse({
+      status: 'fetching',
+      summary: { success: '', failed: '' },
+      rawData: null,
+    });
+
+    publishDecon({
+      portal,
+      layers: [],
+      edits: [],
+      serviceMetaData: {
+        value: '',
+        label: editsScenario.scenarioName,
+        description: editsScenario.scenarioDescription,
+        url: '',
+      },
+      layerProps,
+      // table: editsScenario.table, // TODO decon-types
+      referenceLayersTable: editsScenario.referenceLayersTable,
+      referenceMaterials: {
+        createWebMap: includePartialPlanWebMap,
+        createWebScene: includePartialPlanWebScene,
+        webMapReferenceLayerSelections,
+        webSceneReferenceLayerSelections,
+      },
+      operationSettings,
+      operationDetails,
+      calculationResults,
+    })
+      .then((res: any) => {
+        console.log('res: ', res);
+        const portalId = res.portalId;
+
+        // get totals
+        const totals = {
+          added: 0,
+          updated: 0,
+          deleted: 0,
+          failed: 0,
+        };
+        const changes: PublishResults = {};
+
+        res.edits.forEach((layerRes: any) => {
+          if (layerRes.id !== 0) return;
+
+          // need to loop through each array and check the success flag
+          if (layerRes.addResults) {
+            layerRes.addResults.forEach((item: any) => {
+              if (item.success) totals.added += 1;
+              else totals.failed += 1;
+            });
+          }
+          if (layerRes.updateResults) {
+            layerRes.updateResults.forEach((item: any) => {
+              if (item.success) totals.updated += 1;
+              else totals.failed += 1;
+            });
+          }
+          if (layerRes.deleteResults) {
+            layerRes.deleteResults.forEach((item: any) => {
+              if (item.success) totals.deleted += 1;
+              else totals.failed += 1;
+            });
+          }
+        });
+
+        // create the message string for each type of change (add, update and delete)
+        const successParts = [];
+        if (totals.added) {
+          successParts.push(`${totals.added} item(s) added`);
+        }
+        if (totals.updated) {
+          successParts.push(`${totals.updated} item(s) updated`);
+        }
+        if (totals.deleted) {
+          successParts.push(`${totals.deleted} item(s) deleted`);
+        }
+
+        // combine the messages
+        let success = '';
+        if (successParts.length === 1) {
+          success = successParts[0];
+        }
+        if (successParts.length > 1) {
+          success =
+            successParts.slice(0, -1).join(', ') +
+            ' and ' +
+            successParts.slice(-1);
+        }
+
+        // create the failed status message
+        const failed = totals.failed
+          ? `${totals.failed} item(s) failed to publish. Check the console log for details.`
+          : '';
+        if (failed) console.error('Some items failed to publish: ', res);
+
+        setPublishDeconPlanResponse({
+          status: 'success',
+          summary: { success, failed },
+          rawData: res,
+        });
+
+        // make a copy of the edits context variable
+        // update the edits state
+        setEdits((edits) => {
+          const editsScenario = edits.edits[
+            scenarioIndex
+          ] as ScenarioDeconEditsType;
+          editsScenario.status = 'published';
+          editsScenario.portalId = portalId;
+
+          editsScenario.linkedLayerIds.forEach((linkedLayerId) => {
+            const linkedLayer = edits.edits.find(
+              (edit) => edit.layerId === linkedLayerId,
+            );
+            if (!linkedLayer) return;
+            linkedLayer.status = 'published';
+            linkedLayer.portalId = portalId;
+          });
+
+          return {
+            count: edits.count + 1,
+            edits: [
+              ...edits.edits.slice(0, scenarioIndex),
+              editsScenario,
+              ...edits.edits.slice(scenarioIndex + 1),
+            ],
+          };
+        });
+
+        // updated the edited layer
+        setLayers((layers) =>
+          // TODO need to look up layers linked to selectedScenario
+          //      this only applys to layerType=Decon
+          layers.map((layer) => {
+            const editsLayer = edits.edits.find(
+              (edit) =>
+                edit.layerId === layer.layerId && edit.type === 'layer-decon',
+            );
+            if (!editsLayer) return layer;
+
+            const updatedLayer: LayerType = {
+              ...layer,
+              status: 'published',
+              portalId,
+            };
+            return updatedLayer;
+          }),
+        );
+
+        setSelectedScenario((selectedScenario) => {
+          if (!selectedScenario) return selectedScenario;
+
+          selectedScenario.status = 'published';
+          selectedScenario.portalId = portalId;
+          return selectedScenario;
+        });
+      })
+      .catch((err) => {
+        console.error('isServiceNameAvailable error', err);
+        setPublishDeconPlanResponse({
+          status: 'fetch-failure',
+          summary: { success: '', failed: '' },
+          error: {
+            error: createErrorObject(err),
+            message: err.message,
+          },
+          rawData: err,
+        });
+
+        window.logErrorToGa(err);
+      });
+  }, [
+    calculateResultsDecon.data,
+    edits,
+    includePartialPlanWebMap,
+    includePartialPlanWebScene,
+    layerProps,
+    map,
+    portal,
+    selectedScenario,
+    setEdits,
+    setLayers,
+    setSelectedScenario,
+    webMapReferenceLayerSelections,
+    webSceneReferenceLayerSelections,
+  ]);
+
   // Run the publish
   useEffect(() => {
     if (!oAuthInfo || !portal || !signedIn) return;
@@ -1978,17 +2383,20 @@ function Publish({ appType }: Props) {
     setPublishButtonClicked(false);
 
     if (includeFullPlan) {
-      publishFullPlan();
+      if (appType === 'sampling') publishFullPlan();
+      if (appType === 'decon') publishDeconPlan();
     }
 
     if (includePartialPlan) {
-      publishPartialPlan();
+      if (appType === 'sampling') publishPartialPlan();
+      if (appType === 'decon') publishDeconPlan();
     }
 
     if (includeCustomSampleTypes) {
       publishSampleTypes();
     }
   }, [
+    appType,
     hasNameBeenChecked,
     includeCustomSampleTypes,
     includeFullPlan,
@@ -1998,6 +2406,7 @@ function Publish({ appType }: Props) {
     oAuthInfo,
     portal,
     publishButtonClicked,
+    publishDeconPlan,
     publishFullPlan,
     publishPartialPlan,
     publishSampleTableMetaData,
@@ -2037,18 +2446,35 @@ function Publish({ appType }: Props) {
     ((publishResponse.status !== 'name-not-available' ||
       (publishResponse.status === 'name-not-available' &&
         publishNameCheck.status === 'success')) &&
-      sampleCount !== 0 && // verify there are samples to publish
+      ((appType === 'sampling' && sampleCount !== 0) ||
+        (appType === 'decon' &&
+          calculateResultsDecon.status === 'success' &&
+          calculateResultsDecon.data)) && // verify there are samples to publish
       // verify service name availbility if changed
       (publishNameCheck.status === 'none' ||
         publishNameCheck.status === 'success'));
 
   const isPublishPartialPlanReady =
     (!includeFullPlan && !includePartialPlan) ||
+    appType !== 'sampling' ||
     // verify the service name is available
     ((publishPartialResponse.status !== 'name-not-available' ||
       (publishPartialResponse.status === 'name-not-available' &&
         publishNameCheck.status === 'success')) &&
       sampleCount !== 0 && // verify there are samples to publish
+      // verify service name availbility if changed
+      (publishNameCheck.status === 'none' ||
+        publishNameCheck.status === 'success'));
+
+  const isPublishDeconPlanReady =
+    (!includeFullPlan && !includePartialPlan) ||
+    appType !== 'decon' ||
+    // verify the service name is available
+    ((publishDeconPlanResponse.status !== 'name-not-available' ||
+      (publishDeconPlanResponse.status === 'name-not-available' &&
+        publishNameCheck.status === 'success')) &&
+      calculateResultsDecon.status === 'success' &&
+      calculateResultsDecon.data && // verify there is data to publish
       // verify service name availbility if changed
       (publishNameCheck.status === 'none' ||
         publishNameCheck.status === 'success'));
@@ -2067,30 +2493,20 @@ function Publish({ appType }: Props) {
       (sampleTypesNameCheck.status === 'none' ||
         sampleTypesNameCheck.status === 'success'));
 
-  if (appType === 'decon') {
-    return (
-      <div css={panelContainer}>
-        <h2>Publish Output</h2>
-        <div css={sectionContainer}>
-          <MessageBox
-            severity="warning"
-            title="Feature Not Yet Available"
-            message="This feature is not available yet."
-          />
-        </div>
-      </div>
-    );
-  }
+  let appName = '';
+  if (appType === 'sampling') appName = 'TOTS';
+  if (appType === 'decon') appName = 'TODS';
 
   return (
     <div css={panelContainer}>
       <h2>Publish Output</h2>
       <div css={sectionContainer}>
         <p>
-          Publish the configured TOTS output to your ArcGIS Online account. A
-          summary of the selections made on the Configure Output step is below.
-          By default, only you and the ArcGIS Online administrator can access
-          content created. Provide other collaborators access to TOTS content by{' '}
+          Publish the configured {appName} output to your ArcGIS Online account.
+          A summary of the selections made on the Configure Output step is
+          below. By default, only you and the ArcGIS Online administrator can
+          access content created. Provide other collaborators access to TOTS
+          content by{' '}
           <a
             href="https://doc.arcgis.com/en/arcgis-online/share-maps/share-items.htm"
             target="_blank"
@@ -2134,7 +2550,8 @@ function Publish({ appType }: Props) {
           </a>
         </p>
         {(publishResponse.status === 'name-not-available' ||
-          publishPartialResponse.status === 'name-not-available') && (
+          publishPartialResponse.status === 'name-not-available' ||
+          publishDeconPlanResponse.status === 'name-not-available') && (
           <EditScenario
             appType={appType}
             initialScenario={selectedScenario}
@@ -2147,7 +2564,8 @@ function Publish({ appType }: Props) {
           />
         )}
         {publishResponse.status !== 'name-not-available' &&
-          publishPartialResponse.status !== 'name-not-available' && (
+          publishPartialResponse.status !== 'name-not-available' &&
+          publishDeconPlanResponse.status !== 'name-not-available' && (
             <Fragment>
               <p css={layerInfo}>
                 <strong>Plan Name: </strong>
@@ -2173,20 +2591,22 @@ function Publish({ appType }: Props) {
             ) : (
               <i className="fas fa-times" css={unCheckedStyles}></i>
             )}
-            Include Tailored TOTS Output Files:
+            Include Tailored {appName} Output Files:
           </strong>
           {includePartialPlan && (
             <div>
-              <div>
-                <strong css={webMapContainerCheckboxStyles}>
-                  {includePartialPlanWebMap ? (
-                    <i className="fas fa-check" css={checkedStyles}></i>
-                  ) : (
-                    <i className="fas fa-times" css={unCheckedStyles}></i>
-                  )}
-                  Include Web Map:
-                </strong>
-              </div>
+              {appType === 'sampling' && (
+                <div>
+                  <strong css={webMapContainerCheckboxStyles}>
+                    {includePartialPlanWebMap ? (
+                      <i className="fas fa-check" css={checkedStyles}></i>
+                    ) : (
+                      <i className="fas fa-times" css={unCheckedStyles}></i>
+                    )}
+                    Include Web Map:
+                  </strong>
+                </div>
+              )}
               {webMapReferenceLayerSelections.length > 0 && (
                 <div css={webMapContainerCheckboxStyles}>
                   Reference layers to include:
@@ -2200,33 +2620,37 @@ function Publish({ appType }: Props) {
                 </div>
               )}
 
-              <div>
-                <strong css={webMapContainerCheckboxStyles}>
-                  {includePartialPlanWebScene ? (
-                    <i className="fas fa-check" css={checkedStyles}></i>
-                  ) : (
-                    <i className="fas fa-times" css={unCheckedStyles}></i>
+              {appType === 'sampling' && (
+                <Fragment>
+                  <div>
+                    <strong css={webMapContainerCheckboxStyles}>
+                      {includePartialPlanWebScene ? (
+                        <i className="fas fa-check" css={checkedStyles}></i>
+                      ) : (
+                        <i className="fas fa-times" css={unCheckedStyles}></i>
+                      )}
+                      Include Web Scene:
+                    </strong>
+                  </div>
+                  {webSceneReferenceLayerSelections.length > 0 && (
+                    <div css={webMapContainerCheckboxStyles}>
+                      Reference layers to include:
+                      <ul>
+                        {webSceneReferenceLayerSelections
+                          .sort((a, b) => a.label.localeCompare(b.label))
+                          .map((l, index) => (
+                            <li key={index}>{l.label}</li>
+                          ))}
+                      </ul>
+                    </div>
                   )}
-                  Include Web Scene:
-                </strong>
-              </div>
-              {webSceneReferenceLayerSelections.length > 0 && (
-                <div css={webMapContainerCheckboxStyles}>
-                  Reference layers to include:
-                  <ul>
-                    {webSceneReferenceLayerSelections
-                      .sort((a, b) => a.label.localeCompare(b.label))
-                      .map((l, index) => (
-                        <li key={index}>{l.label}</li>
-                      ))}
-                  </ul>
-                </div>
+                </Fragment>
               )}
             </div>
           )}
         </div>
 
-        {includeCustomSampleTypes && (
+        {includeCustomSampleTypes && appType === 'sampling' && (
           <div>
             <strong>Include Custom Sample Types:</strong>
             <ul>
@@ -2261,11 +2685,14 @@ function Publish({ appType }: Props) {
 
       {(publishResponse.status === 'fetching' ||
         publishPartialResponse.status === 'fetching' ||
-        publishSamplesResponse.status === 'fetching') && <LoadingSpinner />}
+        publishSamplesResponse.status === 'fetching' ||
+        publishDeconPlanResponse.status === 'fetching') && <LoadingSpinner />}
       {publishResponse.status === 'fetch-failure' &&
         webServiceErrorMessage(publishResponse.error)}
       {publishPartialResponse.status === 'fetch-failure' &&
         webServiceErrorMessage(publishPartialResponse.error)}
+      {publishDeconPlanResponse.status === 'fetch-failure' &&
+        webServiceErrorMessage(publishDeconPlanResponse.error)}
       {publishSamplesResponse.status === 'fetch-failure' &&
         webServiceErrorMessage()}
       {publishResponse.status === 'success' &&
@@ -2284,6 +2711,14 @@ function Publish({ appType }: Props) {
             message={publishPartialResponse.summary.failed}
           />
         )}
+      {publishDeconPlanResponse.status === 'success' &&
+        publishDeconPlanResponse.summary.failed && (
+          <MessageBox
+            severity="error"
+            title="Some item(s) failed to publish"
+            message={publishDeconPlanResponse.summary.failed}
+          />
+        )}
       {publishSamplesResponse.status === 'success' &&
         publishSamplesResponse.summary.failed && (
           <MessageBox
@@ -2296,18 +2731,23 @@ function Publish({ appType }: Props) {
         (includeFullPlan && publishResponse.status === 'success')) &&
         (!includePartialPlan ||
           (includePartialPlan &&
-            publishPartialResponse.status === 'success')) &&
+            (publishPartialResponse.status === 'success' ||
+              publishDeconPlanResponse.status === 'success'))) &&
         (!includeCustomSampleTypes ||
           (includeCustomSampleTypes &&
             publishSamplesResponse.status === 'success')) &&
         publishSuccessMessage([
           publishPartialResponse.rawData?.itemData,
+          publishDeconPlanResponse.rawData?.itemData,
           publishSamplesResponse.rawData?.itemData,
         ])}
 
       {!signedIn && notLoggedInMessage}
       {(includeFullPlan || includePartialPlan) &&
-        sampleCount === 0 &&
+        ((appType === 'sampling' && sampleCount === 0) ||
+          (appType === 'decon' &&
+            (calculateResultsDecon.status !== 'success' ||
+              !calculateResultsDecon.data))) &&
         noSamplesPublishMessage}
       {includeCustomSampleTypes && (
         <Fragment>
@@ -2338,6 +2778,7 @@ function Publish({ appType }: Props) {
       {(includeFullPlan || includePartialPlan || includeCustomSampleTypes) &&
         isPublishPlanReady &&
         isPublishPartialPlanReady &&
+        isPublishDeconPlanReady &&
         isPublishSamplesReady && (
           <div css={publishButtonContainerStyles}>
             <button

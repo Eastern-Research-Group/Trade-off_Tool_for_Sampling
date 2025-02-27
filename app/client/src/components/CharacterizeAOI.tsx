@@ -15,6 +15,7 @@ import {
   activateSketchButton,
   calculateArea,
   createScenarioDeconLayer,
+  generateUUID,
   getDefaultSamplingMaskLayer,
   getScenariosDecon,
   updateLayerEdits,
@@ -232,7 +233,7 @@ function CharacterizeAOI({
     setSelectedScenario,
     sketchVM,
   } = useContext(SketchContext);
-  const { defaultGsg, services } = useLookupFiles().data;
+  const { defaultGsg, technologyTypes, services } = useLookupFiles().data;
 
   // Initializes the aoi layer for performance reasons
   useEffect(() => {
@@ -386,12 +387,17 @@ function CharacterizeAOI({
         buildingFootprint: 0,
         summary: {
           totalAoiSqM: planAoiArea,
+          totalBuildingExtSqM: 0,
+          totalBuildingIntSqM: 0,
+          totalBuildingVolumeCubM: 0,
+          totalBuildingVolumeContentsCubM: 0,
           totalBuildingFootprintSqM: 0,
           totalBuildingFloorsSqM: 0,
           totalBuildingSqM: 0,
           totalBuildingExtWallsSqM: 0,
           totalBuildingIntWallsSqM: 0,
           totalBuildingRoofSqM: 0,
+          totalBuildingCeilingsSqM: 0,
         },
         aoiPercentages: {
           numAois: 0,
@@ -434,6 +440,7 @@ function CharacterizeAOI({
         gsgParam,
         sceneViewForArea,
         true,
+        technologyTypes,
       );
 
       if (gsgParam) {
@@ -456,6 +463,7 @@ function CharacterizeAOI({
         {},
         defaultDeconSelections,
       );
+      console.log('newDeconTechSelections: ', newDeconTechSelections);
 
       // Figure out what to add graphics to
       const aoiAssessed = deconSketchLayer.layers.find(
@@ -538,12 +546,18 @@ function CharacterizeAOI({
           };
           aoiAnalysis.aoiSummary = {
             totalAoiSqM: planData.summary.totalAoiSqM,
+            totalBuildingExtSqM: planData.summary.totalBuildingExtSqM,
+            totalBuildingIntSqM: planData.summary.totalBuildingIntSqM,
+            totalBuildingVolumeCubM: planData.summary.totalBuildingVolumeCubM,
+            totalBuildingVolumeContentsCubM:
+              planData.summary.totalBuildingVolumeContentsCubM,
             totalBuildingExtWallsSqM: planData.summary.totalBuildingExtWallsSqM,
             totalBuildingFloorsSqM: planData.summary.totalBuildingFloorsSqM,
             totalBuildingFootprintSqM:
               planData.summary.totalBuildingFootprintSqM,
             totalBuildingIntWallsSqM: planData.summary.totalBuildingIntWallsSqM,
             totalBuildingRoofSqM: planData.summary.totalBuildingRoofSqM,
+            totalBuildingCeilingsSqM: planData.summary.totalBuildingCeilingsSqM,
             totalBuildingSqM: planData.summary.totalBuildingSqM,
             areaByMedia: newDeconTechSelections.map((media: any) => {
               return {
@@ -551,33 +565,59 @@ function CharacterizeAOI({
                 media: media.media,
                 pctAoi: media.pctAoi,
                 surfaceArea: media.surfaceArea,
+                volume: media.volume,
+                subMedia: media.subRows
+                  ? media.subRows.map((r) => ({
+                      id: r.id ?? generateUUID(),
+                      media: r.media,
+                      pctAoi: r.pctAoi,
+                      surfaceArea: r.surfaceArea,
+                      volume: r.volume,
+                      subMedia: [],
+                    }))
+                  : [],
               };
             }),
           };
 
           editsCopy.edits.forEach((edit) => {
             if (
-              edit.type !== 'layer-decon' ||
-              edit.analysisLayerId !== aoiAnalysis?.layerId
+              (edit.type !== 'layer-decon' ||
+                edit.analysisLayerId !== aoiAnalysis?.layerId) &&
+              (edit.type !== 'layer-aoi-analysis' ||
+                edit.layerId !== aoiAnalysis?.layerId)
             )
               return;
 
-            edit.deconTechSelections = edit.deconTechSelections.map((tech) => {
-              const media = newDeconTechSelections.find(
+            edit.deconTechSelections = newDeconTechSelections.map((tech) => {
+              const media = edit.deconTechSelections.find(
                 (a) => a.media === tech.media,
               );
 
-              let pctAoi = tech.pctAoi;
-              let surfaceArea = tech.surfaceArea;
-              if (media) {
-                pctAoi = media.pctAoi;
-                surfaceArea = media.surfaceArea;
-              }
-
               return {
                 ...tech,
-                pctAoi,
-                surfaceArea,
+                deconTech: media?.deconTech ?? tech.deconTech,
+                isHazardous: media?.isHazardous ?? tech.isHazardous,
+                numIterativeApplications:
+                  media?.numIterativeApplications ??
+                  tech.numIterativeApplications,
+                removeContents: media?.removeContents ?? tech.removeContents,
+                subRows: tech.subRows?.map((sub: any) => {
+                  const mediaSubRow = media?.subRows?.find(
+                    (s: any) => s.media === sub.media,
+                  );
+                  return {
+                    ...sub,
+                    id: sub.id ?? generateUUID(),
+                    deconTech: mediaSubRow?.deconTech ?? sub.deconTech,
+                    isHazardous: mediaSubRow?.isHazardous ?? sub.isHazardous,
+                    numIterativeApplications:
+                      mediaSubRow?.numIterativeApplications ??
+                      sub.numIterativeApplications,
+                    removeContents:
+                      mediaSubRow?.removeContents ?? sub.removeContents,
+                  };
+                }),
               };
             });
           });
@@ -815,7 +855,8 @@ function CharacterizeAOI({
             edit.layerId === deconOperation?.layerId,
         ) as LayerDeconEditsType | undefined;
         if (selectedOp) {
-          selectedOp.analysisLayerId = layerAoiAnalysis.layerId;
+          if (!selectedOp.analysisLayerId)
+            selectedOp.analysisLayerId = layerAoiAnalysis.layerId;
           selectedOp.deconTechSelections = selectedOp.deconTechSelections.map(
             (tech) => {
               return {
@@ -1034,19 +1075,39 @@ function CharacterizeAOI({
                     return {
                       ...edit,
                       analysisLayerId: newLayer.layerId,
-                      deconTechSelections: edit.deconTechSelections.map(
+                      deconTechSelections: newLayer.deconTechSelections.map(
                         (tech) => {
-                          const media = newLayer.aoiSummary.areaByMedia.find(
-                            (a) => a.media === tech.media,
+                          const editTech = edit.deconTechSelections.find(
+                            (e) => e.media === tech.media,
                           );
-
-                          const pctAoi = media?.pctAoi ?? 0;
-                          const surfaceArea = media?.surfaceArea ?? 0;
-
                           return {
                             ...tech,
-                            pctAoi,
-                            surfaceArea,
+                            deconTech: editTech?.deconTech ?? tech.deconTech,
+                            numIterativeApplications:
+                              editTech?.numIterativeApplications ??
+                              tech.numIterativeApplications,
+                            removeContents:
+                              editTech?.removeContents ?? tech.removeContents,
+                            subRows:
+                              editTech?.subRows?.map((subTech: any) => {
+                                const subEditTech = editTech
+                                  ? editTech.subRows.find(
+                                      (e: any) => e.media === tech.media,
+                                    )
+                                  : null;
+
+                                return {
+                                  ...subTech,
+                                  deconTech:
+                                    subEditTech?.deconTech ?? subTech.deconTech,
+                                  numIterativeApplications:
+                                    subEditTech?.numIterativeApplications ??
+                                    subTech.numIterativeApplications,
+                                  removeContents:
+                                    subEditTech?.removeContents ??
+                                    subTech.removeContents,
+                                };
+                              }) ?? tech.subRows,
                           };
                         },
                       ),

@@ -561,13 +561,13 @@ function NavBar({ appType, height }: Props) {
                       <div css={mainTallyStyles}>
                         Total Waste Volume (m<sup>3</sup>):{' '}
                         {Math.round(
-                          calculateResultsDecon.data['WASTE_VOLUME_SOLID'],
+                          calculateResultsDecon.data['WASTE_VOLUME_TOTAL'],
                         ).toLocaleString()}
                       </div>
                       <div css={mainTallyStyles}>
                         Total Waste Mass (kg):{' '}
                         {Math.round(
-                          calculateResultsDecon.data['WASTE_WEIGHT_SOLID'],
+                          calculateResultsDecon.data['WASTE_WEIGHT_TOTAL'],
                         ).toLocaleString()}
                       </div>
                     </div>

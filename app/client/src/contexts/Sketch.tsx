@@ -17,6 +17,7 @@ import { fetchCheck } from 'utils/fetchUtils';
 import { updatePointSymbol, updatePolygonSymbol } from 'utils/sketchUtils';
 // types
 import {
+  AreaByMediaType,
   EditsType,
   LayerAoiAnalysisEditsType,
   ScenarioDeconEditsType,
@@ -81,13 +82,19 @@ export type PlanGraphics = {
     aoiArea: number;
     buildingFootprint: number;
     summary: {
+      areaByMedia: AreaByMediaType[];
       totalAoiSqM: number;
+      totalBuildingExtSqM: number;
+      totalBuildingIntSqM: number;
+      totalBuildingVolumeCubM: number;
+      totalBuildingVolumeContentsCubM: number;
       totalBuildingFootprintSqM: number;
       totalBuildingFloorsSqM: number;
       totalBuildingSqM: number;
       totalBuildingExtWallsSqM: number;
       totalBuildingIntWallsSqM: number;
       totalBuildingRoofSqM: number;
+      totalBuildingCeilingsSqM: number;
     };
     aoiPercentages: {
       numAois: number;
@@ -471,10 +478,12 @@ export function SketchProvider({ children }: Props) {
         deconTech: null,
         pctAoi: 0,
         surfaceArea: 0,
+        volume: 0,
+        volumeContents: 0,
+        removeContents: false,
         avgCfu: 0,
         totalCfu: 0,
-        numApplications: 1,
-        numConcurrentApplications: 1,
+        numIterativeApplications: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
         avgFinalContamination: null,
@@ -486,10 +495,12 @@ export function SketchProvider({ children }: Props) {
         deconTech: null,
         pctAoi: 0,
         surfaceArea: 0,
+        volume: 0,
+        volumeContents: 0,
+        removeContents: false,
         avgCfu: 0,
         totalCfu: 0,
-        numApplications: 1,
-        numConcurrentApplications: 1,
+        numIterativeApplications: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
         avgFinalContamination: null,
@@ -501,10 +512,12 @@ export function SketchProvider({ children }: Props) {
         deconTech: null,
         pctAoi: 0,
         surfaceArea: 0,
+        volume: 0,
+        volumeContents: 0,
+        removeContents: false,
         avgCfu: 0,
         totalCfu: 0,
-        numApplications: 1,
-        numConcurrentApplications: 1,
+        numIterativeApplications: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
         avgFinalContamination: null,
@@ -512,63 +525,39 @@ export function SketchProvider({ children }: Props) {
       },
       {
         id: 4,
-        media: 'Building Exterior Walls',
+        media: 'Building Exteriors',
         deconTech: null,
         pctAoi: 0,
         surfaceArea: 0,
+        volume: 0,
+        volumeContents: 0,
+        removeContents: false,
         avgCfu: 0,
         totalCfu: 0,
-        numApplications: 1,
-        numConcurrentApplications: 1,
+        numIterativeApplications: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
         avgFinalContamination: null,
         aboveDetectionLimit: '',
+        subRows: [],
       },
       {
         id: 5,
-        media: 'Building Interior Floors',
+        media: 'Building Interiors',
         deconTech: null,
         pctAoi: 0,
         surfaceArea: 0,
+        volume: 0,
+        volumeContents: 0,
+        removeContents: false,
         avgCfu: 0,
         totalCfu: 0,
-        numApplications: 1,
-        numConcurrentApplications: 1,
+        numIterativeApplications: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
         avgFinalContamination: null,
         aboveDetectionLimit: '',
-      },
-      {
-        id: 6,
-        media: 'Building Interior Walls',
-        deconTech: null,
-        pctAoi: 0,
-        surfaceArea: 0,
-        avgCfu: 0,
-        totalCfu: 0,
-        numApplications: 1,
-        numConcurrentApplications: 1,
-        pctDeconed: 100,
-        isHazardous: hazardousOptions[1],
-        avgFinalContamination: null,
-        aboveDetectionLimit: '',
-      },
-      {
-        id: 7,
-        media: 'Building Roofs',
-        deconTech: null,
-        pctAoi: 0,
-        surfaceArea: 0,
-        avgCfu: 0,
-        totalCfu: 0,
-        numApplications: 1,
-        numConcurrentApplications: 1,
-        pctDeconed: 100,
-        isHazardous: hazardousOptions[1],
-        avgFinalContamination: null,
-        aboveDetectionLimit: '',
+        subRows: [],
       },
     ]);
   }, [allSampleOptions, defaultDeconSelections]);
