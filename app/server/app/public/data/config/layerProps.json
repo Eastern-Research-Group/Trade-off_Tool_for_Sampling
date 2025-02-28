@@ -1179,8 +1179,30 @@
       "defaultValue": null
     },
     {
+      "name": "SOLID_WASTE_MASS",
+      "alias": "Solid Waste in kilograms",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
       "name": "AQUEOUS_WASTE_M3",
       "alias": "Aqueous Waste in meters cubed",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "AQUEOUS_WASTE_MASS",
+      "alias": "Aqueous Waste in kilograms",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",

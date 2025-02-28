@@ -2083,11 +2083,15 @@ function Publish({ appType }: Props) {
 
       let totalSolidWaste = 0;
       let totalLiquidWaste = 0;
+      let totalSolidWasteMass = 0;
+      let totalLiquidWasteMass = 0;
       let totalCost = 0;
       let totalTime = 0;
       linkedLayer.deconLayerResults.resultsTable.forEach((tech) => {
         totalSolidWaste += tech.solidWasteVolumeM3;
+        totalSolidWasteMass += tech.solidWasteMassKg;
         totalLiquidWaste += tech.liquidWasteVolumeM3;
+        totalLiquidWasteMass += tech.liquidWasteMassKg;
         totalCost += tech.decontaminationCost;
         totalTime += tech.decontaminationTimeDays;
         calculationResults.push({
@@ -2098,7 +2102,9 @@ function Publish({ appType }: Props) {
           DECON_TECH_UUID: tech.decontaminationTechnology,
           DECON_TECH: tech.decontaminationTechnology,
           SOLID_WASTE_M3: tech.solidWasteVolumeM3,
+          SOLID_WASTE_MASS: tech.solidWasteMassKg,
           AQUEOUS_WASTE_M3: tech.liquidWasteVolumeM3,
+          AQUEOUS_WASTE_MASS: tech.liquidWasteMassKg,
           COST: tech.decontaminationCost,
           TIME: tech.decontaminationTimeDays,
         });
@@ -2112,19 +2118,25 @@ function Publish({ appType }: Props) {
         DECON_TECH_UUID: null,
         DECON_TECH: null,
         SOLID_WASTE_M3: totalSolidWaste,
+        SOLID_WASTE_MASS: totalSolidWasteMass,
         AQUEOUS_WASTE_M3: totalLiquidWaste,
+        AQUEOUS_WASTE_MASS: totalLiquidWasteMass,
         COST: totalCost,
         TIME: totalTime,
       });
     });
 
     let totalSolidWaste = 0;
+    let totalSolidWasteMass = 0;
     let totalLiquidWaste = 0;
+    let totalLiquidWasteMass = 0;
     let totalCost = 0;
     let totalTime = 0;
     calculationResultsSummary.forEach((summary) => {
       totalSolidWaste += summary.SOLID_WASTE_M3;
+      totalSolidWasteMass += summary.SOLID_WASTE_MASS;
       totalLiquidWaste += summary.AQUEOUS_WASTE_M3;
+      totalLiquidWasteMass += summary.AQUEOUS_WASTE_MASS;
       totalCost += summary.COST;
       totalTime += summary.TIME;
     });
@@ -2137,7 +2149,9 @@ function Publish({ appType }: Props) {
       DECON_TECH_UUID: null,
       DECON_TECH: null,
       SOLID_WASTE_M3: totalSolidWaste,
+      SOLID_WASTE_MASS: totalSolidWasteMass,
       AQUEOUS_WASTE_M3: totalLiquidWaste,
+      AQUEOUS_WASTE_MASS: totalLiquidWasteMass,
       COST: totalCost,
       TIME: totalTime,
     });
@@ -2151,7 +2165,9 @@ function Publish({ appType }: Props) {
         DECON_TECH_UUID: tech.decontaminationTechnology,
         DECON_TECH: tech.decontaminationTechnology,
         SOLID_WASTE_M3: tech.solidWasteVolumeM3,
+        SOLID_WASTE_MASS: tech.solidWasteMassKg,
         AQUEOUS_WASTE_M3: tech.liquidWasteVolumeM3,
+        AQUEOUS_WASTE_MASS: tech.liquidWasteMassKg,
         COST: tech.decontaminationCost,
         TIME: tech.decontaminationTimeDays,
       });

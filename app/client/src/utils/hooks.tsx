@@ -158,8 +158,13 @@ function performBasicDeconCalculations(
     SURFACE_SPECIFIC_PARAMS,
   } = deconAttributes;
 
-  const { CONTAM_REMOVAL_FACTOR, SOLID_WASTE_VOLUME, AQUEOUS_WASTE_VOLUME } =
-    SURFACE_SPECIFIC_PARAMS[sel.media];
+  const {
+    CONTAM_REMOVAL_FACTOR,
+    SOLID_WASTE_VOLUME,
+    AQUEOUS_WASTE_VOLUME,
+    SOLID_WASTE_MASS,
+    AQUEOUS_WASTE_MASS,
+  } = SURFACE_SPECIFIC_PARAMS[sel.media];
 
   // calculate final contamination
   const contamRemovalFactor = parentMedia
@@ -172,20 +177,28 @@ function performBasicDeconCalculations(
   sel.avgFinalContamination = avgFinalContam;
   sel.aboveDetectionLimit = avgFinalContam >= detectionLimit;
 
-  const removeBldContents =
+  const removeBldgContents =
     removeBuildingContentsOverride !== undefined
       ? removeBuildingContentsOverride
-      : sel.removeBldContents;
+      : sel.removeContents;
 
   const areaDeconApplied = sel.surfaceArea * (sel.pctDeconed * 0.01);
   const volumeDeconApplied = sel.volume;
 
   const liquidWasteM3 = areaDeconApplied * AQUEOUS_WASTE_VOLUME;
   let solidWasteM3 = areaDeconApplied * SOLID_WASTE_VOLUME;
-  if (sel.media === 'Building Interiors' && removeBldContents) {
+  const liquidWasteMass = areaDeconApplied * AQUEOUS_WASTE_MASS;
+  let solidWasteMass = areaDeconApplied * SOLID_WASTE_MASS;
+  if (sel.media === 'Building Interiors') {
     const pctVolumeDeconed = sel.pctDeconed * 0.01 * sel.volumeContents;
-    if (APPLICATION_METHOD === 'Surface') solidWasteM3 -= pctVolumeDeconed;
-    else solidWasteM3 += pctVolumeDeconed;
+    if (APPLICATION_METHOD === 'Surface' && !removeBldgContents) {
+      solidWasteM3 -= pctVolumeDeconed;
+      solidWasteMass -= pctVolumeDeconed * SOLID_WASTE_MASS;
+    }
+    if (APPLICATION_METHOD === 'Volumetric' && removeBldgContents) {
+      solidWasteM3 += pctVolumeDeconed;
+      solidWasteMass += pctVolumeDeconed * SOLID_WASTE_MASS;
+    }
   }
 
   const deconCost =
@@ -207,6 +220,8 @@ function performBasicDeconCalculations(
     decontaminationTechnology: deconTech,
     solidWasteVolumeM3: solidWasteM3,
     liquidWasteVolumeM3: liquidWasteM3,
+    solidWasteMassKg: solidWasteMass,
+    liquidWasteMassKg: liquidWasteMass,
     decontaminationCost: deconCost,
     decontaminationTimeDays: deconTime,
     averageInitialContamination: sel.avgCfu,
@@ -219,6 +234,8 @@ function performBasicDeconCalculations(
     deconTime,
     solidWasteM3,
     liquidWasteM3,
+    solidWasteMass,
+    liquidWasteMass,
   };
 }
 
@@ -2026,6 +2043,8 @@ export function useCalculateDeconPlan() {
       // perform calculations off percentAOI stuff
       let totalSolidWasteM3 = 0;
       let totalLiquidWasteM3 = 0;
+      let totalSolidWasteMass = 0;
+      let totalLiquidWasteMass = 0;
       let totalDeconCost = 0;
       let totalDeconTime = 0;
       linkedDeconOperations.forEach((deconOp) => {
@@ -2061,6 +2080,8 @@ export function useCalculateDeconPlan() {
           let deconTime = 0;
           let solidWasteM3 = 0;
           let liquidWasteM3 = 0;
+          let solidWasteMass = 0;
+          let liquidWasteMass = 0;
           if (
             deconOp.approach === 'Basic' &&
             media === 'Buildings (Interior and Exterior)'
@@ -2083,6 +2104,8 @@ export function useCalculateDeconPlan() {
               deconTime += calcOutput.deconTime;
               solidWasteM3 += calcOutput.solidWasteM3;
               liquidWasteM3 += calcOutput.liquidWasteM3;
+              solidWasteMass += calcOutput.solidWasteMass;
+              liquidWasteMass += calcOutput.liquidWasteMass;
             });
           } else if (
             deconOp.approach === 'Advanced' &&
@@ -2104,15 +2127,23 @@ export function useCalculateDeconPlan() {
               deconTime += calcOutput.deconTime;
               solidWasteM3 += calcOutput.solidWasteM3;
               liquidWasteM3 += calcOutput.liquidWasteM3;
+              solidWasteMass += calcOutput.solidWasteMass;
+              liquidWasteMass += calcOutput.liquidWasteMass;
             });
           } else {
-            ({ deconCost, deconTime, solidWasteM3, liquidWasteM3 } =
-              performBasicDeconCalculations(
-                deconTech,
-                sel,
-                sampleAttributesDecon[deconTech as any],
-                jsonDownloadOpLevel,
-              ));
+            ({
+              deconCost,
+              deconTime,
+              solidWasteM3,
+              liquidWasteM3,
+              solidWasteMass,
+              liquidWasteMass,
+            } = performBasicDeconCalculations(
+              deconTech,
+              sel,
+              sampleAttributesDecon[deconTech as any],
+              jsonDownloadOpLevel,
+            ));
           }
 
           if (deconOp.deconLayerResults) {
@@ -2120,10 +2151,14 @@ export function useCalculateDeconPlan() {
             deconOp.deconLayerResults.time += deconTime;
             deconOp.deconLayerResults.wasteVolume +=
               solidWasteM3 + liquidWasteM3;
+            deconOp.deconLayerResults.wasteMass +=
+              solidWasteMass + liquidWasteMass;
           }
 
           totalSolidWasteM3 += solidWasteM3;
           totalLiquidWasteM3 += liquidWasteM3;
+          totalSolidWasteMass += solidWasteMass;
+          totalLiquidWasteMass += liquidWasteMass;
           totalDeconCost += deconCost;
           totalDeconTime += deconTime;
         });
@@ -2152,6 +2187,8 @@ export function useCalculateDeconPlan() {
               item.decontaminationTimeDays;
             tech[deconTech].solidWasteVolumeM3 += item.solidWasteVolumeM3;
             tech[deconTech].liquidWasteVolumeM3 += item.liquidWasteVolumeM3;
+            tech[deconTech].solidWasteMassKg += item.solidWasteMassKg;
+            tech[deconTech].liquidWasteMassKg += item.liquidWasteMassKg;
           } else {
             tech[deconTech] = {
               ...item,
@@ -2168,8 +2205,10 @@ export function useCalculateDeconPlan() {
         // assign counts
         'Solid Waste Volume': totalSolidWasteM3,
         'Liquid Waste Volume': totalLiquidWasteM3,
+        'Solid Waste Mass': totalSolidWasteMass,
+        'Liquid Waste Mass': totalLiquidWasteMass,
         WASTE_VOLUME_TOTAL: totalSolidWasteM3 + totalLiquidWasteM3,
-        WASTE_WEIGHT_TOTAL: 0,
+        WASTE_WEIGHT_TOTAL: totalSolidWasteMass + totalLiquidWasteMass,
 
         //totals
         TOTAL_COST: totalDeconCost,

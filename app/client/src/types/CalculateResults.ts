@@ -46,6 +46,8 @@ export type CalculateResultsDeconDataType = {
   TOTAL_TIME: number;
   'Solid Waste Volume': number;
   'Liquid Waste Volume': number;
+  'Solid Waste Mass': number;
+  'Liquid Waste Mass': number;
   WASTE_VOLUME_TOTAL: number;
   WASTE_WEIGHT_TOTAL: number;
   'Contamination Type': string;
