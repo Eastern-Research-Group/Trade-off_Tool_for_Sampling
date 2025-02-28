@@ -62,7 +62,9 @@ export type JsonDownloadType = {
   contaminationScenario: string;
   decontaminationTechnology: string;
   solidWasteVolumeM3: number;
+  solidWasteMassKg: number;
   liquidWasteVolumeM3: number;
+  liquidWasteMassKg: number;
   decontaminationCost: number;
   decontaminationTimeDays: number;
   averageInitialContamination: number;

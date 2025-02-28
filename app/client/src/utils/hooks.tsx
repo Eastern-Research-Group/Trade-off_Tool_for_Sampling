@@ -53,6 +53,7 @@ import {
   CalculateResultsDeconDataType,
 } from 'types/CalculateResults';
 import {
+  BuildingApproachTypes,
   EditsType,
   LayerAoiAnalysisEditsType,
   LayerDeconEditsType,
@@ -157,8 +158,13 @@ function performBasicDeconCalculations(
     SURFACE_SPECIFIC_PARAMS,
   } = deconAttributes;
 
-  const { CONTAM_REMOVAL_FACTOR, SOLID_WASTE_VOLUME, AQUEOUS_WASTE_VOLUME } =
-    SURFACE_SPECIFIC_PARAMS[sel.media];
+  const {
+    CONTAM_REMOVAL_FACTOR,
+    SOLID_WASTE_VOLUME,
+    AQUEOUS_WASTE_VOLUME,
+    SOLID_WASTE_MASS,
+    AQUEOUS_WASTE_MASS,
+  } = SURFACE_SPECIFIC_PARAMS[sel.media];
 
   // calculate final contamination
   const contamRemovalFactor = parentMedia
@@ -171,20 +177,28 @@ function performBasicDeconCalculations(
   sel.avgFinalContamination = avgFinalContam;
   sel.aboveDetectionLimit = avgFinalContam >= detectionLimit;
 
-  const removeBldContents =
+  const removeBldgContents =
     removeBuildingContentsOverride !== undefined
       ? removeBuildingContentsOverride
-      : sel.removeBldContents;
+      : sel.removeContents;
 
   const areaDeconApplied = sel.surfaceArea * (sel.pctDeconed * 0.01);
   const volumeDeconApplied = sel.volume;
 
   const liquidWasteM3 = areaDeconApplied * AQUEOUS_WASTE_VOLUME;
   let solidWasteM3 = areaDeconApplied * SOLID_WASTE_VOLUME;
-  if (sel.media === 'Building Interiors' && removeBldContents) {
+  const liquidWasteMass = areaDeconApplied * AQUEOUS_WASTE_MASS;
+  let solidWasteMass = areaDeconApplied * SOLID_WASTE_MASS;
+  if (sel.media === 'Building Interiors') {
     const pctVolumeDeconed = sel.pctDeconed * 0.01 * sel.volumeContents;
-    if (APPLICATION_METHOD === 'Surface') solidWasteM3 -= pctVolumeDeconed;
-    else solidWasteM3 += pctVolumeDeconed;
+    if (APPLICATION_METHOD === 'Surface' && !removeBldgContents) {
+      solidWasteM3 -= pctVolumeDeconed;
+      solidWasteMass -= pctVolumeDeconed * SOLID_WASTE_MASS;
+    }
+    if (APPLICATION_METHOD === 'Volumetric' && removeBldgContents) {
+      solidWasteM3 += pctVolumeDeconed;
+      solidWasteMass += pctVolumeDeconed * SOLID_WASTE_MASS;
+    }
   }
 
   const deconCost =
@@ -206,6 +220,8 @@ function performBasicDeconCalculations(
     decontaminationTechnology: deconTech,
     solidWasteVolumeM3: solidWasteM3,
     liquidWasteVolumeM3: liquidWasteM3,
+    solidWasteMassKg: solidWasteMass,
+    liquidWasteMassKg: liquidWasteMass,
     decontaminationCost: deconCost,
     decontaminationTimeDays: deconTime,
     averageInitialContamination: sel.avgCfu,
@@ -218,6 +234,8 @@ function performBasicDeconCalculations(
     deconTime,
     solidWasteM3,
     liquidWasteM3,
+    solidWasteMass,
+    liquidWasteMass,
   };
 }
 
@@ -1820,9 +1838,16 @@ export function useCalculateDeconPlan() {
                 return;
               }
 
-              // TODO this doesn't seem correct
-              const { CONTAMVAL, ROOFS, FLOORS, EXTWALLS, INTWALLS } =
-                contamGraphic.attributes;
+              const {
+                CONTAMVAL,
+                INTERIOR,
+                EXTERIOR,
+                BRICK,
+                CONCRETE,
+                STEEL,
+                WOOD,
+                OTHER,
+              } = contamGraphic.attributes;
 
               const plumeCfu = CONTAMVAL;
 
@@ -1833,32 +1858,63 @@ export function useCalculateDeconPlan() {
                 (op) => op.analysisLayerId === characterizationLayer.layerId,
               ) as LayerDeconEditsType | undefined;
               if (deconOp) {
+                const approach = deconOp.approach;
+                const buildingApproach = deconOp.buildingApproach;
+                const mediaKey =
+                  approach === 'Basic'
+                    ? 'Advanced - Building Structural Component'
+                    : `${approach}${approach === 'Advanced' ? ` - ${buildingApproach}` : ''}`;
+
                 // find decon tech selections
-                const buildingTech = deconOp.deconTechSelections?.filter((t) =>
-                  t.media.includes('Building '),
+                const basicBuildingDeconTech =
+                  deconOp.deconTechSelections?.find(
+                    (t) => t.media === 'Buildings (Interior and Exterior)',
+                  );
+                const buildingTech = deconOp.deconTechSelections?.filter(
+                  (t) =>
+                    mediaLookup[mediaKey].includes(t.media) &&
+                    !outsideMedia.includes(t.media),
                 );
                 buildingTech?.forEach((tech) => {
-                  let mediaCfu = plumeCfu * (partitionFactors[tech.media] ?? 0);
-                  if (tech.media === 'Building Roofs' && ROOFS)
-                    mediaCfu = ROOFS;
-                  if (tech.media === 'Building Interior Floors' && FLOORS)
-                    mediaCfu = FLOORS;
-                  if (tech.media === 'Building Exterior Walls' && EXTWALLS)
-                    mediaCfu = EXTWALLS;
-                  if (tech.media === 'Building Interior Walls' && INTWALLS)
-                    mediaCfu = INTWALLS;
+                  let mediaCfu = plumeCfu;
+
+                  if (tech.media === 'Building Exteriors' && EXTERIOR)
+                    mediaCfu = EXTERIOR;
+                  if (tech.media === 'Building Interiors' && INTERIOR)
+                    mediaCfu = INTERIOR;
+                  if (tech.media === 'Brick Buildings' && BRICK)
+                    mediaCfu = BRICK;
+                  if (tech.media === 'Concrete Buildings' && CONCRETE)
+                    mediaCfu = CONCRETE;
+                  if (tech.media === 'Steel Buildings' && STEEL)
+                    mediaCfu = STEEL;
+                  if (tech.media === 'Wood Buildings' && WOOD) mediaCfu = WOOD;
+                  if (tech.media === 'Other Buildings' && OTHER)
+                    mediaCfu = OTHER;
 
                   originalCfu += mediaCfu;
 
                   const deconTech =
-                    sampleAttributesDecon[tech.deconTech?.value];
+                    sampleAttributesDecon[
+                      approach === 'Basic'
+                        ? basicBuildingDeconTech?.deconTech?.value
+                        : tech.deconTech?.value
+                    ];
                   if (!deconTech) {
                     newCfu += mediaCfu;
                     return;
                   }
 
+                  const bldgApproachKey =
+                    buildingApproach === 'Building Structural Component' ||
+                    approach === 'Basic'
+                      ? 'SURFACE_SPECIFIC_PARAMS'
+                      : 'MATERIAL_SPECIFIC_PARAMS';
+
                   const { CONTAM_REMOVAL_FACTOR } =
-                    sampleAttributesDecon[tech.deconTech.value];
+                    deconTech[bldgApproachKey][
+                      tech.media.replace(' Buildings', '')
+                    ];
 
                   const reductionFactor = parseSmallFloat(
                     1 - CONTAM_REMOVAL_FACTOR,
@@ -1987,6 +2043,8 @@ export function useCalculateDeconPlan() {
       // perform calculations off percentAOI stuff
       let totalSolidWasteM3 = 0;
       let totalLiquidWasteM3 = 0;
+      let totalSolidWasteMass = 0;
+      let totalLiquidWasteMass = 0;
       let totalDeconCost = 0;
       let totalDeconTime = 0;
       linkedDeconOperations.forEach((deconOp) => {
@@ -2022,6 +2080,8 @@ export function useCalculateDeconPlan() {
           let deconTime = 0;
           let solidWasteM3 = 0;
           let liquidWasteM3 = 0;
+          let solidWasteMass = 0;
+          let liquidWasteMass = 0;
           if (
             deconOp.approach === 'Basic' &&
             media === 'Buildings (Interior and Exterior)'
@@ -2044,6 +2104,8 @@ export function useCalculateDeconPlan() {
               deconTime += calcOutput.deconTime;
               solidWasteM3 += calcOutput.solidWasteM3;
               liquidWasteM3 += calcOutput.liquidWasteM3;
+              solidWasteMass += calcOutput.solidWasteMass;
+              liquidWasteMass += calcOutput.liquidWasteMass;
             });
           } else if (
             deconOp.approach === 'Advanced' &&
@@ -2065,15 +2127,23 @@ export function useCalculateDeconPlan() {
               deconTime += calcOutput.deconTime;
               solidWasteM3 += calcOutput.solidWasteM3;
               liquidWasteM3 += calcOutput.liquidWasteM3;
+              solidWasteMass += calcOutput.solidWasteMass;
+              liquidWasteMass += calcOutput.liquidWasteMass;
             });
           } else {
-            ({ deconCost, deconTime, solidWasteM3, liquidWasteM3 } =
-              performBasicDeconCalculations(
-                deconTech,
-                sel,
-                sampleAttributesDecon[deconTech as any],
-                jsonDownloadOpLevel,
-              ));
+            ({
+              deconCost,
+              deconTime,
+              solidWasteM3,
+              liquidWasteM3,
+              solidWasteMass,
+              liquidWasteMass,
+            } = performBasicDeconCalculations(
+              deconTech,
+              sel,
+              sampleAttributesDecon[deconTech as any],
+              jsonDownloadOpLevel,
+            ));
           }
 
           if (deconOp.deconLayerResults) {
@@ -2081,10 +2151,14 @@ export function useCalculateDeconPlan() {
             deconOp.deconLayerResults.time += deconTime;
             deconOp.deconLayerResults.wasteVolume +=
               solidWasteM3 + liquidWasteM3;
+            deconOp.deconLayerResults.wasteMass +=
+              solidWasteMass + liquidWasteMass;
           }
 
           totalSolidWasteM3 += solidWasteM3;
           totalLiquidWasteM3 += liquidWasteM3;
+          totalSolidWasteMass += solidWasteMass;
+          totalLiquidWasteMass += liquidWasteMass;
           totalDeconCost += deconCost;
           totalDeconTime += deconTime;
         });
@@ -2113,6 +2187,8 @@ export function useCalculateDeconPlan() {
               item.decontaminationTimeDays;
             tech[deconTech].solidWasteVolumeM3 += item.solidWasteVolumeM3;
             tech[deconTech].liquidWasteVolumeM3 += item.liquidWasteVolumeM3;
+            tech[deconTech].solidWasteMassKg += item.solidWasteMassKg;
+            tech[deconTech].liquidWasteMassKg += item.liquidWasteMassKg;
           } else {
             tech[deconTech] = {
               ...item,
@@ -2129,8 +2205,10 @@ export function useCalculateDeconPlan() {
         // assign counts
         'Solid Waste Volume': totalSolidWasteM3,
         'Liquid Waste Volume': totalLiquidWasteM3,
+        'Solid Waste Mass': totalSolidWasteMass,
+        'Liquid Waste Mass': totalLiquidWasteMass,
         WASTE_VOLUME_TOTAL: totalSolidWasteM3 + totalLiquidWasteM3,
-        WASTE_WEIGHT_TOTAL: 0,
+        WASTE_WEIGHT_TOTAL: totalSolidWasteMass + totalLiquidWasteMass,
 
         //totals
         TOTAL_COST: totalDeconCost,
@@ -2267,10 +2345,13 @@ export function useCalculateDeconPlan() {
                 contamGraphic.geometry,
               )
             ) {
-              contamGraphic.attributes.INTWALLS = null;
-              contamGraphic.attributes.EXTWALLS = null;
-              contamGraphic.attributes.ROOFS = null;
-              contamGraphic.attributes.FLOORS = null;
+              contamGraphic.attributes.EXTERIOR = null;
+              contamGraphic.attributes.INTERIOR = null;
+              contamGraphic.attributes.BRICK = null;
+              contamGraphic.attributes.CONCRETE = null;
+              contamGraphic.attributes.STEEL = null;
+              contamGraphic.attributes.WOOD = null;
+              contamGraphic.attributes.OTHER = null;
               newContamGraphics.push(contamGraphic);
               continue;
             }
@@ -2297,13 +2378,29 @@ export function useCalculateDeconPlan() {
               ? newInnerContamGeometry
               : [newInnerContamGeometry];
 
-            let CONTAMVALINTWALLS = contamGraphic.attributes.INTWALLS;
-            let CONTAMVALEXTWALLS = contamGraphic.attributes.EXTWALLS;
-            let CONTAMVALROOFS = contamGraphic.attributes.ROOFS;
-            let CONTAMVALFLOORS = contamGraphic.attributes.FLOORS;
+            const approach = deconOp.approach;
+            const buildingApproach = deconOp.buildingApproach;
+            const mediaKey =
+              approach === 'Basic'
+                ? 'Advanced - Building Structural Component'
+                : `${approach}${approach === 'Advanced' ? ` - ${buildingApproach}` : ''}`;
+            const basicBuildingDeconTech = curDeconTechSelections.find(
+              (t) => t.media === 'Buildings (Interior and Exterior)',
+            );
+            const buildingTech = curDeconTechSelections.filter((t) =>
+              mediaLookup[mediaKey].includes(t.media),
+            );
+
+            let CONTAMVALEXTERIOR = contamGraphic.attributes.EXTERIOR;
+            let CONTAMVALINTERIOR = contamGraphic.attributes.INTERIOR;
+            let CONTAMVALBRICK = contamGraphic.attributes.BRICK;
+            let CONTAMVALCONCRETE = contamGraphic.attributes.CONCRETE;
+            let CONTAMVALSTEEL = contamGraphic.attributes.STEEL;
+            let CONTAMVALWOOD = contamGraphic.attributes.WOOD;
+            let CONTAMVALOTHER = contamGraphic.attributes.OTHER;
             let totalSurfaceRemovalFactor = 0;
             let surfaceRemovalCount = 0;
-            for (const sel of curDeconTechSelections) {
+            for (const sel of buildingTech) {
               if (sel.deconTech) hasDeconTech = true;
 
               if (
@@ -2323,50 +2420,74 @@ export function useCalculateDeconPlan() {
                     continue;
                   }
 
-                  const plumeCfu = graphic.attributes.CONTAMVALPLUME;
-                  let mediaCfu = plumeCfu * (partitionFactors[sel.media] ?? 0);
+                  const {
+                    INTERIOR,
+                    EXTERIOR,
+                    BRICK,
+                    CONCRETE,
+                    STEEL,
+                    WOOD,
+                    OTHER,
+                  } = contamGraphic.attributes;
+                  let mediaCfu = graphic.attributes.CONTAMVALPLUME;
 
-                  if (sel.media === 'Building Roofs') {
-                    if (contamGraphic.attributes.ROOFS)
-                      mediaCfu = contamGraphic.attributes.ROOFS;
-                  }
-                  if (sel.media === 'Building Interior Floors') {
-                    if (contamGraphic.attributes.FLOORS)
-                      mediaCfu = contamGraphic.attributes.FLOORS;
-                  }
-                  if (sel.media === 'Building Exterior Walls') {
-                    if (contamGraphic.attributes.EXTWALLS)
-                      mediaCfu = contamGraphic.attributes.EXTWALLS;
-                  }
-                  if (sel.media === 'Building Interior Walls') {
-                    if (contamGraphic.attributes.INTWALLS)
-                      mediaCfu = contamGraphic.attributes.INTWALLS;
-                  }
+                  if (sel.media === 'Building Exteriors' && EXTERIOR)
+                    mediaCfu = EXTERIOR;
+                  if (sel.media === 'Building Interiors' && INTERIOR)
+                    mediaCfu = INTERIOR;
+                  if (sel.media === 'Brick Buildings' && BRICK)
+                    mediaCfu = BRICK;
+                  if (sel.media === 'Concrete Buildings' && CONCRETE)
+                    mediaCfu = CONCRETE;
+                  if (sel.media === 'Steel Buildings' && STEEL)
+                    mediaCfu = STEEL;
+                  if (sel.media === 'Wood Buildings' && WOOD) mediaCfu = WOOD;
+                  if (sel.media === 'Other Buildings' && OTHER)
+                    mediaCfu = OTHER;
 
-                  const deconTech = sampleAttributesDecon[sel.deconTech?.value];
+                  const deconTech =
+                    sampleAttributesDecon[
+                      approach === 'Basic'
+                        ? basicBuildingDeconTech?.deconTech?.value
+                        : sel.deconTech?.value
+                    ];
                   if (!deconTech) continue;
 
+                  const bldgApproachKey =
+                    buildingApproach === 'Building Structural Component' ||
+                    approach === 'Basic'
+                      ? 'SURFACE_SPECIFIC_PARAMS'
+                      : 'MATERIAL_SPECIFIC_PARAMS';
+
                   const { CONTAM_REMOVAL_FACTOR } =
-                    sampleAttributesDecon[sel.deconTech.value];
+                    deconTech[bldgApproachKey][
+                      sel.media.replace(' Buildings', '')
+                    ];
 
                   const contamReductionFactor = parseSmallFloat(
                     1 - CONTAM_REMOVAL_FACTOR,
                   );
                   const avgCfu = mediaCfu * contamReductionFactor;
-                  if (sel.media === 'Building Roofs') CONTAMVALROOFS = avgCfu;
-                  if (sel.media === 'Building Interior Floors')
-                    CONTAMVALFLOORS = avgCfu;
-                  if (sel.media === 'Building Exterior Walls')
-                    CONTAMVALEXTWALLS = avgCfu;
-                  if (sel.media === 'Building Interior Walls')
-                    CONTAMVALINTWALLS = avgCfu;
+
+                  if (sel.media === 'Building Exteriors')
+                    CONTAMVALEXTERIOR = avgCfu;
+                  if (sel.media === 'Building Interiors')
+                    CONTAMVALINTERIOR = avgCfu;
+                  if (sel.media === 'Brick Buildings') CONTAMVALBRICK = avgCfu;
+                  if (sel.media === 'Concrete Buildings')
+                    CONTAMVALCONCRETE = avgCfu;
+                  if (sel.media === 'Steel Buildings') CONTAMVALSTEEL = avgCfu;
+                  if (sel.media === 'Wood Buildings') CONTAMVALWOOD = avgCfu;
+                  if (sel.media === 'Other Buildings') CONTAMVALOTHER = avgCfu;
                 }
               } else {
                 surfaceRemovalCount += 1;
                 if (!sel.pctAoi || !sel.deconTech) continue;
 
                 const { CONTAM_REMOVAL_FACTOR } =
-                  sampleAttributesDecon[sel.deconTech.value];
+                  sampleAttributesDecon[sel.deconTech.value][
+                    'SURFACE_SPECIFIC_PARAMS'
+                  ][sel.media];
                 totalSurfaceRemovalFactor += CONTAM_REMOVAL_FACTOR;
               }
             }
@@ -2388,10 +2509,13 @@ export function useCalculateDeconPlan() {
                   new Graphic({
                     attributes: {
                       ...contamGraphic.attributes,
-                      INTWALLS: null,
-                      EXTWALLS: null,
-                      ROOFS: null,
-                      FLOORS: null,
+                      EXTERIOR: null,
+                      INTERIOR: null,
+                      BRICK: null,
+                      CONCRETE: null,
+                      STEEL: null,
+                      WOOD: null,
+                      OTHER: null,
                     },
                     geometry: geom,
                     symbol: contamGraphic.symbol,
@@ -2406,20 +2530,26 @@ export function useCalculateDeconPlan() {
 
             for (const geom of innerGeometry) {
               let newCfu = CONTAMVAL;
-              if (CONTAMVALEXTWALLS > newCfu) newCfu = CONTAMVALEXTWALLS;
-              if (CONTAMVALINTWALLS > newCfu) newCfu = CONTAMVALINTWALLS;
-              if (CONTAMVALROOFS > newCfu) newCfu = CONTAMVALROOFS;
-              if (CONTAMVALFLOORS > newCfu) newCfu = CONTAMVALFLOORS;
+              if (CONTAMVALEXTERIOR > newCfu) newCfu = CONTAMVALEXTERIOR;
+              if (CONTAMVALINTERIOR > newCfu) newCfu = CONTAMVALINTERIOR;
+              if (CONTAMVALBRICK > newCfu) newCfu = CONTAMVALBRICK;
+              if (CONTAMVALCONCRETE > newCfu) newCfu = CONTAMVALCONCRETE;
+              if (CONTAMVALSTEEL > newCfu) newCfu = CONTAMVALSTEEL;
+              if (CONTAMVALWOOD > newCfu) newCfu = CONTAMVALWOOD;
+              if (CONTAMVALOTHER > newCfu) newCfu = CONTAMVALOTHER;
 
               newContamGraphics.push(
                 new Graphic({
                   attributes: {
                     ...contamGraphic.attributes,
                     CONTAMVAL, // plume reductions
-                    INTWALLS: CONTAMVALINTWALLS,
-                    EXTWALLS: CONTAMVALEXTWALLS,
-                    ROOFS: CONTAMVALROOFS,
-                    FLOORS: CONTAMVALFLOORS,
+                    EXTERIOR: CONTAMVALEXTERIOR,
+                    INTERIOR: CONTAMVALINTERIOR,
+                    BRICK: CONTAMVALBRICK,
+                    CONCRETE: CONTAMVALCONCRETE,
+                    STEEL: CONTAMVALSTEEL,
+                    WOOD: CONTAMVALWOOD,
+                    OTHER: CONTAMVALOTHER,
                   },
                   geometry: geom,
                   symbol: !window.location.search.includes('devMode=true')

@@ -523,7 +523,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
           enableZ: true,
         };
       }
-    } else if (currentPanel?.value !== 'setup') {
+    } else if (currentPanel?.value !== 'additionalTools') {
       // disable the sketch vm for any panel other than locateSamples
       aoiSketchVM.layer = null as unknown as __esri.GraphicsLayer;
     }

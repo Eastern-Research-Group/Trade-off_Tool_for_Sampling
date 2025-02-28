@@ -523,20 +523,32 @@ export function contaminationMapPopup(feature: any) {
         // { label: 'Contaminated', fieldName: 'CONTAMINATED' },
         // { label: 'Has Decontamination been Applied', fieldName: 'CONTAMHIT' },
         {
-          fieldName: 'EXTWALLS',
-          label: 'Contamination Value Exterior Walls',
+          fieldName: 'EXTERIOR',
+          label: 'Contamination Value Building Exteriors',
         },
         {
-          fieldName: 'INTWALLS',
-          label: 'Contamination Value Interior Walls',
+          fieldName: 'INTERIOR',
+          label: 'Contamination Value Building Interiors',
         },
         {
-          fieldName: 'FLOORS',
-          label: 'Contamination Value Floors',
+          fieldName: 'BRICK',
+          label: 'Contamination Value Brick Buildings',
         },
         {
-          fieldName: 'ROOFS',
-          label: 'Contamination Value Roofs',
+          fieldName: 'CONCRETE',
+          label: 'Contamination Value Concrete Buildings',
+        },
+        {
+          fieldName: 'STEEL',
+          label: 'Contamination Value Steel Buildings',
+        },
+        {
+          fieldName: 'WOOD',
+          label: 'Contamination Value Wood Buildings',
+        },
+        {
+          fieldName: 'OTHER',
+          label: 'Contamination Value Other Buildings',
         },
         { label: 'FID', fieldName: 'FID' },
         { label: 'ID', fieldName: 'Id' },

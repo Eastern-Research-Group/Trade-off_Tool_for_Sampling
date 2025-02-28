@@ -40,25 +40,42 @@ const sectionContainer = css`
   padding: 0 20px;
 `;
 
-// --- components (AdditionalSetup) ---
+// --- components (AdditionalTools) ---
 type Props = {
   appType: AppType;
 };
 
-function AdditionalSetup({ appType }: Props) {
+function AdditionalTools({ appType }: Props) {
   return (
     <div css={panelContainer}>
       <div>
         <div css={sectionContainer}>
-          <h2>Additional Setup</h2>
-          <p>Placeholder text...</p>
+          <h2>Additional Tools</h2>
+          {appType === 'sampling' && (
+            <p>
+              Additional tools are available to support planning efforts. TOTS
+              allows user to create custom sample types for use in planning. You
+              can also characterize an area of interest to understand
+              characteristics of ground surfaces and building infrastructure in
+              an AOI. Use EPA’s waste staging/storage suitability feature layer
+              in conjunction with other relevant GIS data (e.g., parcel
+              ownership) to identify staging areas.​
+            </p>
+          )}
+          {appType === 'decon' && (
+            <p>
+              Additional tools are available to support planning efforts. You
+              can characterize an area of interest to understand characteristics
+              of ground surfaces and building infrastructure in an AOI. Use
+              EPA’s waste staging/storage suitability feature layer in
+              conjunction with other relevant GIS data (e.g., parcel ownership)
+              to identify staging areas.​
+            </p>
+          )}
         </div>
 
         <AccordionList>
-          <AccordionItem
-            title={'Characterize Area of Interest'}
-            initiallyExpanded={isDecon()}
-          >
+          <AccordionItem title={'Characterize Area of Interest'}>
             <div css={sectionContainer}>
               <CharacterizeAOI appType={appType} />
             </div>
@@ -77,10 +94,10 @@ function AdditionalSetup({ appType }: Props) {
       </div>
 
       <div css={sectionContainer}>
-        <NavigationButton currentPanel="setup" />
+        <NavigationButton currentPanel="additionalTools" />
       </div>
     </div>
   );
 }
 
-export default AdditionalSetup;
+export default AdditionalTools;
