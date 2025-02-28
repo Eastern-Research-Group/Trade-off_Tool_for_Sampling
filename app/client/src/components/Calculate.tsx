@@ -2530,24 +2530,39 @@ function CalculateResultsPopup({
                       alias: 'Contamination Value',
                     },
                     {
-                      name: 'EXTWALLS',
+                      name: 'EXTERIOR',
                       type: 'double',
-                      alias: 'Contamination Value Exterior Walls',
+                      alias: 'Contamination Value Building Exteriors',
                     },
                     {
-                      name: 'INTWALLS',
+                      name: 'INTERIOR',
                       type: 'double',
-                      alias: 'Contamination Value Interior Walls',
+                      alias: 'Contamination Value Building Interiors',
                     },
                     {
-                      name: 'FLOORS',
+                      name: 'BRICK',
                       type: 'double',
-                      alias: 'Contamination Value Floors',
+                      alias: 'Contamination Value Brick Buildings',
                     },
                     {
-                      name: 'ROOFS',
+                      name: 'CONCRETE',
                       type: 'double',
-                      alias: 'Contamination Value Roofs',
+                      alias: 'Contamination Value Concrete Buildings',
+                    },
+                    {
+                      name: 'STEEL',
+                      type: 'double',
+                      alias: 'Contamination Value Steel Buildings',
+                    },
+                    {
+                      name: 'WOOD',
+                      type: 'double',
+                      alias: 'Contamination Value Wood Buildings',
+                    },
+                    {
+                      name: 'OTHER',
+                      type: 'double',
+                      alias: 'Contamination Value Other Buildings',
                     },
                     {
                       name: 'CONTAMUNIT',
