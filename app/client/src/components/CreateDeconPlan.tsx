@@ -1743,8 +1743,14 @@ function DeconSelectionPopup({
                 header: 'Percent of AOI',
                 accessorKey: 'pctAoi',
                 size: 75,
-                cell: (info: CellContext<any, any>) =>
-                  `${formatNumber(info.getValue())}%`,
+                cell: (info: CellContext<any, any>) => {
+                  if (
+                    info.row.original.media ===
+                    'Buildings (Interior and Exterior)'
+                  )
+                    return undefined;
+                  return `${formatNumber(info.getValue())}%`;
+                },
               },
               {
                 header: 'Surface Area',
