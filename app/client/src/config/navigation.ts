@@ -7,8 +7,8 @@ export const samplingPanels: PanelType[] = [
     iconClass: 'fas fa-layer-group',
   },
   {
-    value: 'setup',
-    label: 'Additional Setup',
+    value: 'additionalTools',
+    label: 'Additional Tools',
     iconClass: 'fas fa-wrench',
   },
   {
@@ -40,8 +40,8 @@ export const deconPanels: PanelType[] = [
     iconClass: 'fas fa-layer-group',
   },
   {
-    value: 'setup',
-    label: 'AOI Setup',
+    value: 'additionalTools',
+    label: 'Additional Tools',
     iconClass: 'fas fa-wrench',
   },
   {
@@ -68,7 +68,7 @@ export const deconPanels: PanelType[] = [
 
 export type PanelValueType =
   | 'addData'
-  | 'setup'
+  | 'additionalTools'
   | 'locateSamples'
   | 'decon'
   | 'calculate'

@@ -5,6 +5,7 @@ import { css } from '@emotion/react';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import InfoIcon from 'components/InfoIcon';
+import MessageBox from 'components/MessageBox';
 import Select from 'components/Select';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
@@ -29,29 +30,14 @@ import {
   LayerDeconEditsType,
 } from 'types/Edits';
 import { LayerType } from 'types/Layer';
-import { ErrorType } from 'types/Misc';
 import { AppType } from 'types/Navigation';
 // styles
-import { colors, infoIconStyles, reactSelectStyles } from 'styles';
+import { infoIconStyles, reactSelectStyles } from 'styles';
 import { webServiceErrorMessage } from 'config/errorMessages';
 import { fetchPost, fetchPostFile } from 'utils/fetchUtils';
 import { fetchBuildingData, GsgParam, processScenario } from 'utils/hooks';
 import { convertBase64ToFile } from 'utils/utils';
 import { useLookupFiles } from 'contexts/LookupFiles';
-
-export type SaveStatusType =
-  | 'none'
-  | 'changes'
-  | 'fetching'
-  | 'success'
-  | 'failure'
-  | 'fetch-failure'
-  | 'name-not-available';
-
-export type SaveResultsType = {
-  status: SaveStatusType;
-  error?: ErrorType;
-};
 
 const helpText = `
   Select "Draw Area of Interest" to draw a boundary on your map to<br/>
@@ -127,31 +113,6 @@ const layerSelectStyles = css`
 const radioLabelStyles = css`
   padding-left: 0.375rem;
 `;
-
-const saveButtonContainerStyles = css`
-  display: flex;
-  justify-content: flex-end;
-`;
-
-const saveButtonStyles = (status: string) => {
-  let backgroundColor = '';
-  if (status === 'success') {
-    backgroundColor = `background-color: ${colors.green()};`;
-  }
-  if (status === 'failure' || status === 'name-not-available') {
-    backgroundColor = `background-color: ${colors.red()};`;
-  }
-
-  return css`
-    margin: 5px 0;
-    ${backgroundColor}
-
-    &:disabled {
-      cursor: default;
-      opacity: 0.65;
-    }
-  `;
-};
 
 const sketchAoiButtonStyles = css`
   background-color: white;
@@ -463,7 +424,6 @@ function CharacterizeAOI({
         {},
         defaultDeconSelections,
       );
-      console.log('newDeconTechSelections: ', newDeconTechSelections);
 
       // Figure out what to add graphics to
       const aoiAssessed = deconSketchLayer.layers.find(
@@ -743,6 +703,8 @@ function CharacterizeAOI({
         tempCharacterizeAoiLayer,
       } = createScenarioDeconLayer(defaultDeconSelections);
 
+      layerDecon.analysisLayerId = layerAoiAnalysis.layerId;
+
       // make a copy of the edits context variable
       setEdits((edits) => {
         const newEdits = edits.edits.filter((edit) => {
@@ -750,6 +712,23 @@ function CharacterizeAOI({
 
           return idx === -1;
         });
+
+        if (selectedScenario?.type === 'scenario-decon') {
+          const scenarioEdit = newEdits.find(
+            (e) => e.layerId === selectedScenario.layerId,
+          ) as ScenarioDeconEditsType;
+          if (scenarioEdit.linkedLayerIds.length === 0) {
+            scenarioEdit.linkedLayerIds.push(layerDecon.layerId);
+            setSelectedScenario((selectedScenario) => {
+              if (selectedScenario?.type !== 'scenario-decon')
+                return selectedScenario;
+              return {
+                ...selectedScenario,
+                linkedLayerIds: [layerDecon.layerId],
+              };
+            });
+          }
+        }
 
         return {
           count: edits.count + 1,
@@ -782,127 +761,128 @@ function CharacterizeAOI({
     layers,
     layersInitialized,
     map,
+    selectedScenario,
     setDeconSketchLayer,
     setEdits,
     setLayers,
+    setSelectedScenario,
   ]);
 
   const [newDeconLayerName, setNewDeconLayerName] = useState('');
-  const [saveStatus, setSaveStatus] = useState<SaveStatusType>('none');
+
+  function handleAdd() {
+    if (!map) return;
+
+    const {
+      layers: newLayers,
+      groupLayer,
+      layerAoiAnalysis,
+      sketchLayer,
+      tempAssessedAoiLayer,
+      tempImageAnalysisLayer,
+      tempCharacterizeAoiLayer,
+    } = createScenarioDeconLayer(defaultDeconSelections, undefined);
+
+    // make a copy of the edits context variable
+    setEdits((edits) => {
+      const newEdits = edits.edits.filter((edit) => {
+        const idx = newLayers.findIndex((l) => l.layerId === edit.layerId);
+
+        return idx === -1;
+      });
+
+      const selectedOp = edits.edits.find(
+        (edit) =>
+          edit.type === 'layer-decon' &&
+          edit.layerId === deconOperation?.layerId,
+      ) as LayerDeconEditsType | undefined;
+      if (selectedOp) {
+        if (!selectedOp.analysisLayerId)
+          selectedOp.analysisLayerId = layerAoiAnalysis.layerId;
+        selectedOp.deconTechSelections = selectedOp.deconTechSelections.map(
+          (tech) => {
+            return {
+              ...tech,
+              pctAoi: 0,
+              surfaceArea: 0,
+            };
+          },
+        );
+      }
+
+      return {
+        count: edits.count + 1,
+        edits: [...newEdits, layerAoiAnalysis],
+      };
+    });
+
+    setDeconSketchLayer(layerAoiAnalysis);
+
+    const tLayers = [...layers];
+    if (tempCharacterizeAoiLayer) tLayers.push(tempCharacterizeAoiLayer);
+    if (sketchLayer) tLayers.push(sketchLayer);
+    if (tempImageAnalysisLayer) tLayers.push(tempImageAnalysisLayer);
+    if (tempAssessedAoiLayer) tLayers.push(tempAssessedAoiLayer);
+
+    // update layers (set parent layer)
+    window.totsLayers = tLayers;
+    setLayers(tLayers);
+
+    if (selectedScenario?.type === 'scenario-decon') {
+      setCalculateResultsDecon((calculateResultsDecon) => {
+        return {
+          status: 'fetching',
+          panelOpen: calculateResultsDecon.panelOpen,
+          data: null,
+        };
+      });
+    }
+
+    // add the scenario group layer to the map
+    map.add(groupLayer);
+  }
 
   // Saves the scenario name and description to the layer and edits objects.
   function handleSave() {
     if (!map) return;
 
     const layer = layers.find((l) => l.layerId === deconSketchLayer?.layerId);
-    if (deconSketchLayer && layer && editScenarioVisible) {
-      // update title on layer
-      if (layer.sketchLayer) layer.sketchLayer.title = newDeconLayerName;
+    if (!deconSketchLayer || !layer) return;
 
-      // update selected decon layer
-      setDeconSketchLayer((layer) => {
-        if (!layer) return null;
-        return {
-          ...layer,
-          name: newDeconLayerName,
-          label: newDeconLayerName,
-        };
-      });
+    // update title on layer
+    if (layer.sketchLayer) layer.sketchLayer.title = newDeconLayerName;
 
-      setDeconLayers((deconLayers) => {
-        return deconLayers.map((layer) => {
-          if (layer.layerId === deconSketchLayer.layerId) {
-            return {
-              ...layer,
-              name: newDeconLayerName,
-              label: newDeconLayerName,
-            };
-          }
-          return layer;
-        });
-      });
+    // update selected decon layer
+    setDeconSketchLayer((layer) => {
+      if (!layer) return null;
+      return {
+        ...layer,
+        name: newDeconLayerName,
+        label: newDeconLayerName,
+      };
+    });
 
-      // update the layer in edits and the decisionunit attribute for each graphic
-      const editsCopy = updateLayerEdits({
-        appType,
-        edits,
-        layer: { ...layer, name: newDeconLayerName, label: newDeconLayerName },
-        type: 'update',
-      });
-      setEdits(editsCopy);
-    } else {
-      const {
-        layers: newLayers,
-        groupLayer,
-        layerAoiAnalysis,
-        sketchLayer,
-        tempAssessedAoiLayer,
-        tempImageAnalysisLayer,
-        tempCharacterizeAoiLayer,
-      } = createScenarioDeconLayer(defaultDeconSelections, newDeconLayerName);
-
-      // make a copy of the edits context variable
-      setEdits((edits) => {
-        const newEdits = edits.edits.filter((edit) => {
-          const idx = newLayers.findIndex((l) => l.layerId === edit.layerId);
-
-          return idx === -1;
-        });
-
-        const selectedOp = edits.edits.find(
-          (edit) =>
-            edit.type === 'layer-decon' &&
-            edit.layerId === deconOperation?.layerId,
-        ) as LayerDeconEditsType | undefined;
-        if (selectedOp) {
-          if (!selectedOp.analysisLayerId)
-            selectedOp.analysisLayerId = layerAoiAnalysis.layerId;
-          selectedOp.deconTechSelections = selectedOp.deconTechSelections.map(
-            (tech) => {
-              return {
-                ...tech,
-                pctAoi: 0,
-                surfaceArea: 0,
-              };
-            },
-          );
-        }
-
-        return {
-          count: edits.count + 1,
-          edits: [...newEdits, layerAoiAnalysis],
-        };
-      });
-
-      setDeconSketchLayer(layerAoiAnalysis);
-
-      const tLayers = [...layers];
-      if (tempCharacterizeAoiLayer) tLayers.push(tempCharacterizeAoiLayer);
-      if (sketchLayer) tLayers.push(sketchLayer);
-      if (tempImageAnalysisLayer) tLayers.push(tempImageAnalysisLayer);
-      if (tempAssessedAoiLayer) tLayers.push(tempAssessedAoiLayer);
-
-      // update layers (set parent layer)
-      window.totsLayers = tLayers;
-      setLayers(tLayers);
-
-      if (selectedScenario?.type === 'scenario-decon') {
-        setCalculateResultsDecon((calculateResultsDecon) => {
+    setDeconLayers((deconLayers) => {
+      return deconLayers.map((layer) => {
+        if (layer.layerId === deconSketchLayer.layerId) {
           return {
-            status: 'fetching',
-            panelOpen: calculateResultsDecon.panelOpen,
-            data: null,
+            ...layer,
+            name: newDeconLayerName,
+            label: newDeconLayerName,
           };
-        });
-      }
+        }
+        return layer;
+      });
+    });
 
-      // add the scenario group layer to the map
-      map.add(groupLayer);
-    }
-
-    setAddScenarioVisible(false);
-    setEditScenarioVisible(false);
-    setSaveStatus('success');
+    // update the layer in edits and the decisionunit attribute for each graphic
+    const editsCopy = updateLayerEdits({
+      appType,
+      edits,
+      layer: { ...layer, name: newDeconLayerName, label: newDeconLayerName },
+      type: 'update',
+    });
+    setEdits(editsCopy);
   }
 
   useEffect(() => {
@@ -1037,8 +1017,17 @@ function CharacterizeAOI({
                 title={addScenarioVisible ? 'Cancel' : 'Add Layer'}
                 onClick={() => {
                   setEditScenarioVisible(false);
-                  if (!addScenarioVisible) setNewDeconLayerName('');
                   setAddScenarioVisible(!addScenarioVisible);
+
+                  if (!addScenarioVisible) {
+                    handleAdd();
+
+                    // log stuff for tracking this
+                  } else {
+                    setNewDeconLayerName('');
+
+                    // delete the newly added layer
+                  }
                 }}
               >
                 <i
@@ -1144,31 +1133,14 @@ function CharacterizeAOI({
               value={newDeconLayerName}
               onChange={(ev) => {
                 setNewDeconLayerName(ev.target.value);
-                setSaveStatus('changes');
+              }}
+              onBlur={handleSave}
+              onKeyUp={(ev) => {
+                if (ev.key !== 'Enter') return;
+                handleSave();
               }}
             />
           </label>
-
-          <div css={saveButtonContainerStyles}>
-            <button
-              css={saveButtonStyles(saveStatus)}
-              type="submit"
-              disabled={
-                saveStatus === 'none' ||
-                saveStatus === 'success' ||
-                !newDeconLayerName ||
-                newDeconLayerName === deconSketchLayer?.name
-              }
-              onClick={handleSave}
-            >
-              {(saveStatus === 'none' || saveStatus === 'changes') && 'Save'}
-              {saveStatus === 'success' && (
-                <Fragment>
-                  <i className="fas fa-check" /> Saved
-                </Fragment>
-              )}
-            </button>
-          </div>
         </div>
       )}
 
@@ -1450,7 +1422,8 @@ function CharacterizeAOI({
                   disabled={calculateResultsDecon.status === 'fetching'}
                   onClick={assessAoi}
                 >
-                  {aoiCharacterizationData.status !== 'fetching' && 'Submit'}
+                  {aoiCharacterizationData.status !== 'fetching' &&
+                    'Save and Submit'}
                   {aoiCharacterizationData.status === 'fetching' && (
                     <Fragment>
                       <i className="fas fa-spinner fa-pulse" />
@@ -1459,8 +1432,24 @@ function CharacterizeAOI({
                   )}
                 </button>
               </div>
+              {aoiCharacterizationData.status === 'fetching' && (
+                <MessageBox
+                  severity="warning"
+                  title=""
+                  message={
+                    <Fragment>
+                      The tool is performing ground surface imagery analysis and
+                      retrieving building infrastructure characteristics. Please
+                      be patient. Tip: Smaller AOIs will return results more
+                      quickly.
+                    </Fragment>
+                  }
+                />
+              )}
             </Fragment>
           )}
+
+          <hr />
         </Fragment>
       )}
     </Fragment>

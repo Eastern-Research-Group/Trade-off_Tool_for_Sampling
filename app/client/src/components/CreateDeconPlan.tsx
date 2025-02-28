@@ -4,8 +4,7 @@ import React, { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
 import { CellContext } from '@tanstack/react-table';
 // components
-import { AccordionList, AccordionItem } from 'components/Accordion';
-import CharacterizeAOI, { SaveStatusType } from 'components/CharacterizeAOI';
+import CharacterizeAOI from 'components/CharacterizeAOI';
 import { EditScenario } from 'components/EditLayerMetaData';
 import InfoIcon from 'components/InfoIcon';
 import LoadingSpinner from 'components/LoadingSpinner';
@@ -44,6 +43,15 @@ import { formatNumber, getNewName, getScenarioName } from 'utils/utils';
 // styles
 import { colors, infoIconStyles, reactSelectStyles } from 'styles';
 import { DialogContent, DialogOverlay } from '@reach/dialog';
+
+type SaveStatusType =
+  | 'none'
+  | 'changes'
+  | 'fetching'
+  | 'success'
+  | 'failure'
+  | 'fetch-failure'
+  | 'name-not-available';
 
 type ShapeTypeSelect = {
   value: string;
@@ -190,6 +198,10 @@ const saveButtonContainerStyles = css`
   justify-content: flex-end;
 `;
 
+const opIndentStyles = css`
+  margin-left: 0.75rem;
+`;
+
 const saveButtonStyles = (status: string) => {
   let backgroundColor = '';
   if (status === 'success') {
@@ -290,11 +302,15 @@ function CreateDeconPlan({ appType }: Props) {
     sketchLayerInitialized,
   ]);
 
+  const [lastDeconOpId, setLastDeconOpId] = useState('');
   useEffect(() => {
     if (!deconOperation) {
       setDeconSketchLayer(null);
       return;
     }
+    if (deconOperation.layerId === lastDeconOpId) return;
+
+    setLastDeconOpId(deconOperation.layerId);
 
     const deconLayer = edits.edits.find(
       (edit) =>
@@ -311,7 +327,7 @@ function CreateDeconPlan({ appType }: Props) {
         edit.layerId === deconLayer.analysisLayerId,
     ) as LayerAoiAnalysisEditsType;
     setDeconSketchLayer(layer ?? null);
-  }, [deconOperation, edits, setDeconSketchLayer]);
+  }, [deconOperation, edits, lastDeconOpId, setDeconSketchLayer]);
 
   // scenario and layer edit UI visibility controls
   const [addOperationVisible, setAddOperationVisible] = useState(false);
@@ -382,13 +398,11 @@ function CreateDeconPlan({ appType }: Props) {
         <div css={lineSeparatorStyles} />
         <div css={sectionContainer}>
           {selectedScenario ? (
-            <p></p>
+            <strong>Step1: Define a Decontamination Plan</strong>
           ) : (
             <Fragment>
-              <p>
-                Create a decontamination plan. Enter a plan name and description
-                and click Save.
-              </p>
+              <strong>Step1: Define a Decontamination Plan</strong>
+              <p>Enter a plan name and description and click Save.</p>
               <MessageBox
                 severity="warning"
                 title=""
@@ -657,6 +671,14 @@ function CreateDeconPlan({ appType }: Props) {
 
           {selectedScenario && (
             <Fragment>
+              <strong>Step 2: Define a Decontamination Operation</strong>
+              <p>
+                For each decon operation, select or create a new operation and
+                create or link an existing AOI. Click “Select/Edit
+                Decontamination Technology Selections” to assign an appropriate
+                decontamination method to each contamination scenario
+                presented.​
+              </p>
               <div>
                 <div css={iconButtonContainerStyles}>
                   <div css={verticalCenterTextStyles}>
@@ -1177,84 +1199,69 @@ function CreateDeconPlan({ appType }: Props) {
                 </div>
               )}
 
-              <CharacterizeAOI
-                appType={appType}
-                label="Linked AOI Layer"
-                showHelpText={false}
-                showOnEdit={true}
-              />
+              <div css={opIndentStyles}>
+                <CharacterizeAOI
+                  appType={appType}
+                  label="Linked AOI Layer"
+                  showHelpText={false}
+                  showOnEdit={true}
+                />
 
-              {trainingMode && (
-                <div>
-                  <label htmlFor="contamination-map-select-input">
-                    Contamination map
-                  </label>
-                  <div css={inlineMenuStyles}>
-                    <Select
-                      id="contamination-map-select"
-                      inputId="contamination-map-select-input"
-                      css={fullWidthSelectStyles}
-                      styles={reactSelectStyles as any}
-                      value={contaminationMap}
-                      onChange={(ev) => setContaminationMap(ev as LayerType)}
-                      options={layers.filter(
-                        (layer: any) => layer.layerType === 'Contamination Map',
-                      )}
-                    />
-                    <button
-                      css={addButtonStyles}
-                      onClick={(_ev) => {
-                        setGoTo('addData');
-                        setGoToOptions({
-                          from: 'file',
-                          layerType: 'Contamination Map',
-                        });
-                      }}
-                    >
-                      Add
-                    </button>
+                {trainingMode && (
+                  <div>
+                    <label htmlFor="contamination-map-select-input">
+                      Contamination map
+                    </label>
+                    <div css={inlineMenuStyles}>
+                      <Select
+                        id="contamination-map-select"
+                        inputId="contamination-map-select-input"
+                        css={fullWidthSelectStyles}
+                        styles={reactSelectStyles as any}
+                        value={contaminationMap}
+                        onChange={(ev) => setContaminationMap(ev as LayerType)}
+                        options={layers.filter(
+                          (layer: any) =>
+                            layer.layerType === 'Contamination Map',
+                        )}
+                      />
+                      <button
+                        css={addButtonStyles}
+                        onClick={(_ev) => {
+                          setGoTo('addData');
+                          setGoToOptions({
+                            from: 'file',
+                            layerType: 'Contamination Map',
+                          });
+                        }}
+                      >
+                        Add
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+
+                {deconSketchLayer &&
+                  (!trainingMode || (trainingMode && contaminationMap)) && (
+                    <Fragment>
+                      <button
+                        css={submitButtonStyles}
+                        onClick={() => setDeconTechPopupOpen(true)}
+                      >
+                        Select/Edit Decontamination Technology Selections
+                      </button>
+
+                      <DeconSelectionPopup
+                        defaultDeconSelections={defaultDeconSelections}
+                        isOpen={deconTechPopupOpen}
+                        onClose={() => setDeconTechPopupOpen(false)}
+                      />
+                    </Fragment>
+                  )}
+              </div>
             </Fragment>
           )}
         </div>
-
-        {deconSketchLayer &&
-          (!trainingMode || (trainingMode && contaminationMap)) && (
-            <Fragment>
-              <AccordionList>
-                <AccordionItem
-                  title="Select Decontamination Technology"
-                  initiallyExpanded={true}
-                >
-                  <div css={sectionContainer}>
-                    <p>
-                      The tool generates a listing of different contamination
-                      scenarios that are present within the specified AOI. Click
-                      "Select/Edit Decontamination Technology Selections" to
-                      review a summary of relevant characteristics and assign an
-                      appropriate decontamination method to address the
-                      contamination.
-                    </p>
-
-                    <button
-                      css={submitButtonStyles}
-                      onClick={() => setDeconTechPopupOpen(true)}
-                    >
-                      Select/Edit Decontamination Technology Selections
-                    </button>
-
-                    <DeconSelectionPopup
-                      defaultDeconSelections={defaultDeconSelections}
-                      isOpen={deconTechPopupOpen}
-                      onClose={() => setDeconTechPopupOpen(false)}
-                    />
-                  </div>
-                </AccordionItem>
-              </AccordionList>
-            </Fragment>
-          )}
       </div>
       <div css={sectionContainer}>
         <NavigationButton currentPanel="decon" />
