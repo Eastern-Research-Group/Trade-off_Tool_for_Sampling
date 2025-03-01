@@ -6,6 +6,7 @@ import { AccordionList, AccordionItem } from 'components/Accordion';
 import CharacterizeAOI from 'components/CharacterizeAOI';
 import CustomSampleType from 'components/CustomSampleType';
 import NavigationButton from 'components/NavigationButton';
+import StagingAreas from 'components/StagingAreas';
 // types
 import { ErrorType } from 'types/Misc';
 import { AppType } from 'types/Navigation';
@@ -64,14 +65,21 @@ function AdditionalSetup({ appType }: Props) {
             </div>
           </AccordionItem>
           {appType === 'sampling' && (
-            <AccordionItem title="Create Custom Sample Types">
-              <div css={sectionContainer}>
-                <CustomSampleType
-                  appType="sampling"
-                  id="plan-custom-sample-types"
-                />
-              </div>
-            </AccordionItem>
+            <>
+              <AccordionItem title="Identify Staging Areas">
+                <div css={sectionContainer}>
+                  <StagingAreas />
+                </div>
+              </AccordionItem>
+              <AccordionItem title="Create Custom Sample Types">
+                <div css={sectionContainer}>
+                  <CustomSampleType
+                    appType="sampling"
+                    id="plan-custom-sample-types"
+                  />
+                </div>
+              </AccordionItem>
+            </>
           )}
         </AccordionList>
       </div>

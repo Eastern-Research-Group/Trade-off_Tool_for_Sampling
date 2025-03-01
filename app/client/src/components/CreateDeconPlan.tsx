@@ -17,10 +17,12 @@ import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 import { ReactTableEditable } from 'components/ReactTable';
 import Select from 'components/Select';
+// config
+import { hazardousOptions } from 'config/options';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 import { NavigationContext } from 'contexts/Navigation';
-import { SketchContext, hazardousOptions } from 'contexts/Sketch';
+import { SketchContext } from 'contexts/Sketch';
 // types
 import {
   EditsType,

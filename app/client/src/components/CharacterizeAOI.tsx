@@ -1,9 +1,13 @@
 /** @jsxImportSource @emotion/react */
 
-import React, { Fragment, useContext, useEffect, useState } from 'react';
+import { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
+import AoiSketchButton from 'components/AoiSketchButton';
+import AoiLayerButtons from 'components/AoiLayerButtons';
+import AoiLayerEdit from 'components/AoiLayerEdit';
+import AoiLayerSelect from 'components/AoiLayerSelect';
 import InfoIcon from 'components/InfoIcon';
 import Select from 'components/Select';
 // contexts
@@ -12,11 +16,8 @@ import { NavigationContext } from 'contexts/Navigation';
 import { PlanGraphics, SketchContext } from 'contexts/Sketch';
 // utils
 import {
-  activateSketchButton,
   calculateArea,
   createScenarioDeconLayer,
-  getDefaultSamplingMaskLayer,
-  getScenariosDecon,
   updateLayerEdits,
 } from 'utils/sketchUtils';
 // types
@@ -25,13 +26,12 @@ import {
   LayerEditsType,
   EditsType,
   LayerAoiAnalysisEditsType,
-  LayerDeconEditsType,
 } from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { ErrorType } from 'types/Misc';
 import { AppType } from 'types/Navigation';
 // styles
-import { colors, infoIconStyles, reactSelectStyles } from 'styles';
+import { infoIconStyles, reactSelectStyles } from 'styles';
 import { webServiceErrorMessage } from 'config/errorMessages';
 import { fetchPost, fetchPostFile } from 'utils/fetchUtils';
 import { fetchBuildingData, GsgParam, processScenario } from 'utils/hooks';
@@ -67,27 +67,6 @@ const addButtonStyles = css`
   height: 38px; /* same height as ReactSelect */
 `;
 
-const iconButtonContainerStyles = css`
-  display: flex;
-  justify-content: space-between;
-`;
-
-const iconButtonStyles = css`
-  width: 25px;
-  margin: 0 2px;
-  padding: 0.25em 0;
-  color: black;
-  background-color: white;
-  border-radius: 0;
-  line-height: 16px;
-  text-decoration-line: none;
-  font-weight: bold;
-
-  &:hover {
-    background-color: white;
-  }
-`;
-
 const inlineMenuStyles = css`
   display: flex;
   align-items: center;
@@ -99,80 +78,8 @@ const inlineSelectStyles = css`
   margin-right: 10px;
 `;
 
-const inputStyles = css`
-  width: 100%;
-  height: 36px;
-  margin: 0 0 10px 0;
-  padding-left: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-`;
-
-const layerButtonContainerStyles = css`
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-
-  div {
-    display: flex;
-    justify-content: flex-end;
-  }
-`;
-
-const layerSelectStyles = css`
-  margin-bottom: 10px;
-`;
-
 const radioLabelStyles = css`
   padding-left: 0.375rem;
-`;
-
-const saveButtonContainerStyles = css`
-  display: flex;
-  justify-content: flex-end;
-`;
-
-const saveButtonStyles = (status: string) => {
-  let backgroundColor = '';
-  if (status === 'success') {
-    backgroundColor = `background-color: ${colors.green()};`;
-  }
-  if (status === 'failure' || status === 'name-not-available') {
-    backgroundColor = `background-color: ${colors.red()};`;
-  }
-
-  return css`
-    margin: 5px 0;
-    ${backgroundColor}
-
-    &:disabled {
-      cursor: default;
-      opacity: 0.65;
-    }
-  `;
-};
-
-const sketchAoiButtonStyles = css`
-  background-color: white;
-  color: black;
-  margin-bottom: 0.5rem;
-
-  &:hover,
-  &:focus {
-    background-color: #e7f6f8;
-    cursor: pointer;
-  }
-`;
-
-const sketchAoiTextStyles = css`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  i {
-    font-size: 20px;
-    margin-right: 5px;
-  }
 `;
 
 const submitButtonStyles = css`
@@ -182,11 +89,6 @@ const submitButtonStyles = css`
   button {
     margin-top: 10px;
   }
-`;
-
-const verticalCenterTextStyles = css`
-  display: flex;
-  align-items: center;
 `;
 
 // --- components (CharacterizeAOI) ---
@@ -208,19 +110,14 @@ function CharacterizeAOI({
   const { setGoTo, setGoToOptions } = useContext(NavigationContext);
   const {
     aoiCharacterizationData,
-    aoiSketchLayer,
     aoiSketchVM,
-    deconOperation,
     deconSketchLayer,
     defaultDeconSelections,
-    displayDimensions,
     edits,
     gsgFiles,
     layers,
     layersInitialized,
     map,
-    mapView,
-    sceneView,
     sceneViewForArea,
     selectedScenario,
     setAoiCharacterizationData,
@@ -229,25 +126,8 @@ function CharacterizeAOI({
     setEdits,
     setGsgFiles,
     setLayers,
-    setSelectedScenario,
-    sketchVM,
   } = useContext(SketchContext);
   const { defaultGsg, services } = useLookupFiles().data;
-
-  // Initializes the aoi layer for performance reasons
-  useEffect(() => {
-    if (!map || !layersInitialized || aoiSketchLayer) return;
-
-    const newAoiSketchLayer = getDefaultSamplingMaskLayer();
-
-    // add the layer to the map
-    setLayers((layers) => {
-      return [...layers, newAoiSketchLayer];
-    });
-
-    // set the active sketch layer
-    setAoiSketchLayer(newAoiSketchLayer);
-  }, [map, aoiSketchLayer, setAoiSketchLayer, layersInitialized, setLayers]);
 
   const [lastAoiSketchLayer, setLastAoiSketchLayer] =
     useState<__esri.GraphicsLayer | null>(null);
@@ -285,39 +165,6 @@ function CharacterizeAOI({
       if (lastAoiSketchLayer) aoiSketchVM.layer = lastAoiSketchLayer;
     };
   }, [aoiSketchVM, edits, lastAoiSketchLayer, layers]);
-
-  // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
-  // dropdown this will create an AOI layer. This also sets the sketchVM to use the
-  // selected AOI and triggers a React useEffect to allow the user to sketch on the map.
-  function sketchAoiButtonClick() {
-    if (!map || !aoiSketchVM || !sceneView || !mapView || !deconSketchLayer)
-      return;
-
-    const aoiEditsLayer = deconSketchLayer.layers.find(
-      (l) => l.layerType === 'Decon Mask',
-    );
-    const sketchLayer = layers.find(
-      (l) =>
-        l.layerType === 'Decon Mask' && l.layerId === aoiEditsLayer?.layerId,
-    );
-
-    if (sketchLayer)
-      aoiSketchVM.layer = sketchLayer.sketchLayer as __esri.GraphicsLayer;
-
-    // save changes from other sketchVM and disable to prevent
-    // interference
-    if (sketchVM) sketchVM[displayDimensions].cancel();
-
-    // make the style of the button active
-    const wasSet = activateSketchButton('decon-mask');
-
-    if (wasSet) {
-      // let the user draw/place the shape
-      aoiSketchVM.create('polygon');
-    } else {
-      aoiSketchVM.cancel();
-    }
-  }
 
   async function assessAoi() {
     if (!deconSketchLayer || !deconSketchLayer.aoiLayerMode) return;
@@ -748,368 +595,56 @@ function CharacterizeAOI({
   ]);
 
   const [newDeconLayerName, setNewDeconLayerName] = useState('');
-  const [saveStatus, setSaveStatus] = useState<SaveStatusType>('none');
-
-  // Saves the scenario name and description to the layer and edits objects.
-  function handleSave() {
-    if (!map) return;
-
-    const layer = layers.find((l) => l.layerId === deconSketchLayer?.layerId);
-    if (deconSketchLayer && layer && editScenarioVisible) {
-      // update title on layer
-      if (layer.sketchLayer) layer.sketchLayer.title = newDeconLayerName;
-
-      // update selected decon layer
-      setDeconSketchLayer((layer) => {
-        if (!layer) return null;
-        return {
-          ...layer,
-          name: newDeconLayerName,
-          label: newDeconLayerName,
-        };
-      });
-
-      setDeconLayers((deconLayers) => {
-        return deconLayers.map((layer) => {
-          if (layer.layerId === deconSketchLayer.layerId) {
-            return {
-              ...layer,
-              name: newDeconLayerName,
-              label: newDeconLayerName,
-            };
-          }
-          return layer;
-        });
-      });
-
-      // update the layer in edits and the decisionunit attribute for each graphic
-      const editsCopy = updateLayerEdits({
-        appType,
-        edits,
-        layer: { ...layer, name: newDeconLayerName, label: newDeconLayerName },
-        type: 'update',
-      });
-      setEdits(editsCopy);
-    } else {
-      const {
-        layers: newLayers,
-        groupLayer,
-        layerAoiAnalysis,
-        sketchLayer,
-        tempAssessedAoiLayer,
-        tempImageAnalysisLayer,
-        tempCharacterizeAoiLayer,
-      } = createScenarioDeconLayer(defaultDeconSelections, newDeconLayerName);
-
-      // make a copy of the edits context variable
-      setEdits((edits) => {
-        const newEdits = edits.edits.filter((edit) => {
-          const idx = newLayers.findIndex((l) => l.layerId === edit.layerId);
-
-          return idx === -1;
-        });
-
-        const selectedOp = edits.edits.find(
-          (edit) =>
-            edit.type === 'layer-decon' &&
-            edit.layerId === deconOperation?.layerId,
-        ) as LayerDeconEditsType | undefined;
-        if (selectedOp) {
-          selectedOp.analysisLayerId = layerAoiAnalysis.layerId;
-          selectedOp.deconTechSelections = selectedOp.deconTechSelections.map(
-            (tech) => {
-              return {
-                ...tech,
-                pctAoi: 0,
-                surfaceArea: 0,
-              };
-            },
-          );
-        }
-
-        return {
-          count: edits.count + 1,
-          edits: [...newEdits, layerAoiAnalysis],
-        };
-      });
-
-      setDeconSketchLayer(layerAoiAnalysis);
-
-      const tLayers = [...layers];
-      if (tempCharacterizeAoiLayer) tLayers.push(tempCharacterizeAoiLayer);
-      if (sketchLayer) tLayers.push(sketchLayer);
-      if (tempImageAnalysisLayer) tLayers.push(tempImageAnalysisLayer);
-      if (tempAssessedAoiLayer) tLayers.push(tempAssessedAoiLayer);
-
-      // update layers (set parent layer)
-      window.totsLayers = tLayers;
-      setLayers(tLayers);
-
-      if (selectedScenario?.type === 'scenario-decon') {
-        setCalculateResultsDecon((calculateResultsDecon) => {
-          return {
-            status: 'fetching',
-            panelOpen: calculateResultsDecon.panelOpen,
-            data: null,
-          };
-        });
-      }
-
-      // add the scenario group layer to the map
-      map.add(groupLayer);
-    }
-
-    setAddScenarioVisible(false);
-    setEditScenarioVisible(false);
-    setSaveStatus('success');
-  }
 
   useEffect(() => {
     setNewDeconLayerName(deconSketchLayer?.name ?? '');
   }, [deconSketchLayer]);
 
+  const sketchLayerDef = layers.find((l) => {
+    const aoiEditsLayer = deconSketchLayer?.layers.find(
+      (l) => l.layerType === 'Decon Mask',
+    );
+    if (!aoiEditsLayer) return false;
+    return l.layerType === 'Decon Mask' && l.layerId === aoiEditsLayer?.layerId;
+  });
+  const sketchLayer = sketchLayerDef?.sketchLayer;
+
   return (
     <Fragment>
       {showHelpText && <p>{helpText.replaceAll('<br/>', '')}</p>}
 
-      <div>
-        <div css={iconButtonContainerStyles}>
-          <div css={verticalCenterTextStyles}>
-            <label htmlFor="scenario-select-input">{label}</label>
-          </div>
-          <div css={layerButtonContainerStyles}>
-            <div>
-              {deconSketchLayer && (
-                <Fragment>
-                  <button
-                    css={iconButtonStyles}
-                    title="Delete Layer"
-                    onClick={() => {
-                      if (!deconSketchLayer) return;
+      <AoiLayerSelect
+        addScenarioVisible={addScenarioVisible}
+        deconLayers={deconLayers}
+        editScenarioVisible={editScenarioVisible}
+        extraLabelContent={
+          <AoiLayerButtons
+            addScenarioVisible={addScenarioVisible}
+            deconLayers={deconLayers}
+            editScenarioVisible={editScenarioVisible}
+            setAddScenarioVisible={setAddScenarioVisible}
+            setNewDeconLayerName={setNewDeconLayerName}
+            setDeconLayers={setDeconLayers}
+            setEditScenarioVisible={setEditScenarioVisible}
+          />
+        }
+        label={label}
+        setAddScenarioVisible={setAddScenarioVisible}
+        setNewDeconLayerName={setNewDeconLayerName}
+        setDeconLayers={setDeconLayers}
+        setEditScenarioVisible={setEditScenarioVisible}
+      />
 
-                      const idsToDelete: string[] = [deconSketchLayer.layerId];
-                      deconSketchLayer.layers.forEach((l) => {
-                        idsToDelete.push(l.layerId);
-                      });
-
-                      const newDeconLayers = deconLayers.filter(
-                        (layer) => !idsToDelete.includes(layer.layerId),
-                      );
-                      setDeconLayers(newDeconLayers);
-                      setDeconSketchLayer(
-                        newDeconLayers.length > 0 ? newDeconLayers[0] : null,
-                      );
-
-                      // remove all of the child layers
-                      setLayers((layers) => {
-                        return layers.filter(
-                          (layer) => !idsToDelete.includes(layer.layerId),
-                        );
-                      });
-
-                      // remove the scenario from edits
-                      const newEdits: EditsType = {
-                        count: edits.count + 1,
-                        edits: edits.edits.filter(
-                          (item) => item.layerId !== deconSketchLayer.layerId,
-                        ),
-                      };
-
-                      edits.edits.forEach((edit) => {
-                        if (edit.type !== 'layer-decon') return;
-                        if (!idsToDelete.includes(edit.analysisLayerId)) return;
-
-                        edit.analysisLayerId = '';
-                        edit.deconTechSelections = edit.deconTechSelections.map(
-                          (tech) => {
-                            return {
-                              ...tech,
-                              pctAoi: 0,
-                              surfaceArea: 0,
-                            };
-                          },
-                        );
-                      });
-
-                      setEdits(newEdits);
-
-                      // select the next available scenario
-                      const scenarios = getScenariosDecon(newEdits);
-                      setSelectedScenario(
-                        scenarios.length > 0 ? scenarios[0] : null,
-                      );
-
-                      if (scenarios.length > 0) {
-                        setCalculateResultsDecon((calculateResultsDecon) => {
-                          return {
-                            status: 'fetching',
-                            panelOpen: calculateResultsDecon.panelOpen,
-                            data: null,
-                          };
-                        });
-                      }
-
-                      if (!map) return;
-
-                      // make the new selection visible
-                      if (scenarios.length > 0) {
-                        const newSelection = map.layers.find(
-                          (layer) => layer.id === scenarios[0].layerId,
-                        );
-                        if (newSelection) newSelection.visible = true;
-                      }
-
-                      // remove the scenario from the map
-                      const mapLayer = map.layers.find(
-                        (layer) => layer.id === deconSketchLayer.layerId,
-                      );
-                      map.remove(mapLayer);
-                    }}
-                  >
-                    <i className="fas fa-trash-alt" />
-                    <span className="sr-only">Delete Layer</span>
-                  </button>
-
-                  {deconSketchLayer.status !== 'published' && (
-                    <button
-                      css={iconButtonStyles}
-                      title={editScenarioVisible ? 'Cancel' : 'Edit Layer'}
-                      onClick={() => {
-                        setAddScenarioVisible(false);
-                        setEditScenarioVisible(!editScenarioVisible);
-                      }}
-                    >
-                      <i
-                        className={
-                          editScenarioVisible ? 'fas fa-times' : 'fas fa-edit'
-                        }
-                      />
-                      <span className="sr-only">
-                        {editScenarioVisible ? 'Cancel' : 'Edit Layer'}
-                      </span>
-                    </button>
-                  )}
-                </Fragment>
-              )}
-              <button
-                css={iconButtonStyles}
-                title={addScenarioVisible ? 'Cancel' : 'Add Layer'}
-                onClick={() => {
-                  setEditScenarioVisible(false);
-                  if (!addScenarioVisible) setNewDeconLayerName('');
-                  setAddScenarioVisible(!addScenarioVisible);
-                }}
-              >
-                <i
-                  className={
-                    addScenarioVisible ? 'fas fa-times' : 'fas fa-plus'
-                  }
-                />
-                <span className="sr-only">
-                  {addScenarioVisible ? 'Cancel' : 'Add Layer'}
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-        <Select
-          id="characterize-aoi-select-input-container"
-          inputId="characterize-aoi-select-input"
-          css={layerSelectStyles}
-          isDisabled={addScenarioVisible || editScenarioVisible}
-          options={deconLayers}
-          value={deconSketchLayer}
-          onChange={(ev) => {
-            const newLayer = ev as LayerAoiAnalysisEditsType;
-            setDeconSketchLayer(newLayer);
-
-            setEdits((edits) => {
-              return {
-                count: edits.count + 1,
-                edits: edits.edits.map((edit) => {
-                  if (
-                    edit.type === 'layer-decon' &&
-                    edit.layerId === deconOperation?.layerId
-                  ) {
-                    return {
-                      ...edit,
-                      analysisLayerId: newLayer.layerId,
-                      deconTechSelections: edit.deconTechSelections.map(
-                        (tech) => {
-                          const media = newLayer.aoiSummary.areaByMedia.find(
-                            (a) => a.media === tech.media,
-                          );
-
-                          const pctAoi = media?.pctAoi ?? 0;
-                          const surfaceArea = media?.surfaceArea ?? 0;
-
-                          return {
-                            ...tech,
-                            pctAoi,
-                            surfaceArea,
-                          };
-                        },
-                      ),
-                    };
-                  }
-
-                  return edit;
-                }),
-              };
-            });
-
-            if (selectedScenario?.type === 'scenario-decon') {
-              setCalculateResultsDecon((calculateResultsDecon) => {
-                return {
-                  status: 'fetching',
-                  panelOpen: calculateResultsDecon.panelOpen,
-                  data: null,
-                };
-              });
-            }
-          }}
-        />
-      </div>
-
-      {(addScenarioVisible || editScenarioVisible) && (
-        <div>
-          <label>
-            <span>Decon Layer Name</span>
-            <input
-              type="text"
-              css={inputStyles}
-              maxLength={250}
-              placeholder="Enter decon Layer Name"
-              value={newDeconLayerName}
-              onChange={(ev) => {
-                setNewDeconLayerName(ev.target.value);
-                setSaveStatus('changes');
-              }}
-            />
-          </label>
-
-          <div css={saveButtonContainerStyles}>
-            <button
-              css={saveButtonStyles(saveStatus)}
-              type="submit"
-              disabled={
-                saveStatus === 'none' ||
-                saveStatus === 'success' ||
-                !newDeconLayerName ||
-                newDeconLayerName === deconSketchLayer?.name
-              }
-              onClick={handleSave}
-            >
-              {(saveStatus === 'none' || saveStatus === 'changes') && 'Save'}
-              {saveStatus === 'success' && (
-                <Fragment>
-                  <i className="fas fa-check" /> Saved
-                </Fragment>
-              )}
-            </button>
-          </div>
-        </div>
-      )}
+      <AoiLayerEdit
+        addScenarioVisible={addScenarioVisible}
+        appType={appType}
+        editScenarioVisible={editScenarioVisible}
+        newDeconLayerName={newDeconLayerName}
+        setAddScenarioVisible={setAddScenarioVisible}
+        setDeconLayers={setDeconLayers}
+        setEditScenarioVisible={setEditScenarioVisible}
+        setNewDeconLayerName={setNewDeconLayerName}
+      />
 
       {(!showOnEdit ||
         (showOnEdit && (addScenarioVisible || editScenarioVisible))) && (
@@ -1183,23 +718,7 @@ function CharacterizeAOI({
           </div>
 
           {generateRandomMode === 'draw' && (
-            <button
-              id="decon-mask"
-              title="Draw Decon Mask"
-              className="sketch-button"
-              disabled={calculateResultsDecon.status === 'fetching'}
-              onClick={() => {
-                if (!aoiSketchLayer) return;
-
-                sketchAoiButtonClick();
-              }}
-              css={sketchAoiButtonStyles}
-            >
-              <span css={sketchAoiTextStyles}>
-                <i className="fas fa-draw-polygon" />{' '}
-                <span>Draw Area of Interest</span>
-              </span>
-            </button>
+            <AoiSketchButton sketchLayer={sketchLayer} />
           )}
 
           <div style={{ display: 'none' }}>
