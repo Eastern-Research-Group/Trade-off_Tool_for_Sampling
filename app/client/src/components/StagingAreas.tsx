@@ -3,8 +3,8 @@
 import { useContext, useEffect } from 'react';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
+import ImageryLayer from '@arcgis/core/layers/ImageryLayer.js';
 import PopupTemplate from '@arcgis/core/PopupTemplate.js';
-import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 // components
 import AoiSketchButton from 'components/AoiSketchButton';
 import Switch from 'components/Switch';
@@ -185,10 +185,37 @@ function useSuitabilityLayer() {
     if (!map) return;
     return (
       map.findLayerById(SUITABILITY_LAYER_ID) ??
-      new FeatureLayer({
+      new ImageryLayer({
+        bandIds: [0, 1, 2],
+        format: 'jpgpng',
         id: SUITABILITY_LAYER_ID,
-        title: 'Staging Suitability',
-        visible: true,
+        listMode: 'show',
+        mosaicRule: { ascending: true, method: 'northwest', operation: 'sum' },
+        // TODO: Add a colormap to the suitability layer.
+        /*rasterFunction: {
+          functionName: 'Colormap',
+          functionArguments: {
+            Colormap: [
+              [0, 255, 0, 0],
+              [1, 255, 128, 0],
+              [2, 255, 255, 0],
+              [3, 141, 211, 0],
+              [4, 56, 168, 0],
+            ],
+            Raster: {
+              rasterFunctionArguments: {
+                InputRanges: [
+                  0, 100.0001, 100.0001, 200.0001, 200.0001, 300.0001, 300.0001,
+                  400.0001, 400.0001, 500.0001,
+                ],
+                OutputValues: [0, 1, 2, 3, 4],
+                NoDataRanges: [],
+              },
+              rasterFunction: 'Remap',
+              variableName: 'Raster',
+            },
+          },
+        },*/
         url: services.suitability,
       })
     );
