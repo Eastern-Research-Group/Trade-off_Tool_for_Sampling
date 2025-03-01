@@ -101,10 +101,7 @@ function AoiButton({ className, sketchLayer }: Props) {
     if (sketchLayer) map.add(sketchLayer);
 
     // add the layer to the map
-    setLayers((layers) => {
-      const newLayers = [...layers, newAoiSketchLayer];
-      return newLayers;
-    });
+    setLayers((layers) => [...layers, newAoiSketchLayer]);
 
     // set the active sketch layer
     setAoiSketchLayer(newAoiSketchLayer);
@@ -132,11 +129,7 @@ function AoiButton({ className, sketchLayer }: Props) {
       id={BUTTON_ID}
       title="Draw Decon Mask"
       className={`sketch-button ${className}`}
-      onClick={() => {
-        if (!aoiSketchLayer) return;
-
-        sketchAoiButtonClick();
-      }}
+      onClick={sketchAoiButtonClick}
       css={sketchAoiButtonStyles}
     >
       <span css={sketchAoiTextStyles}>

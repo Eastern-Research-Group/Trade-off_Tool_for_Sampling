@@ -52,6 +52,7 @@ import {
   applyRendererForTotsLayer,
   createLayer,
   generateUUID,
+  isGraphicSketchLayerType,
 } from 'utils/sketchUtils';
 import { getEnvironment } from 'utils/utils';
 
