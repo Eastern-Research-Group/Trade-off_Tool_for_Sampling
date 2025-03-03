@@ -227,6 +227,9 @@ function performBasicDeconCalculations(
     averageInitialContamination: sel.avgCfu,
     averageFinalContamination: sel.avgFinalContamination,
     aboveDetectionLimit: sel.aboveDetectionLimit,
+    pctAoi: outsideMedia.includes(sel.media) ? sel.pctAoi : null,
+    surfaceArea: sel.surfaceArea,
+    volume: sel.volume,
   });
 
   return {
