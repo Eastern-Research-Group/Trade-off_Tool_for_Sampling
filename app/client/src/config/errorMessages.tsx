@@ -379,6 +379,7 @@ export const noServiceNameMessage = (
 );
 
 export const publishSuccessMessage = (
+  appName: string,
   itemData?: { name: string; serviceUrl: string }[],
 ) => {
   const items = itemData?.filter((data) => data?.serviceUrl);
@@ -389,8 +390,9 @@ export const publishSuccessMessage = (
       message={
         <div>
           <span>
-            To view or share your TOTS content with others, go to the My Content
-            menu in the Content section of your ArcGIS Online organization
+            To view or share your {appName} content with others, go to the My
+            Content menu in the Content section of your ArcGIS Online
+            organization
             {items && items.length > 0 ? ' or click the link(s) below' : ''}.
           </span>
           {items && items.length > 0 && (
@@ -424,10 +426,13 @@ export const scenarioNameTakenMessage = (scenarioName: string) => (
 );
 
 // tots not availble messages
-export const totsNotAvailableMessage = (
-  <MessageBox
-    severity="error"
-    title="TOTS Not Available"
-    message={`TOTS is temporarily unavailable, please try again later.`}
-  />
-);
+export const totsNotAvailableMessage = () => {
+  const appName = window.location.pathname === '/decon' ? 'TODS' : 'TOTS';
+  return (
+    <MessageBox
+      severity="error"
+      title={`${appName} Not Available`}
+      message={`${appName} is temporarily unavailable, please try again later.`}
+    />
+  );
+};
