@@ -53,7 +53,6 @@ import {
   CalculateResultsDeconDataType,
 } from 'types/CalculateResults';
 import {
-  BuildingApproachTypes,
   EditsType,
   LayerAoiAnalysisEditsType,
   LayerDeconEditsType,
@@ -101,13 +100,6 @@ const mediaToBeepEnum = {
   'Streets/Sidewalks - Concrete': 'concrete',
   'Soil/Vegetation': 'soil',
 };
-
-const partitionFactors = {
-  'Building Exterior Walls': 0.5,
-  'Building Interior Walls': 0.3,
-  'Building Interior Floors': 0.7,
-  'Building Roofs': 1,
-} as any;
 
 export const summarizedBuildingSurfaceTypes = [
   'Buildings (Interior and Exterior)',

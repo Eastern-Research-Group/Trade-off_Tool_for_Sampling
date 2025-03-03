@@ -1127,7 +1127,6 @@ function CalculateResultsPopup({
     aoiSketchLayer,
     displayDimensions,
     edits,
-    jsonDownload,
     layers,
     map,
     mapView,
@@ -2508,7 +2507,9 @@ function CalculateResultsPopup({
 
         {linkedDeconOps.map((layer, index) => {
           let totalSolidWasteVolume = 0;
+          let totalSolidWasteMass = 0;
           let totalLiquidWasteVolume = 0;
+          let totalLiquidWasteMass = 0;
           let totalDeconCost = 0;
           let totalDeconTime = 0;
           let totalInitialContamination = 0;
@@ -2517,10 +2518,12 @@ function CalculateResultsPopup({
           const tableData =
             layer.deconLayerResults?.resultsTable.map((d) => {
               totalSolidWasteVolume += parseSmallFloat(d.solidWasteVolumeM3, 0);
+              totalSolidWasteMass += parseSmallFloat(d.solidWasteMassKg, 0);
               totalLiquidWasteVolume += parseSmallFloat(
                 d.liquidWasteVolumeM3,
                 0,
               );
+              totalLiquidWasteMass += parseSmallFloat(d.liquidWasteMassKg, 0);
               totalDeconCost += parseSmallFloat(d.decontaminationCost, 2);
               totalDeconTime += parseSmallFloat(d.decontaminationTimeDays, 1);
               totalInitialContamination += parseSmallFloat(
@@ -2534,7 +2537,9 @@ function CalculateResultsPopup({
               return {
                 ...d,
                 solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3),
+                solidWasteMassKg: formatNumber(d.solidWasteMassKg),
                 liquidWasteVolumeM3: formatNumber(d.liquidWasteVolumeM3),
+                liquidWasteMassKg: formatNumber(d.liquidWasteMassKg),
                 decontaminationCost: formatNumber(d.decontaminationCost, 2),
                 decontaminationTimeDays: formatNumber(
                   d.decontaminationTimeDays,
@@ -2554,7 +2559,9 @@ function CalculateResultsPopup({
             contaminationScenario: 'TOTALS',
             decontaminationTechnology: '',
             solidWasteVolumeM3: formatNumber(totalSolidWasteVolume, -1),
+            solidWasteMassKg: formatNumber(totalSolidWasteMass, -1),
             liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume, -1),
+            liquidWasteMassKg: formatNumber(totalLiquidWasteMass, -1),
             decontaminationCost: formatNumber(totalDeconCost, -1),
             decontaminationTimeDays: formatNumber(totalDeconTime, -1),
             averageInitialContamination: formatNumber(
@@ -2566,6 +2573,7 @@ function CalculateResultsPopup({
               -1,
             ),
             aboveDetectionLimit: '',
+            numIterativeApplications: 0,
           });
 
           return (
@@ -2662,7 +2670,6 @@ function CalculateResultsPopup({
           >
             Download Summary Data
           </button>
-          <DownloadIWasteData />
           {trainingMode && contamMapUpdated && (
             <button
               css={saveAttributesButtonStyles}
@@ -2798,42 +2805,6 @@ function CalculateResultsPopup({
         </div>
       </DialogContent>
     </DialogOverlay>
-  );
-}
-
-type DownloadIWasteProps = {
-  isSubmitStyle?: boolean;
-};
-
-function DownloadIWasteData({ isSubmitStyle = false }: DownloadIWasteProps) {
-  const { jsonDownload, selectedScenario } = useContext(SketchContext);
-  return (
-    <button
-      css={isSubmitStyle ? submitButtonStyles : saveAttributesButtonStyles}
-      onClick={() => {
-        if (!selectedScenario) return;
-        const fileName = `tods_${selectedScenario.scenarioName}.json`;
-
-        const newJsonDownload = jsonDownload.map((j) => {
-          const newJ = { ...j } as any;
-          delete newJ.aboveDetectionLimit;
-          delete newJ.averageInitialContamination;
-          delete newJ.averageFinalContamination;
-
-          return newJ;
-        });
-
-        // Create a blob of the data
-        const fileToSave = new Blob([JSON.stringify(newJsonDownload)], {
-          type: 'application/json',
-        });
-
-        // Save the file
-        saveAs(fileToSave, fileName);
-      }}
-    >
-      Download Data for Waste Planning
-    </button>
   );
 }
 
