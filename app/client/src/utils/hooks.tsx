@@ -230,6 +230,11 @@ function performBasicDeconCalculations(
     pctAoi: outsideMedia.includes(sel.media) ? sel.pctAoi : null,
     surfaceArea: sel.surfaceArea,
     volume: sel.volume,
+    volumeContents:
+      sel.media === 'Building Interiors' ? sel.volumeContents : null,
+    numIterativeApplications: sel.numIterativeApplications,
+    removeContents:
+      sel.media === 'Building Interiors' ? sel.removeContents : null,
   });
 
   return {

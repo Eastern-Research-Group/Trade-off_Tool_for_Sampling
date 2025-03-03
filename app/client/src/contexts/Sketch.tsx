@@ -73,6 +73,9 @@ export type JsonDownloadType = {
   pctAoi?: number;
   surfaceArea?: number;
   volume?: number;
+  volumeContents?: number;
+  numIterativeApplications: number;
+  removeContents?: boolean;
 };
 
 export type AoiCharacterizationData = {

@@ -1556,15 +1556,18 @@ function CalculateResultsPopup({
 
       // setup column widths
       summarySheet.columns = [
-        { width: 30 },
-        { width: 40 },
-        { width: 18 },
-        { width: 18 },
-        { width: 18 },
-        { width: 18 },
-        { width: devMode ? 18 : 51 },
-        { width: devMode ? 51 : 59 },
-        { width: 59 },
+        { width: 30 }, // scenario
+        { width: 40 }, // deconTech
+        { width: 18 }, // remove contents
+        { width: 18 }, // num iterations
+        { width: 18 }, // pctAoi
+        { width: 18 }, // surface area
+        { width: 18 }, // solid waste or bldg volume for devMode
+        { width: 18 }, // liquid waste or bldg contents volume for devMode
+        { width: devMode ? 18 : 51 }, // cost or solid waste for devMode
+        { width: devMode ? 18 : 59 }, // time or liquid waste for devMode
+        { width: devMode ? 51 : 18 }, // cost
+        { width: devMode ? 59 : 18 }, // time
       ];
 
       const cols = [
@@ -1572,6 +1575,16 @@ function CalculateResultsPopup({
         {
           label: 'Selected Decontamination Technology',
           fieldName: 'decontaminationTechnology',
+        },
+        {
+          label: 'Remove Bldg Contents After Decon?',
+          fieldName: 'removeContents',
+          format: 'boolean',
+        },
+        {
+          label: 'Number of Decon Iterations',
+          fieldName: 'numIterativeApplications',
+          format: 'number',
         },
         {
           label: 'Percent of AOI',
@@ -1587,6 +1600,13 @@ function CalculateResultsPopup({
           ? {
               label: 'Volume (m³)',
               fieldName: 'volume',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Volume Contents (m³)',
+              fieldName: 'volumeContents',
               format: 'number',
             }
           : undefined,
@@ -1674,7 +1694,12 @@ function CalculateResultsPopup({
                 value:
                   col.format && ['currency', 'number'].includes(col.format)
                     ? (parseSmallFloat(value, 2) ?? '').toLocaleString()
-                    : value,
+                    : col.format === 'boolean' &&
+                        ![null, undefined].includes(value)
+                      ? col.format
+                        ? 'Yes'
+                        : 'No'
+                      : value,
                 numFmt:
                   col.format === 'currency' ? currencyNumberFormat : undefined,
               };
