@@ -1561,6 +1561,7 @@ function CalculateResultsPopup({
         { width: 18 },
         { width: 18 },
         { width: 18 },
+        { width: 18 },
         { width: devMode ? 18 : 51 },
         { width: devMode ? 51 : 59 },
         { width: 59 },
@@ -1571,6 +1572,11 @@ function CalculateResultsPopup({
         {
           label: 'Selected Decontamination Technology',
           fieldName: 'decontaminationTechnology',
+        },
+        {
+          label: 'Percent of AOI',
+          fieldName: 'pctAoi',
+          format: 'number',
         },
         {
           label: 'Surface Area (m²)',
