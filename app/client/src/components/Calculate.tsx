@@ -27,7 +27,12 @@ import { useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // types
-import { LayerDeconEditsType } from 'types/Edits';
+import {
+  EditsType,
+  LayerDeconEditsType,
+  ScenarioDeconEditsType,
+  ScenarioEditsType,
+} from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { ErrorType } from 'types/Misc';
 import { AppType } from 'types/Navigation';
@@ -105,6 +110,86 @@ function getGraphics(map: __esri.Map, layerId: string) {
   }
 
   return { groupLayer, graphics };
+}
+
+function getOperationSummary(
+  selectedScenario: ScenarioEditsType | ScenarioDeconEditsType | null,
+  edits: EditsType,
+) {
+  let linkedDeconOps: LayerDeconEditsType[] = [];
+  if (selectedScenario?.type === 'scenario-decon') {
+    linkedDeconOps = edits.edits.filter(
+      (e) =>
+        e.type === 'layer-decon' &&
+        selectedScenario.linkedLayerIds.includes(e.layerId),
+    ) as LayerDeconEditsType[];
+  }
+
+  let totalSolidWasteVolume = 0;
+  let totalLiquidWasteVolume = 0;
+  let totalDeconCost = 0;
+  let totalDeconTime = 0;
+  let totalInitialContamination = 0;
+  let totalFinalContamination = 0;
+  const tableData = [];
+  linkedDeconOps.forEach((layer) => {
+    let totalOpSolidWasteVolume = 0;
+    let totalOpLiquidWasteVolume = 0;
+    let totalOpDeconCost = 0;
+    let totalOpDeconTime = 0;
+    let totalOpInitialContamination = 0;
+    let totalOpFinalContamination = 0;
+    layer.deconLayerResults?.resultsTable.forEach((d) => {
+      totalOpSolidWasteVolume += parseSmallFloat(d.solidWasteVolumeM3, 0);
+      totalOpLiquidWasteVolume += parseSmallFloat(d.liquidWasteVolumeM3, 0);
+      totalOpDeconCost += parseSmallFloat(d.decontaminationCost, 2);
+      totalOpDeconTime += parseSmallFloat(d.decontaminationTimeDays, 1);
+      totalOpInitialContamination += parseSmallFloat(
+        d.averageInitialContamination,
+        0,
+      );
+      totalOpFinalContamination += parseSmallFloat(
+        d.averageFinalContamination,
+        2,
+      );
+    });
+
+    totalSolidWasteVolume += totalOpSolidWasteVolume;
+    totalLiquidWasteVolume += totalOpLiquidWasteVolume;
+    totalDeconCost += totalOpDeconCost;
+    totalDeconTime += totalOpDeconTime;
+    totalInitialContamination += totalOpInitialContamination;
+    totalFinalContamination += totalOpFinalContamination;
+
+    tableData.push({
+      operationName: layer.name,
+      solidWasteVolumeM3: formatNumber(totalOpSolidWasteVolume, -1),
+      liquidWasteVolumeM3: formatNumber(totalOpLiquidWasteVolume, -1),
+      decontaminationCost: formatNumber(totalOpDeconCost, -1),
+      decontaminationTimeDays: formatNumber(totalOpDeconTime, -1),
+      averageInitialContamination: formatNumber(
+        totalOpInitialContamination,
+        -1,
+      ),
+      averageFinalContamination: formatNumber(totalOpFinalContamination, -1),
+      aboveDetectionLimit: '',
+    });
+  });
+  tableData.push({
+    operationName: 'TOTALS',
+    solidWasteVolumeM3: formatNumber(totalSolidWasteVolume, -1),
+    liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume, -1),
+    decontaminationCost: formatNumber(totalDeconCost, -1),
+    decontaminationTimeDays: formatNumber(totalDeconTime, -1),
+    averageInitialContamination: formatNumber(totalInitialContamination, -1),
+    averageFinalContamination: formatNumber(totalFinalContamination, -1),
+    aboveDetectionLimit: '',
+  });
+
+  return {
+    linkedDeconOps,
+    tableData,
+  };
 }
 
 // --- styles (Calculate) ---
@@ -1042,7 +1127,6 @@ function CalculateResultsPopup({
     aoiSketchLayer,
     displayDimensions,
     edits,
-    jsonDownload,
     layers,
     map,
     mapView,
@@ -1262,7 +1346,7 @@ function CalculateResultsPopup({
     // create the sheets
     addSummarySheet();
     addLayerSummarySheet();
-    addSampleSheet();
+    addBuildingsSheet();
 
     // download the file
     workbook.xlsx
@@ -1356,11 +1440,7 @@ function CalculateResultsPopup({
       summarySheet.getCell(14, 3).value = 'Decontamination Waste Generation';
 
       const cols = [
-        { label: 'Contamination Scenario', fieldName: 'contaminationScenario' },
-        {
-          label: 'Selected Decontamination Technology',
-          fieldName: 'decontaminationTechnology',
-        },
+        { label: 'Operation', fieldName: 'operationName' },
         {
           label: 'Solid Waste (m³)',
           fieldName: 'solidWasteVolumeM3',
@@ -1417,7 +1497,8 @@ function CalculateResultsPopup({
       });
 
       const rows: Row[] = [];
-      jsonDownload.forEach((item) => {
+      const { tableData } = getOperationSummary(selectedScenario, edits);
+      tableData.forEach((item) => {
         rows.push(
           cols.map((col) => {
             const fieldValue = (item as any)[col.fieldName];
@@ -1474,14 +1555,18 @@ function CalculateResultsPopup({
 
       // setup column widths
       summarySheet.columns = [
-        { width: 30 },
-        { width: 40 },
-        { width: 39 },
-        { width: 18 },
-        { width: 18 },
-        { width: 18 },
-        { width: 51 },
-        { width: 59 },
+        { width: 30 }, // scenario
+        { width: 40 }, // deconTech
+        { width: 18 }, // remove contents
+        { width: 18 }, // num iterations
+        { width: 18 }, // pctAoi
+        { width: 18 }, // surface area
+        { width: 18 }, // solid waste or bldg volume for devMode
+        { width: 18 }, // liquid waste or bldg contents volume for devMode
+        { width: devMode ? 18 : 51 }, // cost or solid waste for devMode
+        { width: devMode ? 18 : 59 }, // time or liquid waste for devMode
+        { width: devMode ? 51 : 18 }, // cost
+        { width: devMode ? 59 : 18 }, // time
       ];
 
       const cols = [
@@ -1490,6 +1575,40 @@ function CalculateResultsPopup({
           label: 'Selected Decontamination Technology',
           fieldName: 'decontaminationTechnology',
         },
+        {
+          label: 'Remove Bldg Contents After Decon?',
+          fieldName: 'removeContents',
+          format: 'boolean',
+        },
+        {
+          label: 'Number of Decon Iterations',
+          fieldName: 'numIterativeApplications',
+          format: 'number',
+        },
+        {
+          label: 'Percent of AOI',
+          fieldName: 'pctAoi',
+          format: 'number',
+        },
+        {
+          label: 'Surface Area (m²)',
+          fieldName: 'surfaceArea',
+          format: 'number',
+        },
+        devMode
+          ? {
+              label: 'Volume (m³)',
+              fieldName: 'volume',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Volume Contents (m³)',
+              fieldName: 'volumeContents',
+              format: 'number',
+            }
+          : undefined,
         {
           label: 'Solid Waste (m³)',
           fieldName: 'solidWasteVolumeM3',
@@ -1510,7 +1629,7 @@ function CalculateResultsPopup({
           fieldName: 'decontaminationTimeDays',
           format: 'number',
         },
-      ];
+      ].filter((col) => col !== undefined);
 
       if (devMode && trainingMode) {
         cols.push({
@@ -1574,7 +1693,12 @@ function CalculateResultsPopup({
                 value:
                   col.format && ['currency', 'number'].includes(col.format)
                     ? (parseSmallFloat(value, 2) ?? '').toLocaleString()
-                    : value,
+                    : col.format === 'boolean' &&
+                        ![null, undefined].includes(value)
+                      ? col.format
+                        ? 'Yes'
+                        : 'No'
+                      : value,
                 numFmt:
                   col.format === 'currency' ? currencyNumberFormat : undefined,
               };
@@ -1592,7 +1716,7 @@ function CalculateResultsPopup({
       });
     }
 
-    function addSampleSheet() {
+    function addBuildingsSheet() {
       if (!selectedScenario || selectedScenario.type !== 'scenario-decon')
         return;
 
@@ -1605,20 +1729,33 @@ function CalculateResultsPopup({
 
       const cols = [
         { label: 'Layer', fieldName: 'layerName' },
+        { label: 'UUID', fieldName: 'UUID' },
+        devMode ? { label: 'Object ID', fieldName: 'OBJECTID' } : undefined,
         { label: 'Building ID', fieldName: 'BUILD_ID' },
         { label: 'Building Occupancy Classification', fieldName: 'OCC_CLS' },
         { label: 'Primary Occupancy', fieldName: 'PRIM_OCC' },
         { label: 'Secondary Occupancy', fieldName: 'SEC_OCC' },
-        { label: 'Object ID', fieldName: 'OBJECTID' },
-        { label: 'UUID', fieldName: 'UUID' },
+        { label: 'Model Building Type Code', fieldName: 'soc' },
         { label: 'Address', fieldName: 'PROP_ADDR' },
         { label: 'City', fieldName: 'PROP_CITY' },
         { label: 'State', fieldName: 'PROP_ST' },
         { label: 'ZIP Code', fieldName: 'PROP_ZIP' },
         { label: 'Outbuilding or Non-Primary Structure', fieldName: 'OUTBLDG' },
         { label: 'Height (meters)', fieldName: 'HEIGHT', format: 'number' },
-        { label: 'Square Meters', fieldName: 'SQMETERS', format: 'number' },
-        { label: 'Square Feet', fieldName: 'SQFEET', format: 'number' },
+        devMode
+          ? { label: 'Height (feet)', fieldName: 'heightFt', format: 'number' }
+          : undefined,
+        { label: 'Number of Stories', fieldName: 'numStory', format: 'number' },
+        {
+          label: 'Footprint Square Meters',
+          fieldName: 'SQMETERS',
+          format: 'number',
+        },
+        {
+          label: 'Footprint Square Feet',
+          fieldName: 'SQFEET',
+          format: 'number',
+        },
         {
           label: 'Highest Ground Elevation (meters)',
           fieldName: 'H_ADJ_ELEV',
@@ -1632,7 +1769,7 @@ function CalculateResultsPopup({
         { label: 'County FIPS', fieldName: 'FIPS' },
         { label: 'Census Tract Identifier', fieldName: 'CENSUSCODE' },
         { label: 'Production Date', fieldName: 'PROD_DATE' },
-        { label: 'SOURCE', fieldName: 'Source' },
+        { label: 'SOURCE', fieldName: 'SOURCE' },
         { label: 'USNG Coordinates', fieldName: 'USNG' },
         { label: 'Longitude', fieldName: 'LONGITUDE' },
         { label: 'Latitude', fieldName: 'LATITUDE' },
@@ -1644,6 +1781,482 @@ function CalculateResultsPopup({
         },
         { label: 'Remarks', fieldName: 'REMARKS' },
         { label: 'State FIPS', fieldName: 'STATE_FIPS' },
+        devMode
+          ? {
+              label: 'Roof Area (square meters)',
+              fieldName: 'roofSqM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Footprint Area (square meters)',
+              fieldName: 'footprintSqM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Floors Area (square meters)',
+              fieldName: 'floorsSqM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ceilings Area (square meters)',
+              fieldName: 'ceilingsSqM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Walls Area (square meters)',
+              fieldName: 'extWallsSqM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Walls Area (square meters)',
+              fieldName: 'intWallsSqM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Volume (cubic meters)',
+              fieldName: 'extVolumeCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Volume (cubic meters)',
+              fieldName: 'intVolumeCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Contents Volume (cubic meters)',
+              fieldName: 'intVolumeContentsCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Roof Area (square feet)',
+              fieldName: 'roofSqFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Footprint Area (square feet)',
+              fieldName: 'footprintSqFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Floors Area (square feet)',
+              fieldName: 'floorsSqFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ceilings Area (square feet)',
+              fieldName: 'ceilingsSqFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Walls Area (square feet)',
+              fieldName: 'extWallsSqFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Walls Area (square feet)',
+              fieldName: 'intWallsSqFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Volume (cubic feet)',
+              fieldName: 'extVolumeCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Volume (cubic feet)',
+              fieldName: 'intVolumeCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Contents Volume (cubic feet)',
+              fieldName: 'intVolumeContentsCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Brick Area (square meters)',
+              fieldName: 'extBrickSqM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Brick Area (square meters)',
+              fieldName: 'intBrickSqM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Brick Volume (cubic meters)',
+              fieldName: 'extVolumeBrickCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Brick Volume (cubic meters)',
+              fieldName: 'intVolumeBrickCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Brick Contents Volume (cubic meters)',
+              fieldName: 'intVolumeBrickContentsCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Concrete Area (square meters)',
+              fieldName: 'extConcreteSqM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Concrete Area (square meters)',
+              fieldName: 'intConcreteSqM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Concrete Volume (cubic meters)',
+              fieldName: 'extVolumeConcreteCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Concrete Volume (cubic meters)',
+              fieldName: 'intVolumeConcreteCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Concrete Contents Volume (cubic meters)',
+              fieldName: 'intVolumeConcreteContentsCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Steel Area (square meters)',
+              fieldName: 'extSteelSqM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Steel Area (square meters)',
+              fieldName: 'intSteelSqM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Steel Volume (cubic meters)',
+              fieldName: 'extVolumeSteelCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Steel Volume (cubic meters)',
+              fieldName: 'intVolumeSteelCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Steel Contents Volume (cubic meters)',
+              fieldName: 'intVolumeSteelContentsCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Wood Area (square meters)',
+              fieldName: 'extWoodSqM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Wood Area (square meters)',
+              fieldName: 'intWoodSqM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Wood Volume (cubic meters)',
+              fieldName: 'extVolumeWoodCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Wood Volume (cubic meters)',
+              fieldName: 'intVolumeWoodCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Wood Contents Volume (cubic meters)',
+              fieldName: 'intVolumeWoodContentsCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Other Area (square meters)',
+              fieldName: 'extOtherSqM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Other Area (square meters)',
+              fieldName: 'intOtherSqM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Other Volume (cubic meters)',
+              fieldName: 'extVolumeOtherCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Other Volume (cubic meters)',
+              fieldName: 'intVolumeOtherCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Other Contents Volume (cubic meters)',
+              fieldName: 'intVolumeOtherContentsCubM',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Brick Area (square feet)',
+              fieldName: 'extBrickSqFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Brick Area (square feet)',
+              fieldName: 'intBrickSqFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Brick Volume (cubic feet)',
+              fieldName: 'extVolumeBrickCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Brick Volume (cubic feet)',
+              fieldName: 'intVolumeBrickCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Brick Contents Volume (cubic feet)',
+              fieldName: 'intVolumeBrickContentsCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Concrete Area (square feet)',
+              fieldName: 'extConcreteSqFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Concrete Area (square feet)',
+              fieldName: 'intConcreteSqFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Concrete Volume (cubic feet)',
+              fieldName: 'extVolumeConcreteCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Concrete Volume (cubic feet)',
+              fieldName: 'intVolumeConcreteCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Concrete Contents Volume (cubic feet)',
+              fieldName: 'intVolumeConcreteContentsCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Steel Area (square feet)',
+              fieldName: 'extSteelSqFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Steel Area (square feet)',
+              fieldName: 'intSteelSqFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Steel Volume (cubic feet)',
+              fieldName: 'extVolumeSteelCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Steel Volume (cubic feet)',
+              fieldName: 'intVolumeSteelCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Steel Contents Volume (cubic feet)',
+              fieldName: 'intVolumeSteelContentsCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Wood Area (square feet)',
+              fieldName: 'extWoodSqFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Wood Area (square feet)',
+              fieldName: 'intWoodSqFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Wood Volume (cubic feet)',
+              fieldName: 'extVolumeWoodCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Wood Volume (cubic feet)',
+              fieldName: 'intVolumeWoodCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Wood Contents Volume (cubic feet)',
+              fieldName: 'intVolumeWoodContentsCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Other Area (square feet)',
+              fieldName: 'extOtherSqFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Other Area (square feet)',
+              fieldName: 'intOtherSqFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Ext Other Volume (cubic feet)',
+              fieldName: 'extVolumeOtherCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Other Volume (cubic feet)',
+              fieldName: 'intVolumeOtherCubFt',
+              format: 'number',
+            }
+          : undefined,
+        devMode
+          ? {
+              label: 'Int Other Contents Volume (cubic feet)',
+              fieldName: 'intVolumeOtherContentsCubFt',
+              format: 'number',
+            }
+          : undefined,
         {
           label: 'Ext Area (square meters)',
           fieldName: 'extSqM',
@@ -1674,368 +2287,7 @@ function CalculateResultsPopup({
           fieldName: 'totalSqFt',
           format: 'number',
         },
-      ];
-
-      if (devMode) {
-        cols.push(
-          ...[
-            {
-              label: 'Roof Area (square meters)',
-              fieldName: 'roofSqM',
-              format: 'number',
-            },
-            {
-              label: 'Footprint Area (square meters)',
-              fieldName: 'footprintSqM',
-              format: 'number',
-            },
-            {
-              label: 'Floors Area (square meters)',
-              fieldName: 'floorsSqM',
-              format: 'number',
-            },
-            {
-              label: 'Ceilings Area (square meters)',
-              fieldName: 'ceilingsSqM',
-              format: 'number',
-            },
-            {
-              label: 'Ext Walls Area (square meters)',
-              fieldName: 'extWallsSqM',
-              format: 'number',
-            },
-            {
-              label: 'Int Walls Area (square meters)',
-              fieldName: 'intWallsSqM',
-              format: 'number',
-            },
-            {
-              label: 'Ext Volume (cubic meters)',
-              fieldName: 'extVolumeCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Volume (cubic meters)',
-              fieldName: 'intVolumeCubM',
-              format: 'number',
-            },
-            {
-              label: 'Interior Contents Volume (cubic meters)',
-              fieldName: 'intVolumeContentsCubM',
-              format: 'number',
-            },
-            {
-              label: 'Roof Area (square feet)',
-              fieldName: 'roofSqFt',
-              format: 'number',
-            },
-            {
-              label: 'Footprint Area (square feet)',
-              fieldName: 'footprintSqFt',
-              format: 'number',
-            },
-            {
-              label: 'Floors Area (square feet)',
-              fieldName: 'floorsSqFt',
-              format: 'number',
-            },
-            {
-              label: 'Ceilings Area (square feet)',
-              fieldName: 'ceilingsSqFt',
-              format: 'number',
-            },
-            {
-              label: 'Ext Walls Area (square feet)',
-              fieldName: 'extWallsSqFt',
-              format: 'number',
-            },
-            {
-              label: 'Int Walls Area (square feet)',
-              fieldName: 'intWallsSqFt',
-              format: 'number',
-            },
-            {
-              label: 'Ext Volume (cubic feet)',
-              fieldName: 'extVolumeCubFt',
-              format: 'number',
-            },
-            {
-              label: 'Int Volume (cubic feet)',
-              fieldName: 'intVolumeCubFt',
-              format: 'number',
-            },
-            {
-              label: 'Int Contents Volume (cubic feet)',
-              fieldName: 'intVolumeContentsCubFt',
-              format: 'number',
-            },
-            {
-              label: 'Ext Brick Area (square meters)',
-              fieldName: 'extBrickSqM',
-              format: 'number',
-            },
-            {
-              label: 'Int Brick Area (square meters)',
-              fieldName: 'intBrickSqM',
-              format: 'number',
-            },
-            {
-              label: 'Ext Volume Brick (cubic meters)',
-              fieldName: 'extVolumeBrickCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Volume Brick (cubic meters)',
-              fieldName: 'intVolumeBrickCubM',
-              format: 'number',
-            },
-            {
-              label: 'Interior Contents Volume Brick (cubic meters)',
-              fieldName: 'intVolumeBrickContentCubM',
-              format: 'number',
-            },
-            {
-              label: 'Ext Concrete Area (square meters)',
-              fieldName: 'extConcreteSqM',
-              format: 'number',
-            },
-            {
-              label: 'Int Concrete Area (square meters)',
-              fieldName: 'intConcreteSqM',
-              format: 'number',
-            },
-            {
-              label: 'Ext Volume Concrete (cubic meters)',
-              fieldName: 'extVolumeConcreteCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Volume Concrete (cubic meters)',
-              fieldName: 'IntVolumeConcreteCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Contents Volume Concrete (cubic meters)',
-              fieldName: 'intVolumeConcreteContentCubM',
-              format: 'number',
-            },
-            {
-              label: 'Ext Steel Area (square meters)',
-              fieldName: 'extSteelSqM',
-              format: 'number',
-            },
-            {
-              label: 'Int Steel Area (square meters)',
-              fieldName: 'intSteelSqM',
-              format: 'number',
-            },
-            {
-              label: 'Int Volume Steel (cubic meters)',
-              fieldName: 'intVolumeSteelCubM',
-              format: 'number',
-            },
-            {
-              label: 'Ext Volume Steel (cubic meters)',
-              fieldName: 'extVolumeSteelCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Contents Volume Steel (cubic meters)',
-              fieldName: 'intVolumeSteelContentCubM',
-              format: 'number',
-            },
-            {
-              label: 'Ext Wood Area (square meters)',
-              fieldName: 'extWoodSqM',
-              format: 'number',
-            },
-            {
-              label: 'Int Wood Area (square meters)',
-              fieldName: 'intWoodSqM',
-              format: 'number',
-            },
-            {
-              label: 'Ext Volume Wood (cubic meters)',
-              fieldName: 'extVolumeWoodCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Volume Wood (cubic meters)',
-              fieldName: 'intVolumeWoodCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Contents Volume Wood (cubic meters)',
-              fieldName: 'intVolumeWoodContentCubM',
-              format: 'number',
-            },
-            {
-              label: 'Ext Other Area (square meters)',
-              fieldName: 'extOtherSqM',
-              format: 'number',
-            },
-            {
-              label: 'Int Other Area (square meters)',
-              fieldName: 'intOtherSqM',
-              format: 'number',
-            },
-            {
-              label: 'Ext Volume Other (cubic meters)',
-              fieldName: 'extVolumeOtherCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Volume Other (cubic meters)',
-              fieldName: 'IntVolumeOtherCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Contents Volume Other (cubic meters)',
-              fieldName: 'intVolumeOtherContentCubM',
-              format: 'number',
-            },
-            {
-              label: 'Ext Brick Area (square feet)',
-              fieldName: 'extBrickSqFt',
-              format: 'number',
-            },
-            {
-              label: 'Int Brick Area (square feet)',
-              fieldName: 'intBrickSqFt',
-              format: 'number',
-            },
-            {
-              label: 'Ext Volume Brick (cubic feet)',
-              fieldName: 'extVolumeBrickCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Volume Brick (cubic feet)',
-              fieldName: 'intVolumeBrickCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Contents Volume Brick (cubic feet)',
-              fieldName: 'intVolumeBrickContentCubM',
-              format: 'number',
-            },
-            {
-              label: 'Ext Concrete Area (square feet)',
-              fieldName: 'extConcreteSqFt',
-              format: 'number',
-            },
-            {
-              label: 'Int Concrete Area (square feet)',
-              fieldName: 'intConcreteSqFt',
-              format: 'number',
-            },
-            {
-              label: 'Ext Volume Concrete (cubic feet)',
-              fieldName: 'extVolumeConcreteCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Volume Concrete (cubic feet)',
-              fieldName: 'intVolumeConcreteCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Contents Volume Concrete (cubic feet)',
-              fieldName: 'intVolumeConcreteContentCubM',
-              format: 'number',
-            },
-            {
-              label: 'Ext Steel Area (square feet)',
-              fieldName: 'extSteelSqFt',
-              format: 'number',
-            },
-            {
-              label: 'Int Steel Area (square feet)',
-              fieldName: 'intSteelSqFt',
-              format: 'number',
-            },
-            {
-              label: 'Ext Volume Steel (cubic feet)',
-              fieldName: 'extVolumeSteelCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Volume Steel (cubic feet)',
-              fieldName: 'intVolumeSteelCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Contents Volume Steel (cubic feet)',
-              fieldName: 'intVolumeSteelContentCubM',
-              format: 'number',
-            },
-            {
-              label: 'Ext Wood Area (square feet)',
-              fieldName: 'extWoodSqFt',
-              format: 'number',
-            },
-            {
-              label: 'Int Wood Area (square feet)',
-              fieldName: 'intWoodSqFt',
-              format: 'number',
-            },
-            {
-              label: 'Ext Volume Wood (cubic feet)',
-              fieldName: 'extVolumeWoodCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Volume Wood (cubic feet)',
-              fieldName: 'intVolumeWoodCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Contents Volume Wood (cubic feet)',
-              fieldName: 'intVolumeWoodContentCubM',
-              format: 'number',
-            },
-            {
-              label: 'Ext Other Area (square feet)',
-              fieldName: 'extOtherSqFt',
-              format: 'number',
-            },
-            {
-              label: 'Int Other Area (square feet)',
-              fieldName: 'intOtherSqFt',
-              format: 'number',
-            },
-            {
-              label: 'Ext Volume Other (cubic feet)',
-              fieldName: 'extVolumeOtherCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Volume Other (cubic feet)',
-              fieldName: 'intVolumeOtherCubM',
-              format: 'number',
-            },
-            {
-              label: 'Int Contents Volume Other (cubic feet)',
-              fieldName: 'intVolumeOtherContentCubM',
-              format: 'number',
-            },
-          ],
-        );
-
-        if (trainingMode) {
-          cols.push(
-            ...[
-              { label: 'Contamination Type', fieldName: 'CONTAMTYPE' },
-              {
-                label: 'Activity (Initial)',
-                fieldName: 'CONTAMVALINITIAL',
-              },
-              { label: 'Activity (Final)', fieldName: 'CONTAMVAL' },
-              { label: 'Unit of Measure', fieldName: 'CONTAMUNIT' },
-            ],
-          );
-        }
-      }
+      ].filter((col) => col !== undefined);
 
       let curRow = 3;
       curRow = fillOutCells({
@@ -2139,7 +2391,6 @@ function CalculateResultsPopup({
     devMode,
     downloadStatus,
     edits,
-    jsonDownload,
     layers,
     map,
     selectedScenario,
@@ -2150,75 +2401,10 @@ function CalculateResultsPopup({
     (l) => l.id === 'contaminationMapUpdated',
   );
 
-  let linkedDeconOps: LayerDeconEditsType[] = [];
-  if (selectedScenario?.type === 'scenario-decon') {
-    linkedDeconOps = edits.edits.filter(
-      (e) =>
-        e.type === 'layer-decon' &&
-        selectedScenario.linkedLayerIds.includes(e.layerId),
-    ) as LayerDeconEditsType[];
-  }
-
-  let totalSolidWasteVolume = 0;
-  let totalLiquidWasteVolume = 0;
-  let totalDeconCost = 0;
-  let totalDeconTime = 0;
-  let totalInitialContamination = 0;
-  let totalFinalContamination = 0;
-  const tableData = [];
-  linkedDeconOps.forEach((layer) => {
-    let totalOpSolidWasteVolume = 0;
-    let totalOpLiquidWasteVolume = 0;
-    let totalOpDeconCost = 0;
-    let totalOpDeconTime = 0;
-    let totalOpInitialContamination = 0;
-    let totalOpFinalContamination = 0;
-    layer.deconLayerResults?.resultsTable.forEach((d) => {
-      totalOpSolidWasteVolume += parseSmallFloat(d.solidWasteVolumeM3, 0);
-      totalOpLiquidWasteVolume += parseSmallFloat(d.liquidWasteVolumeM3, 0);
-      totalOpDeconCost += parseSmallFloat(d.decontaminationCost, 2);
-      totalOpDeconTime += parseSmallFloat(d.decontaminationTimeDays, 1);
-      totalOpInitialContamination += parseSmallFloat(
-        d.averageInitialContamination,
-        0,
-      );
-      totalOpFinalContamination += parseSmallFloat(
-        d.averageFinalContamination,
-        2,
-      );
-    });
-
-    totalSolidWasteVolume += totalOpSolidWasteVolume;
-    totalLiquidWasteVolume += totalOpLiquidWasteVolume;
-    totalDeconCost += totalOpDeconCost;
-    totalDeconTime += totalOpDeconTime;
-    totalInitialContamination += totalOpInitialContamination;
-    totalFinalContamination += totalOpFinalContamination;
-
-    tableData.push({
-      operationName: layer.name,
-      solidWasteVolumeM3: formatNumber(totalOpSolidWasteVolume, -1),
-      liquidWasteVolumeM3: formatNumber(totalOpLiquidWasteVolume, -1),
-      decontaminationCost: formatNumber(totalOpDeconCost, -1),
-      decontaminationTimeDays: formatNumber(totalOpDeconTime, -1),
-      averageInitialContamination: formatNumber(
-        totalOpInitialContamination,
-        -1,
-      ),
-      averageFinalContamination: formatNumber(totalOpFinalContamination, -1),
-      aboveDetectionLimit: '',
-    });
-  });
-  tableData.push({
-    operationName: 'TOTALS',
-    solidWasteVolumeM3: formatNumber(totalSolidWasteVolume, -1),
-    liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume, -1),
-    decontaminationCost: formatNumber(totalDeconCost, -1),
-    decontaminationTimeDays: formatNumber(totalDeconTime, -1),
-    averageInitialContamination: formatNumber(totalInitialContamination, -1),
-    averageFinalContamination: formatNumber(totalFinalContamination, -1),
-    aboveDetectionLimit: '',
-  });
+  const { linkedDeconOps, tableData } = getOperationSummary(
+    selectedScenario,
+    edits,
+  );
 
   return (
     <DialogOverlay
@@ -2321,7 +2507,9 @@ function CalculateResultsPopup({
 
         {linkedDeconOps.map((layer, index) => {
           let totalSolidWasteVolume = 0;
+          let totalSolidWasteMass = 0;
           let totalLiquidWasteVolume = 0;
+          let totalLiquidWasteMass = 0;
           let totalDeconCost = 0;
           let totalDeconTime = 0;
           let totalInitialContamination = 0;
@@ -2330,10 +2518,12 @@ function CalculateResultsPopup({
           const tableData =
             layer.deconLayerResults?.resultsTable.map((d) => {
               totalSolidWasteVolume += parseSmallFloat(d.solidWasteVolumeM3, 0);
+              totalSolidWasteMass += parseSmallFloat(d.solidWasteMassKg, 0);
               totalLiquidWasteVolume += parseSmallFloat(
                 d.liquidWasteVolumeM3,
                 0,
               );
+              totalLiquidWasteMass += parseSmallFloat(d.liquidWasteMassKg, 0);
               totalDeconCost += parseSmallFloat(d.decontaminationCost, 2);
               totalDeconTime += parseSmallFloat(d.decontaminationTimeDays, 1);
               totalInitialContamination += parseSmallFloat(
@@ -2347,7 +2537,9 @@ function CalculateResultsPopup({
               return {
                 ...d,
                 solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3),
+                solidWasteMassKg: formatNumber(d.solidWasteMassKg),
                 liquidWasteVolumeM3: formatNumber(d.liquidWasteVolumeM3),
+                liquidWasteMassKg: formatNumber(d.liquidWasteMassKg),
                 decontaminationCost: formatNumber(d.decontaminationCost, 2),
                 decontaminationTimeDays: formatNumber(
                   d.decontaminationTimeDays,
@@ -2367,7 +2559,9 @@ function CalculateResultsPopup({
             contaminationScenario: 'TOTALS',
             decontaminationTechnology: '',
             solidWasteVolumeM3: formatNumber(totalSolidWasteVolume, -1),
+            solidWasteMassKg: formatNumber(totalSolidWasteMass, -1),
             liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume, -1),
+            liquidWasteMassKg: formatNumber(totalLiquidWasteMass, -1),
             decontaminationCost: formatNumber(totalDeconCost, -1),
             decontaminationTimeDays: formatNumber(totalDeconTime, -1),
             averageInitialContamination: formatNumber(
@@ -2379,6 +2573,7 @@ function CalculateResultsPopup({
               -1,
             ),
             aboveDetectionLimit: '',
+            numIterativeApplications: 0,
           });
 
           return (
@@ -2475,7 +2670,6 @@ function CalculateResultsPopup({
           >
             Download Summary Data
           </button>
-          <DownloadIWasteData />
           {trainingMode && contamMapUpdated && (
             <button
               css={saveAttributesButtonStyles}
@@ -2611,42 +2805,6 @@ function CalculateResultsPopup({
         </div>
       </DialogContent>
     </DialogOverlay>
-  );
-}
-
-type DownloadIWasteProps = {
-  isSubmitStyle?: boolean;
-};
-
-function DownloadIWasteData({ isSubmitStyle = false }: DownloadIWasteProps) {
-  const { jsonDownload, selectedScenario } = useContext(SketchContext);
-  return (
-    <button
-      css={isSubmitStyle ? submitButtonStyles : saveAttributesButtonStyles}
-      onClick={() => {
-        if (!selectedScenario) return;
-        const fileName = `tods_${selectedScenario.scenarioName}.json`;
-
-        const newJsonDownload = jsonDownload.map((j) => {
-          const newJ = { ...j } as any;
-          delete newJ.aboveDetectionLimit;
-          delete newJ.averageInitialContamination;
-          delete newJ.averageFinalContamination;
-
-          return newJ;
-        });
-
-        // Create a blob of the data
-        const fileToSave = new Blob([JSON.stringify(newJsonDownload)], {
-          type: 'application/json',
-        });
-
-        // Save the file
-        saveAs(fileToSave, fileName);
-      }}
-    >
-      Download Data for Waste Planning
-    </button>
   );
 }
 

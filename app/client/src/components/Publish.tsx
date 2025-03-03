@@ -2521,7 +2521,8 @@ function Publish({ appType }: Props) {
           Publish the configured {appName} output to your ArcGIS Online account.
           A summary of the selections made on the Configure Output step is
           below. By default, only you and the ArcGIS Online administrator can
-          access content created. Provide other collaborators access to TOTS
+          access content created. Provide other collaborators access to{' '}
+          {appName}
           content by{' '}
           <a
             href="https://doc.arcgis.com/en/arcgis-online/share-maps/share-items.htm"
@@ -2752,7 +2753,7 @@ function Publish({ appType }: Props) {
         (!includeCustomSampleTypes ||
           (includeCustomSampleTypes &&
             publishSamplesResponse.status === 'success')) &&
-        publishSuccessMessage([
+        publishSuccessMessage(appName, [
           publishPartialResponse.rawData?.itemData,
           publishDeconPlanResponse.rawData?.itemData,
           publishSamplesResponse.rawData?.itemData,

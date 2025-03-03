@@ -2,8 +2,6 @@ import { JsonDownloadType } from 'contexts/Sketch';
 import { ErrorType } from 'types/Misc';
 
 export type CalculateResultsDataType = {
-  OBJECTID: number | undefined;
-  GLOBALID: string | undefined;
   NUM_USER_SAMPLES: number;
   NUM_SAMPLES: number;
   TOTAL_COST: number;

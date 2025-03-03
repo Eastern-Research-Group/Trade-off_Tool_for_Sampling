@@ -241,7 +241,7 @@ function App() {
 
   if (lookupFiles.status === 'idle') return null;
   if (lookupFiles.status === 'pending') return <LoadingSpinner />;
-  if (lookupFiles.status === 'failure') return totsNotAvailableMessage;
+  if (lookupFiles.status === 'failure') return totsNotAvailableMessage();
   return (
     <Fragment>
       <AlertDialog />

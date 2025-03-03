@@ -755,7 +755,7 @@
     },
     {
       "name": "ALC",
-      "alias": "Analysis Labor Cost",
+      "alias": "Analysis Labor Cost ($)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -766,7 +766,7 @@
     },
     {
       "name": "AMC",
-      "alias": "Analysis Material Cost",
+      "alias": "Analysis Material Cost ($)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -811,7 +811,7 @@
     },
     {
       "name": "SAMPLING_MATERIAL_COST",
-      "alias": "Sampling Material Cost",
+      "alias": "Sampling Material Cost ($)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -822,7 +822,7 @@
     },
     {
       "name": "SAMPLING_LABOR_COST",
-      "alias": "Sampling Personnel Labor Cost",
+      "alias": "Sampling Personnel Labor Cost ($)",
       "type": "esriFieldTypeInteger",
       "actualType": "int",
       "sqlType": "sqlTypeInteger",
@@ -844,7 +844,7 @@
     },
     {
       "name": "TTA",
-      "alias": "Time to Analyze",
+      "alias": "Time to Analyze (person hrs/sample)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -855,7 +855,7 @@
     },
     {
       "name": "TTC",
-      "alias": "Sampling Time to Collect",
+      "alias": "Sampling Time to Collect (person hrs/sample)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -866,7 +866,7 @@
     },
     {
       "name": "LAB_ANALYSIS_TIME",
-      "alias": "Time to Complete Analyses",
+      "alias": "Time to Complete Analyses (hours)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -877,7 +877,7 @@
     },
     {
       "name": "SAMPLING_TIME",
-      "alias": "Time to Complete Sampling",
+      "alias": "Time to Complete Sampling (hours)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -888,7 +888,7 @@
     },
     {
       "name": "TTPK",
-      "alias": "Sampling Time to Prepare Kits",
+      "alias": "Sampling Time to Prepare Kits (hours)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -899,7 +899,7 @@
     },
     {
       "name": "TOTAL_LAB_COST",
-      "alias": "Total Analysis Cost",
+      "alias": "Total Analysis Cost ($)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -910,7 +910,7 @@
     },
     {
       "name": "TOTAL_COST",
-      "alias": "Total Cost",
+      "alias": "Total Cost ($)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -943,7 +943,7 @@
     },
     {
       "name": "TOTAL_SAMPLING_TIME",
-      "alias": "Total Required Sampling Time",
+      "alias": "Total Required Sampling Time (hours)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -954,7 +954,7 @@
     },
     {
       "name": "TOTAL_SAMPLED_AREA",
-      "alias": "Total Sampled Area",
+      "alias": "Total Sampled Area (ft2)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -965,7 +965,7 @@
     },
     {
       "name": "TOTAL_SAMPLING_COST",
-      "alias": "Total Sampling Cost",
+      "alias": "Total Sampling Cost ($)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -976,7 +976,7 @@
     },
     {
       "name": "TOTAL_SAMPLING_LABOR_COST",
-      "alias": "Total Sampling Labor Cost",
+      "alias": "Total Sampling Labor Cost ($)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -987,7 +987,7 @@
     },
     {
       "name": "TOTAL_TIME",
-      "alias": "Total Time",
+      "alias": "Total Time (hours)",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -1949,7 +1949,7 @@
         "places": 2
       },
       "isEditable": false,
-      "label": "Total Time per Sample",
+      "label": "Total Time per Sample (hrs)",
       "visible": true
     },
     "TYPE": {
@@ -1995,7 +1995,7 @@
         "places": 2
       },
       "isEditable": false,
-      "label": "Waste Volume per Sample",
+      "label": "Waste Volume per Sample (L/sample)",
       "visible": true
     },
     "WWPS": {
@@ -2005,7 +2005,7 @@
         "places": 2
       },
       "isEditable": false,
-      "label": "Waste Weight per Sample",
+      "label": "Waste Weight per Sample (lbs/sample)",
       "visible": true
     }
   }

@@ -187,6 +187,8 @@ function ConfigureOutput({ appType }: Props) {
     userDefinedAttributes,
   } = useContext(SketchContext);
 
+  const appName = appType === 'decon' ? 'TODS' : 'TOTS';
+
   const sampleTypeOptions: SampleTypeOptions = Object.values(
     userDefinedAttributes.sampleTypes,
   ).map((type) => {
@@ -217,11 +219,11 @@ function ConfigureOutput({ appType }: Props) {
     />
   );
 
-  const webSceneIcon = (id: string) => (
+  const webSceneIcon = (id: string, appName: string) => (
     <InfoIcon
       id={id}
       cssStyles={infoIconStyles}
-      tooltip="A web scene is used for viewing TOTS sampling plans in ArcGIS Online with 3D."
+      tooltip={`A web scene is used for viewing ${appName} sampling plans in ArcGIS Online with 3D.`}
     />
   );
 
@@ -430,8 +432,9 @@ function ConfigureOutput({ appType }: Props) {
           {!signedIn && notLoggedInMessage}
           <div>
             <p>
-              Use this tab to configure what TOTS output is published to your
-              ArcGIS Online account. Select one or more of the options below.
+              Use this tab to configure what {appName} output is published to
+              your ArcGIS Online account. Select one or more of the options
+              below.
             </p>
           </div>
 
@@ -548,7 +551,7 @@ function ConfigureOutput({ appType }: Props) {
                       <label css={subLabelStyles}>
                         <span>
                           Include Web Scene
-                          {webSceneIcon('partial-web-scene-icon')}
+                          {webSceneIcon('partial-web-scene-icon', appName)}
                         </span>
                         <div
                           css={switchStyles}

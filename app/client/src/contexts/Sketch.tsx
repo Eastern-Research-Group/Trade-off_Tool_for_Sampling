@@ -70,6 +70,12 @@ export type JsonDownloadType = {
   averageInitialContamination: number;
   averageFinalContamination: number;
   aboveDetectionLimit: boolean;
+  pctAoi?: number;
+  surfaceArea?: number;
+  volume?: number;
+  volumeContents?: number;
+  numIterativeApplications: number;
+  removeContents?: boolean;
 };
 
 export type AoiCharacterizationData = {

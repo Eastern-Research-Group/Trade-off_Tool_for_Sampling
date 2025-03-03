@@ -357,6 +357,60 @@
       </style>
     <![endif]-->
 
+    <!-- Set the page title dynamically -->
+    <script>
+      // map pathnames to a formatted title for SEO purposes
+      const pathnameMapping = {
+        default: {
+          title: 'Trade-off Tool for Sampling (TOTS) | US EPA',
+          description:
+            'Trade-off Tool for Sampling (TOTS) is JavaScript Web Mapping application to create a sampling strategy for chemical and radiological contamination characterization easily accessible to field collection applications via the EPA GeoPlatform.',
+          webArea: 'TOTS',
+        },
+        decon: {
+          title:
+            'Trade-off Tool for Decontamination Strategies (TODS) | US EPA',
+          description:
+            'Trade-off Tool for Decontamination Strategies (TODS) is JavaScript Web Mapping application to create a decontamination strategy for chemical and radiological contamination characterization easily accessible to the EPA GeoPlatform.',
+          webArea: 'TODS',
+        },
+      };
+
+      function setMetaItem(attribute, attributeValue, content) {
+        // remove old dc title tags if necessary
+        let oldTag = document.querySelector(
+          '[' + attribute + "='" + attributeValue + "']",
+        );
+        if (oldTag) oldTag.remove();
+
+        // create dc title tag
+        const newTag = document.createElement('meta');
+        newTag.setAttribute(attribute, attributeValue);
+        newTag.content = content;
+        document.getElementsByTagName('head')[0].appendChild(newTag);
+      }
+
+      // update page title and description using mapping
+      function setPageInfo(pathnameMapping) {
+        const pathname = window.location.pathname.split('/')[1];
+        const pageInfo = pathnameMapping[pathname] || pathnameMapping.default;
+        document.title = pageInfo.title;
+
+        setMetaItem('name', 'DC.title', pageInfo.title);
+        setMetaItem('name', 'description', pageInfo.description);
+        setMetaItem('name', 'DC.description', pageInfo.description);
+        setMetaItem('property', 'WebArea', pageInfo.webArea);
+        setMetaItem('property', 'og:title', pageInfo.title);
+      }
+
+      setPageInfo(pathnameMapping); // set page title when page loads
+
+      // set page title when window location changes
+      window.addEventListener('locationchange', function (event) {
+        setPageInfo(pathnameMapping);
+      });
+    </script>
+
     <script>
       /**
        * This script is used for displaying a "browser unsupported"
@@ -364,10 +418,11 @@
        * div, when available it then checks the browser version and
        * displays the message if necessary.
        */
+      const appId = window.location.pathname === '/decon' ? 'tods' : 'tots';
 
       function unsupportedBrowserMessage() {
         const unsupportedMessage = document.getElementById(
-          'unsupported-browser-message',
+          `unsupported-browser-message-${appId}`,
         );
 
         if (unsupportedMessage) {
@@ -472,7 +527,7 @@
       // Allows the user to close the unsupported message.
       function hideUnsupportedMessage() {
         const unsupportedMessage = document.getElementById(
-          'unsupported-browser-message',
+          `unsupported-browser-message-${appId}`,
         );
         unsupportedMessage.style.display = 'none';
       }
@@ -651,7 +706,7 @@
           const extension = href.split('.').pop;
           const category =
             window.location.hostname === event.target.hostname
-              ? //Part of the TOTS application
+              ? //Part of the application
                 extension === '.pdf' || extension === '.zip'
                 ? 'Download'
                 : 'Internal'
@@ -1096,7 +1151,7 @@
                 You need to enable JavaScript to run this app.
               </noscript>
               <div
-                id="unsupported-browser-message"
+                id="unsupported-browser-message-tots"
                 class="unsupportedMessageContainer"
               >
                 <div class="unsupportedErrorBox">
@@ -1111,6 +1166,51 @@
                     JavaScript API for advanced mapping features, which are not
                     supported by this browser. For more information visit the
                     following links:
+                    <a
+                      href="https://developers.arcgis.com/javascript/latest/system-requirements/#:~:text=Supported%20browsers&text=Firefox%2093%20or%20later,Safari%2014%20or%20later"
+                      >ArcGIS API for JavaScript System Requirements</a
+                    >
+                    and
+                    <a
+                      href="https://www.esri.com/arcgis-blog/products/arcgis/announcements/so-long-internet-explorer-11/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      >So Long Internet Explorer</a
+                    >.
+                    <a
+                      class="exit-disclaimer"
+                      href="https://www.epa.gov/home/exit-epa"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      EXIT
+                    </a>
+                  </div>
+                  <button
+                    class="unsupportedCloseButton"
+                    onClick="hideUnsupportedMessage();"
+                  >
+                    x
+                  </button>
+                </div>
+              </div>
+              <div
+                id="unsupported-browser-message-tods"
+                class="unsupportedMessageContainer"
+              >
+                <div class="unsupportedErrorBox">
+                  <div class="unsupportedMessage">
+                    <strong
+                      >You are using a browser that is not supported. Trade-off
+                      Tool for Decontamination Strategies (TODS) works best on
+                      the latest verions of Chrome, Safari, Edge, or
+                      Firfox.</strong
+                    >
+                    <br />
+                    Trade-off Tool for Decontamination Strategies (TODS)
+                    utilizes Esri's ArcGIS JavaScript API for advanced mapping
+                    features, which are not supported by this browser. For more
+                    information visit the following links:
                     <a
                       href="https://developers.arcgis.com/javascript/latest/system-requirements/#:~:text=Supported%20browsers&text=Firefox%2093%20or%20later,Safari%2014%20or%20later"
                       >ArcGIS API for JavaScript System Requirements</a
