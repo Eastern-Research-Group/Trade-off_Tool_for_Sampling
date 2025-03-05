@@ -556,7 +556,7 @@ export async function fetchBuildingData(
 
       // meters
       const heightM = HEIGHT ?? defaultStoryHeightM;
-      const numStory = Math.max(heightM / defaultStoryHeightM, 1);
+      const numStory = Math.max(Math.ceil(heightM / defaultStoryHeightM), 1);
       const roofSqM = SQMETERS;
       const footprintSqM = SQMETERS;
       const floorsSqM = numStory * footprintSqM;

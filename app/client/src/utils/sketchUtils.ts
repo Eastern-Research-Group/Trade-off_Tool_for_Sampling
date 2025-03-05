@@ -1142,8 +1142,8 @@ export function getBuildingTableColumns({
     {
       header: 'Building ID',
       accessorKey: 'BUILD_ID',
-      size: 0,
-      show: false,
+      size: baseColumnWidth,
+      show: devMode,
     },
     {
       header: 'Object ID',
