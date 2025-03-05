@@ -1,10 +1,10 @@
 /** @jsxImportSource @emotion/react */
 
 import { useContext, useEffect } from 'react';
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import ImageryLayer from '@arcgis/core/layers/ImageryLayer.js';
 import PopupTemplate from '@arcgis/core/PopupTemplate.js';
+import { css } from '@emotion/react';
 // components
 import AoiSketchButton from 'components/AoiSketchButton';
 import Switch from 'components/Switch';
@@ -22,6 +22,27 @@ import {
 
 const SUITABILITY_LAYER_ID = generateUUID();
 const STAGING_AOI_LAYER_NAME = 'Sketched Staging AOI';
+
+// --- styles ---
+
+const calculationSectionStyles = css`
+  column-gap: 1em;
+  display: grid;
+  font-size: 0.9em;
+  grid-template-columns: 2fr 3fr;
+  grid-template-rows: auto;
+  justify-items: end;
+  padding: 0;
+  row-gap: 0.5em;
+
+  & > div {
+    text-align: right;
+
+    &:nth-of-type(odd) {
+      font-weight: bold;
+    }
+  }
+`;
 
 // --- components ---
 
@@ -60,14 +81,31 @@ function CalculationResults() {
   const formatNumber = (value: number) =>
     value.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
+  const rows = {
+    Area: { value: totalArea, unit: 'm²' },
+    'Solid Waste Capacity': { value: totalSolidWasteCapacity, unit: 'm³' },
+    'Liquid Waste Capacity': { value: totalLiquidWasteCapacity, unit: 'm³' },
+  };
+
+  const sketchLayer = stagingAoiLayer?.sketchLayer;
+
   // TODO: Format this nicely.
-  return (
-    <section>
-      <p>Area: {formatNumber(totalArea)} m²</p>
-      <p>Solid Waste Capacity: {formatNumber(totalSolidWasteCapacity)} m³</p>
-      <p>Liquid Waste Capacity: {formatNumber(totalLiquidWasteCapacity)} m³</p>
-    </section>
-  );
+  return sketchLayer instanceof GraphicsLayer && sketchLayer.graphics.length ? (
+    <>
+      <h3>AOI Calculation Results</h3>
+      <section css={calculationSectionStyles}>
+        {Object.entries(rows).map(([label, { value, unit }]) => (
+          <>
+            <div>{label}:</div>
+            <div>
+              {' '}
+              {formatNumber(value)} {unit}{' '}
+            </div>
+          </>
+        ))}
+      </section>
+    </>
+  ) : null;
 }
 
 // --- custom hooks ---
@@ -178,8 +216,7 @@ function useStagingAoiLayer() {
 
 function useSuitabilityLayer() {
   const { services } = useLookupFiles().data;
-  const { map, setReferenceLayers, suitabilityLayerVisible } =
-    useContext(SketchContext);
+  const { map, suitabilityLayerVisible } = useContext(SketchContext);
 
   const suitabilityLayer = (() => {
     if (!map) return;
@@ -191,7 +228,7 @@ function useSuitabilityLayer() {
         id: SUITABILITY_LAYER_ID,
         listMode: 'show',
         mosaicRule: { ascending: true, method: 'northwest', operation: 'sum' },
-        // TODO: Add a colormap to the suitability layer.
+        // TODO: Add raster configuration.
         /*rasterFunction: {
           functionName: 'Colormap',
           functionArguments: {
@@ -230,17 +267,7 @@ function useSuitabilityLayer() {
     }
   }
 
-  // Add the suitability layer to the list of reference layers.
-  useEffect(() => {
-    // TODO: See if this is necessary. It significantly increases the size of the indexDB.
-    /*setReferenceLayers((prev) => {
-      if (prev.includes(suitabilityLayer)) {
-        return prev;
-      } else {
-        return [...prev, suitabilityLayer];
-      }
-    });*/
-  }, [setReferenceLayers, suitabilityLayer]);
+  // TODO: Add the sketch layer to the `edits` context attribute.
 
   // Hide the suitability layer when the component unmounts.
   useEffect(() => {
