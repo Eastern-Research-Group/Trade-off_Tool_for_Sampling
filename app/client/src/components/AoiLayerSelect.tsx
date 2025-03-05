@@ -63,7 +63,7 @@ function AoiLayerSelect({
       </div>
       <Select
         id="characterize-aoi-select-input-container"
-        inputId="characterize-aoi-select-input"
+        inputId="scenario-select-input"
         css={layerSelectStyles}
         isDisabled={addScenarioVisible || editScenarioVisible}
         options={deconLayers}

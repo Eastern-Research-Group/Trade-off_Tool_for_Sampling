@@ -1,11 +1,11 @@
 /** @jsxImportSource @emotion/react */
 
-import { useContext, useEffect } from 'react';
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import { useContext, useEffect, useState } from 'react';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
-import ImageryLayer from '@arcgis/core/layers/ImageryLayer.js';
-import PopupTemplate from '@arcgis/core/PopupTemplate.js';
+import ImageryLayer from '@arcgis/core/layers/ImageryLayer';
+import PopupTemplate from '@arcgis/core/PopupTemplate';
 // components
+import AoiGraphicSelect from 'components/AoiGraphicSelect';
 import AoiSketchButton from 'components/AoiSketchButton';
 import Switch from 'components/Switch';
 // contexts
@@ -29,33 +29,57 @@ function StagingAreas() {
   const { setSuitabilityLayerVisible, suitabilityLayerVisible } =
     useContext(SketchContext);
 
+  const [addGraphicVisible, setAddGraphicVisible] = useState(false);
+  const [calculationsVisible, setCalculationsVisible] = useState(false);
+  const [editGraphicVisible, setEditGraphicVisible] = useState(false);
+  const [graphics, setGraphics] = useState<__esri.Graphic[]>([]);
+  const [selectedGraphic, setSelectedGraphic] = useState<__esri.Graphic | null>(
+    null,
+  );
+
   useSuitabilityLayer();
 
   const stagingAoiLayer = useStagingAoiLayer();
 
-  const sketchLayer = stagingAoiLayer?.sketchLayer;
+  const sketchLayer = stagingAoiLayer?.sketchLayer as GraphicsLayer;
+
+  const onSketchButtonClick = () => {
+    // TODO: If the selected graphic is not null, first prompt user to confirm deletion.
+    sketchLayer.removeAll();
+  };
 
   return (
     <div>
       <label className="display-flex flex-align-center flex-justify margin-0">
         <strong>Display Staging Suitability Layer</strong>
+        <AoiGraphicSelect
+          addGraphicVisible={addGraphicVisible}
+          editGraphicVisible={editGraphicVisible}
+          extraLabelContent={null}
+          graphicsLayer={sketchLayer}
+          selectedGraphic={selectedGraphic}
+          setSelectedGraphic={setSelectedGraphic}
+        />
         <Switch
           ariaLabel="Display Staging Suitability Layer"
           checked={suitabilityLayerVisible}
           onChange={setSuitabilityLayerVisible}
         />
       </label>
-      <AoiSketchButton className="margin-top-1" sketchLayer={sketchLayer} />
+      <AoiSketchButton
+        className="margin-top-1"
+        onClick={onSketchButtonClick}
+        sketchLayer={sketchLayer}
+      />
       <CalculationResults />
     </div>
   );
 }
 
-function CalculationResults() {
+function AoiCalculationResults() {
   const stagingAoiLayer = useStagingAoiLayer();
 
-  const { totalArea, totalSolidWasteCapacity, totalLiquidWasteCapacity } =
-    useAoiCalculations(stagingAoiLayer);
+  useAoiCalculations(stagingAoiLayer);
 
   const formatNumber = (value: number) =>
     value.toLocaleString('en-US', { maximumFractionDigits: 2 });
@@ -88,12 +112,6 @@ function useAoiCalculations(aoiLayer?: LayerType) {
   const calculateLiquidWasteCapacity = (areaSqM: number) => {
     return (areaSqM * 0.4) / 0.0020975 / 1000;
   };
-  const sumValues = (key: string) => {
-    return (sketchLayer?.graphics ?? []).reduce((total, graphic) => {
-      return total + (graphic.attributes[key] ?? 0);
-    }, 0);
-  };
-
   // Add a calculations to the graphics in the sketch layer when they are created, and configure the graphic's popup.
   useEffect(() => {
     if (!aoiSketchVM) return;
@@ -101,6 +119,7 @@ function useAoiCalculations(aoiLayer?: LayerType) {
     const handle = aoiSketchVM.on('create', async ({ graphic, state }) => {
       if (state !== 'complete') return;
       if (aoiSketchVM.layer !== sketchLayer) return;
+      console.log(graphic.toJSON()); // XXX
 
       const areaSqM = await calculateArea(
         graphic,
@@ -143,12 +162,6 @@ function useAoiCalculations(aoiLayer?: LayerType) {
       handle.remove();
     };
   }, [aoiSketchVM, sceneViewForArea, sketchLayer]);
-
-  return {
-    totalArea: sumValues('AREA'),
-    totalSolidWasteCapacity: sumValues('SOLID_WASTE_CAPACITY'),
-    totalLiquidWasteCapacity: sumValues('LIQUID_WASTE_CAPACITY'),
-  };
 }
 
 function useStagingAoiLayer() {
@@ -178,8 +191,7 @@ function useStagingAoiLayer() {
 
 function useSuitabilityLayer() {
   const { services } = useLookupFiles().data;
-  const { map, setReferenceLayers, suitabilityLayerVisible } =
-    useContext(SketchContext);
+  const { map, suitabilityLayerVisible } = useContext(SketchContext);
 
   const suitabilityLayer = (() => {
     if (!map) return;
@@ -230,17 +242,7 @@ function useSuitabilityLayer() {
     }
   }
 
-  // Add the suitability layer to the list of reference layers.
-  useEffect(() => {
-    // TODO: See if this is necessary. It significantly increases the size of the indexDB.
-    /*setReferenceLayers((prev) => {
-      if (prev.includes(suitabilityLayer)) {
-        return prev;
-      } else {
-        return [...prev, suitabilityLayer];
-      }
-    });*/
-  }, [setReferenceLayers, suitabilityLayer]);
+  // TODO: Add the AOI edits layer to the `edits` context attribute.
 
   // Hide the suitability layer when the component unmounts.
   useEffect(() => {

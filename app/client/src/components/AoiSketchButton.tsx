@@ -41,6 +41,7 @@ const BUTTON_ID = 'decon-mask';
 
 type Props = {
   className?: string;
+  onClick?: () => void;
   sketchLayer?:
     | __esri.FeatureLayer
     | __esri.GraphicsLayer
@@ -48,7 +49,7 @@ type Props = {
     | null;
 };
 
-function AoiButton({ className, sketchLayer }: Props) {
+function AoiSketchButton({ className, onClick, sketchLayer }: Props) {
   const {
     aoiSketchLayer,
     aoiSketchVM,
@@ -69,6 +70,8 @@ function AoiButton({ className, sketchLayer }: Props) {
   // dropdown this will create an AOI layer. This also sets the sketchVM to use the
   // selected AOI and triggers a React useEffect to allow the user to sketch on the map.
   const sketchAoiButtonClick = () => {
+    onClick?.();
+
     if (!map || !aoiSketchVM || !sceneView || !mapView) return;
 
     // save changes from other sketchVM and disable to prevent
@@ -139,4 +142,4 @@ function AoiButton({ className, sketchLayer }: Props) {
   );
 }
 
-export default AoiButton;
+export default AoiSketchButton;

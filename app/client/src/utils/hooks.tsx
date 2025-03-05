@@ -2830,3 +2830,28 @@ export function useAbort() {
 
   return { abort, getSignal };
 }
+
+export function useStagingAoiLayer() {
+  const { map, layers, layersInitialized, setLayers } =
+    useContext(SketchContext);
+
+  const stagingAoiLayer = layers.find(
+    (layer) => layer.name === STAGING_AOI_LAYER_NAME,
+  );
+
+  useEffect(() => {
+    if (!map || !layersInitialized) return;
+    if (stagingAoiLayer) return;
+
+    const newStagingAoiLayer = getDefaultSamplingMaskLayer(
+      STAGING_AOI_LAYER_NAME,
+    );
+    const sketchLayer = newStagingAoiLayer.sketchLayer;
+    if (sketchLayer) map.add(sketchLayer);
+
+    // add the layer to the map
+    setLayers((layers) => [...layers, newStagingAoiLayer]);
+  }, [layersInitialized, map, setLayers, stagingAoiLayer]);
+
+  return stagingAoiLayer;
+}
