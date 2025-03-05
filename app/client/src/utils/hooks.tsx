@@ -175,7 +175,9 @@ function performBasicDeconCalculations(
       : sel.removeContents;
 
   const areaDeconApplied = sel.surfaceArea * (sel.pctDeconed * 0.01);
-  const volumeDeconApplied = sel.volume;
+  const areaDeconAppliedSqFt =
+    convertSqMtoSqFt(sel.surfaceArea) * (sel.pctDeconed * 0.01);
+  const volumeDeconAppliedCubFt = convertCubMtoCubFt(sel.volume);
 
   const liquidWasteM3 = areaDeconApplied * AQUEOUS_WASTE_VOLUME;
   let solidWasteM3 = areaDeconApplied * SOLID_WASTE_VOLUME;
@@ -196,9 +198,11 @@ function performBasicDeconCalculations(
   const deconCost =
     APPLICATION_METHOD === 'Surface'
       ? FIXED_COSTS +
-        areaDeconApplied * SIZE_BASED_COSTS * sel.numIterativeApplications
+        areaDeconAppliedSqFt * SIZE_BASED_COSTS * sel.numIterativeApplications
       : FIXED_COSTS +
-        volumeDeconApplied * SIZE_BASED_COSTS * sel.numIterativeApplications;
+        volumeDeconAppliedCubFt *
+          SIZE_BASED_COSTS *
+          sel.numIterativeApplications;
   const deconTime =
     SETUP_TIME / 24 +
     BREAKDOWN_TIME / 24 +
@@ -580,7 +584,7 @@ export async function fetchBuildingData(
       const intWallsSqFt = convertSqMtoSqFt(intWallsSqM);
       const extSqFt = convertSqMtoSqFt(extSqM);
       const intSqFt = convertSqMtoSqFt(intSqM);
-      const totalSqFt = convertSqMtoSqFt(intSqFt);
+      const totalSqFt = convertSqMtoSqFt(totalSqM);
       const extVolumeCubFt = convertCubMtoCubFt(extVolumeCubM);
       const intVolumeCubFt = convertCubMtoCubFt(intVolumeCubM);
       const intVolumeContentsCubFt = convertCubMtoCubFt(intVolumeContentsCubM);
