@@ -1581,7 +1581,7 @@ function DeconSelectionPopup({
     setBuildingMaterialDeconSelections(
       Object.values(buildingMaterialDeconObject),
     );
-  }, [deconOperation, defaultDeconSelections, edits, setEdits]);
+  }, [deconOperation, defaultDeconSelections, edits, isOpen, setEdits]);
 
   function handleApproachChange(selection: ApproachTypes) {
     setSelectedApproach(selection);
@@ -1589,6 +1589,69 @@ function DeconSelectionPopup({
 
   function handleBuildingApproachChange(selection: BuildingApproachTypes) {
     setSelectedBuildingApproach(selection);
+  }
+
+  function handleSave() {
+    if (!deconOperation) return;
+
+    const index = edits.edits.findIndex(
+      (item) =>
+        item.type === 'layer-decon' && item.layerId === deconOperation.layerId,
+    );
+    setEdits((edits) => {
+      if (index === -1) return edits;
+
+      const editsCopy = deepCopyObject(edits);
+      const editedOp = editsCopy.edits[index] as LayerDeconEditsType;
+      const newDeconTechSelections: any[] = [];
+
+      const basicDeconSelections =
+        selectedApproach === 'Advanced'
+          ? advancedBaseDeconSelections
+          : basicBaseDeconSelections;
+      const buildingDeconSelections =
+        selectedBuildingApproach === 'Building Primary Material Composition'
+          ? buildingMaterialDeconSelections
+          : buildingStructuralDeconSelections;
+
+      // build new deconTech selections
+      editedOp.deconTechSelections.forEach((originalTech) => {
+        const basicDeconSel = basicDeconSelections.find(
+          (t) => t.id === originalTech.id,
+        );
+        const bldgDeconSel = buildingDeconSelections.find(
+          (t) => t.id === originalTech.id,
+        );
+        if (!basicDeconSel && !bldgDeconSel) {
+          newDeconTechSelections.push(originalTech);
+          return;
+        }
+
+        if (basicDeconSel) newDeconTechSelections.push(basicDeconSel);
+
+        if (bldgDeconSel) newDeconTechSelections.push(bldgDeconSel);
+      });
+
+      editedOp.deconTechSelections = newDeconTechSelections;
+      editedOp.approach = selectedApproach;
+      editedOp.buildingApproach =
+        selectedApproach !== 'Basic' ? selectedBuildingApproach : null;
+
+      return {
+        count: editsCopy.count + 1,
+        edits: editsCopy.edits,
+      };
+    });
+
+    setTimeout(() => {
+      setCalculateResultsDecon((calculateResultsDecon) => {
+        return {
+          status: 'fetching',
+          panelOpen: calculateResultsDecon.panelOpen,
+          data: null,
+        };
+      });
+    }, 100);
   }
 
   const devMode = window.location.search.includes('devMode=true');
@@ -2151,76 +2214,17 @@ function DeconSelectionPopup({
         )}
 
         <div css={buttonContainerStyles}>
+          <button css={saveAttributesButtonStyles} onClick={handleSave}>
+            Refresh Estimates
+          </button>
           <button
             css={saveAttributesButtonStyles}
             onClick={() => {
-              if (!deconOperation) return;
-
-              const index = edits.edits.findIndex(
-                (item) =>
-                  item.type === 'layer-decon' &&
-                  item.layerId === deconOperation.layerId,
-              );
-              setEdits((edits) => {
-                if (index === -1) return edits;
-
-                const editsCopy = deepCopyObject(edits);
-                const editedOp = editsCopy.edits[index] as LayerDeconEditsType;
-                const newDeconTechSelections: any[] = [];
-
-                const basicDeconSelections =
-                  selectedApproach === 'Advanced'
-                    ? advancedBaseDeconSelections
-                    : basicBaseDeconSelections;
-                const buildingDeconSelections =
-                  selectedBuildingApproach ===
-                  'Building Primary Material Composition'
-                    ? buildingMaterialDeconSelections
-                    : buildingStructuralDeconSelections;
-
-                // build new deconTech selections
-                editedOp.deconTechSelections.forEach((originalTech) => {
-                  const basicDeconSel = basicDeconSelections.find(
-                    (t) => t.id === originalTech.id,
-                  );
-                  const bldgDeconSel = buildingDeconSelections.find(
-                    (t) => t.id === originalTech.id,
-                  );
-                  if (!basicDeconSel && !bldgDeconSel) {
-                    newDeconTechSelections.push(originalTech);
-                    return;
-                  }
-
-                  if (basicDeconSel) newDeconTechSelections.push(basicDeconSel);
-
-                  if (bldgDeconSel) newDeconTechSelections.push(bldgDeconSel);
-                });
-
-                editedOp.deconTechSelections = newDeconTechSelections;
-                editedOp.approach = selectedApproach;
-                editedOp.buildingApproach =
-                  selectedApproach !== 'Basic'
-                    ? selectedBuildingApproach
-                    : null;
-
-                return {
-                  count: editsCopy.count + 1,
-                  edits: editsCopy.edits,
-                };
-              });
-
-              setTimeout(() => {
-                setCalculateResultsDecon((calculateResultsDecon) => {
-                  return {
-                    status: 'fetching',
-                    panelOpen: calculateResultsDecon.panelOpen,
-                    data: null,
-                  };
-                });
-              }, 100);
+              handleSave();
+              onClose();
             }}
           >
-            Save
+            Save and Continue
           </button>
           <button
             css={saveAttributesButtonStyles}
