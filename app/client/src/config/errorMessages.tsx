@@ -354,6 +354,14 @@ export const noSamplesPublishMessage = (
   />
 );
 
+export const noDeconPublishMessage = (
+  <MessageBox
+    severity="warning"
+    title="No Plans or AOIs to Publish"
+    message="There are no AOIs or Decon Plans to publish. Please create content and try again."
+  />
+);
+
 export const noSampleTypesPublishMessage = (
   <MessageBox
     severity="warning"

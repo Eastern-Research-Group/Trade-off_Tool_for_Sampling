@@ -56,6 +56,7 @@ import { ErrorType } from 'types/Misc';
 import { AppType } from 'types/Navigation';
 // config
 import {
+  noDeconPublishMessage,
   noSamplesPublishMessage,
   noSampleTypesPublishMessage,
   noServiceNameMessage,
@@ -2760,11 +2761,14 @@ function Publish({ appType }: Props) {
 
       {!signedIn && notLoggedInMessage}
       {(includeFullPlan || includePartialPlan) &&
-        ((appType === 'sampling' && sampleCount === 0) ||
-          (appType === 'decon' &&
-            (calculateResultsDecon.status !== 'success' ||
-              !calculateResultsDecon.data))) &&
+        appType === 'sampling' &&
+        sampleCount === 0 &&
         noSamplesPublishMessage}
+      {(includeFullPlan || includePartialPlan) &&
+        appType === 'decon' &&
+        (calculateResultsDecon.status !== 'success' ||
+          !calculateResultsDecon.data) &&
+        noDeconPublishMessage}
       {includeCustomSampleTypes && (
         <Fragment>
           {sampleTypeSelections.length === 0 && noSampleTypesPublishMessage}
