@@ -1205,7 +1205,7 @@ function CreateDeconPlan({ appType }: Props) {
               <div css={opIndentStyles}>
                 <CharacterizeAOI
                   appType={appType}
-                  label="Linked AOI Layer"
+                  label="Linked AOI Decon Layer"
                   showHelpText={false}
                   showOnEdit={true}
                 />
