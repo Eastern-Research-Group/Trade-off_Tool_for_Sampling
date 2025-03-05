@@ -221,11 +221,11 @@ export const cantUseWithVspMessage = (
   />
 );
 
-export const cantUseWith3dMessage = (
+export const cantUseWith3dMessage = (toolName: string) => (
   <MessageBox
     severity="warning"
     title="Not Available in 3D View"
-    message="Multiple Random Samples cannot be used in 3D mode"
+    message={`${toolName} cannot be used in 3D mode`}
   />
 );
 
@@ -351,6 +351,14 @@ export const noSamplesPublishMessage = (
     severity="warning"
     title="No Samples to Publish"
     message="There are no samples to publish. Please add some samples to the plan and try again."
+  />
+);
+
+export const noDeconPublishMessage = (
+  <MessageBox
+    severity="warning"
+    title="No Plans or AOIs to Publish"
+    message="There are no AOIs or Decon Plans to publish. Please create content and try again."
   />
 );
 

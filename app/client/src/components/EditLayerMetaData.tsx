@@ -943,6 +943,10 @@ function EditCustomSampleTypesTable({
       });
   }, [appType, portal, queryInitialized]);
 
+  useEffect(() => {
+    setSaveStatus({ status: initialStatus });
+  }, [initialStatus, publishSamplesMode]);
+
   const handleSave = () => {
     setPublishSampleTableMetaData({
       value: '',
@@ -1071,13 +1075,14 @@ function EditCustomSampleTypesTable({
           }}
           disabled={
             (publishSamplesMode === 'new' &&
-              JSON.stringify(publishSampleTableMetaData) ===
-                JSON.stringify({
-                  value: '',
-                  label: sampleTableName,
-                  description: sampleTableDescription,
-                  url: '',
-                })) ||
+              (!sampleTableName ||
+                JSON.stringify(publishSampleTableMetaData) ===
+                  JSON.stringify({
+                    value: '',
+                    label: sampleTableName,
+                    description: sampleTableDescription,
+                    url: '',
+                  }))) ||
             (publishSamplesMode === 'existing' &&
               JSON.stringify(publishSampleTableMetaData) ===
                 JSON.stringify(selectedService))

@@ -56,6 +56,7 @@ import { ErrorType } from 'types/Misc';
 import { AppType } from 'types/Navigation';
 // config
 import {
+  noDeconPublishMessage,
   noSamplesPublishMessage,
   noSampleTypesPublishMessage,
   noServiceNameMessage,
@@ -2522,8 +2523,7 @@ function Publish({ appType }: Props) {
           A summary of the selections made on the Configure Output step is
           below. By default, only you and the ArcGIS Online administrator can
           access content created. Provide other collaborators access to{' '}
-          {appName}
-          content by{' '}
+          {appName} content by{' '}
           <a
             href="https://doc.arcgis.com/en/arcgis-online/share-maps/share-items.htm"
             target="_blank"
@@ -2761,11 +2761,14 @@ function Publish({ appType }: Props) {
 
       {!signedIn && notLoggedInMessage}
       {(includeFullPlan || includePartialPlan) &&
-        ((appType === 'sampling' && sampleCount === 0) ||
-          (appType === 'decon' &&
-            (calculateResultsDecon.status !== 'success' ||
-              !calculateResultsDecon.data))) &&
+        appType === 'sampling' &&
+        sampleCount === 0 &&
         noSamplesPublishMessage}
+      {(includeFullPlan || includePartialPlan) &&
+        appType === 'decon' &&
+        (calculateResultsDecon.status !== 'success' ||
+          !calculateResultsDecon.data) &&
+        noDeconPublishMessage}
       {includeCustomSampleTypes && (
         <Fragment>
           {sampleTypeSelections.length === 0 && noSampleTypesPublishMessage}
