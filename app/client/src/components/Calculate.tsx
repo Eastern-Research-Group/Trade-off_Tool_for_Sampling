@@ -1695,7 +1695,7 @@ function CalculateResultsPopup({
                     ? (parseSmallFloat(value, 2) ?? '').toLocaleString()
                     : col.format === 'boolean' &&
                         ![null, undefined].includes(value)
-                      ? col.format
+                      ? value
                         ? 'Yes'
                         : 'No'
                       : value,
