@@ -2215,7 +2215,7 @@ function DeconSelectionPopup({
 
         <div css={buttonContainerStyles}>
           <button css={saveAttributesButtonStyles} onClick={handleSave}>
-            Refresh Estimates
+            Save
           </button>
           <button
             css={saveAttributesButtonStyles}
