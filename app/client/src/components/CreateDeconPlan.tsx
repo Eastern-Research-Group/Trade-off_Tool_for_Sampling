@@ -72,6 +72,9 @@ const pointStyles: ShapeTypeSelect[] = [
   },
 ];
 
+const surfaceAreaInfoText =
+  'Assumes decon operations are performed on 100% of surface area.';
+
 // --- styles (CreateDeconPlan) ---
 const panelContainer = css`
   display: flex;
@@ -1615,9 +1618,6 @@ function DeconSelectionPopup({
             <div>
               <strong>Detection Limit:</strong> 100 (CFU/m²)
             </div>
-            <div>
-              <strong>Assumed Percent of Surface Decontaminated:</strong> 100%
-            </div>
           </div>
           <div>
             {calculateResultsDecon.status === 'fetching' && <LoadingSpinner />}
@@ -1753,7 +1753,16 @@ function DeconSelectionPopup({
                 },
               },
               {
-                header: 'Surface Area',
+                header: () => (
+                  <div>
+                    Surface Area
+                    <InfoIcon
+                      id="basic-surface-area-info-icon"
+                      cssStyles={infoIconStylesModified}
+                      tooltip={surfaceAreaInfoText}
+                    />
+                  </div>
+                ),
                 accessorKey: 'surfaceArea',
                 size: 75,
                 cell: (info: CellContext<any, any>) =>
@@ -1886,7 +1895,16 @@ function DeconSelectionPopup({
                       size: 118,
                     },
                     {
-                      header: 'Surface Area',
+                      header: () => (
+                        <div>
+                          Surface Area
+                          <InfoIcon
+                            id="advanced-structural-surface-area-info-icon"
+                            cssStyles={infoIconStylesModified}
+                            tooltip={surfaceAreaInfoText}
+                          />
+                        </div>
+                      ),
                       accessorKey: 'surfaceArea',
                       size: 75,
                       cell: (info: CellContext<any, any>) =>
@@ -2051,9 +2069,18 @@ function DeconSelectionPopup({
                       size: 118,
                     },
                     {
-                      header: 'Surface Area',
+                      header: () => (
+                        <div>
+                          Surface Area
+                          <InfoIcon
+                            id="advanced-material-surface-area-info-icon"
+                            cssStyles={infoIconStylesModified}
+                            tooltip={surfaceAreaInfoText}
+                          />
+                        </div>
+                      ),
                       accessorKey: 'surfaceArea',
-                      size: 75,
+                      size: 80,
                       cell: (info: CellContext<any, any>) =>
                         `${formatNumber(info.getValue())} m²`,
                     },
