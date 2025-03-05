@@ -177,9 +177,11 @@ function performBasicDeconCalculations(
   const areaDeconApplied = sel.surfaceArea * (sel.pctDeconed * 0.01);
   const volumeDeconApplied = sel.volume;
 
-  const liquidWasteM3 = areaDeconApplied * AQUEOUS_WASTE_VOLUME;
+  const liquidWasteM3 =
+    areaDeconApplied * AQUEOUS_WASTE_VOLUME * sel.numIterativeApplications;
   let solidWasteM3 = areaDeconApplied * SOLID_WASTE_VOLUME;
-  const liquidWasteMass = areaDeconApplied * AQUEOUS_WASTE_MASS;
+  const liquidWasteMass =
+    areaDeconApplied * AQUEOUS_WASTE_MASS * sel.numIterativeApplications;
   let solidWasteMass = areaDeconApplied * SOLID_WASTE_MASS;
   if (sel.media === 'Building Interiors') {
     const pctVolumeDeconed = sel.pctDeconed * 0.01 * sel.volumeContents;
