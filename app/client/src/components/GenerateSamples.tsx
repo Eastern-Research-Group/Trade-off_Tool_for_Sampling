@@ -1022,7 +1022,11 @@ function GenerateSamples({ id, type }: GenerateSamplesProps) {
       {sketchLayer?.layerType === 'VSP' && cantUseWithVspMessage}
       {sketchLayer?.layerType !== 'VSP' &&
         displayDimensions === '3d' &&
-        cantUseWith3dMessage}
+        cantUseWith3dMessage(
+          type === 'statistic'
+            ? 'Statistical Sampling Approach'
+            : 'Multiple Random Samples',
+        )}
       {sketchLayer?.layerType !== 'VSP' && displayDimensions === '2d' && (
         <form onSubmit={randomSamples}>
           {type === 'random' && (

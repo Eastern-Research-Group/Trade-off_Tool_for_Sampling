@@ -221,11 +221,11 @@ export const cantUseWithVspMessage = (
   />
 );
 
-export const cantUseWith3dMessage = (
+export const cantUseWith3dMessage = (toolName: string) => (
   <MessageBox
     severity="warning"
     title="Not Available in 3D View"
-    message="Multiple Random Samples cannot be used in 3D mode"
+    message={`${toolName} cannot be used in 3D mode`}
   />
 );
 
