@@ -205,7 +205,7 @@ function performBasicDeconCalculations(
     SETUP_TIME / 24 +
     BREAKDOWN_TIME / 24 +
     (areaDeconApplied * APPLICATION_TIME * sel.numIterativeApplications) / 24 +
-    RESIDENCE_TIME / 24;
+    (RESIDENCE_TIME * sel.numIterativeApplications) / 24;
 
   jsonDownload.push({
     contaminationScenario: parentMedia
