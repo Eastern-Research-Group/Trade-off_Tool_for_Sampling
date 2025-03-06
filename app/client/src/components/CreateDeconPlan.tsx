@@ -1684,11 +1684,11 @@ function DeconSelectionPopup({
           <div>
             <div>
               <strong>{deconOperation?.label} size: </strong>{' '}
-              {area.toLocaleString()} m²
+              {formatNumber(area)} m²
             </div>
             <div>
               <strong>Total Building Footprint:</strong>{' '}
-              {buildingFootprintArea.toLocaleString()} m²
+              {formatNumber(buildingFootprintArea)} m²
             </div>
             <div>
               <strong>Detection Limit:</strong> 100 (CFU/m²)
