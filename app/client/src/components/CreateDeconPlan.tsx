@@ -401,11 +401,16 @@ function CreateDeconPlan({ appType }: Props) {
         <div css={lineSeparatorStyles} />
         <div css={sectionContainer}>
           {selectedScenario ? (
-            <strong>Step1: Define a Decontamination Plan</strong>
+            <strong>Step 1: Define a Decontamination Plan</strong>
           ) : (
             <Fragment>
-              <strong>Step1: Define a Decontamination Plan</strong>
-              <p>Enter a plan name and description and click Save.</p>
+              <strong>Step 1: Define a Decontamination Plan</strong>
+              <p>
+                Create a decon plan with one or more decon operations. Decon
+                operations are associated with a specific area of interest (AOI)
+                where specific decon strategies can be defined. Enter a plan
+                name and description and click Save.
+              </p>
               <MessageBox
                 severity="warning"
                 title=""
@@ -676,11 +681,18 @@ function CreateDeconPlan({ appType }: Props) {
             <Fragment>
               <strong>Step 2: Define a Decontamination Operation</strong>
               <p>
-                For each decon operation, select or create a new operation and
-                create or link an existing AOI. Click “Select/Edit
-                Decontamination Technology Selections” to assign an appropriate
-                decontamination method to each contamination scenario
-                presented.​
+                Each decon operation must be linked to an AOI Decon Layer to
+                quantify ground and building surfaces. For each decon operation
+                you include in your plan, select or create a new AOI Decon
+                Layer. An empty, default Decon layer is loaded by default. Use
+                the “Active Decon Layer” controls to link, add, modify, and/or
+                delete the decon layer that defines the decon operation. Select
+                "Draw Area of Interest" to designate the boundary of your decon
+                operation. Click Save and Submit. Once the tool retrieves the
+                data, the Select/Edit Decontamination Technology Selections
+                button will appear and the map will refresh with new imagery.
+                Click Select/Edit Decontamination Technology Selections to
+                select a decon strategy for each contamination scenario.
               </p>
               <div>
                 <div css={iconButtonContainerStyles}>
@@ -1672,11 +1684,11 @@ function DeconSelectionPopup({
           <div>
             <div>
               <strong>{deconOperation?.label} size: </strong>{' '}
-              {area.toLocaleString()} m²
+              {formatNumber(area)} m²
             </div>
             <div>
               <strong>Total Building Footprint:</strong>{' '}
-              {buildingFootprintArea.toLocaleString()} m²
+              {formatNumber(buildingFootprintArea)} m²
             </div>
             <div>
               <strong>Detection Limit:</strong> 100 (CFU/m²)
