@@ -223,36 +223,8 @@ function useSuitabilityLayer() {
     return (
       map.findLayerById(SUITABILITY_LAYER_ID) ??
       new ImageryLayer({
-        bandIds: [0, 1, 2],
-        format: 'jpgpng',
         id: SUITABILITY_LAYER_ID,
         listMode: 'show',
-        mosaicRule: { ascending: true, method: 'northwest', operation: 'sum' },
-        // TODO: Add raster configuration.
-        /*rasterFunction: {
-          functionName: 'Colormap',
-          functionArguments: {
-            Colormap: [
-              [0, 255, 0, 0],
-              [1, 255, 128, 0],
-              [2, 255, 255, 0],
-              [3, 141, 211, 0],
-              [4, 56, 168, 0],
-            ],
-            Raster: {
-              rasterFunctionArguments: {
-                InputRanges: [
-                  0, 100.0001, 100.0001, 200.0001, 200.0001, 300.0001, 300.0001,
-                  400.0001, 400.0001, 500.0001,
-                ],
-                OutputValues: [0, 1, 2, 3, 4],
-                NoDataRanges: [],
-              },
-              rasterFunction: 'Remap',
-              variableName: 'Raster',
-            },
-          },
-        },*/
         url: services.suitability,
       })
     );
