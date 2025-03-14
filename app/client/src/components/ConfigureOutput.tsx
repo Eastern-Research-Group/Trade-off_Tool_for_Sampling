@@ -163,12 +163,12 @@ function ConfigureOutput({ appType }: Props) {
     setPublishSamplesMode,
     sampleTypeSelections,
     setSampleTypeSelections,
-    includePartialPlan,
-    setIncludePartialPlan,
-    includePartialPlanWebMap,
-    setIncludePartialPlanWebMap,
-    includePartialPlanWebScene,
-    setIncludePartialPlanWebScene,
+    includePlan,
+    setIncludePlan,
+    includePlanWebMap,
+    setIncludePlanWebMap,
+    includePlanWebScene,
+    setIncludePlanWebScene,
     includeCustomSampleTypes,
     setIncludeCustomSampleTypes,
     webMapReferenceLayerSelections,
@@ -204,7 +204,7 @@ function ConfigureOutput({ appType }: Props) {
 
   const [editAttributesOpen, setEditAttributesOpen] = useState(false);
   const [attributesIndex, setAttributesIndex] = useState(-1);
-  const [isPartialOpen, setIsPartialOpen] = useState(includePartialPlan);
+  const [isPlanOpen, setIsPlanOpen] = useState(includePlan);
   const [isSampleTypesOpen, setIsSampleTypesOpen] = useState(
     includeCustomSampleTypes,
   );
@@ -453,12 +453,12 @@ function ConfigureOutput({ appType }: Props) {
         {appType === 'sampling' && (
           <AccordionList>
             <AccordionItem
-              isOpenParam={isPartialOpen}
+              isOpenParam={isPlanOpen}
               onChange={(isOpen) => {
-                setIsPartialOpen(!isPartialOpen);
+                setIsPlanOpen(!isPlanOpen);
                 if (!isOpen) return;
 
-                setIncludePartialPlan(true);
+                setIncludePlan(true);
               }}
               title={
                 <label css={labelStyles}>
@@ -470,10 +470,10 @@ function ConfigureOutput({ appType }: Props) {
                     onClick={(ev) => ev.stopPropagation()}
                   >
                     <Switch
-                      checked={includePartialPlan}
+                      checked={includePlan}
                       onChange={() => {
-                        setIncludePartialPlan(!includePartialPlan);
-                        setIsPartialOpen(!includePartialPlan);
+                        setIncludePlan(!includePlan);
+                        setIsPlanOpen(!includePlan);
                       }}
                       ariaLabel="Include TOTS Sampling Plan"
                     />
@@ -496,7 +496,7 @@ function ConfigureOutput({ appType }: Props) {
                       setIsIncludeWebMapOpen(!isIncludeWebMapOpen);
                       if (!isOpen) return;
 
-                      setIncludePartialPlanWebMap(true);
+                      setIncludePlanWebMap(true);
                     }}
                     title={
                       <label css={subLabelStyles}>
@@ -509,12 +509,10 @@ function ConfigureOutput({ appType }: Props) {
                           onClick={(ev) => ev.stopPropagation()}
                         >
                           <Switch
-                            checked={includePartialPlanWebMap}
+                            checked={includePlanWebMap}
                             onChange={() => {
-                              setIsIncludeWebMapOpen(!includePartialPlanWebMap);
-                              setIncludePartialPlanWebMap(
-                                !includePartialPlanWebMap,
-                              );
+                              setIsIncludeWebMapOpen(!includePlanWebMap);
+                              setIncludePlanWebMap(!includePlanWebMap);
                             }}
                             ariaLabel="Include Web Map"
                           />
@@ -545,7 +543,7 @@ function ConfigureOutput({ appType }: Props) {
                       setIsIncludeWebSceneOpen(!isIncludeWebMapSceneOpen);
                       if (!isOpen) return;
 
-                      setIncludePartialPlanWebScene(true);
+                      setIncludePlanWebScene(true);
                     }}
                     title={
                       <label css={subLabelStyles}>
@@ -558,14 +556,10 @@ function ConfigureOutput({ appType }: Props) {
                           onClick={(ev) => ev.stopPropagation()}
                         >
                           <Switch
-                            checked={includePartialPlanWebScene}
+                            checked={includePlanWebScene}
                             onChange={() => {
-                              setIsIncludeWebSceneOpen(
-                                !includePartialPlanWebScene,
-                              );
-                              setIncludePartialPlanWebScene(
-                                !includePartialPlanWebScene,
-                              );
+                              setIsIncludeWebSceneOpen(!includePlanWebScene);
+                              setIncludePlanWebScene(!includePlanWebScene);
                             }}
                             ariaLabel="Include Web Scene"
                           />

@@ -386,11 +386,10 @@ export const noServiceNameMessage = (
   />
 );
 
-export const publishSuccessMessage = (
-  appName: string,
-  itemData?: { name: string; serviceUrl: string }[],
-) => {
-  const items = itemData?.filter((data) => data?.serviceUrl);
+export const publishSuccessMessage = (appName: string, itemData?: any[]) => {
+  const items = itemData
+    ?.filter((data) => data?.itemData?.serviceUrl)
+    .map((data) => data.itemData);
   return (
     <MessageBox
       severity="info"

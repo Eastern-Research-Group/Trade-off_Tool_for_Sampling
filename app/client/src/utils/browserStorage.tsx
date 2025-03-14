@@ -1559,12 +1559,12 @@ function usePublishStorage(dbInitialized: boolean) {
     setSampleTypeSelections,
     selectedService,
     setSelectedService,
-    includePartialPlan,
-    setIncludePartialPlan,
-    includePartialPlanWebMap,
-    setIncludePartialPlanWebMap,
-    includePartialPlanWebScene,
-    setIncludePartialPlanWebScene,
+    includePlan,
+    setIncludePlan,
+    includePlanWebMap,
+    setIncludePlanWebMap,
+    includePlanWebScene,
+    setIncludePlanWebScene,
     includeCustomSampleTypes,
     setIncludeCustomSampleTypes,
     webMapReferenceLayerSelections,
@@ -1574,9 +1574,9 @@ function usePublishStorage(dbInitialized: boolean) {
   } = useContext(PublishContext);
 
   type OutputSettingsType = {
-    includePartialPlan: boolean;
-    includePartialPlanWebMap: boolean;
-    includePartialPlanWebScene: boolean;
+    includePlan: boolean;
+    includePlanWebMap: boolean;
+    includePlanWebScene: boolean;
     includeCustomSampleTypes: boolean;
     webMapReferenceLayerSelections: any[];
     webSceneReferenceLayerSelections: any[];
@@ -1623,11 +1623,9 @@ function usePublishStorage(dbInitialized: boolean) {
       // set the publish output settings
       if (records.length > 3 && records[3]) {
         const outputSettings: OutputSettingsType = records[3];
-        setIncludePartialPlan(outputSettings.includePartialPlan);
-        setIncludePartialPlanWebMap(outputSettings.includePartialPlanWebMap);
-        setIncludePartialPlanWebScene(
-          outputSettings.includePartialPlanWebScene,
-        );
+        setIncludePlan(outputSettings.includePlan);
+        setIncludePlanWebMap(outputSettings.includePlanWebMap);
+        setIncludePlanWebScene(outputSettings.includePlanWebScene);
         setIncludeCustomSampleTypes(outputSettings.includeCustomSampleTypes);
         setWebMapReferenceLayerSelections(
           outputSettings.webMapReferenceLayerSelections,
@@ -1641,9 +1639,9 @@ function usePublishStorage(dbInitialized: boolean) {
     dbInitialized,
     readInitialized,
     setIncludeCustomSampleTypes,
-    setIncludePartialPlan,
-    setIncludePartialPlanWebMap,
-    setIncludePartialPlanWebScene,
+    setIncludePlan,
+    setIncludePlanWebMap,
+    setIncludePlanWebScene,
     setPublishSamplesMode,
     setPublishSampleTableMetaData,
     setSampleTableDescription,
@@ -1693,9 +1691,9 @@ function usePublishStorage(dbInitialized: boolean) {
     if (!readDone) return;
 
     const settings: OutputSettingsType = {
-      includePartialPlan,
-      includePartialPlanWebMap,
-      includePartialPlanWebScene,
+      includePlan,
+      includePlanWebMap,
+      includePlanWebScene,
       includeCustomSampleTypes,
       webMapReferenceLayerSelections,
       webSceneReferenceLayerSelections,
@@ -1704,9 +1702,9 @@ function usePublishStorage(dbInitialized: boolean) {
     writeToStorage(key4, settings, setOptions);
   }, [
     includeCustomSampleTypes,
-    includePartialPlan,
-    includePartialPlanWebMap,
-    includePartialPlanWebScene,
+    includePlan,
+    includePlanWebMap,
+    includePlanWebScene,
     readDone,
     setOptions,
     webMapReferenceLayerSelections,

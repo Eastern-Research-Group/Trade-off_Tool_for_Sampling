@@ -1,15 +1,5 @@
 // types
-import { CalculateResultsDataType } from 'types/CalculateResults';
-import {
-  CalculateResultsType,
-  CalculateSettingsType,
-  FeatureEditsType,
-  LayerEditsType,
-  ReferenceLayersTableType,
-  ReferenceLayerTableType,
-  ServiceMetaDataType,
-  TableType,
-} from 'types/Edits';
+import { FeatureEditsType } from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { LayerProps } from 'types/Misc';
 import { AttributesType, ReferenceLayerSelections } from 'types/Publish';
@@ -17,6 +7,94 @@ import { AttributesType, ReferenceLayerSelections } from 'types/Publish';
 import { fetchPost, fetchCheck } from 'utils/fetchUtils';
 import { generateUUID, getCurrentDateTime } from 'utils/sketchUtils';
 import { chunkArray, escapeForLucene } from 'utils/utils';
+
+const webMapProps = {
+  version: '2.27',
+  authoringApp: 'ArcGISMapViewer',
+  authoringAppVersion: '2023.1',
+  baseMap: {
+    baseMapLayers: [
+      {
+        id: 'VectorTile_9568',
+        title: 'World Topographic Map',
+        layerType: 'VectorTileLayer',
+        styleUrl:
+          'https://cdn.arcgis.com/sharing/rest/content/items/42df0d22517e49ad84edcee4c093857d/resources/styles/root.json',
+      },
+    ],
+    title: 'Topographic',
+  },
+  initialState: {},
+  spatialReference: {
+    latestWkid: 3857,
+    wkid: 102100,
+  },
+};
+
+const webSceneProps = {
+  version: '1.30',
+  authoringApp: 'WebSceneViewer',
+  authoringAppVersion: '2023.1.0',
+  baseMap: {
+    baseMapLayers: [
+      {
+        id: '1866114cd76-layer-1',
+        title: 'World Topo Map',
+        url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer',
+        layerType: 'ArcGISTiledMapServiceLayer',
+      },
+    ],
+    id: '1866114cb4d-basemap-0',
+    title: 'Topographic',
+    elevationLayers: [
+      {
+        id: 'globalElevation',
+        listMode: 'show',
+        title: 'Terrain3D',
+        url: 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer',
+        layerType: 'ArcGISTiledElevationServiceLayer',
+      },
+    ],
+  },
+  ground: {
+    layers: [
+      {
+        id: 'globalElevation',
+        listMode: 'show',
+        title: 'Terrain3D',
+        url: 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer',
+        layerType: 'ArcGISTiledElevationServiceLayer',
+      },
+    ],
+    transparency: 0,
+    navigationConstraint: {
+      type: 'none',
+    },
+  },
+  heightModelInfo: {
+    heightModel: 'gravity_related_height',
+    heightUnit: 'meter',
+  },
+  initialState: {
+    environment: {
+      lighting: {
+        type: 'sun',
+        datetime: 1678899363000,
+        displayUTCOffset: -5,
+      },
+      atmosphereEnabled: true,
+      starsEnabled: true,
+      weather: {
+        type: 'sunny',
+        cloudCover: 0.5,
+      },
+    },
+  },
+  spatialReference: {
+    latestWkid: 3857,
+    wkid: 102100,
+  },
+};
 
 /**
  * Changes the layer name such that it will work with ArcGIS Online
@@ -51,7 +129,7 @@ function getEnvironmentString() {
  * @returns A string to be used as a parameter to ESRI REST services
  *          to avoid CORS errors
  */
-function getEnvironmentStringParam() {
+export function getEnvironmentStringParam() {
   const environmentStr = getEnvironmentString();
   return environmentStr ? `&${environmentStr}=1` : '';
 }
@@ -64,7 +142,7 @@ function getEnvironmentStringParam() {
  * @param params The web service parameters to append the environment
  *               variable to
  */
-function appendEnvironmentObjectParam(params: any) {
+export function appendEnvironmentObjectParam(params: any) {
   const environmentStr = getEnvironmentString();
   if (environmentStr) params[environmentStr] = 1;
 }
@@ -75,7 +153,10 @@ function appendEnvironmentObjectParam(params: any) {
  * @param portal The portal object to check against.
  * @param serviceName The desired feature service name.
  */
-function isServiceNameAvailable(portal: __esri.Portal, serviceName: string) {
+export function isServiceNameAvailable(
+  portal: __esri.Portal,
+  serviceName: string,
+) {
   return new Promise((resolve, reject) => {
     // Workaround for esri.Portal not having credential
     const tempPortal: any = portal;
@@ -109,20 +190,15 @@ function isServiceNameAvailable(portal: __esri.Portal, serviceName: string) {
  * it doesn't already exist
  *
  * @param portal The portal object to retreive the hosted feature service from
- * @param serviceMetaData Metadata to be added to the feature service and layers.
- * @param category Determines what category to add.
+ * @param featureService Object detailing information about the feature service to be published.
  * @returns A promise that resolves to the hosted feature service object
  */
-async function getFeatureService(
-  portal: __esri.Portal,
-  serviceMetaData: ServiceMetaDataType,
-  category: string,
-) {
+async function getFeatureService(portal: __esri.Portal, featureService: any) {
   try {
     // check if the tots feature service already exists
-    let service = await getFeatureServiceWrapped(portal, serviceMetaData);
+    let service: any = await getFeatureServiceWrapped(portal, featureService);
     if (!service) {
-      service = await createFeatureService(portal, serviceMetaData, category);
+      service = await createFeatureService(portal, featureService);
     }
 
     // get individual layer definitions
@@ -150,17 +226,14 @@ async function getFeatureService(
   }
 }
 
-function getFeatureServiceRetry(
-  portal: __esri.Portal,
-  serviceMetaData: ServiceMetaDataType,
-) {
+function getFeatureServiceRetry(portal: __esri.Portal, featureService: any) {
   return new Promise((resolve, reject) => {
     // Function that fetches the lookup file.
     // This will retry the fetch 3 times if the fetch fails with a
     // 1 second delay between each retry.
     const fetchLookup = (retryCount: number = 0) => {
       // check if the tots feature service already exists
-      getFeatureServiceWrapped(portal, serviceMetaData)
+      getFeatureServiceWrapped(portal, featureService)
         .then((service) => {
           if (service) {
             resolve(service);
@@ -195,58 +268,48 @@ function getFeatureServiceRetry(
  * doesn't already exist
  *
  * @param portal The portal object to retreive the hosted feature service from
- * @param serviceMetaData Metadata to be added to the feature service and layers.
+ * @param featureService Object detailing information about the feature service to be published.
  * @returns A promise that resolves to the hosted feature service object or
  *  null if the service does not exist
  */
-function getFeatureServiceWrapped(
+async function getFeatureServiceWrapped(
   portal: __esri.Portal,
-  serviceMetaData: ServiceMetaDataType,
-): Promise<any> {
-  return new Promise((resolve, reject) => {
+  featureService: any,
+) {
+  try {
     let query = `orgid:${escapeForLucene(portal.user.orgId)}`;
-    query += serviceMetaData.value
-      ? ` AND id:${serviceMetaData.value}`
-      : ` AND name:${serviceMetaData.label}`;
-    portal
-      .queryItems({
-        query,
-      })
-      .then((res) => {
-        const exactMatch = res.results.find(
-          (layer: any) => layer.name === serviceMetaData.label,
-        );
+    query += featureService.value
+      ? ` AND id:${featureService.value}`
+      : ` AND name:${featureService.label}`;
+    const queryRes = await portal.queryItems({
+      query,
+    });
 
-        if (exactMatch) {
-          const portalService = exactMatch;
+    const exactMatch = queryRes.results.find(
+      (layer: any) => layer.name === featureService.label,
+    );
 
-          // Workaround for esri.Portal not having credential
-          const tempPortal: any = portal;
-          fetchCheck(
-            `${portalService.url}?f=json${getEnvironmentStringParam()}&token=${
-              tempPortal.credential.token
-            }`,
-          )
-            .then((res) => {
-              const returnValue = {
-                portalService,
-                featureService: res,
-              };
-              resolve(returnValue);
-            })
-            .catch((err) => {
-              window.logErrorToGa(err);
-              reject(err);
-            });
-        } else {
-          resolve(null);
-        }
-      })
-      .catch((err) => {
-        window.logErrorToGa(err);
-        reject(err);
-      });
-  });
+    if (exactMatch) {
+      const portalService = exactMatch;
+
+      // Workaround for esri.Portal not having credential
+      const tempPortal: any = portal;
+      const res = await fetchCheck(
+        `${portalService.url}?f=json${getEnvironmentStringParam()}&token=${
+          tempPortal.credential.token
+        }`,
+      );
+      return {
+        portalService,
+        featureService: res,
+      };
+    } else {
+      return null;
+    }
+  } catch (err) {
+    window.logErrorToGa(err);
+    return err;
+  }
 }
 
 /**
@@ -254,23 +317,23 @@ function getFeatureServiceWrapped(
  * doesn't already exist
  *
  * @param portal The portal object to retreive the hosted feature service from
- * @param serviceMetaData Metadata to be added to the feature service and layers.
+ * @param featureService Object detailing information about the feature service to be published.
  * @param type Web Map or Web Scene depending on what needs to be retrieved
  * @returns A promise that resolves to the web map/scene object or
  *  null if the service does not exist
  */
 async function getWebMapSceneWrapped(
   portal: __esri.Portal,
-  serviceMetaData: ServiceMetaDataType,
+  featureService: any,
   type: 'Web Map' | 'Web Scene',
 ) {
   try {
     let query = `orgid:"${escapeForLucene(portal.user.orgId)}"`;
-    query += `AND title:"${serviceMetaData.label}" AND type: "${type}"`;
+    query += `AND title:"${featureService.label}" AND type: "${type}"`;
     const res = await portal.queryItems({ query });
 
     const exactMatch = res.results.find(
-      (layer: any) => layer.title === serviceMetaData.label,
+      (layer: any) => layer.title === featureService.label,
     );
     if (exactMatch) return exactMatch;
     else return null;
@@ -284,15 +347,10 @@ async function getWebMapSceneWrapped(
  * Creates and returns the hosted feature service
  *
  * @param portal The portal object to create the hosted feature service on
- * @param serviceMetaData Metadata to be added to the feature service and layers.
- * @param category Determines what category to add.
+ * @param featureService Object detailing information about the feature service to be published.
  * @returns A promise that resolves to the hosted feature service object
  */
-function createFeatureService(
-  portal: __esri.Portal,
-  serviceMetaData: ServiceMetaDataType,
-  category: string,
-) {
+function createFeatureService(portal: __esri.Portal, featureService: any) {
   return new Promise((resolve, reject) => {
     // Workaround for esri.Portal not having credential
     const tempPortal: any = portal;
@@ -302,10 +360,10 @@ function createFeatureService(
       f: 'json',
       token: tempPortal.credential.token,
       outputType: 'featureService',
-      description: serviceMetaData.description,
-      snippet: serviceMetaData.description,
+      description: featureService.description,
+      snippet: featureService.description,
       createParameters: {
-        name: serviceMetaData.label,
+        name: featureService.label,
         hasStaticData: false,
         maxRecordCount: 1000,
         supportedQueryFormats: 'JSON',
@@ -339,7 +397,7 @@ function createFeatureService(
 
           // add metadata for determining whether a feature service has a sample layer vs
           // just being a reference layer.
-          categories: category,
+          categories: featureService.category,
         };
         appendEnvironmentObjectParam(indata);
 
@@ -348,7 +406,7 @@ function createFeatureService(
           indata,
         ).then((_res) => {
           // get the feature service from the portal and return it
-          getFeatureServiceRetry(portal, serviceMetaData)
+          getFeatureServiceRetry(portal, featureService)
             .then((service) => resolve(service))
             .catch((err) => {
               window.logErrorToGa(err);
@@ -371,7 +429,7 @@ function createFeatureService(
  * @returns A promise that resolves to the layers on the hosted
  *  feature service
  */
-function getFeatureLayers(serviceUrl: string, token: string) {
+export function getFeatureLayers(serviceUrl: string, token: string) {
   return new Promise((resolve, reject) => {
     fetchCheck(
       `${serviceUrl}?f=json&${getEnvironmentStringParam()}&token=${token}`,
@@ -395,7 +453,7 @@ function getFeatureLayers(serviceUrl: string, token: string) {
  * @returns A promise that resolves to the layers on the hosted
  *  feature service
  */
-function getFeatureTables(serviceUrl: string, token: string) {
+export function getFeatureTables(serviceUrl: string, token: string) {
   return new Promise((resolve, reject) => {
     fetchCheck(
       `${serviceUrl}?f=json&${getEnvironmentStringParam()}&token=${token}`,
@@ -416,7 +474,7 @@ function getFeatureTables(serviceUrl: string, token: string) {
  * @param id ID of the layer to retreive
  * @returns A promise that resolves to the requested layer
  */
-function getFeatureLayer(serviceUrl: string, token: string, id: number) {
+export function getFeatureLayer(serviceUrl: string, token: string, id: number) {
   return new Promise((resolve, reject) => {
     fetchCheck(
       `${serviceUrl}/${id}?f=json&${getEnvironmentStringParam()}=1&token=${token}`,
@@ -439,7 +497,10 @@ function getFeatureLayer(serviceUrl: string, token: string, id: number) {
  * @param layerProps Default/shared properties used for creating feature services, layers, web maps, and web scenes.
  * @returns The extent of graphics, the renderers for points and polygons
  */
-function buildRendererParams(layer: LayerType, layerProps: LayerProps | null) {
+export function buildRendererParams(
+  layer: LayerType,
+  layerProps: LayerProps | null,
+) {
   // get the current extent, so we can go back
   let graphicsExtent: __esri.Extent | null = null;
 
@@ -556,16 +617,15 @@ function buildRendererParams(layer: LayerType, layerProps: LayerProps | null) {
  *
  * @param portal The portal object to create feature layers on
  * @param serviceUrl The hosted feature service to save layers to
- * @param layerMetaData Array of service metadata to be added to the layers of a feature service.
+ * @param featureService Object detailing information about the feature service to be published.
+ * @param referenceMaterials Details about web map/scene to publish
+ * @param service The feature service object
  * @returns A promise that resolves to the layers that were saved
  */
 function createFeatureLayers(
   portal: __esri.Portal,
   serviceUrl: string,
-  layers: LayerType[],
-  serviceMetaData: ServiceMetaDataType,
-  attributesToInclude: AttributesType[] | null,
-  layerProps: LayerProps,
+  featureService: any,
   referenceMaterials: {
     createWebMap: boolean;
     createWebScene: boolean;
@@ -575,8 +635,10 @@ function createFeatureLayers(
   service: any,
 ) {
   return new Promise((resolve, reject) => {
-    const layersParams: any[] = [];
-    if (layers.length === 0) {
+    if (
+      featureService.layers.length === 0 &&
+      featureService.tables.length === 0
+    ) {
       resolve({
         success: true,
         layers: [],
@@ -586,117 +648,28 @@ function createFeatureLayers(
     }
 
     const layerIds: string[] = [];
-    layers.forEach((layer) => {
-      const {
-        graphicsExtent,
-        templatesPoints,
-        templatesPolygons,
-        uniqueValueInfosPolygons,
-        uniqueValueInfosPoints,
-      } = buildRendererParams(layer, null);
-
-      // add a custom type for determining which layers in a feature service
-      // are the sample layers. All feature services made through TOTS should only
-      // have one layer, but it is possible for user
-      if (layer.layerType === 'Samples') {
-        templatesPolygons.push({
-          id: 'epa-tots-sample-layer',
-          name: 'epa-tots-sample-layer',
-        });
-      }
-      if (layer.layerType === 'VSP') {
-        templatesPolygons.push({
-          id: 'epa-tots-vsp-layer',
-          name: 'epa-tots-vsp-layer',
-        });
-      }
-
-      let fields = layerProps.defaultFields;
-      if (attributesToInclude) {
-        fields = layerProps.defaultFields.filter(
-          (x: any) =>
-            attributesToInclude.findIndex((y) => y.name === x.name) > -1 ||
-            x.name === 'GLOBALID' ||
-            x.name === 'OBJECTID',
-        );
-      }
-
-      attributesToInclude?.forEach((attribute) => {
-        const fieldIndex = fields.findIndex(
-          (x: any) => x.name === attribute.name,
-        );
-
-        if (fieldIndex > -1) return;
-
-        fields.push(buildFieldFromCustomAttribute(attribute));
+    const layersParams: any[] = featureService.layers
+      .filter(
+        (l) =>
+          service.featureService.layers.findIndex(
+            (i) => i.id === l.id && i.name === l.layerDefinitionProps.name,
+          ) === -1,
+      )
+      .map((l) => {
+        layerIds.push(l.layerId);
+        return l.layerDefinitionProps;
       });
-
-      // add the polygon representation
-      const polyLayerFromService = service.featureService.layers.find(
-        (l: any) => l.id === layer.id && l.name === layer.label,
-      );
-      if (!polyLayerFromService) {
-        layerIds.push(layer.sketchLayer.id);
-        layersParams.push({
-          ...layerProps.defaultLayerProps,
-          fields,
-          name: serviceMetaData.label,
-          description: serviceMetaData.description,
-          extent: graphicsExtent,
-          drawingInfo: {
-            renderer: {
-              type: 'uniqueValue',
-              field1: 'TYPEUUID',
-              uniqueValueInfos: uniqueValueInfosPolygons,
-            },
-          },
-          types: templatesPolygons,
-        });
-      }
-
-      // add a custom type for determining which layers in a feature service
-      // are the sample layers. All feature services made through TOTS should only
-      // have one layer, but it is possible for user
-      if (layer.layerType === 'Samples') {
-        templatesPoints.push({
-          id: 'epa-tots-sample-points-layer',
-          name: 'epa-tots-sample-points-layer',
-        });
-      }
-      if (layer.layerType === 'VSP') {
-        templatesPoints.push({
-          id: 'epa-tots-vsp-points-layer',
-          name: 'epa-tots-vsp-points-layer',
-        });
-      }
-
-      // add the point representation
-      const pointLayerFromService = service.featureService.layers.find(
-        (l: any) =>
-          l.id === layer.pointsId && l.name === layer.pointsLayer?.title,
-      );
-      if (!pointLayerFromService) {
-        layerIds.push(layer.pointsLayer?.id || '');
-        layersParams.push({
-          ...layerProps.defaultLayerProps,
-          fields,
-          geometryType: 'esriGeometryPoint',
-          name: serviceMetaData.label + '-points',
-          description: serviceMetaData.description,
-          extent: graphicsExtent,
-          drawingInfo: {
-            renderer: {
-              type: 'uniqueValue',
-              field1: 'TYPEUUID',
-              uniqueValueInfos: uniqueValueInfosPoints,
-            },
-          },
-          types: templatesPoints,
-        });
-      }
-    });
+    const tablesOut: any[] = featureService.tables
+      .filter(
+        (t) =>
+          service.featureService.tables.findIndex(
+            (i) => i.name === t.tableDefinitionProps.name,
+          ) === -1,
+      )
+      .map((t) => t.tableDefinitionProps);
 
     const refIdsAdded: string[] = [];
+    console.log('referenceMaterials: ', referenceMaterials);
     const processReferencLayerSelections = (l: ReferenceLayerSelections) => {
       if (refIdsAdded.includes(l.id)) return;
       if (l.type !== 'file') return;
@@ -708,8 +681,8 @@ function createFeatureLayers(
       if (layerFromService) return;
 
       refIdsAdded.push(l.id);
-
       layerIds.push(l.id);
+
       layersParams.push({
         ...l.layer.rawLayer.layerDefinition,
         name: convertLayerName(l.label),
@@ -723,72 +696,6 @@ function createFeatureLayers(
       processReferencLayerSelections,
     );
 
-    const tablesOut: any[] = [];
-
-    // add the sample-types table if it hasn't already been added
-    const sampleTypeTableName = `${serviceMetaData.label}-sample-types`;
-    const hasSampleTable =
-      service.featureService.tables.findIndex(
-        (t: any) => t.name === sampleTypeTableName,
-      ) > -1;
-    if (!hasSampleTable) {
-      tablesOut.push({
-        ...layerProps.defaultTableProps,
-        fields: layerProps.defaultFields,
-        type: 'Table',
-        name: sampleTypeTableName,
-        description: `Custom sample type definitions for "${serviceMetaData.label}".`,
-      });
-    }
-
-    // add the reference-layers table if it hasn't already been added
-    const refLayerTableName = `${serviceMetaData.label}-reference-layers`;
-    const hasRefLayerTable =
-      service.featureService.tables.findIndex(
-        (t: any) => t.name === refLayerTableName,
-      ) > -1;
-    if (!hasRefLayerTable) {
-      tablesOut.push({
-        ...layerProps.defaultTableProps,
-        fields: layerProps.defaultReferenceTableFields,
-        type: 'Table',
-        name: refLayerTableName,
-        description: `Links to reference layers for "${serviceMetaData.label}".`,
-      });
-    }
-
-    // add the calculate-settings table if it hasn't already been added
-    const calculateSettingsTableName = `${serviceMetaData.label}-calculate-settings`;
-    const hasCalculateSettingsTable =
-      service.featureService.tables.findIndex(
-        (t: any) => t.name === calculateSettingsTableName,
-      ) > -1;
-    if (!hasCalculateSettingsTable) {
-      tablesOut.push({
-        ...layerProps.defaultTableProps,
-        fields: layerProps.defaultCalculateSettingsTableFields,
-        type: 'Table',
-        name: calculateSettingsTableName,
-        description: `Calculate settings for "${serviceMetaData.label}".`,
-      });
-    }
-
-    // add the calculate-results table if it hasn't already been added
-    const calculateResultsTableName = `${serviceMetaData.label}-calculate-results`;
-    const hasCalculateResultsTable =
-      service.featureService.tables.findIndex(
-        (t: any) => t.name === calculateResultsTableName,
-      ) > -1;
-    if (!hasCalculateResultsTable) {
-      tablesOut.push({
-        ...layerProps.defaultTableProps,
-        fields: layerProps.defaultCalculateResultsTableFields,
-        type: 'Table',
-        name: calculateResultsTableName,
-        description: `Calculation results for "${serviceMetaData.label}".`,
-      });
-    }
-
     // Workaround for esri.Portal not having credential
     const tempPortal: any = portal;
     const data = {
@@ -826,297 +733,6 @@ function createFeatureLayers(
         window.logErrorToGa(err);
         reject(err);
       });
-  });
-}
-
-/**
- * Used for adding a feature layer to a hosted feature service on
- * ArcGIS Online
- *
- * @param portal The portal object to create feature layers on
- * @param serviceUrl The hosted feature service to save layers to
- * @param layerMetaData Array of service metadata to be added to the layers of a feature service.
- * @returns A promise that resolves to the layers that were saved
- */
-function createDeconFeatureLayers(
-  portal: __esri.Portal,
-  serviceUrl: string,
-  layers: LayerType[],
-  serviceMetaData: ServiceMetaDataType,
-  attributesToInclude: AttributesType[] | null,
-  layerProps: LayerProps,
-  referenceMaterials: {
-    createWebMap: boolean;
-    createWebScene: boolean;
-    webMapReferenceLayerSelections: ReferenceLayerSelections[];
-    webSceneReferenceLayerSelections: ReferenceLayerSelections[];
-  },
-  service: any,
-) {
-  return new Promise((resolve, reject) => {
-    const layersParams: any[] = [];
-    // if (layers.length === 0) {
-    //   resolve({
-    //     success: true,
-    //     layers: [],
-    //     tables: [],
-    //   });
-    //   return;
-    // }
-
-    const layerIds: string[] = [];
-    layers.forEach((layer) => {
-      const { graphicsExtent, templatesPolygons, uniqueValueInfosPolygons } =
-        buildRendererParams(layer, null);
-
-      // add a custom type for determining which layers in a feature service
-      // are the sample layers. All feature services made through TOTS should only
-      // have one layer, but it is possible for user
-      if (layer.layerType === 'Contamination Map') {
-        templatesPolygons.push({
-          id: 'epa-tods-contamination-map-layer',
-          name: 'epa-tods-contamination-map-layer',
-        });
-      }
-
-      let fields = layerProps.defaultFields;
-      if (attributesToInclude) {
-        fields = layerProps.defaultFields.filter(
-          (x: any) =>
-            attributesToInclude.findIndex((y) => y.name === x.name) > -1 ||
-            x.name === 'GLOBALID' ||
-            x.name === 'OBJECTID',
-        );
-      }
-
-      attributesToInclude?.forEach((attribute) => {
-        const fieldIndex = fields.findIndex(
-          (x: any) => x.name === attribute.name,
-        );
-
-        if (fieldIndex > -1) return;
-
-        fields.push(buildFieldFromCustomAttribute(attribute));
-      });
-
-      // add the polygon representation
-      const polyLayerFromService = service.featureService.layers.find(
-        (l: any) => l.id === layer.id && l.name === layer.label,
-      );
-      if (!polyLayerFromService && layer.sketchLayer) {
-        layerIds.push(layer.sketchLayer.id);
-        layersParams.push({
-          ...layerProps.defaultLayerProps,
-          fields,
-          name: serviceMetaData.label,
-          description: serviceMetaData.description,
-          extent: graphicsExtent,
-          drawingInfo: {
-            renderer: {
-              type: 'uniqueValue',
-              field1: 'TYPEUUID',
-              uniqueValueInfos: uniqueValueInfosPolygons,
-            },
-          },
-          types: templatesPolygons,
-        });
-      }
-    });
-
-    const refIdsAdded: string[] = [];
-    const processReferencLayerSelections = (l: ReferenceLayerSelections) => {
-      if (refIdsAdded.includes(l.id)) return;
-      if (l.type !== 'file') return;
-
-      // don't duplicate existing layers
-      const layerFromService = service.featureService.layers.find(
-        (m: any) => m.name === l.label,
-      );
-      if (layerFromService) return;
-
-      refIdsAdded.push(l.id);
-
-      layerIds.push(l.id);
-      layersParams.push({
-        ...l.layer.rawLayer.layerDefinition,
-        name: convertLayerName(l.label),
-      });
-    };
-
-    referenceMaterials.webMapReferenceLayerSelections.forEach(
-      processReferencLayerSelections,
-    );
-
-    const tablesOut: any[] = [];
-
-    // add the operation-settings table if it hasn't already been added
-    const operationSettingsTableName = `${serviceMetaData.label}-operation-settings`;
-    const hasOperationSettingsTable =
-      service.featureService.tables.findIndex(
-        (t: any) => t.name === operationSettingsTableName,
-      ) > -1;
-    if (!hasOperationSettingsTable) {
-      tablesOut.push({
-        ...layerProps.defaultTableProps,
-        fields: layerProps.defaultDeconOperationSettingsTableFields,
-        type: 'Table',
-        name: operationSettingsTableName,
-        description: `Operation settings for "${serviceMetaData.label}".`,
-      });
-    }
-
-    // add the operation-details table if it hasn't already been added
-    const operationDetailsTableName = `${serviceMetaData.label}-operation-details`;
-    const hasOperationDetailsTable =
-      service.featureService.tables.findIndex(
-        (t: any) => t.name === operationDetailsTableName,
-      ) > -1;
-    if (!hasOperationDetailsTable) {
-      tablesOut.push({
-        ...layerProps.defaultTableProps,
-        fields: layerProps.defaultDeconOperationDetailsTableFields,
-        type: 'Table',
-        name: operationDetailsTableName,
-        description: `Operation details for "${serviceMetaData.label}".`,
-      });
-    }
-
-    // add the calculate-results table if it hasn't already been added
-    const calculationResultsTableName = `${serviceMetaData.label}-calculation-results`;
-    const hasCalculateResultsTable =
-      service.featureService.tables.findIndex(
-        (t: any) => t.name === calculationResultsTableName,
-      ) > -1;
-    if (!hasCalculateResultsTable) {
-      tablesOut.push({
-        ...layerProps.defaultTableProps,
-        fields: layerProps.defaultDeconCalculationResultsTableFields,
-        type: 'Table',
-        name: calculationResultsTableName,
-        description: `Calculation results for "${serviceMetaData.label}".`,
-      });
-    }
-
-    // add the reference-layers table if it hasn't already been added
-    const refLayerTableName = `${serviceMetaData.label}-reference-layers`;
-    const hasRefLayerTable =
-      service.featureService.tables.findIndex(
-        (t: any) => t.name === refLayerTableName,
-      ) > -1;
-    if (!hasRefLayerTable) {
-      tablesOut.push({
-        ...layerProps.defaultTableProps,
-        fields: layerProps.defaultReferenceTableFields,
-        type: 'Table',
-        name: refLayerTableName,
-        description: `Links to reference layers for "${serviceMetaData.label}".`,
-      });
-    }
-
-    // // add the decon-types table if it hasn't already been added
-    // const deconTypeTableName = `${serviceMetaData.label}-decon-types`;
-    // const hasDeconTable =
-    //   service.featureService.tables.findIndex(
-    //     (t: any) => t.name === deconTypeTableName,
-    //   ) > -1;
-    // if (!hasSampleTable) {
-    //   tablesOut.push({
-    //     ...layerProps.defaultTableProps,
-    //     fields: layerProps.defaultFields,
-    //     type: 'Table',
-    //     name: deconTypeTableName,
-    //     description: `Custom decon technology type definitions for "${serviceMetaData.label}".`,
-    //   });
-    // }
-
-    // Workaround for esri.Portal not having credential
-    const tempPortal: any = portal;
-    const data = {
-      f: 'json',
-      token: tempPortal.credential.token,
-      addToDefinition: {
-        layers: layersParams,
-        tables: tablesOut,
-      },
-    };
-    appendEnvironmentObjectParam(data);
-
-    if (layersParams.length === 0 && tablesOut.length === 0) {
-      resolve({
-        success: true,
-        layers: [],
-        tables: [],
-      });
-      return;
-    }
-
-    // inject /admin into rest/services to be able to call
-    const adminServiceUrl = serviceUrl.replace(
-      'rest/services',
-      'rest/admin/services',
-    );
-    fetchPost(`${adminServiceUrl}/addToDefinition`, data)
-      .then((res: any) => {
-        res.layers.forEach((l: any, index: number) => {
-          l['layerId'] = layerIds[index];
-        });
-        resolve(res);
-      })
-      .catch((err) => {
-        window.logErrorToGa(err);
-        reject(err);
-      });
-  });
-}
-
-/**
- * Used for adding a table to a hosted feature service on
- * ArcGIS Online
- *
- * @param portal The portal object to create feature layers on
- * @param serviceUrl The hosted feature service to save layers to
- * @param serviceMetaData Array of service metadata to be added to the layers of a feature service.
- * @returns A promise that resolves to the layers that were saved
- */
-function createFeatureTables(
-  portal: __esri.Portal,
-  serviceUrl: string,
-  serviceMetaData: ServiceMetaDataType,
-  layerProps: LayerProps,
-) {
-  return new Promise((resolve, reject) => {
-    const tableParams: any[] = [];
-
-    tableParams.push({
-      ...layerProps.defaultTableProps,
-      fields: [
-        ...layerProps.defaultFields,
-        ...layerProps.additionalTableFields,
-      ],
-      type: 'Table',
-      name: serviceMetaData.label,
-      description: serviceMetaData.description,
-    });
-
-    // Workaround for esri.Portal not having credential
-    const tempPortal: any = portal;
-    const data = {
-      f: 'json',
-      token: tempPortal.credential.token,
-      addToDefinition: {
-        tables: tableParams,
-      },
-    };
-    appendEnvironmentObjectParam(data);
-
-    // inject /admin into rest/services to be able to call
-    const adminServiceUrl = serviceUrl.replace(
-      'rest/services',
-      'rest/admin/services',
-    );
-    fetchPost(`${adminServiceUrl}/addToDefinition`, data)
-      .then((res) => resolve(res))
-      .catch((err) => reject(err));
   });
 }
 
@@ -1127,7 +743,7 @@ function createFeatureTables(
  * @param attribute The attribute to be converted
  * @returns A field that can be sent to AGO
  */
-function buildFieldFromCustomAttribute(attribute: AttributesType) {
+export function buildFieldFromCustomAttribute(attribute: AttributesType) {
   let esriType = '';
   let actualType: string | undefined = undefined;
   let sqlType = '';
@@ -1275,7 +891,7 @@ function getNewFields(
       layerDefinition.fields.findIndex((f: any) => f.name === attribute.name) >
       -1;
 
-    if (!hasField) newFields.push(buildFieldFromCustomAttribute(attribute));
+    if (!hasField) newFields.push(attribute);
   });
 
   return newFields;
@@ -1321,42 +937,36 @@ function getFieldsToDelete(
  *
  * @param portal The portal object to create feature layers on
  * @param serviceUrl The hosted feature service to save layers to
- * @param layers The layers to be updated
- * @param layersResponse The response from creating layers
+ * @param featureService Object detailing information about the feature service to be published.
+ * @param layersResponse The response from creating layer
  * @param service The feature service object
- * @param attributesToInclude The attributes to include with each graphic
  * @returns A promise that resolves to the layers that were updated
  */
 async function updateFeatureLayers({
   portal,
   serviceUrl,
-  layers,
+  featureService,
   layersResponse,
   service,
-  attributesToInclude,
 }: {
   portal: __esri.Portal;
   serviceUrl: string;
-  layers: LayerType[];
+  featureService: any;
   layersResponse: any;
   service: any;
-  attributesToInclude?: AttributesType[] | null;
 }) {
   try {
     // Workaround for esri.Portal not having credential
     const tempPortal: any = portal;
 
-    let polygonsLayerCreated = false;
-    let pointsLayerCreated = false;
-    layersResponse?.layers?.forEach((layer: any) => {
-      if (layer.id === 0) polygonsLayerCreated = true;
-      if (layer.id === 1) pointsLayerCreated = true;
-    });
-
-    if (layers?.length === 0) {
+    if (
+      featureService.layers.length === 0 &&
+      featureService.tables.length === 0
+    ) {
       return {
         success: true,
         layers: [],
+        tables: [],
       };
     }
 
@@ -1369,126 +979,128 @@ async function updateFeatureLayers({
     const addParams: any[] = [];
     const deleteParams: any[] = [];
     const updateParams: any[] = [];
-    layers.forEach((layer) => {
-      const {
-        graphicsExtent,
-        uniqueValueInfosPolygons,
-        uniqueValueInfosPoints,
-      } = buildRendererParams(layer, null);
+    featureService.layers.forEach((layer) => {
+      const id = findLayerId({
+        service,
+        layersResponse,
+        name: layer.layerDefinitionProps.name,
+      });
 
       // update the polygon representation
-      if (!polygonsLayerCreated) {
-        const fieldsToDelete = getFieldsToDelete(
-          0,
-          service,
-          attributesToInclude,
-        );
+      const fieldsToDelete = getFieldsToDelete(
+        id,
+        service,
+        layer.layerDefinitionProps.fields,
+      );
 
-        if (fieldsToDelete.length > 0) {
-          // delete any fields that have been marked for removal
-          deleteParams.push({
-            url: `${adminServiceUrl}/0/deleteFromDefinition`,
-            params: {
-              f: 'json',
-              token: tempPortal.credential.token,
-              deleteFromDefinition: {
-                fields: fieldsToDelete,
-              },
-            },
-          });
-        }
-
-        // add any new fields
-        const fieldsToAdd = getNewFields(0, service, attributesToInclude);
-        if (fieldsToAdd.length > 0) {
-          addParams.push({
-            url: `${adminServiceUrl}/0/addToDefinition`,
-            params: {
-              f: 'json',
-              token: tempPortal.credential.token,
-              addToDefinition: {
-                fields: fieldsToAdd,
-              },
-            },
-          });
-        }
-
-        // update definition
-        updateParams.push({
-          url: `${adminServiceUrl}/0/updateDefinition`,
+      if (fieldsToDelete.length > 0) {
+        // delete any fields that have been marked for removal
+        deleteParams.push({
+          url: `${adminServiceUrl}/${id}/deleteFromDefinition`,
           params: {
             f: 'json',
             token: tempPortal.credential.token,
-            updateDefinition: {
-              extent: graphicsExtent,
-              drawingInfo: {
-                renderer: {
-                  type: 'uniqueValue',
-                  field1: 'TYPEUUID',
-                  uniqueValueInfos: uniqueValueInfosPolygons,
-                },
-              },
+            deleteFromDefinition: {
+              fields: fieldsToDelete,
             },
           },
         });
       }
 
-      // update the point representation
-      if (!pointsLayerCreated) {
-        const fieldsToDelete = getFieldsToDelete(
-          1,
-          service,
-          attributesToInclude,
-        );
-
-        if (fieldsToDelete.length > 0) {
-          // delete any fields that have been marked for removal
-          deleteParams.push({
-            url: `${adminServiceUrl}/1/deleteFromDefinition`,
-            params: {
-              f: 'json',
-              token: tempPortal.credential.token,
-              deleteFromDefinition: {
-                fields: fieldsToDelete,
-              },
-            },
-          });
-        }
-
-        // add any new fields
-        const fieldsToAdd = getNewFields(1, service, attributesToInclude);
-        if (fieldsToAdd.length > 0) {
-          addParams.push({
-            url: `${adminServiceUrl}/1/addToDefinition`,
-            params: {
-              f: 'json',
-              token: tempPortal.credential.token,
-              addToDefinition: {
-                fields: fieldsToAdd,
-              },
-            },
-          });
-        }
-
-        // update definition
-        updateParams.push({
-          url: `${adminServiceUrl}/1/updateDefinition`,
+      // add any new fields
+      const fieldsToAdd = getNewFields(
+        id,
+        service,
+        layer.layerDefinitionProps.fields,
+      );
+      if (fieldsToAdd.length > 0) {
+        addParams.push({
+          url: `${adminServiceUrl}/${id}/addToDefinition`,
           params: {
             f: 'json',
             token: tempPortal.credential.token,
-            updateDefinition: {
-              extent: graphicsExtent,
-              drawingInfo: {
-                renderer: {
-                  type: 'uniqueValue',
-                  field1: 'TYPEUUID',
-                  uniqueValueInfos: uniqueValueInfosPoints,
-                },
-              },
+            addToDefinition: {
+              fields: fieldsToAdd,
             },
           },
         });
       }
+
+      // update definition
+      updateParams.push({
+        url: `${adminServiceUrl}/${id}/updateDefinition`,
+        params: {
+          f: 'json',
+          token: tempPortal.credential.token,
+          updateDefinition: {
+            name: layer.layerDefinitionProps.name,
+            description: layer.layerDefinitionProps.description,
+            extent: layer.layerDefinitionProps.extent,
+            drawingInfo: layer.layerDefinitionProps.drawingInfo,
+          },
+        },
+      });
+    });
+
+    featureService.tables.forEach((table) => {
+      const id = findLayerId({
+        service,
+        layersResponse,
+        name: table.tableDefinitionProps.name,
+      });
+
+      // update the polygon representation
+      const fieldsToDelete = getFieldsToDelete(
+        id,
+        service,
+        table.tableDefinitionProps.fields,
+      );
+
+      if (fieldsToDelete.length > 0) {
+        // delete any fields that have been marked for removal
+        deleteParams.push({
+          url: `${adminServiceUrl}/${id}/deleteFromDefinition`,
+          params: {
+            f: 'json',
+            token: tempPortal.credential.token,
+            deleteFromDefinition: {
+              fields: fieldsToDelete,
+            },
+          },
+        });
+      }
+
+      // add any new fields
+      const fieldsToAdd = getNewFields(
+        id,
+        service,
+        table.tableDefinitionProps.fields,
+      );
+      if (fieldsToAdd.length > 0) {
+        addParams.push({
+          url: `${adminServiceUrl}/${id}/addToDefinition`,
+          params: {
+            f: 'json',
+            token: tempPortal.credential.token,
+            addToDefinition: {
+              fields: fieldsToAdd,
+            },
+          },
+        });
+      }
+
+      // update definition
+      updateParams.push({
+        url: `${adminServiceUrl}/${id}/updateDefinition`,
+        params: {
+          f: 'json',
+          token: tempPortal.credential.token,
+          updateDefinition: {
+            name: table.tableDefinitionProps.name,
+            description: table.tableDefinitionProps.description,
+          },
+        },
+      });
     });
 
     // Fire off requests in order of deletes, adds, and updates.
@@ -1539,7 +1151,7 @@ async function updateFeatureLayers({
  * @param id The ID of the layer to delete
  * @returns A promise that resolves to the layers that were deleted
  */
-function deleteFeatureLayer(
+export function deleteFeatureLayer(
   portal: __esri.Portal,
   servicUrl: string,
   id: number,
@@ -1575,10 +1187,11 @@ function deleteFeatureLayer(
  *
  * @param portal The portal to get all features from
  * @param serviceUrl The hosted feature service to query
+ * @param objectIdField The object id field for the service
  * @returns A promise that resolves to all of the features on the hosted
  *  feature service
  */
-function getAllFeatures(
+export function getAllFeatures(
   portal: __esri.Portal,
   serviceUrl: string,
   objectIdField: string = 'OBJECTID',
@@ -1666,10 +1279,11 @@ function getAllFeatures(
  * @param layer The layer the graphic is on
  * @param array The array to add the point version of graphic to
  * @param item The edits item that is being looked for
+ * @param attributesToInclude The attributes to include with each graphic
  * @param forDeletes True means this is for the deletes change type which is just the global id
  * @returns
  */
-function addPointFeatures(
+export function addPointFeatures(
   layer: LayerType,
   array: any[],
   item: FeatureEditsType,
@@ -1698,7 +1312,7 @@ function addPointFeatures(
         item.attributes.PERMANENT_IDENTIFIER,
     );
 
-    attributes['GLOBALID'] = graphic.attributes['GLOBALID'];
+    attributes['GLOBALID'] = generateUUID();
     attributes['OBJECTID'] = graphic.attributes['OBJECTID'];
     if (attributesToInclude) {
       attributesToInclude.forEach((attribute) => {
@@ -1763,123 +1377,66 @@ function findLayerId({
  * @param portal The portal object to apply edits to
  * @param service The feature service object
  * @param serviceUrl The url of the hosted feature service
- * @param layerProps Default/shared properties used for creating feature services, layers, web maps, and web scenes.
- * @param layers The layers that the edits object pertain to
- * @param edits The edits to be saved to the hosted feature service
- * @param serviceMetaData The name and description of the service to be saved
- * @param table any - The table object
- * @param attributesToInclude The attributes to include with each graphic
- * @param referenceLayersTable Reference layers that were previously published
+ * @param featureService Object detailing information about the feature service to be published.
+ * @param layersResponse The response from creating layers
  * @param referenceMaterials Reference layers to store in reference layers table
- * @param calculateSettings Calculate settings to be stored
- * @param calculateResults Calculation Results both current and already published
  * @returns A promise that resolves to the successfully saved objects
  */
 async function applyEdits({
   portal,
   service,
   serviceUrl,
-  layerProps,
-  layers,
+  featureService,
   layersResponse,
-  edits,
-  serviceMetaData,
-  table,
-  attributesToInclude,
-  referenceLayersTable,
   referenceMaterials,
-  calculateSettings,
-  calculateResults,
 }: {
   portal: __esri.Portal;
   service: any;
   serviceUrl: string;
-  layerProps: LayerProps | null;
-  layers: LayerType[];
+  featureService: any;
   layersResponse: any;
-  edits: LayerEditsType[];
-  serviceMetaData: ServiceMetaDataType;
-  table: TableType | null;
-  attributesToInclude: AttributesType[] | null;
-  referenceLayersTable: ReferenceLayersTableType;
   referenceMaterials: {
     createWebMap: boolean;
     createWebScene: boolean;
     webMapReferenceLayerSelections: ReferenceLayerSelections[];
     webSceneReferenceLayerSelections: ReferenceLayerSelections[];
   };
-  calculateSettings: CalculateSettingsType;
-  calculateResults: CalculateResultsType;
 }) {
   try {
     const changes: any[] = [];
-    const scenarioName = serviceMetaData.label;
+    const tempPortal: any = portal;
 
-    // loop through the layers and build the payload
-    edits.forEach((layerEdits) => {
-      // build the deletes list, which is just an array of global ids.
-      const deletes: string[] = [];
-      layerEdits.deletes.forEach((item) => {
-        deletes.push(item.GLOBALID);
+    // clear out data
+    const idsToClear: number[] = [
+      ...service.featureService.layers.map((l) => l.id),
+      ...service.featureService.tables.map((t) => t.id),
+    ];
+    const clearPromises: Promise<unknown>[] = [];
+    idsToClear.forEach((id) => {
+      const data = {
+        f: 'json',
+        token: tempPortal.credential.token,
+        where: '1=1',
+      };
+      appendEnvironmentObjectParam(data);
+
+      clearPromises.push(fetchPost(`${serviceUrl}/${id}/deleteFeatures`, data));
+    });
+    const clearResponses = await Promise.all(clearPromises);
+    console.log('clearResponses: ', clearResponses);
+
+    console.log('featureService: ', featureService);
+    featureService.layers.forEach((layer) => {
+      changes.push({
+        id: findLayerId({
+          service,
+          layersResponse,
+          name: layer.layerDefinitionProps.name,
+        }),
+        adds: layer.adds,
+        updates: layer.updates,
+        deletes: [],
       });
-
-      if (
-        layerEdits.adds.length > 0 ||
-        layerEdits.updates.length > 0 ||
-        deletes.length > 0
-      ) {
-        changes.push({
-          id: findLayerId({ service, layersResponse, name: scenarioName }),
-          adds: layerEdits.adds,
-          updates: layerEdits.updates,
-          deletes,
-        });
-      }
-
-      // find the points version of the layer
-      const mapLayer = layers.find(
-        (mapLayer) => mapLayer.layerId === layerEdits?.layerId,
-      );
-      if (!mapLayer?.pointsLayer) return;
-
-      // Loop through the above changes and build a points version
-      const pointsAdds: FeatureEditsType[] = [];
-      const pointsUpdates: FeatureEditsType[] = [];
-      const pointsDeletes: string[] = [];
-      layerEdits.adds.forEach((item) => {
-        addPointFeatures(mapLayer, pointsAdds, item, attributesToInclude);
-      });
-      layerEdits.updates.forEach((item) => {
-        addPointFeatures(
-          mapLayer,
-          layerEdits.pointsId === -1 ? pointsAdds : pointsUpdates,
-          item,
-          attributesToInclude,
-        );
-      });
-      if (layerEdits.pointsId !== -1) {
-        layerEdits.deletes.forEach((item) => {
-          pointsDeletes.push(item.GLOBALID);
-        });
-      }
-
-      // Push the points version into the changes array
-      if (
-        pointsAdds.length > 0 ||
-        pointsUpdates.length > 0 ||
-        pointsDeletes.length > 0
-      ) {
-        changes.push({
-          id: findLayerId({
-            service,
-            layersResponse,
-            name: `${scenarioName}-points`,
-          }),
-          adds: pointsAdds,
-          updates: pointsUpdates,
-          deletes: pointsDeletes,
-        });
-      }
     });
 
     const refIdsAdded: string[] = [];
@@ -1934,308 +1491,19 @@ async function applyEdits({
       });
     });
 
-    let tableOut: TableType | null = null;
-    const output = buildTableEdits({
-      layers,
-      table,
-      id: findLayerId({
-        service,
-        layersResponse,
-        name: `${scenarioName}-sample-types`,
-      }),
-      layerProps,
-    });
-    changes.push({
-      ...output.edits,
-      updates: output.edits.updates.map((i) => {
-        const item: any = Object.values(table?.sampleTypes).find(
-          (t: any) => t.TYPEUUID === i.attributes.TYPEUUID,
-        );
-        return {
-          attributes: {
-            ...i.attributes,
-            GLOBALID: item?.GLOBALID ?? i.attributes.GLOBALID,
-          },
-        };
-      }),
-    });
-    tableOut = output.table;
-
-    let refLayerTableOut: ReferenceLayersTableType | null = null;
-    const refOutput = await buildReferenceLayerTableEdits({
-      id: findLayerId({
-        service,
-        layersResponse,
-        name: `${scenarioName}-reference-layers`,
-      }),
-      referenceLayersTable,
-      referenceMaterials,
-    });
-    changes.push(refOutput.edits);
-    refLayerTableOut = refOutput.table;
-
-    let calculateSettingsTableOut: any | null = null;
-    const calculateSettingsOutput = await buildCalculateSettingsTableEdits({
-      id: findLayerId({
-        service,
-        layersResponse,
-        name: `${scenarioName}-calculate-settings`,
-      }),
-      calculateSettings,
-    });
-    changes.push(calculateSettingsOutput.edits);
-    calculateSettingsTableOut = calculateSettingsOutput.edits;
-
-    let calculateResultsTableOut: any | null = null;
-    const calculateResultsOutput = await buildCalculateResultsTableEdits({
-      id: findLayerId({
-        service,
-        layersResponse,
-        name: `${scenarioName}-calculate-results`,
-      }),
-      calculateResults,
-    });
-    changes.push(calculateResultsOutput.edits);
-    calculateResultsTableOut = calculateResultsOutput.edits;
-
-    // Workaround for esri.Portal not having credential
-    const tempPortal: any = portal;
-
-    // run the webserivce call to update ArcGIS Online
-    const data = {
-      f: 'json',
-      token: tempPortal.credential.token,
-      edits: changes,
-      honorSequenceOfEdits: true,
-      useGlobalIds: true,
-    };
-    appendEnvironmentObjectParam(data);
-
-    const res = await fetchPost(`${serviceUrl}/applyEdits`, data);
-
-    return {
-      response: res,
-      table: tableOut,
-      refLayerTableOut,
-      calculateSettingsTableOut,
-      calculateResultsTableOut,
-    };
-  } catch (err) {
-    window.logErrorToGa(err);
-    throw err;
-  }
-}
-
-/**
- * Applys edits to a layer or layers within a hosted feature service
- * on ArcGIS Online.
- *
- * @param portal The portal object to apply edits to
- * @param service The feature service object
- * @param serviceUrl The url of the hosted feature service
- * @param layerProps Default/shared properties used for creating feature services, layers, web maps, and web scenes.
- * @param layers The layers that the edits object pertain to
- * @param edits The edits to be saved to the hosted feature service
- * @param serviceMetaData The name and description of the service to be saved
- * @param table any - The table object
- * @param attributesToInclude The attributes to include with each graphic
- * @param referenceLayersTable Reference layers that were previously published
- * @param referenceMaterials Reference layers to store in reference layers table
- * @param calculateSettings Calculate settings to be stored
- * @param calculateResults Calculation Results both current and already published
- * @returns A promise that resolves to the successfully saved objects
- */
-async function applyEditsDecon({
-  portal,
-  service,
-  serviceUrl,
-  layersResponse,
-  edits,
-  serviceMetaData,
-  referenceLayersTable,
-  referenceMaterials,
-  operationSettings,
-  operationDetails,
-  calculationResults,
-}: {
-  portal: __esri.Portal;
-  service: any;
-  serviceUrl: string;
-  layersResponse: any;
-  edits: LayerEditsType[];
-  serviceMetaData: ServiceMetaDataType;
-  referenceLayersTable: ReferenceLayersTableType;
-  referenceMaterials: {
-    createWebMap: boolean;
-    createWebScene: boolean;
-    webMapReferenceLayerSelections: ReferenceLayerSelections[];
-    webSceneReferenceLayerSelections: ReferenceLayerSelections[];
-  };
-  operationSettings: any;
-  operationDetails: any;
-  calculationResults: any;
-}) {
-  try {
-    const changes: any[] = [];
-    const scenarioName = serviceMetaData.label;
-    const tempPortal: any = portal;
-
-    // loop through the layers and build the payload
-    edits.forEach((layerEdits) => {
-      // build the deletes list, which is just an array of global ids.
-      const deletes: string[] = [];
-      layerEdits.deletes.forEach((item) => {
-        deletes.push(item.GLOBALID);
-      });
-
-      if (
-        layerEdits.adds.length > 0 ||
-        layerEdits.updates.length > 0 ||
-        deletes.length > 0
-      ) {
-        changes.push({
-          id: findLayerId({ service, layersResponse, name: scenarioName }),
-          adds: layerEdits.adds,
-          updates: layerEdits.updates,
-          deletes,
-        });
-      }
-    });
-
-    // clear out data
-    const tablesToClear = [
-      'operation-settings',
-      'operation-details',
-      'calculation-results',
-      'reference-layers',
-      'operation-details',
-      'decon-types',
-    ];
-    const clearPromises: Promise<unknown>[] = [];
-    tablesToClear.forEach((tableName) => {
-      const id = findLayerId({
-        service,
-        layersResponse,
-        name: `${scenarioName}-${tableName}`,
-      });
-      if (id === -1) return;
-
-      const data = {
-        f: 'json',
-        token: tempPortal.credential.token,
-        where: '1=1',
-      };
-      appendEnvironmentObjectParam(data);
-
-      clearPromises.push(fetchPost(`${serviceUrl}/${id}/deleteFeatures`, data));
-    });
-    const clearResponses = await Promise.all(clearPromises);
-    console.log('clearResponses: ', clearResponses);
-
-    let operationSettingsTableOut: any | null = null;
-    const operationSettingsOutput = await buildSimpleTableEdits({
-      id: findLayerId({
-        service,
-        layersResponse,
-        name: `${scenarioName}-operation-settings`,
-      }),
-      data: operationSettings,
-    });
-    changes.push(operationSettingsOutput.edits);
-    operationSettingsTableOut = operationSettingsOutput.edits;
-
-    let operationDetailsTableOut: any | null = null;
-    const operationDetailsOutput = await buildSimpleTableEdits({
-      id: findLayerId({
-        service,
-        layersResponse,
-        name: `${scenarioName}-operation-details`,
-      }),
-      data: operationDetails,
-    });
-    changes.push(operationDetailsOutput.edits);
-    operationDetailsTableOut = operationDetailsOutput.edits;
-
-    let calculationResultsTableOut: any | null = null;
-    const calculationResultsOutput = await buildSimpleTableEdits({
-      id: findLayerId({
-        service,
-        layersResponse,
-        name: `${scenarioName}-calculation-results`,
-      }),
-      data: calculationResults,
-    });
-    changes.push(calculationResultsOutput.edits);
-    calculationResultsTableOut = calculationResultsOutput.edits;
-
-    const refIdsAdded: string[] = [];
-    referenceMaterials.webMapReferenceLayerSelections.forEach((l) => {
-      if (refIdsAdded.includes(l.id)) return;
-      if (l.type !== 'file') return;
-
-      // don't duplicate existing layers
-      const layerFromService = service.featureService.layers.find(
-        (m: any) => m.name === l.label,
-      );
-      if (layerFromService) return;
-
-      refIdsAdded.push(l.id);
-
-      if (l.layer.rawLayer.featureSet.features.length === 0) return;
-
-      changes.push({
+    const tableOutputs: any[] = [];
+    featureService.tables.forEach((table: any) => {
+      const output = buildSimpleTableEdits({
         id: findLayerId({
           service,
           layersResponse,
-          name: convertLayerName(l.label),
+          name: table.tableDefinitionProps.name,
         }),
-        adds: l.layer.rawLayer.featureSet.features,
-        updates: [],
-        deletes: [],
+        data: table.data,
       });
+      tableOutputs.push(output.edits);
+      changes.push(output.edits);
     });
-
-    let refLayerTableOut: ReferenceLayersTableType | null = null;
-    const refOutput = await buildReferenceLayerTableEdits({
-      id: findLayerId({
-        service,
-        layersResponse,
-        name: `${scenarioName}-reference-layers`,
-      }),
-      referenceLayersTable,
-      referenceMaterials,
-    });
-    changes.push(refOutput.edits);
-    refLayerTableOut = refOutput.table;
-
-    // let tableOut: TableType | null = null;
-    // const output = buildTableEdits({
-    //   layers,
-    //   table,
-    //   id: findLayerId({
-    //     service,
-    //     layersResponse,
-    //     name: `${scenarioName}-decon-types`,
-    //   }),
-    //   layerProps,
-    // });
-    // changes.push({
-    //   ...output.edits,
-    //   updates: output.edits.updates.map((i) => {
-    //     const item: any = Object.values(table?.sampleTypes).find(
-    //       (t: any) => t.TYPEUUID === i.attributes.TYPEUUID,
-    //     );
-    //     return {
-    //       attributes: {
-    //         ...i.attributes,
-    //         GLOBALID: item?.GLOBALID ?? i.attributes.GLOBALID,
-    //       },
-    //     };
-    //   }),
-    // });
-    // tableOut = output.table;
-
-    // Workaround for esri.Portal not having credential
 
     // run the webserivce call to update ArcGIS Online
     const data = {
@@ -2251,11 +1519,7 @@ async function applyEditsDecon({
 
     return {
       response: res,
-      operationSettingsTableOut,
-      operationDetailsTableOut,
-      calculationResultsTableOut,
-      refLayerTableOut,
-      // table: tableOut, // decon-types
+      tableOutputs,
     };
   } catch (err) {
     window.logErrorToGa(err);
@@ -2267,111 +1531,21 @@ async function applyEditsDecon({
  * Builds the edits arrays for publishing the sample types layer of
  * the sampling plan feature service.
  *
- * @param layers LayerType[] - The layers to search for sample types in
- * @param table any - The table object
- * @param id Id of the layer
- * @param layerProps Default/shared properties used for creating feature services, layers, web maps, and web scenes.
- * @returns An object containing the edits arrays
- */
-function buildTableEdits({
-  layers,
-  table,
-  id,
-  layerProps,
-}: {
-  layers: LayerType[];
-  table: TableType | null;
-  id: number;
-  layerProps: LayerProps | null;
-}) {
-  const adds: any[] = [];
-  const updates: any[] = [];
-  const deletes: any[] = [];
-  const sampleTypesOut: any = {};
-
-  layers.forEach((layer) => {
-    const { sampleTypes } = buildRendererParams(layer, layerProps);
-
-    // build the deletes array
-    if (table?.sampleTypes) {
-      Object.keys(table.sampleTypes).forEach((key) => {
-        if (
-          !Object.prototype.hasOwnProperty.call(sampleTypes, key) &&
-          table.sampleTypes[key]?.GLOBALID
-        ) {
-          deletes.push(table.sampleTypes[key].GLOBALID);
-        }
-      });
-    }
-
-    // build the adds and updates arrays
-    Object.keys(sampleTypes).forEach((key) => {
-      if (Object.prototype.hasOwnProperty.call(table?.sampleTypes, key)) {
-        updates.push(sampleTypes[key]);
-        sampleTypesOut[key] = sampleTypes[key];
-      } else {
-        adds.push(sampleTypes[key]);
-        sampleTypesOut[key] = sampleTypes[key];
-      }
-    });
-  });
-
-  return {
-    table: {
-      id,
-      sampleTypes: sampleTypesOut,
-    },
-    edits: {
-      id,
-      adds,
-      updates,
-      deletes,
-    },
-  };
-}
-
-/**
- * Builds the edits arrays for publishing the sample types layer of
- * the sampling plan feature service.
- *
- * @param id Id of the layer
- * @param referenceLayersTable Reference layers that were previously published
  * @param referenceMaterials Reference layers to store in reference layers table
  * @returns An object containing the edits arrays
  */
-async function buildReferenceLayerTableEdits({
-  id,
-  referenceLayersTable,
-  referenceMaterials,
-}: {
-  id: number;
-  referenceLayersTable: ReferenceLayersTableType;
-  referenceMaterials: {
-    createWebMap: boolean;
-    createWebScene: boolean;
-    webMapReferenceLayerSelections: ReferenceLayerSelections[];
-    webSceneReferenceLayerSelections: ReferenceLayerSelections[];
-  };
+export function buildReferenceLayerTableEditsNew(referenceMaterials: {
+  createWebMap: boolean;
+  createWebScene: boolean;
+  webMapReferenceLayerSelections: ReferenceLayerSelections[];
+  webSceneReferenceLayerSelections: ReferenceLayerSelections[];
 }) {
   const adds: any[] = [];
-  const updates: any[] = [];
-  const deletes: any[] = [];
-  const referenceLayersOut: ReferenceLayerTableType[] = [];
   const timestamp = getCurrentDateTime();
 
   // build a unique list of reference materials across web map and web scene
   const uniqueReferenceLayerSelections: ReferenceLayerSelections[] = [];
   const refIdsAdded: string[] = [];
-
-  // delete any layers that are already duplicated
-  const layersAlreadyPublishedToKeep: string[] = [];
-  referenceLayersTable?.referenceLayers.forEach((l) => {
-    if (layersAlreadyPublishedToKeep.includes(l.layerId)) {
-      deletes.push(l.globalId);
-      return;
-    }
-    layersAlreadyPublishedToKeep.push(l.layerId);
-  });
 
   referenceMaterials.webMapReferenceLayerSelections.forEach((l) => {
     if (refIdsAdded.includes(l.id)) return;
@@ -2408,102 +1582,24 @@ async function buildReferenceLayerTableEdits({
     });
   });
 
-  // get reference layers that were already published
-  const layersAlreadyPublished: string[] = [];
-  referenceLayersTable?.referenceLayers.forEach((l) => {
-    layersAlreadyPublished.push(l.layerId);
-
-    // add to deletes array if layer isn't in output list
-    const newLayer = uniqueReferenceLayerSelections.find(
-      (j) => j.id === l.layerId,
-    );
-    if (!newLayer && l.globalId) deletes.push(l.globalId);
-  });
-
   // build the adds, updates, and deletes
   uniqueReferenceLayerSelections.forEach((refLayer) => {
-    // build the adds and updates arrays
-    if (layersAlreadyPublished.includes(refLayer.id)) {
-      updates.push(refLayer);
-    } else {
-      adds.push({
-        attributes: {
-          GLOBALID: generateUUID(),
-          LAYERID: refLayer.id,
-          LABEL: refLayer.label,
-          LAYERTYPE: refLayer.type === 'file' ? '' : refLayer.layerType,
-          ONWEBMAP: refLayer.onWebMap,
-          ONWEBSCENE: refLayer.onWebScene,
-          TYPE: refLayer.type,
-          URL: refLayer.value,
-          URLTYPE: refLayer.type === 'url' ? refLayer.urlType : '',
-          CREATEDDATE: timestamp,
-          UPDATEDDATE: timestamp,
-        },
-      });
-    }
+    adds.push({
+      GLOBALID: generateUUID(),
+      LAYERID: refLayer.id,
+      LABEL: refLayer.label,
+      LAYERTYPE: refLayer.type === 'file' ? '' : refLayer.layerType,
+      ONWEBMAP: refLayer.onWebMap,
+      ONWEBSCENE: refLayer.onWebScene,
+      TYPE: refLayer.type,
+      URL: refLayer.value,
+      URLTYPE: refLayer.type === 'url' ? refLayer.urlType : '',
+      CREATEDDATE: timestamp,
+      UPDATEDDATE: timestamp,
+    });
   });
 
-  return {
-    table: {
-      id,
-      referenceLayers: referenceLayersOut,
-    },
-    edits: {
-      id,
-      adds,
-      updates,
-      deletes,
-    },
-  };
-}
-
-/**
- * Builds the edits arrays for publishing the calculate settings table of
- * the sampling plan feature service.
- *
- * @param id Id of the layer
- * @param calculateSettings Calculate Settings both current and already published
- * @returns An object containing the edits arrays
- */
-async function buildCalculateSettingsTableEdits({
-  id,
-  calculateSettings,
-}: {
-  id: number;
-  calculateSettings: CalculateSettingsType;
-}) {
-  const adds: any[] = [];
-  const updates: any[] = [];
-  const timestamp = getCurrentDateTime();
-
-  if (!calculateSettings.published) {
-    adds.push({
-      attributes: {
-        ...calculateSettings.current,
-        GLOBALID: generateUUID(),
-        CREATEDDATE: timestamp,
-        UPDATEDDATE: timestamp,
-      },
-    });
-  } else {
-    updates.push({
-      attributes: {
-        ...calculateSettings.published,
-        ...calculateSettings.current,
-        UPDATEDDATE: timestamp,
-      },
-    });
-  }
-
-  return {
-    edits: {
-      id,
-      adds,
-      updates,
-      deletes: [],
-    },
-  };
+  return adds;
 }
 
 /**
@@ -2514,13 +1610,7 @@ async function buildCalculateSettingsTableEdits({
  * @param data data to be saved to table
  * @returns An object containing the edits arrays
  */
-async function buildSimpleTableEdits({
-  id,
-  data,
-}: {
-  id: number;
-  data: any[];
-}) {
+function buildSimpleTableEdits({ id, data }: { id: number; data: any[] }) {
   const adds: any[] = [];
   const timestamp = getCurrentDateTime();
 
@@ -2540,54 +1630,6 @@ async function buildSimpleTableEdits({
       id,
       adds,
       updates: [],
-      deletes: [],
-    },
-  };
-}
-
-/**
- * Builds the edits arrays for publishing the calculate settings table of
- * the sampling plan feature service.
- *
- * @param id Id of the layer
- * @param calculateResults Calculation Results both current and already published
- * @returns An object containing the edits arrays
- */
-async function buildCalculateResultsTableEdits({
-  id,
-  calculateResults,
-}: {
-  id: number;
-  calculateResults: CalculateResultsType;
-}) {
-  const adds: any[] = [];
-  const updates: any[] = [];
-  const timestamp = getCurrentDateTime();
-
-  if (!calculateResults.published) {
-    adds.push({
-      attributes: {
-        ...calculateResults.current,
-        GLOBALID: generateUUID(),
-        CREATEDDATE: timestamp,
-        UPDATEDDATE: timestamp,
-      },
-    });
-  } else {
-    updates.push({
-      attributes: {
-        ...calculateResults.published,
-        ...calculateResults.current,
-        UPDATEDDATE: timestamp,
-      },
-    });
-  }
-
-  return {
-    edits: {
-      id,
-      adds,
-      updates,
       deletes: [],
     },
   };
@@ -2692,36 +1734,39 @@ function buildReferenceLayers(
  *
  * @param portal The portal object to apply edits to
  * @param service The feature service object
- * @param layers The layers that the edits object pertain to
+ * @param featureService Object detailing information about the feature service to be published.
  * @param layersResponse The response from creating layers
- * @param attributesToInclude The attributes to include with each graphic
- * @param layerProps Default properties to apply to the layer
  * @param referenceMaterials Reference layers to apply to web map
  * @param map Esri Map - Used for sorting the reference layers
+ * @param type Web Map or Web Scene
+ * @param existingWebMapScene Object for existing web map or web scene, if available
  * @returns A promise that resolves to the successfully saved web map
  */
-function addWebMap({
+function addWebMapScene({
   portal,
   service,
-  layers,
+  featureService,
   layersResponse,
-  attributesToInclude,
-  layerProps,
   referenceMaterials,
   map,
-  existingWebMap,
+  type,
+  existingWebMapScene,
 }: {
   portal: __esri.Portal;
   service: any;
-  layers: LayerType[];
+  featureService: any;
   layersResponse: any;
-  attributesToInclude: AttributesType[] | null;
-  layerProps: LayerProps;
   referenceMaterials: ReferenceLayerSelections[];
   map: __esri.Map;
-  existingWebMap: any | null;
+  type: 'Web Map' | 'Web Scene';
+  existingWebMapScene: any | null;
 }) {
   return new Promise((resolve, reject) => {
+    if (featureService.layers.length === 0) {
+      resolve({
+        success: true,
+      });
+    }
     // Workaround for esri.Portal not having credential
     const tempPortal: any = portal;
 
@@ -2729,20 +1774,49 @@ function addWebMap({
     const baseUrl = service.portalService.url;
     const title = service.portalService.title;
 
-    const fieldInfos: any[] = [];
-    attributesToInclude?.forEach((attribute) => {
-      if (
-        Object.prototype.hasOwnProperty.call(
-          layerProps.webMapFieldProps,
-          attribute.name,
-        )
-      ) {
-        fieldInfos.push((layerProps.webMapFieldProps as any)[attribute.name]);
-      } else {
+    const operationalLayers: any[] = [];
+    const extent: __esri.Extent =
+      featureService.layers[0].layerDefinitionProps.extent;
+
+    console.log('referenceMaterials: ', referenceMaterials);
+    buildReferenceLayers(map, operationalLayers, referenceMaterials);
+    console.log('operationalLayers: ', operationalLayers.length);
+    operationalLayers.forEach((opLayer) => console.log('opLayer: ', opLayer));
+
+    const responseChoice =
+      service.featureService.layers.length > 0
+        ? service.featureService.layers
+        : layersResponse.layers;
+    console.log('service: ', service);
+    console.log('responseChoice: ', responseChoice);
+
+    const layersOut: any[] = [];
+    const choicesCombined = [
+      ...service.featureService.layers,
+      ...layersResponse.layers,
+    ];
+    choicesCombined.reverse();
+    choicesCombined.forEach((l: any) => {
+      layersOut.push(l);
+    });
+
+    layersOut.forEach((layer: any) => {
+      // get the fields from the layer definition
+      let layerFields = featureService.layers.find(
+        (l) => l.layerId === layer.layerId,
+      )?.layerDefinitionProps?.fields;
+      if (!layerFields) {
+        layerFields = referenceMaterials.find(
+          (l) => l.id === layer.layerId && l.type === 'file',
+        )?.layer?.fields;
+      }
+
+      // get the fieldInfos for the popups
+      const fieldInfos = layerFields?.map((field: any) => {
         let format: any = undefined;
         if (
-          attribute.dataType === 'double' ||
-          attribute.dataType === 'integer'
+          field.type === 'esriFieldTypeDouble' ||
+          field.type === 'esriFieldTypeInteger'
         ) {
           format = {
             digitSeparator: true,
@@ -2750,46 +1824,15 @@ function addWebMap({
           };
         }
 
-        fieldInfos.push({
-          fieldName: attribute.name,
-          label: attribute.label,
-          isEditable: true,
+        return {
+          fieldName: field.name,
+          label: field.alias,
+          isEditable: field.editable,
           visible: true,
           format,
-        });
-      }
-    });
+        };
+      });
 
-    const operationalLayers: any[] = [];
-    const mainLayer = layers[0];
-    let extent: __esri.Extent = mainLayer.sketchLayer.fullExtent;
-    const { graphicsExtent } = buildRendererParams(mainLayer, null);
-    if (graphicsExtent) {
-      extent = graphicsExtent;
-    }
-
-    buildReferenceLayers(map, operationalLayers, referenceMaterials);
-
-    const responseChoice =
-      service.featureService.layers.length > 0
-        ? service.featureService.layers
-        : layersResponse.layers;
-
-    const layer0 = responseChoice[0];
-    const layer1 = responseChoice[1];
-    const layersOut: any[] = [];
-    const choicesCombined = [
-      ...service.featureService.layers,
-      ...layersResponse.layers,
-    ];
-    choicesCombined.forEach((l: any, index: number) => {
-      if (index === 0 || index === 1) return;
-      layersOut.push(l);
-    });
-    layersOut.push(layer0);
-    layersOut.push(layer1);
-
-    layersOut.forEach((layer: any) => {
       operationalLayers.push({
         title: layer.name,
         url: `${baseUrl}/${layer.id}`,
@@ -2798,36 +1841,26 @@ function addWebMap({
         popupInfo: {
           popupElements: [{ type: 'fields' }, { type: 'attachments' }],
           showAttachments: true,
-          fieldInfos: fieldInfos,
+          fieldInfos,
           title: `${layer.name}: {USERNAME}`,
         },
       });
     });
+    console.log('operationalLayers: ', operationalLayers);
+
+    const webProps = type === 'Web Map' ? webMapProps : webSceneProps;
 
     // run the webserivce call to update ArcGIS Online
     const data = {
       f: 'json',
       token: tempPortal.credential.token,
       title: title,
-      type: 'Web Map',
+      type,
       text: {
-        version: '2.27',
-        authoringApp: 'ArcGISMapViewer',
-        authoringAppVersion: '2023.1',
+        ...webProps,
         operationalLayers,
-        baseMap: {
-          baseMapLayers: [
-            {
-              id: 'VectorTile_9568',
-              title: 'World Topographic Map',
-              layerType: 'VectorTileLayer',
-              styleUrl:
-                'https://cdn.arcgis.com/sharing/rest/content/items/42df0d22517e49ad84edcee4c093857d/resources/styles/root.json',
-            },
-          ],
-          title: 'Topographic',
-        },
         initialState: {
+          ...webProps.initialState,
           viewpoint: {
             targetGeometry: {
               spatialReference: {
@@ -2840,18 +1873,22 @@ function addWebMap({
               ymax: extent.ymax,
             },
           },
-        },
-        spatialReference: {
-          latestWkid: 3857,
-          wkid: 102100,
+          camera:
+            type === 'Web Scene'
+              ? {
+                  fov: 55,
+                  heading: 0,
+                  tilt: 0.22039218612040226,
+                }
+              : undefined,
         },
       },
     };
     appendEnvironmentObjectParam(data);
 
     // const serviceUrl: string = service.portalService.url;
-    const url = existingWebMap
-      ? `${existingWebMap.userItemUrl}/update`
+    const url = existingWebMapScene
+      ? `${existingWebMapScene.userItemUrl}/update`
       : `${portal.user.userContentUrl}/addItem`;
 
     fetchPost(url, data)
@@ -2864,266 +1901,141 @@ function addWebMap({
 }
 
 /**
- * Publishes a web scene version of the feature service.
+ * Publishes a single feature service
  *
  * @param portal The portal object to apply edits to
- * @param service The feature service object
- * @param layers The layers that the edits object pertain to
- * @param layersResponse The response from creating layers
- * @param attributesToInclude The attributes to include with each graphic
- * @param layerProps Default properties to apply to the layer
- * @param referenceMaterials Reference layers to apply to web scene
  * @param map Esri Map - Used for sorting the reference layers
- * @returns A promise that resolves to the successfully saved web scene
+ * @param featureService Object detailing information about the feature service to be published.
+ * @param referenceMaterials Reference layers to apply to web map
+ * @returns A promise that resolves to the successfully published data
  */
-function addWebScene({
+async function publishFeatureService({
   portal,
-  service,
-  layers,
-  layersResponse,
-  attributesToInclude,
-  layerProps,
-  referenceMaterials,
   map,
-  existingWebScene,
+  featureService,
+  referenceMaterials,
 }: {
   portal: __esri.Portal;
-  service: any;
-  layers: LayerType[];
-  layersResponse: any;
-  attributesToInclude: AttributesType[] | null;
-  layerProps: LayerProps;
-  referenceMaterials: ReferenceLayerSelections[];
   map: __esri.Map;
-  existingWebScene: any | null;
+  featureService: any;
+  referenceMaterials: {
+    createWebMap: boolean;
+    createWebScene: boolean;
+    webMapReferenceLayerSelections: ReferenceLayerSelections[];
+    webSceneReferenceLayerSelections: ReferenceLayerSelections[];
+  };
 }) {
-  return new Promise((resolve, reject) => {
-    // Workaround for esri.Portal not having credential
-    const tempPortal: any = portal;
+  const service = await getFeatureService(portal, featureService);
 
-    const itemId = service.portalService.id;
-    const baseUrl = service.portalService.url;
-    const title = service.portalService.title;
+  const itemName: string = service.portalService.name;
+  const itemServiceUrl: string = service.portalService.itemPageUrl;
+  const serviceUrl: string = service.portalService.url;
+  const portalId: string = service.portalService.id;
+  const idMapping: any = {};
 
-    const fieldInfos: any[] = [];
-    attributesToInclude?.forEach((attribute) => {
+  // create the layers
+  const layersResponse: any = await createFeatureLayers(
+    portal,
+    serviceUrl,
+    featureService,
+    referenceMaterials,
+    service,
+  );
+  console.log('layersResponse: ', layersResponse);
+
+  // update the layer ids in edits
+  layersResponse.layers?.forEach((layer: any) => {
+    const isPoints = layer.name.endsWith('-points');
+
+    const layerEdits = featureService.layers.find((layerEdit) => {
+      const leName = layerEdit.layerDefinitionProps.name;
+      return (
+        ((!isPoints && layerEdit.id === -1) || isPoints) &&
+        (leName === layer.name || `${leName}-points` === layer.name)
+      );
+    });
+
+    // update the various ids (id, pointsId, portalId)
+    if (layerEdits) {
       if (
-        Object.prototype.hasOwnProperty.call(
-          layerProps.webMapFieldProps,
-          attribute.name,
-        )
+        !Object.prototype.hasOwnProperty.call(idMapping, layerEdits.layerId)
       ) {
-        fieldInfos.push((layerProps.webMapFieldProps as any)[attribute.name]);
-      } else {
-        let format: any = undefined;
-        if (
-          attribute.dataType === 'double' ||
-          attribute.dataType === 'integer'
-        ) {
-          format = {
-            digitSeparator: true,
-            places: 0,
-          };
-        }
-
-        fieldInfos.push({
-          fieldName: attribute.name,
-          label: attribute.label,
-          isEditable: true,
-          visible: true,
-          format,
-        });
+        idMapping[layerEdits.layerId] = { portalId };
       }
-    });
-
-    const operationalLayers: any[] = [];
-    const mainLayer = layers[0];
-    let extent: __esri.Extent = mainLayer.sketchLayer.fullExtent;
-    const { graphicsExtent } = buildRendererParams(mainLayer, null);
-    if (graphicsExtent) {
-      extent = graphicsExtent;
+      if (isPoints) idMapping[layerEdits.layerId].pointsId = layer.id;
+      else idMapping[layerEdits.layerId].id = layer.id;
     }
+  });
 
-    buildReferenceLayers(map, operationalLayers, referenceMaterials);
+  const updateRes = await updateFeatureLayers({
+    portal,
+    serviceUrl,
+    featureService,
+    layersResponse,
+    service,
+  });
+  console.log('updateRes: ', updateRes);
 
-    const responseChoice =
-      service.featureService.layers.length > 0
-        ? service.featureService.layers
-        : layersResponse.layers;
+  // publish the edits
+  const editsRes = await applyEdits({
+    portal,
+    service,
+    serviceUrl,
+    featureService,
+    layersResponse,
+    referenceMaterials,
+  });
 
-    const layer0 = responseChoice[0];
-    const layer1 = responseChoice[1];
-    const layersOut: any[] = [];
-    const choicesCombined = [
-      ...service.featureService.layers,
-      ...layersResponse.layers,
-    ];
-    choicesCombined.forEach((l: any, index: number) => {
-      if (index === 0 || index === 1) return;
-      layersOut.push(l);
+  if (referenceMaterials.createWebMap) {
+    const webMapRes = await getWebMapSceneWrapped(
+      portal,
+      featureService,
+      'Web Map',
+    );
+
+    await addWebMapScene({
+      type: 'Web Map',
+      portal,
+      service,
+      featureService,
+      layersResponse,
+      referenceMaterials: referenceMaterials.webMapReferenceLayerSelections,
+      map,
+      existingWebMapScene: webMapRes,
     });
-    layersOut.push(layer0);
-    layersOut.push(layer1);
+  }
 
-    layersOut.forEach((layer: any) => {
-      operationalLayers.push({
-        title: layer.name,
-        url: `${baseUrl}/${layer.id}`,
-        itemId,
-        layerType: 'ArcGISFeatureLayer',
-        popupInfo: {
-          popupElements: [{ type: 'fields' }, { type: 'attachments' }],
-          showAttachments: true,
-          fieldInfos: fieldInfos,
-          title: `${layer.name}: {USERNAME}`,
-        },
-      });
-    });
+  if (referenceMaterials.createWebScene) {
+    const webSceneRes = await getWebMapSceneWrapped(
+      portal,
+      featureService,
+      'Web Scene',
+    );
 
-    // run the webserivce call to update ArcGIS Online
-    const data = {
-      f: 'json',
-      token: tempPortal.credential.token,
-      title: title,
+    await addWebMapScene({
       type: 'Web Scene',
-      text: {
-        version: '1.30',
-        authoringApp: 'WebSceneViewer',
-        authoringAppVersion: '2023.1.0',
-        operationalLayers,
-        baseMap: {
-          baseMapLayers: [
-            {
-              id: '1866114cd76-layer-1',
-              title: 'World Topo Map',
-              url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer',
-              layerType: 'ArcGISTiledMapServiceLayer',
-            },
-          ],
-          id: '1866114cb4d-basemap-0',
-          title: 'Topographic',
-          elevationLayers: [
-            {
-              id: 'globalElevation',
-              listMode: 'show',
-              title: 'Terrain3D',
-              url: 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer',
-              layerType: 'ArcGISTiledElevationServiceLayer',
-            },
-          ],
-        },
-        ground: {
-          layers: [
-            {
-              id: 'globalElevation',
-              listMode: 'show',
-              title: 'Terrain3D',
-              url: 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer',
-              layerType: 'ArcGISTiledElevationServiceLayer',
-            },
-          ],
-          transparency: 0,
-          navigationConstraint: {
-            type: 'none',
-          },
-        },
-        heightModelInfo: {
-          heightModel: 'gravity_related_height',
-          heightUnit: 'meter',
-        },
-        initialState: {
-          environment: {
-            lighting: {
-              type: 'sun',
-              datetime: 1678899363000,
-              displayUTCOffset: -5,
-            },
-            atmosphereEnabled: true,
-            starsEnabled: true,
-            weather: {
-              type: 'sunny',
-              cloudCover: 0.5,
-            },
-          },
-          viewpoint: {
-            targetGeometry: {
-              spatialReference: {
-                latestWkid: 3857,
-                wkid: 102100,
-              },
-              xmin: extent.xmin,
-              ymin: extent.ymin,
-              xmax: extent.xmax,
-              ymax: extent.ymax,
-            },
-            camera: {
-              fov: 55,
-              heading: 0,
-              tilt: 0.22039218612040226,
-            },
-          },
-        },
-        spatialReference: {
-          latestWkid: 3857,
-          wkid: 102100,
-        },
-      },
-    };
-    appendEnvironmentObjectParam(data);
+      portal,
+      service,
+      featureService,
+      layersResponse,
+      referenceMaterials: referenceMaterials.webSceneReferenceLayerSelections,
+      map,
+      existingWebMapScene: webSceneRes,
+    });
+  }
 
-    const url = existingWebScene
-      ? `${existingWebScene.userItemUrl}/update`
-      : `${portal.user.userContentUrl}/addItem`;
+  const output = {
+    portalId,
+    idMapping,
+    edits: editsRes.response,
+    itemData: {
+      name: itemName,
+      serviceUrl: itemServiceUrl,
+    },
+  };
+  featureService?.onPublishComplete?.(output);
 
-    fetchPost(url, data)
-      .then((res) => resolve(res))
-      .catch((err) => {
-        window.logErrorToGa(err);
-        reject(err);
-      });
-  });
-}
-
-/**
- * Applys edits to a layer or layers within a hosted feature service
- * on ArcGIS Online.
- *
- * @param portal The portal object to apply edits to
- * @param serviceUrl The url of the hosted feature service
- * @param layers The layers that the edits object pertain to
- * @param edits The edits to be saved to the hosted feature service
- * @returns A promise that resolves to the successfully saved objects
- */
-function applyEditsTable({
-  portal,
-  serviceUrl,
-  changes,
-}: {
-  portal: __esri.Portal;
-  serviceUrl: string;
-  changes: any;
-}) {
-  return new Promise((resolve, reject) => {
-    // Workaround for esri.Portal not having credential
-    const tempPortal: any = portal;
-
-    // run the webserivce call to update ArcGIS Online
-    const data = {
-      f: 'json',
-      token: tempPortal.credential.token,
-      adds: changes.adds,
-      updates: changes.updates,
-      deletes: changes.deletes.map((item: any) => {
-        return item.attributes.OBJECTID;
-      }),
-      honorSequenceOfEdits: true,
-    };
-    appendEnvironmentObjectParam(data);
-
-    fetchPost(`${serviceUrl}/${changes.id}/applyEdits`, data)
-      .then((res) => resolve(res))
-      .catch((err) => reject(err));
-  });
+  return output;
 }
 
 /**
@@ -3131,491 +2043,44 @@ function applyEditsTable({
  *
  * @param portal The portal object to apply edits to
  * @param map Esri Map - Used for sorting the reference layers
- * @param layers The layers that the edits object pertain to
- * @param edits The edits to be saved to the hosted feature service
- * @param serviceMetaData The name and description of the service to be saved
- * @param layerProps Default/shared properties used for creating feature services, layers, web maps, and web scenes.
- * @param attributesToInclude Attributes to include in the final layers, web map, and web scene
- * @param table Table of custom sample types
- * @param referenceLayersTable Reference layers that were previously published
+ * @param featureService Object detailing information about the feature service to be published.
  * @param referenceMaterials Reference layers to apply to web map
- * @param calculateSettings Calculate settings to be stored
- * @param calculateResults Calculation Results both current and already published
  * @returns A promise that resolves to the successfully published data
  */
-function publish({
+export async function publish({
   portal,
   map,
-  layers,
-  edits,
-  serviceMetaData,
-  layerProps,
-  attributesToInclude = null,
-  table = null,
-  referenceLayersTable,
+  featureServices,
   referenceMaterials,
-  calculateSettings,
-  calculateResults,
 }: {
   portal: __esri.Portal;
   map: __esri.Map;
-  layers: LayerType[];
-  edits: LayerEditsType[];
-  serviceMetaData: ServiceMetaDataType;
-  layerProps: LayerProps;
-  attributesToInclude?: AttributesType[] | null;
-  table?: any;
-  referenceLayersTable: ReferenceLayersTableType;
+  featureServices: any[];
   referenceMaterials: {
     createWebMap: boolean;
     createWebScene: boolean;
     webMapReferenceLayerSelections: ReferenceLayerSelections[];
     webSceneReferenceLayerSelections: ReferenceLayerSelections[];
   };
-  calculateSettings: CalculateSettingsType;
-  calculateResults: CalculateResultsType;
 }) {
-  return new Promise((resolve, reject) => {
-    if (layers.length === 0) {
-      reject('No layers to publish.');
-      return;
-    }
+  if (featureServices.length === 0) return 'Nothing to publish.';
 
-    getFeatureService(portal, serviceMetaData, 'contains-epa-tots-sample-layer')
-      .then((service: any) => {
-        const itemName: string = service.portalService.name;
-        const itemServiceUrl: string = service.portalService.itemPageUrl;
-        const serviceUrl: string = service.portalService.url;
-        const portalId: string = service.portalService.id;
-        const idMapping: any = {};
-        // create the layers
-        createFeatureLayers(
+  try {
+    const requests: Promise<any>[] = [];
+    featureServices.forEach((featureService) => {
+      requests.push(
+        publishFeatureService({
           portal,
-          serviceUrl,
-          layers,
-          serviceMetaData,
-          attributesToInclude,
-          layerProps,
+          map,
+          featureService,
           referenceMaterials,
-          service,
-        )
-          .then((layersResponse: any) => {
-            let tableParam = table;
-            // update the layer ids in edits
-            layersResponse.layers?.forEach((layer: any) => {
-              const isPoints = layer.name.endsWith('-points');
+        }),
+      );
+    });
 
-              const layerEdits = edits.find((layerEdit) => {
-                return (
-                  ((!isPoints && layerEdit.id === -1) || isPoints) &&
-                  (serviceMetaData.label === layer.name ||
-                    `${serviceMetaData.label}-points` === layer.name)
-                );
-              });
-
-              const mapLayer = layers.find(
-                (mapLayer) => mapLayer.layerId === layerEdits?.layerId,
-              );
-
-              // update the various ids (id, pointsId, portalId)
-              if (layerEdits) {
-                if (!isPoints) {
-                  layerEdits.id = layer.id;
-                  layerEdits.portalId = portalId;
-                }
-
-                // Figure out how to get the points version of the id
-                if (isPoints && layerEdits) {
-                  layerEdits.pointsId = layer.id;
-                }
-              }
-              if (mapLayer) {
-                if (!isPoints) {
-                  mapLayer.id = layer.id;
-                  mapLayer.portalId = portalId;
-                }
-
-                // Figure out how to get the points version of the id
-                if (isPoints && mapLayer.pointsLayer) {
-                  mapLayer.pointsId = layer.id;
-                }
-
-                if (
-                  !Object.prototype.hasOwnProperty.call(
-                    idMapping,
-                    mapLayer.uuid,
-                  )
-                ) {
-                  idMapping[mapLayer.uuid] = { portalId };
-                }
-                if (isPoints) idMapping[mapLayer.uuid].pointsId = layer.id;
-                else idMapping[mapLayer.uuid].id = layer.id;
-              }
-            });
-
-            layersResponse.tables?.forEach((table: any) => {
-              const isSampleTypes = table.name.endsWith('-sample-types');
-              if (isSampleTypes) {
-                tableParam = {
-                  id: table.id,
-                  sampleTypes: {},
-                };
-              }
-            });
-
-            // update the renderers
-            updateFeatureLayers({
-              portal,
-              serviceUrl,
-              layers,
-              layersResponse,
-              service,
-              attributesToInclude,
-            })
-              .then((_updateRes) => {
-                // publish the edits
-                applyEdits({
-                  portal,
-                  service,
-                  serviceUrl,
-                  layerProps,
-                  layers,
-                  layersResponse,
-                  edits,
-                  serviceMetaData,
-                  table: tableParam,
-                  attributesToInclude,
-                  referenceLayersTable,
-                  referenceMaterials,
-                  calculateSettings,
-                  calculateResults,
-                })
-                  .then(async (editsRes: any) => {
-                    try {
-                      if (referenceMaterials.createWebMap) {
-                        const webMapRes = await getWebMapSceneWrapped(
-                          portal,
-                          serviceMetaData,
-                          'Web Map',
-                        );
-
-                        await addWebMap({
-                          portal,
-                          service,
-                          layers,
-                          layersResponse,
-                          attributesToInclude,
-                          layerProps,
-                          referenceMaterials:
-                            referenceMaterials.webMapReferenceLayerSelections,
-                          map,
-                          existingWebMap: webMapRes,
-                        });
-                      }
-
-                      if (referenceMaterials.createWebScene) {
-                        const webSceneRes = await getWebMapSceneWrapped(
-                          portal,
-                          serviceMetaData,
-                          'Web Scene',
-                        );
-
-                        await addWebScene({
-                          portal,
-                          service,
-                          layers,
-                          layersResponse,
-                          attributesToInclude,
-                          layerProps,
-                          referenceMaterials:
-                            referenceMaterials.webSceneReferenceLayerSelections,
-                          map,
-                          existingWebScene: webSceneRes,
-                        });
-                      }
-
-                      resolve({
-                        portalId,
-                        idMapping,
-                        edits: editsRes.response,
-                        table: editsRes.table,
-                        calculateSettings: editsRes.calculateSettingsTableOut,
-                        calculateResults: editsRes.calculateResultsTableOut,
-                        itemData: {
-                          name: itemName,
-                          serviceUrl: itemServiceUrl,
-                        },
-                      });
-                    } catch (err) {
-                      window.logErrorToGa(err);
-                      reject(err);
-                    }
-                  })
-                  .catch((err) => {
-                    window.logErrorToGa(err);
-                    reject(err);
-                  });
-              })
-              .catch((err) => {
-                window.logErrorToGa(err);
-                reject(err);
-              });
-          })
-          .catch((err) => {
-            window.logErrorToGa(err);
-            reject(err);
-          });
-      })
-      .catch((err) => {
-        window.logErrorToGa(err);
-        reject(err);
-      });
-  });
+    return await Promise.all(requests);
+  } catch (err) {
+    window.logErrorToGa(err);
+    return err;
+  }
 }
-
-/**
- * Publishes a layer or layers to ArcGIS online.
- *
- * @param portal The portal object to apply edits to
- * @param map Esri Map - Used for sorting the reference layers
- * @param layers The layers that the edits object pertain to
- * @param edits The edits to be saved to the hosted feature service
- * @param serviceMetaData The name and description of the service to be saved
- * @param layerProps Default/shared properties used for creating feature services, layers, web maps, and web scenes.
- * @param attributesToInclude Attributes to include in the final layers, web map, and web scene
- * @param table Table of custom sample types
- * @param referenceLayersTable Reference layers that were previously published
- * @param referenceMaterials Reference layers to apply to web map
- * @param calculateSettings Calculate settings to be stored
- * @param calculateResults Calculation Results both current and already published
- * @returns A promise that resolves to the successfully published data
- */
-function publishDecon({
-  portal,
-  layers,
-  edits,
-  serviceMetaData,
-  layerProps,
-  attributesToInclude = null,
-  table = null,
-  referenceLayersTable,
-  referenceMaterials,
-  operationSettings,
-  operationDetails,
-  calculationResults,
-}: {
-  portal: __esri.Portal;
-  layers: LayerType[];
-  edits: LayerEditsType[];
-  serviceMetaData: ServiceMetaDataType;
-  layerProps: LayerProps;
-  attributesToInclude?: AttributesType[] | null;
-  table?: any;
-  referenceLayersTable: ReferenceLayersTableType;
-  referenceMaterials: {
-    createWebMap: boolean;
-    createWebScene: boolean;
-    webMapReferenceLayerSelections: ReferenceLayerSelections[];
-    webSceneReferenceLayerSelections: ReferenceLayerSelections[];
-  };
-  operationSettings: any;
-  operationDetails: any;
-  calculationResults: any;
-}) {
-  return new Promise((resolve, reject) => {
-    // if (layers.length === 0) {
-    //   reject('No layers to publish.');
-    //   return;
-    // }
-
-    getFeatureService(portal, serviceMetaData, 'contains-epa-tods-decon-layer')
-      .then((service: any) => {
-        const itemName: string = service.portalService.name;
-        const itemServiceUrl: string = service.portalService.itemPageUrl;
-        const serviceUrl: string = service.portalService.url;
-        const portalId: string = service.portalService.id;
-        const idMapping: any = {};
-        // create the layers
-        createDeconFeatureLayers(
-          portal,
-          serviceUrl,
-          layers,
-          serviceMetaData,
-          attributesToInclude,
-          layerProps,
-          referenceMaterials,
-          service,
-        )
-          .then((layersResponse: any) => {
-            console.log('layersResponse: ', layersResponse);
-            // TODO need to think about how to update the updated contamination map
-
-            let tableParam = table;
-            layersResponse.tables?.forEach((table: any) => {
-              const isdeconTypes = table.name.endsWith('-decon-types');
-              if (isdeconTypes) {
-                tableParam = {
-                  id: table.id,
-                  sampleTypes: {},
-                };
-              }
-            });
-
-            // update the renderers
-            updateFeatureLayers({
-              portal,
-              serviceUrl,
-              layers,
-              layersResponse,
-              service,
-              attributesToInclude,
-            })
-              .then((_updateRes) => {
-                // publish the edits
-                applyEditsDecon({
-                  portal,
-                  service,
-                  serviceUrl,
-                  layersResponse,
-                  edits,
-                  serviceMetaData,
-                  referenceLayersTable,
-                  referenceMaterials,
-                  operationSettings,
-                  operationDetails,
-                  calculationResults,
-                })
-                  .then(async (editsRes: any) => {
-                    resolve({
-                      portalId,
-                      idMapping,
-                      edits: editsRes.response,
-                      // table: editsRes.table, // for decon-types to be added later
-                      operationSettings: editsRes.operationSettingsTableOut,
-                      operationDetailsTableOut:
-                        editsRes.operationDetailsTableOut,
-                      calculationResults: editsRes.calculationResultsTableOut,
-                      itemData: {
-                        name: itemName,
-                        serviceUrl: itemServiceUrl,
-                      },
-                    });
-                  })
-                  .catch((err) => {
-                    window.logErrorToGa(err);
-                    reject(err);
-                  });
-              })
-              .catch((err) => {
-                window.logErrorToGa(err);
-                reject(err);
-              });
-          })
-          .catch((err) => {
-            window.logErrorToGa(err);
-            reject(err);
-          });
-      })
-      .catch((err) => {
-        window.logErrorToGa(err);
-        reject(err);
-      });
-  });
-}
-
-/**
- * Publishes a table to ArcGIS online. Currently this is used for
- * publishing user defined sample types.
- *
- * @param portal The portal object to apply edits to
- * @param changes The table data to be saved to the hosted feature service
- * @param serviceMetaData The name and description of the service to be saved
- * @returns A promise that resolves to the successfully published data
- */
-function publishTable({
-  portal,
-  changes,
-  serviceMetaData,
-  layerProps,
-}: {
-  portal: __esri.Portal;
-  changes: any;
-  serviceMetaData: ServiceMetaDataType;
-  layerProps: LayerProps;
-}) {
-  return new Promise((resolve, reject) => {
-    if (
-      changes.adds.length === 0 &&
-      changes.updates.length === 0 &&
-      changes.deletes.length === 0
-    ) {
-      reject('No data to publish.');
-      return;
-    }
-
-    getFeatureService(
-      portal,
-      serviceMetaData,
-      'contains-epa-tots-user-defined-sample-types',
-    )
-      .then((service: any) => {
-        const itemName: string = service.portalService.name;
-        const itemServiceUrl: string = service.portalService.itemPageUrl;
-        const serviceUrl: string = service.portalService.url;
-
-        // publish the edits
-        function localApplyEdits() {
-          applyEditsTable({ portal, serviceUrl, changes })
-            .then((res) =>
-              resolve({
-                service,
-                edits: res,
-                itemData: {
-                  name: itemName,
-                  serviceUrl: itemServiceUrl,
-                },
-              }),
-            )
-            .catch((err) => reject(err));
-        }
-
-        for (const table of service.featureService.tables) {
-          if (table.name === serviceMetaData.label) {
-            changes.id = table.id;
-            break;
-          }
-        }
-
-        if (changes.id !== -1) {
-          localApplyEdits();
-          return;
-        }
-
-        // create the layers
-        createFeatureTables(portal, serviceUrl, serviceMetaData, layerProps)
-          .then((res: any) => {
-            // update the layer ids in edits
-            changes.id = res.layers[0].id;
-
-            localApplyEdits();
-          })
-          .catch((err) => reject(err));
-      })
-      .catch((err) => reject(err));
-  });
-}
-
-export {
-  appendEnvironmentObjectParam,
-  deleteFeatureLayer,
-  getAllFeatures,
-  getEnvironmentString,
-  getEnvironmentStringParam,
-  getFeatureLayer,
-  getFeatureLayers,
-  getFeatureTables,
-  isServiceNameAvailable,
-  publish,
-  publishDecon,
-  publishTable,
-};
