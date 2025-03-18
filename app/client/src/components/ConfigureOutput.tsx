@@ -163,6 +163,10 @@ function ConfigureOutput({ appType }: Props) {
     setPublishSamplesMode,
     sampleTypeSelections,
     setSampleTypeSelections,
+    selectedAoiCharacterizations,
+    setSelectedAoiCharacterizations,
+    includeAoiCharacterization,
+    setIncludeAoiCharacterization,
     includePlan,
     setIncludePlan,
     includePlanWebMap,
@@ -202,11 +206,21 @@ function ConfigureOutput({ appType }: Props) {
     };
   });
 
+  const aoiCharOptions = edits.edits
+    .filter((edit) => edit.type === 'layer-aoi-analysis')
+    .map((edit) => ({
+      label: edit.label,
+      value: edit.value,
+    }));
+
   const [editAttributesOpen, setEditAttributesOpen] = useState(false);
   const [attributesIndex, setAttributesIndex] = useState(-1);
   const [isPlanOpen, setIsPlanOpen] = useState(includePlan);
   const [isSampleTypesOpen, setIsSampleTypesOpen] = useState(
     includeCustomSampleTypes,
+  );
+  const [isAoiCharOpen, setIsAoiCharOpen] = useState(
+    includeAoiCharacterization,
   );
   const [isIncludeWebMapOpen, setIsIncludeWebMapOpen] = useState(false);
   const [isIncludeWebMapSceneOpen, setIsIncludeWebSceneOpen] = useState(false);
@@ -787,6 +801,60 @@ function ConfigureOutput({ appType }: Props) {
                 </div>
 
                 <EditCustomSampleTypesTable appType={appType} />
+              </div>
+            </AccordionItem>
+            <AccordionItem
+              isOpenParam={isAoiCharOpen}
+              onChange={(isOpen) => {
+                setIsAoiCharOpen(!isAoiCharOpen);
+                if (!isOpen) return;
+
+                setIncludeAoiCharacterization(true);
+              }}
+              title={
+                <label css={labelStyles}>
+                  <strong>Include AOI Characterization</strong>
+                  <div
+                    css={switchStyles}
+                    onClick={(ev) => ev.stopPropagation()}
+                  >
+                    <Switch
+                      checked={includeAoiCharacterization}
+                      onChange={() => {
+                        setIsAoiCharOpen(!includeAoiCharacterization);
+                        setIncludeAoiCharacterization(
+                          !includeAoiCharacterization,
+                        );
+                      }}
+                      ariaLabel="Include AOI Characterization"
+                    />
+                  </div>
+                </label>
+              }
+            >
+              <div css={sectionContainer}>
+                <p>
+                  Publish AOI characterization data to ArcGIS Online. Select an
+                  AOI characterization item from the drop-down list.
+                </p>
+                <div>
+                  <label htmlFor="publish-aoi-char-select">
+                    AOI Characterization to Publish
+                  </label>
+                  <Select
+                    inputId="publish-aoi-char-select"
+                    isMulti={true}
+                    isSearchable={false}
+                    options={aoiCharOptions}
+                    value={selectedAoiCharacterizations}
+                    onChange={(ev) =>
+                      setSelectedAoiCharacterizations(ev as any)
+                    }
+                    css={multiSelectStyles}
+                  />
+                </div>
+
+                {/* <EditCustomSampleTypesTable appType={appType} /> */}
               </div>
             </AccordionItem>
           </AccordionList>

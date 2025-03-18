@@ -388,7 +388,7 @@ export const noServiceNameMessage = (
 
 export const publishSuccessMessage = (appName: string, itemData?: any[]) => {
   const items = itemData
-    ?.filter((data) => data?.itemData?.serviceUrl)
+    ?.filter((data) => data?.itemData?.itemServiceUrl)
     .map((data) => data.itemData);
   return (
     <MessageBox
@@ -405,9 +405,9 @@ export const publishSuccessMessage = (appName: string, itemData?: any[]) => {
           {items && items.length > 0 && (
             <ul>
               {items.map((item) => (
-                <li key={item.serviceUrl}>
+                <li key={item.itemServiceUrl}>
                   <a
-                    href={item.serviceUrl}
+                    href={item.itemServiceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

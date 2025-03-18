@@ -1547,37 +1547,46 @@ function usePublishStorage(dbInitialized: boolean) {
 
   const { setOptions } = useContext(DialogContext);
   const {
-    publishSamplesMode,
-    setPublishSamplesMode,
-    publishSampleTableMetaData,
-    setPublishSampleTableMetaData,
-    sampleTableDescription,
-    setSampleTableDescription,
-    sampleTableName,
-    setSampleTableName,
-    sampleTypeSelections,
-    setSampleTypeSelections,
-    selectedService,
-    setSelectedService,
-    includePlan,
-    setIncludePlan,
-    includePlanWebMap,
-    setIncludePlanWebMap,
-    includePlanWebScene,
-    setIncludePlanWebScene,
+    includeAoiCharacterization,
     includeCustomSampleTypes,
+    includePlan,
+    includePlanWebMap,
+    includePlanWebScene,
+    publishSamplesMode,
+    publishSampleTableMetaData,
+    sampleTableDescription,
+    sampleTableName,
+    sampleTypeSelections,
+    selectedAoiCharacterizations,
+    selectedService,
+    setIncludeAoiCharacterization,
     setIncludeCustomSampleTypes,
-    webMapReferenceLayerSelections,
+    setIncludePlan,
+    setIncludePlanWebMap,
+    setIncludePlanWebScene,
+    setPublishSamplesMode,
+    setPublishSampleTableMetaData,
+    setSampleTableDescription,
+    setSampleTableName,
+    setSampleTypeSelections,
+    setSelectedAoiCharacterizations,
+    setSelectedService,
     setWebMapReferenceLayerSelections,
-    webSceneReferenceLayerSelections,
     setWebSceneReferenceLayerSelections,
+    webMapReferenceLayerSelections,
+    webSceneReferenceLayerSelections,
   } = useContext(PublishContext);
 
   type OutputSettingsType = {
+    includeAoiCharacterization: boolean;
+    includeCustomSampleTypes: boolean;
     includePlan: boolean;
     includePlanWebMap: boolean;
     includePlanWebScene: boolean;
-    includeCustomSampleTypes: boolean;
+    selectedAoiCharacterizations: {
+      label: string;
+      value: string;
+    }[];
     webMapReferenceLayerSelections: any[];
     webSceneReferenceLayerSelections: any[];
   };
@@ -1623,10 +1632,16 @@ function usePublishStorage(dbInitialized: boolean) {
       // set the publish output settings
       if (records.length > 3 && records[3]) {
         const outputSettings: OutputSettingsType = records[3];
+        setIncludeAoiCharacterization(
+          outputSettings.includeAoiCharacterization,
+        );
+        setIncludeCustomSampleTypes(outputSettings.includeCustomSampleTypes);
         setIncludePlan(outputSettings.includePlan);
         setIncludePlanWebMap(outputSettings.includePlanWebMap);
         setIncludePlanWebScene(outputSettings.includePlanWebScene);
-        setIncludeCustomSampleTypes(outputSettings.includeCustomSampleTypes);
+        setSelectedAoiCharacterizations(
+          outputSettings.selectedAoiCharacterizations ?? [],
+        );
         setWebMapReferenceLayerSelections(
           outputSettings.webMapReferenceLayerSelections,
         );
@@ -1638,6 +1653,7 @@ function usePublishStorage(dbInitialized: boolean) {
   }, [
     dbInitialized,
     readInitialized,
+    setIncludeAoiCharacterization,
     setIncludeCustomSampleTypes,
     setIncludePlan,
     setIncludePlanWebMap,
@@ -1647,6 +1663,7 @@ function usePublishStorage(dbInitialized: boolean) {
     setSampleTableDescription,
     setSampleTableName,
     setSampleTypeSelections,
+    setSelectedAoiCharacterizations,
     setSelectedService,
     setWebMapReferenceLayerSelections,
     setWebSceneReferenceLayerSelections,
@@ -1691,21 +1708,30 @@ function usePublishStorage(dbInitialized: boolean) {
     if (!readDone) return;
 
     const settings: OutputSettingsType = {
+      includeAoiCharacterization,
+      includeCustomSampleTypes,
       includePlan,
       includePlanWebMap,
       includePlanWebScene,
-      includeCustomSampleTypes,
+      selectedAoiCharacterizations: selectedAoiCharacterizations.map(
+        (item) => ({
+          label: item.label,
+          value: item.value,
+        }),
+      ),
       webMapReferenceLayerSelections,
       webSceneReferenceLayerSelections,
     };
 
     writeToStorage(key4, settings, setOptions);
   }, [
+    includeAoiCharacterization,
     includeCustomSampleTypes,
     includePlan,
     includePlanWebMap,
     includePlanWebScene,
     readDone,
+    selectedAoiCharacterizations,
     setOptions,
     webMapReferenceLayerSelections,
     webSceneReferenceLayerSelections,

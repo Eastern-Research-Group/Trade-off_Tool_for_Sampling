@@ -618,7 +618,6 @@ export function buildRendererParams(
  * @param portal The portal object to create feature layers on
  * @param serviceUrl The hosted feature service to save layers to
  * @param featureService Object detailing information about the feature service to be published.
- * @param referenceMaterials Details about web map/scene to publish
  * @param service The feature service object
  * @returns A promise that resolves to the layers that were saved
  */
@@ -626,12 +625,6 @@ function createFeatureLayers(
   portal: __esri.Portal,
   serviceUrl: string,
   featureService: any,
-  referenceMaterials: {
-    createWebMap: boolean;
-    createWebScene: boolean;
-    webMapReferenceLayerSelections: ReferenceLayerSelections[];
-    webSceneReferenceLayerSelections: ReferenceLayerSelections[];
-  },
   service: any,
 ) {
   return new Promise((resolve, reject) => {
@@ -649,9 +642,9 @@ function createFeatureLayers(
 
     const layerIds: string[] = [];
     const layersParams: any[] = featureService.layers
-      .filter(
+      ?.filter(
         (l) =>
-          service.featureService.layers.findIndex(
+          service.featureService.layers?.findIndex(
             (i) => i.id === l.id && i.name === l.layerDefinitionProps.name,
           ) === -1,
       )
@@ -660,16 +653,16 @@ function createFeatureLayers(
         return l.layerDefinitionProps;
       });
     const tablesOut: any[] = featureService.tables
-      .filter(
+      ?.filter(
         (t) =>
-          service.featureService.tables.findIndex(
+          service.featureService.tables?.findIndex(
             (i) => i.name === t.tableDefinitionProps.name,
           ) === -1,
       )
       .map((t) => t.tableDefinitionProps);
 
     const refIdsAdded: string[] = [];
-    console.log('referenceMaterials: ', referenceMaterials);
+    console.log('referenceMaterials: ', featureService.referenceMaterials);
     const processReferencLayerSelections = (l: ReferenceLayerSelections) => {
       if (refIdsAdded.includes(l.id)) return;
       if (l.type !== 'file') return;
@@ -689,10 +682,10 @@ function createFeatureLayers(
       });
     };
 
-    referenceMaterials.webMapReferenceLayerSelections.forEach(
+    featureService.referenceMaterials?.webMapReferenceLayerSelections?.forEach(
       processReferencLayerSelections,
     );
-    referenceMaterials.webSceneReferenceLayerSelections.forEach(
+    featureService.referenceMaterials?.webSceneReferenceLayerSelections?.forEach(
       processReferencLayerSelections,
     );
 
@@ -1042,7 +1035,7 @@ async function updateFeatureLayers({
       });
     });
 
-    featureService.tables.forEach((table) => {
+    featureService.tables?.forEach((table) => {
       const id = findLayerId({
         service,
         layersResponse,
@@ -1352,19 +1345,19 @@ function findLayerId({
   let layer;
 
   // check in service.layers
-  layer = service.featureService.layers.find((l: any) => l.name === name);
+  layer = service.featureService.layers?.find((l: any) => l.name === name);
   if (layer) return layer.id;
 
   // check in service.tables
-  layer = service.featureService.tables.find((l: any) => l.name === name);
+  layer = service.featureService.tables?.find((l: any) => l.name === name);
   if (layer) return layer.id;
 
   // check in layersResponse.layers
-  layer = layersResponse.layers.find((l: any) => l.name === name);
+  layer = layersResponse.layers?.find((l: any) => l.name === name);
   if (layer) return layer.id;
 
   // check in layersResponse.tables
-  layer = layersResponse.tables.find((l: any) => l.name === name);
+  layer = layersResponse.tables?.find((l: any) => l.name === name);
   if (layer) return layer.id;
 
   return -1;
@@ -1379,7 +1372,6 @@ function findLayerId({
  * @param serviceUrl The url of the hosted feature service
  * @param featureService Object detailing information about the feature service to be published.
  * @param layersResponse The response from creating layers
- * @param referenceMaterials Reference layers to store in reference layers table
  * @returns A promise that resolves to the successfully saved objects
  */
 async function applyEdits({
@@ -1388,19 +1380,12 @@ async function applyEdits({
   serviceUrl,
   featureService,
   layersResponse,
-  referenceMaterials,
 }: {
   portal: __esri.Portal;
   service: any;
   serviceUrl: string;
   featureService: any;
   layersResponse: any;
-  referenceMaterials: {
-    createWebMap: boolean;
-    createWebScene: boolean;
-    webMapReferenceLayerSelections: ReferenceLayerSelections[];
-    webSceneReferenceLayerSelections: ReferenceLayerSelections[];
-  };
 }) {
   try {
     const changes: any[] = [];
@@ -1408,8 +1393,8 @@ async function applyEdits({
 
     // clear out data
     const idsToClear: number[] = [
-      ...service.featureService.layers.map((l) => l.id),
-      ...service.featureService.tables.map((t) => t.id),
+      ...(service.featureService.layers?.map((l) => l.id) ?? []),
+      ...(service.featureService.tables?.map((t) => t.id) ?? []),
     ];
     const clearPromises: Promise<unknown>[] = [];
     idsToClear.forEach((id) => {
@@ -1440,59 +1425,63 @@ async function applyEdits({
     });
 
     const refIdsAdded: string[] = [];
-    referenceMaterials.webMapReferenceLayerSelections.forEach((l) => {
-      if (refIdsAdded.includes(l.id)) return;
-      if (l.type !== 'file') return;
+    featureService.referenceMaterials?.webMapReferenceLayerSelections?.forEach(
+      (l) => {
+        if (refIdsAdded.includes(l.id)) return;
+        if (l.type !== 'file') return;
 
-      // don't duplicate existing layers
-      const layerFromService = service.featureService.layers.find(
-        (m: any) => m.name === l.label,
-      );
-      if (layerFromService) return;
+        // don't duplicate existing layers
+        const layerFromService = service.featureService.layers.find(
+          (m: any) => m.name === l.label,
+        );
+        if (layerFromService) return;
 
-      refIdsAdded.push(l.id);
+        refIdsAdded.push(l.id);
 
-      if (l.layer.rawLayer.featureSet.features.length === 0) return;
+        if (l.layer.rawLayer.featureSet.features.length === 0) return;
 
-      changes.push({
-        id: findLayerId({
-          service,
-          layersResponse,
-          name: convertLayerName(l.label),
-        }),
-        adds: l.layer.rawLayer.featureSet.features,
-        updates: [],
-        deletes: [],
-      });
-    });
-    referenceMaterials.webSceneReferenceLayerSelections.forEach((l) => {
-      if (refIdsAdded.includes(l.id)) return;
-      if (l.type !== 'file') return;
+        changes.push({
+          id: findLayerId({
+            service,
+            layersResponse,
+            name: convertLayerName(l.label),
+          }),
+          adds: l.layer.rawLayer.featureSet.features,
+          updates: [],
+          deletes: [],
+        });
+      },
+    );
+    featureService.referenceMaterials?.webSceneReferenceLayerSelections?.forEach(
+      (l) => {
+        if (refIdsAdded.includes(l.id)) return;
+        if (l.type !== 'file') return;
 
-      // don't duplicate existing layers
-      const layerFromService = service.featureService.layers.find(
-        (m: any) => m.name === l.label,
-      );
-      if (layerFromService) return;
+        // don't duplicate existing layers
+        const layerFromService = service.featureService.layers.find(
+          (m: any) => m.name === l.label,
+        );
+        if (layerFromService) return;
 
-      refIdsAdded.push(l.id);
+        refIdsAdded.push(l.id);
 
-      if (l.layer.rawLayer.featureSet.features.length === 0) return;
+        if (l.layer.rawLayer.featureSet.features.length === 0) return;
 
-      changes.push({
-        id: findLayerId({
-          service,
-          layersResponse,
-          name: convertLayerName(l.label),
-        }),
-        adds: l.layer.rawLayer.featureSet.features,
-        updates: [],
-        deletes: [],
-      });
-    });
+        changes.push({
+          id: findLayerId({
+            service,
+            layersResponse,
+            name: convertLayerName(l.label),
+          }),
+          adds: l.layer.rawLayer.featureSet.features,
+          updates: [],
+          deletes: [],
+        });
+      },
+    );
 
     const tableOutputs: any[] = [];
-    featureService.tables.forEach((table: any) => {
+    featureService.tables?.forEach((table: any) => {
       const output = buildSimpleTableEdits({
         id: findLayerId({
           service,
@@ -1534,7 +1523,7 @@ async function applyEdits({
  * @param referenceMaterials Reference layers to store in reference layers table
  * @returns An object containing the edits arrays
  */
-export function buildReferenceLayerTableEditsNew(referenceMaterials: {
+export function buildReferenceLayerTableEdits(referenceMaterials: {
   createWebMap: boolean;
   createWebScene: boolean;
   webMapReferenceLayerSelections: ReferenceLayerSelections[];
@@ -1906,24 +1895,16 @@ function addWebMapScene({
  * @param portal The portal object to apply edits to
  * @param map Esri Map - Used for sorting the reference layers
  * @param featureService Object detailing information about the feature service to be published.
- * @param referenceMaterials Reference layers to apply to web map
  * @returns A promise that resolves to the successfully published data
  */
 async function publishFeatureService({
   portal,
   map,
   featureService,
-  referenceMaterials,
 }: {
   portal: __esri.Portal;
   map: __esri.Map;
   featureService: any;
-  referenceMaterials: {
-    createWebMap: boolean;
-    createWebScene: boolean;
-    webMapReferenceLayerSelections: ReferenceLayerSelections[];
-    webSceneReferenceLayerSelections: ReferenceLayerSelections[];
-  };
 }) {
   const service = await getFeatureService(portal, featureService);
 
@@ -1938,7 +1919,6 @@ async function publishFeatureService({
     portal,
     serviceUrl,
     featureService,
-    referenceMaterials,
     service,
   );
   console.log('layersResponse: ', layersResponse);
@@ -1983,10 +1963,9 @@ async function publishFeatureService({
     serviceUrl,
     featureService,
     layersResponse,
-    referenceMaterials,
   });
 
-  if (referenceMaterials.createWebMap) {
+  if (featureService.referenceMaterials?.createWebMap) {
     const webMapRes = await getWebMapSceneWrapped(
       portal,
       featureService,
@@ -1999,13 +1978,14 @@ async function publishFeatureService({
       service,
       featureService,
       layersResponse,
-      referenceMaterials: referenceMaterials.webMapReferenceLayerSelections,
+      referenceMaterials:
+        featureService.referenceMaterials.webMapReferenceLayerSelections,
       map,
       existingWebMapScene: webMapRes,
     });
   }
 
-  if (referenceMaterials.createWebScene) {
+  if (featureService.referenceMaterials?.createWebScene) {
     const webSceneRes = await getWebMapSceneWrapped(
       portal,
       featureService,
@@ -2018,7 +1998,8 @@ async function publishFeatureService({
       service,
       featureService,
       layersResponse,
-      referenceMaterials: referenceMaterials.webSceneReferenceLayerSelections,
+      referenceMaterials:
+        featureService.referenceMaterials.webSceneReferenceLayerSelections,
       map,
       existingWebMapScene: webSceneRes,
     });
@@ -2030,7 +2011,8 @@ async function publishFeatureService({
     edits: editsRes.response,
     itemData: {
       name: itemName,
-      serviceUrl: itemServiceUrl,
+      itemServiceUrl,
+      serviceUrl,
     },
   };
   featureService?.onPublishComplete?.(output);
@@ -2044,39 +2026,106 @@ async function publishFeatureService({
  * @param portal The portal object to apply edits to
  * @param map Esri Map - Used for sorting the reference layers
  * @param featureService Object detailing information about the feature service to be published.
- * @param referenceMaterials Reference layers to apply to web map
  * @returns A promise that resolves to the successfully published data
  */
 export async function publish({
   portal,
   map,
   featureServices,
-  referenceMaterials,
 }: {
   portal: __esri.Portal;
   map: __esri.Map;
   featureServices: any[];
-  referenceMaterials: {
-    createWebMap: boolean;
-    createWebScene: boolean;
-    webMapReferenceLayerSelections: ReferenceLayerSelections[];
-    webSceneReferenceLayerSelections: ReferenceLayerSelections[];
-  };
 }) {
   if (featureServices.length === 0) return 'Nothing to publish.';
 
   try {
     const requests: Promise<any>[] = [];
-    featureServices.forEach((featureService) => {
-      requests.push(
-        publishFeatureService({
-          portal,
-          map,
-          featureService,
-          referenceMaterials,
-        }),
-      );
-    });
+
+    // sort services to ensur synchronous services are published first
+    featureServices.sort((a, b) => (a === b ? 0 : a ? -1 : 1));
+
+    const layerPortalIdMapping: {
+      [key: string]: {
+        portalId: string;
+        label: string;
+        layerType: string;
+        type: string;
+        url: string;
+      };
+    } = {};
+    for (const featureService of featureServices) {
+      // add synchronous services to the reference layers
+      if (
+        !featureService.synchronous &&
+        Object.keys(layerPortalIdMapping).length > 0
+      ) {
+        const referenceTable = featureService.tables.find((tbl) =>
+          tbl.tableDefinitionProps.name.endsWith('-reference-layers'),
+        );
+
+        Object.values(layerPortalIdMapping).forEach((value) => {
+          const hasRow =
+            referenceTable.data.findIndex(
+              (row) => row.LAYERID === value.portalId,
+            ) > -1;
+          if (hasRow) return;
+
+          const currDate = getCurrentDateTime();
+          if (referenceTable) {
+            referenceTable.data.push({
+              GLOBALID: generateUUID(),
+              LAYERID: value.portalId,
+              LABEL: value.label,
+              LAYERTYPE: value.layerType,
+              TYPE: value.type,
+              URL: value.url,
+              ONWEBMAP: 1,
+              ONWEBSCENE: 1,
+              CREATEDDATE: currDate,
+              UPDATEDDATE: currDate,
+            });
+          }
+
+          const refSelection = {
+            id: value.portalId,
+            label: value.label,
+            layerType: 'Feature Service',
+            onWebMap: 1,
+            onWebScene: 1,
+            type: value.type,
+            value: value.url,
+          };
+          if (featureService.referenceMaterials) {
+            featureService.referenceMaterials.webMapReferenceLayerSelections.push(
+              refSelection,
+            );
+            featureService.referenceMaterials.webSceneReferenceLayerSelections.push(
+              refSelection,
+            );
+          }
+        });
+      }
+
+      const request = publishFeatureService({
+        portal,
+        map,
+        featureService,
+      });
+      requests.push(request);
+
+      // wait for synchronous services to finish prior to continuing
+      if (featureService.synchronous && featureService.layerId) {
+        const output = await request;
+        layerPortalIdMapping[featureService.layerId] = {
+          portalId: output.portalId,
+          label: featureService.label,
+          layerType: 'Feature Service',
+          type: 'tots',
+          url: output.itemData.serviceUrl,
+        };
+      }
+    }
 
     return await Promise.all(requests);
   } catch (err) {

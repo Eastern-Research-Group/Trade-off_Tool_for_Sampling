@@ -143,6 +143,15 @@
                     "defaultDeconOperationSettingsTableFields": {
                       "type": "object"
                     },
+                    "defaultImageryAnalysisFields": {
+                      "type": "object"
+                    },
+                    "defaultBuildingLayerFields": {
+                      "type": "object"
+                    },
+                    "defaultDeconMaskLayerFields": {
+                      "type": "object"
+                    },
                     "defaultFields": {
                       "type": "object"
                     },

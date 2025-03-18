@@ -8,6 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { css } from '@emotion/react';
+import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import IdentityManager from '@arcgis/core/identity/IdentityManager';
 import Portal from '@arcgis/core/portal/Portal';
 // components
@@ -34,13 +35,14 @@ import { SketchContext } from 'contexts/Sketch';
 import {
   addPointFeatures,
   buildFieldFromCustomAttribute,
-  buildReferenceLayerTableEditsNew,
+  buildReferenceLayerTableEdits,
   buildRendererParams,
   getAllFeatures,
   getFeatureTables,
   isServiceNameAvailable,
   publish,
 } from 'utils/arcGisRestUtils';
+import { buildingColors, imageAnalysisSymbols } from 'utils/hooks';
 import { findLayerInEdits, generateUUID } from 'utils/sketchUtils';
 import { createErrorObject } from 'utils/utils';
 // types
@@ -151,6 +153,7 @@ function Publish({ appType }: Props) {
   const { goToOptions, setGoToOptions, trainingMode } =
     useContext(NavigationContext);
   const {
+    includeAoiCharacterization,
     includeCustomSampleTypes,
     includePlan,
     includePlanWebMap,
@@ -160,6 +163,7 @@ function Publish({ appType }: Props) {
     sampleTableDescription,
     sampleTableName,
     sampleTypeSelections,
+    selectedAoiCharacterizations,
     selectedService,
     setSampleTableDescription,
     setSampleTableName,
@@ -251,6 +255,9 @@ function Publish({ appType }: Props) {
   >('none');
   const [customSampleNameCheckStatus, setCustomSampleNameCheckStatus] =
     useState<'none' | 'available' | 'not-available'>('none');
+  const [aoiCharNameCheckStatus, setAoiCharNameNameCheckStatus] = useState<
+    'none' | 'available' | 'not-available'
+  >('none');
 
   // Check if the scenario name is available
   const [hasNameBeenChecked, setHasNameBeenChecked] = useState(false);
@@ -265,8 +272,10 @@ function Publish({ appType }: Props) {
     const sampleTypesNameChecked =
       !includeCustomSampleTypes ||
       (publishSamplesMode === 'existing' && publishSampleTableMetaData?.value);
+    const aoiCharNameChecked = includeAoiCharacterization ? false : true;
 
-    if (planNameChecked && sampleTypesNameChecked) {
+    // TODO get the aoiCharNameChecked working
+    if (planNameChecked && sampleTypesNameChecked && aoiCharNameChecked) {
       setHasNameBeenChecked(true);
       return;
     }
@@ -296,6 +305,14 @@ function Publish({ appType }: Props) {
       );
       requests.push(request);
       sampleTypesIndex = requests.length - 1;
+    }
+
+    // TODO remove this testing code
+    console.log('requests: ', requests);
+    if (requests.length === 0) {
+      setAoiCharNameNameCheckStatus('available');
+      setHasNameBeenChecked(true);
+      return;
     }
 
     Promise.all(requests)
@@ -364,6 +381,7 @@ function Publish({ appType }: Props) {
       });
   }, [
     appType,
+    includeAoiCharacterization,
     includeCustomSampleTypes,
     includePlan,
     portal,
@@ -377,21 +395,29 @@ function Publish({ appType }: Props) {
   ]);
 
   const publishItems = useCallback(() => {
-    if (!map || !portal || !selectedScenario) return;
+    if (!map || !portal) return;
 
     async function publishItemsInner() {
-      if (!map || !portal || !selectedScenario) return;
+      if (!map || !portal) return;
 
       try {
         const featureServices: any[] = [];
         const errorMessages: string[] = [];
-        const includeSamplePlan = !isDecon();
+        const includeSamplePlan = includePlan && !isDecon();
         const includeDeconPlan = isDecon();
+        const aoiIdsToInclude = selectedAoiCharacterizations.map(
+          (aoi) => aoi.value,
+        );
+        const aoiLayersToInclude: any[] = edits.edits.filter(
+          (edit) =>
+            edit.type === 'layer-aoi-analysis' &&
+            aoiIdsToInclude.includes(edit.value),
+        );
 
         const tempPortal = portal as any;
         const token = tempPortal.credential.token;
 
-        if (includeSamplePlan) {
+        if (includeSamplePlan && selectedScenario) {
           const layerInEdits = findLayerInEdits(
             edits.edits,
             selectedScenario.layerId,
@@ -662,6 +688,7 @@ function Publish({ appType }: Props) {
               value: '',
               description: editsScenario.scenarioDescription,
               url: '',
+              layerId: editsScenario.layerId,
               layers: layersToPublish,
               tables: [
                 {
@@ -709,7 +736,7 @@ function Publish({ appType }: Props) {
                     name: `${editsScenario.scenarioName}-reference-layers`,
                     description: `Links to reference layers for "${editsScenario.scenarioName}".`,
                   },
-                  data: buildReferenceLayerTableEditsNew({
+                  data: buildReferenceLayerTableEdits({
                     createWebMap: includePlanWebMap,
                     createWebScene: includePlanWebScene,
                     webMapReferenceLayerSelections,
@@ -717,6 +744,12 @@ function Publish({ appType }: Props) {
                   }),
                 },
               ],
+              referenceMaterials: {
+                createWebMap: includePlanWebMap,
+                createWebScene: includePlanWebScene,
+                webMapReferenceLayerSelections,
+                webSceneReferenceLayerSelections,
+              },
               onPublishComplete: (res: any) => {
                 console.log('res: ', res);
                 const portalId = res.portalId;
@@ -1047,7 +1080,7 @@ function Publish({ appType }: Props) {
           }
         }
 
-        if (includeDeconPlan) {
+        if (includeDeconPlan && selectedScenario) {
           const { scenarioIndex, editsScenario } = findLayerInEdits(
             edits.edits,
             selectedScenario.layerId,
@@ -1079,6 +1112,7 @@ function Publish({ appType }: Props) {
               const aoiLayer = edits.edits.find(
                 (edit) => edit.layerId === linkedLayer.analysisLayerId,
               ) as LayerAoiAnalysisEditsType;
+              if (aoiLayer) aoiLayersToInclude.push(aoiLayer);
 
               let numBuildings = 0;
               aoiLayer?.layers?.forEach((layer) => {
@@ -1256,6 +1290,7 @@ function Publish({ appType }: Props) {
               value: '',
               description: editsScenario.scenarioDescription,
               url: '',
+              layerId: editsScenario.layerId,
               layers: [],
               tables: [
                 {
@@ -1297,7 +1332,7 @@ function Publish({ appType }: Props) {
                     name: `${editsScenario.scenarioName}-reference-layers`,
                     description: `Links to reference layers for "${editsScenario.scenarioName}".`,
                   },
-                  data: buildReferenceLayerTableEditsNew({
+                  data: buildReferenceLayerTableEdits({
                     createWebMap: includePlanWebMap,
                     createWebScene: includePlanWebScene,
                     webMapReferenceLayerSelections,
@@ -1528,6 +1563,243 @@ function Publish({ appType }: Props) {
           }
         }
 
+        if (includeAoiCharacterization && aoiLayersToInclude.length > 0) {
+          aoiLayersToInclude.forEach((aoiLayer) => {
+            const layersToPublish = [];
+            let extent: __esri.Extent | null = null;
+
+            const imageryLayer = aoiLayer.layers.find(
+              (l) => l.layerType === 'Image Analysis',
+            );
+            const buildingLayer = aoiLayer.layers.find(
+              (l) => l.layerType === 'AOI Assessed',
+            );
+            const maskLayer = aoiLayer.layers.find(
+              (l) => l.layerType === 'Decon Mask',
+            );
+
+            // get the extent
+            const maskLayerSketch = layers.find(
+              (l) => l.layerId === maskLayer?.layerId,
+            );
+            if (maskLayerSketch?.sketchLayer?.type === 'graphics') {
+              const unionGeometry = geometryEngine.union(
+                maskLayerSketch.sketchLayer.graphics
+                  .toArray()
+                  .map((g) => g.geometry),
+              );
+              extent = unionGeometry.extent;
+            }
+
+            if (imageryLayer) {
+              layersToPublish.push({
+                id: imageryLayer.id,
+                layerId: imageryLayer.layerId,
+                layerDefinitionProps: {
+                  ...layerProps.defaultLayerProps,
+                  fields: layerProps.defaultImageryAnalysisFields,
+                  hasZ: false,
+                  name: 'Imagery Analysis Results',
+                  description: '',
+                  extent,
+                  drawingInfo: {
+                    renderer: {
+                      type: 'uniqueValue',
+                      field1: 'category',
+                      uniqueValueInfos: Object.keys(imageAnalysisSymbols).map(
+                        (key) => ({
+                          value: key,
+                          label: key,
+                          symbol: imageAnalysisSymbols[key].toJSON(),
+                        }),
+                      ),
+                      defaultSymbol: {
+                        type: 'esriSFS',
+                        style: 'esriSFSSolid',
+                        color: [150, 150, 150, 0.2],
+                        outline: {
+                          color: [153, 153, 153, 64],
+                          width: 0.84,
+                        },
+                      },
+                    },
+                  },
+                  types: [
+                    {
+                      id: 'epa-tods-imagery-analysis-layer',
+                      name: 'epa-tods-imagery-analysis-layer',
+                    },
+                  ],
+                },
+                adds: imageryLayer.adds.map((a) => ({
+                  ...a,
+                  attributes: {
+                    ...a.attributes,
+                    GLOBALID: generateUUID(),
+                  },
+                })),
+                updates: imageryLayer.updates.map((a) => ({
+                  ...a,
+                  attributes: {
+                    ...a.attributes,
+                    GLOBALID: generateUUID(),
+                  },
+                })),
+                deletes: imageryLayer.deletes,
+                published: imageryLayer.published,
+              });
+            }
+
+            if (buildingLayer) {
+              layersToPublish.push({
+                id: buildingLayer.id,
+                layerId: buildingLayer.layerId,
+                layerDefinitionProps: {
+                  ...layerProps.defaultLayerProps,
+                  fields: layerProps.defaultBuildingLayerFields,
+                  hasZ: false,
+                  name: 'Building Results',
+                  description: '',
+                  extent,
+                  drawingInfo: {
+                    renderer: {
+                      type: 'uniqueValue',
+                      field1: 'category',
+                      uniqueValueInfos: Object.keys(buildingColors)
+                        .filter((k) => k !== 'Other')
+                        .map((key) => ({
+                          value: key,
+                          label: key,
+                          symbol: {
+                            type: 'esriSFS',
+                            style: 'esriSFSSolid',
+                            color: buildingColors[key],
+                            outline: {
+                              color: [153, 153, 153, 64],
+                              width: 0.84,
+                            },
+                          },
+                        })),
+                      defaultSymbol: {
+                        type: 'esriSFS',
+                        style: 'esriSFSSolid',
+                        color: buildingColors['Other'],
+                        outline: {
+                          color: [153, 153, 153, 64],
+                          width: 0.84,
+                        },
+                      },
+                    },
+                  },
+                  types: [
+                    {
+                      id: 'epa-tods-building-layer',
+                      name: 'epa-tods-building-layer',
+                    },
+                  ],
+                },
+                adds: buildingLayer.adds.map((a) => ({
+                  ...a,
+                  attributes: {
+                    ...a.attributes,
+                    GLOBALID: generateUUID(),
+                  },
+                })),
+                updates: buildingLayer.updates.map((a) => ({
+                  ...a,
+                  attributes: {
+                    ...a.attributes,
+                    GLOBALID: generateUUID(),
+                  },
+                })),
+                deletes: buildingLayer.deletes,
+                published: buildingLayer.published,
+              });
+            }
+
+            if (maskLayer) {
+              layersToPublish.push({
+                id: maskLayer.id,
+                layerId: maskLayer.layerId,
+                layerDefinitionProps: {
+                  ...layerProps.defaultLayerProps,
+                  fields: layerProps.defaultDeconMaskLayerFields,
+                  name: 'Area of Interest',
+                  description: '',
+                  extent,
+                  drawingInfo: {
+                    renderer: {
+                      type: 'simple',
+                      symbol: {
+                        type: 'esriSFS',
+                        style: 'esriSFSSolid',
+                        color: [150, 150, 150, 0.2],
+                        outline: {
+                          color: [50, 50, 50],
+                          width: 2,
+                        },
+                      },
+                    },
+                  },
+                  types: [
+                    {
+                      id: 'epa-tods-aoi-layer',
+                      name: 'epa-tods-aoi-layer',
+                    },
+                  ],
+                },
+                adds: maskLayer.adds,
+                updates: maskLayer.updates,
+                deletes: maskLayer.deletes,
+                published: maskLayer.published,
+              });
+            }
+
+            featureServices.push({
+              category: 'contains-epa-tots-aoi-characterization',
+              synchronous: true,
+              label: aoiLayer.label,
+              description: '', // TODO do we need this
+              url: '', // TODO do we need this
+              value: '',
+              layerId: aoiLayer.layerId,
+              layers: layersToPublish,
+              onPublishComplete: (res: any) => {
+                const portalId = res.portalId;
+
+                // make a copy of the edits context variable
+                // update the edits state
+                setEdits((edits) => {
+                  const editsAoi = edits.edits.find(
+                    (edit) => edit.layerId === aoiLayer.layerId,
+                  ) as LayerAoiAnalysisEditsType;
+                  editsAoi.status = 'published';
+                  editsAoi.portalId = portalId;
+
+                  editsAoi.layers.forEach((editedLayer) => {
+                    // update the ids
+                    if (
+                      Object.prototype.hasOwnProperty.call(
+                        res.idMapping,
+                        editedLayer.uuid,
+                      )
+                    ) {
+                      editedLayer.portalId = portalId;
+                      editedLayer.id = res.idMapping[editedLayer.uuid].id;
+                      editsAoi.id = editedLayer.id;
+                    }
+                  });
+
+                  return {
+                    count: edits.count + 1,
+                    edits: edits.edits,
+                  };
+                });
+              },
+            });
+          });
+        }
+
         if (errorMessages.length > 0) {
           setPublishResponse({
             status: 'fetch-failure',
@@ -1551,12 +1823,6 @@ function Publish({ appType }: Props) {
           portal,
           map,
           featureServices,
-          referenceMaterials: {
-            createWebMap: includePlanWebMap,
-            createWebScene: includePlanWebScene,
-            webMapReferenceLayerSelections,
-            webSceneReferenceLayerSelections,
-          },
         });
         console.log('responses: ', responses);
 
@@ -1650,7 +1916,9 @@ function Publish({ appType }: Props) {
     calculateResultsDecon,
     defaultSymbols,
     edits,
+    includeAoiCharacterization,
     includeCustomSampleTypes,
+    includePlan,
     includePlanWebMap,
     includePlanWebScene,
     layerProps,
@@ -1661,6 +1929,7 @@ function Publish({ appType }: Props) {
     publishSampleTableMetaData,
     sampleAttributes,
     sampleTypeSelections,
+    selectedAoiCharacterizations,
     selectedScenario,
     selectedService,
     setEdits,
@@ -1762,6 +2031,14 @@ function Publish({ appType }: Props) {
       // verify service name availbility if changed
       (sampleTypesNameCheck.status === 'none' ||
         sampleTypesNameCheck.status === 'success'));
+
+  // TODO make sure this is correct
+  const isPublishAoiCharReady =
+    !includeAoiCharacterization ||
+    ((aoiCharNameCheckStatus !== 'not-available' ||
+      (aoiCharNameCheckStatus === 'not-available' &&
+        sampleTypesNameCheck.status === 'success')) &&
+      selectedAoiCharacterizations.length > 0);
 
   let appName = '';
   if (appType === 'sampling') appName = 'TOTS';
@@ -1947,6 +2224,20 @@ function Publish({ appType }: Props) {
             </p>
           </div>
         )}
+
+        {includeAoiCharacterization && (
+          <div>
+            <strong>
+              <i className="fas fa-check" css={checkedStyles}></i>
+              Include AOI Characterization Output Files:
+            </strong>
+            <ul>
+              {selectedAoiCharacterizations.map((item, index) => {
+                return <li key={index}>{item.label}</li>;
+              })}
+            </ul>
+          </div>
+        )}
       </div>
 
       {publishResponse.status === 'fetching' && <LoadingSpinner />}
@@ -2000,9 +2291,12 @@ function Publish({ appType }: Props) {
             }}
           />
         )}
-      {(includePlan || includeCustomSampleTypes) &&
+      {(includePlan ||
+        includeCustomSampleTypes ||
+        includeAoiCharacterization) &&
         isPublishPlanReady &&
-        isPublishSamplesReady && (
+        isPublishSamplesReady &&
+        isPublishAoiCharReady && (
           <div css={publishButtonContainerStyles}>
             <button
               css={publishButtonStyles}

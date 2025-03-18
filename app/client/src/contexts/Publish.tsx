@@ -7,6 +7,8 @@ import React, {
   SetStateAction,
   useState,
 } from 'react';
+// styles
+import { isDecon } from 'styles';
 // types
 import { ServiceMetaDataType } from 'types/Edits';
 import {
@@ -16,6 +18,11 @@ import {
 } from 'types/Publish';
 
 type NameAvailableStatus = 'unknown' | 'yes' | 'no';
+
+type SelectedAoiCharacterizations = {
+  label: string;
+  value: string;
+}[];
 
 type PublishType = {
   publishSamplesMode: 'new' | 'existing' | '';
@@ -34,6 +41,12 @@ type PublishType = {
   setSampleTableNameAvailable: Dispatch<SetStateAction<NameAvailableStatus>>;
   selectedService: ServiceMetaDataType | null;
   setSelectedService: Dispatch<SetStateAction<ServiceMetaDataType | null>>;
+  selectedAoiCharacterizations: SelectedAoiCharacterizations;
+  setSelectedAoiCharacterizations: Dispatch<
+    SetStateAction<SelectedAoiCharacterizations>
+  >;
+  includeAoiCharacterization: boolean;
+  setIncludeAoiCharacterization: Dispatch<SetStateAction<boolean>>;
   includePlan: boolean;
   setIncludePlan: Dispatch<SetStateAction<boolean>>;
   includePlanWebMap: boolean;
@@ -276,6 +289,10 @@ export const PublishContext = createContext<PublishType>({
   setSampleTableNameAvailable: () => {},
   selectedService: null,
   setSelectedService: () => {},
+  selectedAoiCharacterizations: [],
+  setSelectedAoiCharacterizations: () => {},
+  includeAoiCharacterization: false,
+  setIncludeAoiCharacterization: () => {},
   includePlan: true,
   setIncludePlan: () => {},
   includePlanWebMap: true,
@@ -306,6 +323,10 @@ export function PublishProvider({ children }: Props) {
     useState<NameAvailableStatus>('unknown');
   const [selectedService, setSelectedService] =
     useState<ServiceMetaDataType | null>(null);
+  const [selectedAoiCharacterizations, setSelectedAoiCharacterizations] =
+    useState<SelectedAoiCharacterizations>([]);
+  const [includeAoiCharacterization, setIncludeAoiCharacterization] =
+    useState(isDecon());
   const [includePlan, setIncludePlan] = useState(true);
   const [includePlanWebMap, setIncludePlanWebMap] = useState(true);
   const [includePlanWebScene, setIncludePlanWebScene] = useState(true);
@@ -335,6 +356,10 @@ export function PublishProvider({ children }: Props) {
         setSampleTableNameAvailable,
         selectedService,
         setSelectedService,
+        selectedAoiCharacterizations,
+        setSelectedAoiCharacterizations,
+        includeAoiCharacterization,
+        setIncludeAoiCharacterization,
         includePlan,
         setIncludePlan,
         includePlanWebMap,

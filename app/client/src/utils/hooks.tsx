@@ -253,56 +253,57 @@ export const backupImagerySymbol = new SimpleFillSymbol({
     style: 'solid',
   },
 });
-export const imageAnalysisSymbols = {
-  Asphalt: new SimpleFillSymbol({
-    color: [0, 0, 0, 0.5],
-    outline: {
-      color: [0, 0, 0, 1],
-      width: 1,
-      style: 'solid',
-    },
-  }),
-  Concrete: new SimpleFillSymbol({
-    color: [156, 156, 156, 0.5],
-    outline: {
-      color: [156, 156, 156, 1],
-      width: 1,
-      style: 'solid',
-    },
-  }),
-  // Soil: new SimpleFillSymbol({
-  //   color: [181, 53, 53, 0.5],
-  //   outline: {
-  //     color: [181, 53, 53, 1],
-  //     width: 1,
-  //     style: 'solid',
-  //   },
-  // }),
-  Soil: new SimpleFillSymbol({
-    color: [191, 217, 153, 0.5],
-    outline: {
-      color: [191, 217, 153, 1],
-      width: 1,
-      style: 'solid',
-    },
-  }),
-  Vegetation: new SimpleFillSymbol({
-    color: [191, 217, 153, 0.5],
-    outline: {
-      color: [191, 217, 153, 1],
-      width: 1,
-      style: 'solid',
-    },
-  }),
-  Water: new SimpleFillSymbol({
-    color: [191, 217, 242, 0.5],
-    outline: {
-      color: [191, 217, 242, 1],
-      width: 1,
-      style: 'solid',
-    },
-  }),
-};
+export const imageAnalysisSymbols: { [key: string]: __esri.SimpleFillSymbol } =
+  {
+    Asphalt: new SimpleFillSymbol({
+      color: [0, 0, 0, 0.5],
+      outline: {
+        color: [0, 0, 0, 1],
+        width: 1,
+        style: 'solid',
+      },
+    }),
+    Concrete: new SimpleFillSymbol({
+      color: [156, 156, 156, 0.5],
+      outline: {
+        color: [156, 156, 156, 1],
+        width: 1,
+        style: 'solid',
+      },
+    }),
+    // Soil: new SimpleFillSymbol({
+    //   color: [181, 53, 53, 0.5],
+    //   outline: {
+    //     color: [181, 53, 53, 1],
+    //     width: 1,
+    //     style: 'solid',
+    //   },
+    // }),
+    Soil: new SimpleFillSymbol({
+      color: [191, 217, 153, 0.5],
+      outline: {
+        color: [191, 217, 153, 1],
+        width: 1,
+        style: 'solid',
+      },
+    }),
+    Vegetation: new SimpleFillSymbol({
+      color: [191, 217, 153, 0.5],
+      outline: {
+        color: [191, 217, 153, 1],
+        width: 1,
+        style: 'solid',
+      },
+    }),
+    Water: new SimpleFillSymbol({
+      color: [191, 217, 242, 0.5],
+      outline: {
+        color: [191, 217, 242, 1],
+        width: 1,
+        style: 'solid',
+      },
+    }),
+  };
 
 type ContaminationPercentages = {
   [planId: string]: { [key: number]: number };
