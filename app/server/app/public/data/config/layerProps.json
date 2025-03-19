@@ -458,6 +458,18 @@
       "defaultValue": "NEWID() WITH VALUES"
     },
     {
+      "name": "TOTSLAYERID",
+      "alias": "TOTSLAYERID",
+      "type": "esriFieldTypeString",
+      "actualType": "nvarchar",
+      "sqlType": "sqlTypeNVarchar",
+      "length": 255,
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
       "name": "LAYERID",
       "alias": "LAYERID",
       "type": "esriFieldTypeString",
@@ -1536,7 +1548,7 @@
     },
     {
       "name": "AOI_LAYER_ID",
-      "alias": "Characterize AOI Feature Service UUID",
+      "alias": "Characterize AOI TOTS Layer ID",
       "type": "esriFieldTypeString",
       "actualType": "nvarchar",
       "sqlType": "sqlTypeNVarchar",
@@ -3110,6 +3122,152 @@
       "editable": true,
       "domain": null,
       "defaultValue": ""
+    },
+    {
+      "name": "CREATEDDATE",
+      "alias": "CREATEDDATE",
+      "type": "esriFieldTypeDate",
+      "sqlType": "sqlTypeOther",
+      "nullable": true,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "USERNAME",
+      "alias": "USERNAME",
+      "type": "esriFieldTypeString",
+      "sqlType": "sqlTypeOther",
+      "length": 255,
+      "nullable": true,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "UPDATEDDATE",
+      "alias": "UPDATEDDATE",
+      "type": "esriFieldTypeDate",
+      "sqlType": "sqlTypeOther",
+      "nullable": true,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    }
+  ],
+  "defaultAoiInfoTableFields": [
+    {
+      "name": "OBJECTID",
+      "alias": "OBJECTID",
+      "type": "esriFieldTypeOID",
+      "actualType": "int",
+      "sqlType": "sqlTypeInteger",
+      "length": 4,
+      "nullable": false,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GLOBALID",
+      "alias": "GlobalID",
+      "type": "esriFieldTypeGlobalID",
+      "sqlType": "sqlTypeOther",
+      "length": 38,
+      "nullable": false,
+      "editable": false,
+      "domain": null,
+      "defaultValue": "NEWID() WITH VALUES"
+    },
+    {
+      "name": "AOI_LAYER_ID",
+      "alias": "Characterize AOI TOTS Layer ID",
+      "type": "esriFieldTypeString",
+      "actualType": "nvarchar",
+      "sqlType": "sqlTypeNVarchar",
+      "length": 255,
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "AOI_VERSION",
+      "alias": "Characterize AOI Feature Service Version Number",
+      "type": "esriFieldTypeInteger",
+      "actualType": "int",
+      "sqlType": "sqlTypeInteger",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "AOI_AREA",
+      "alias": "Area of AOI in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_COUNT",
+      "alias": "Number of Buildings in AOI",
+      "type": "esriFieldTypeInteger",
+      "actualType": "int",
+      "sqlType": "sqlTypeInteger",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_AREA_TOTAL",
+      "alias": "Total Surface Area of Buildings to Decon in meters squared (interior and exterior surfaces)",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_AREA_EXTERIOR",
+      "alias": "Exterior Surface Area of Buildings to Decon in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_AREA_INTERIOR",
+      "alias": "Interior Surface Area of Buildings to Decon in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "NOTES",
+      "alias": "Notes",
+      "type": "esriFieldTypeString",
+      "actualType": "nvarchar",
+      "sqlType": "sqlTypeNVarchar",
+      "length": -1,
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
     },
     {
       "name": "CREATEDDATE",

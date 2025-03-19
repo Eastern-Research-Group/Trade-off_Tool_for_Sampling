@@ -213,6 +213,15 @@ async function getFeatureService(portal: __esri.Portal, featureService: any) {
         ),
       );
     });
+    service.featureService.tables.forEach((table: any) => {
+      requests.push(
+        getFeatureLayer(
+          `${service.portalService.url}`,
+          tempPortal.credential.token,
+          table.id,
+        ),
+      );
+    });
 
     const layerDefinitions = await Promise.all(requests);
 
@@ -1577,6 +1586,7 @@ export function buildReferenceLayerTableEdits(referenceMaterials: {
   uniqueReferenceLayerSelections.forEach((refLayer) => {
     adds.push({
       GLOBALID: generateUUID(),
+      TOTSLAYERID: refLayer.totsLayerId,
       LAYERID: refLayer.id,
       LABEL: refLayer.label,
       LAYERTYPE: refLayer.type === 'file' ? '' : refLayer.layerType,
@@ -2049,6 +2059,7 @@ export async function publish({
 
     const layerPortalIdMapping: {
       [key: string]: {
+        layerId: string;
         portalId: string;
         label: string;
         layerType: string;
@@ -2077,6 +2088,7 @@ export async function publish({
           if (referenceTable) {
             referenceTable.data.push({
               GLOBALID: generateUUID(),
+              TOTSLAYERID: value.layerId,
               LAYERID: value.portalId,
               LABEL: value.label,
               LAYERTYPE: value.layerType,
@@ -2091,6 +2103,7 @@ export async function publish({
 
           const refSelection = {
             id: value.portalId,
+            totsLayerId: value.layerId,
             label: value.label,
             layerType: 'Feature Service',
             onWebMap: 1,
@@ -2120,6 +2133,7 @@ export async function publish({
       if (featureService.synchronous && featureService.layerId) {
         const output = await request;
         layerPortalIdMapping[featureService.layerId] = {
+          layerId: featureService.layerId,
           portalId: output.portalId,
           label: featureService.label,
           layerType: 'Feature Service',

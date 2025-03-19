@@ -1173,7 +1173,10 @@ function Publish({ appType }: Props) {
               let numBuildings = 0;
               aoiLayer?.layers?.forEach((layer) => {
                 if (layer.layerType !== 'AOI Assessed') return;
-                numBuildings += layer.adds.length + layer.published.length;
+                numBuildings +=
+                  layer.adds.length +
+                  layer.updates.length +
+                  layer.published.length;
               });
 
               operationSettings.push({
@@ -1702,7 +1705,12 @@ function Publish({ appType }: Props) {
               });
             }
 
+            let numBuildings = 0;
             if (buildingLayer) {
+              numBuildings =
+                buildingLayer.adds.length +
+                buildingLayer.updates.length +
+                buildingLayer.published.length;
               layersToPublish.push({
                 id: buildingLayer.id,
                 layerId: buildingLayer.layerId,
@@ -1811,11 +1819,36 @@ function Publish({ appType }: Props) {
               category: 'contains-epa-tots-aoi-characterization',
               synchronous: true,
               label: aoiLayer.label,
-              description: '', // TODO do we need this
-              url: '', // TODO do we need this
+              description: aoiLayer.description,
+              url: '',
               value: '',
               layerId: aoiLayer.layerId,
               layers: layersToPublish,
+              tables: [
+                {
+                  tableDefinitionProps: {
+                    ...layerProps.defaultTableProps,
+                    fields: layerProps.defaultAoiInfoTableFields,
+                    type: 'Table',
+                    name: `${aoiLayer.name}-aoi-info`,
+                    description: `Area of Interest info for "${aoiLayer.name}".`,
+                  },
+                  data: [
+                    {
+                      AOI_LAYER_ID: aoiLayer.layerId,
+                      AOI_VERSION: 1,
+                      BUILDING_COUNT: numBuildings,
+                      BUILDING_AREA_TOTAL: aoiLayer.aoiSummary.totalBuildingSqM,
+                      BUILDING_AREA_EXTERIOR:
+                        aoiLayer.aoiSummary.totalBuildingExtSqM,
+                      BUILDING_AREA_INTERIOR:
+                        aoiLayer.aoiSummary.totalBuildingIntSqM,
+                      AOI_AREA: aoiLayer.aoiSummary.totalAoiSqM,
+                      NOTES: '',
+                    },
+                  ],
+                },
+              ],
               onPublishComplete: (res: any) => {
                 const portalId = res.portalId;
 
