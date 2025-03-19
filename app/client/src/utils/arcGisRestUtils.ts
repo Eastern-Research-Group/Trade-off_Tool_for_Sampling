@@ -641,25 +641,27 @@ function createFeatureLayers(
     }
 
     const layerIds: string[] = [];
-    const layersParams: any[] = featureService.layers
-      ?.filter(
-        (l) =>
-          service.featureService.layers?.findIndex(
-            (i) => i.id === l.id && i.name === l.layerDefinitionProps.name,
-          ) === -1,
-      )
-      .map((l) => {
-        layerIds.push(l.layerId);
-        return l.layerDefinitionProps;
-      });
-    const tablesOut: any[] = featureService.tables
-      ?.filter(
-        (t) =>
-          service.featureService.tables?.findIndex(
-            (i) => i.name === t.tableDefinitionProps.name,
-          ) === -1,
-      )
-      .map((t) => t.tableDefinitionProps);
+    const layersParams: any[] =
+      featureService.layers
+        ?.filter(
+          (l) =>
+            service.featureService.layers?.findIndex(
+              (i) => i.id === l.id || i.name === l.layerDefinitionProps.name,
+            ) === -1,
+        )
+        .map((l) => {
+          layerIds.push(l.layerId);
+          return l.layerDefinitionProps;
+        }) ?? [];
+    const tablesOut: any[] =
+      featureService.tables
+        ?.filter(
+          (t) =>
+            service.featureService.tables?.findIndex(
+              (i) => i.name === t.tableDefinitionProps.name,
+            ) === -1,
+        )
+        .map((t) => t.tableDefinitionProps) ?? [];
 
     const refIdsAdded: string[] = [];
     console.log('referenceMaterials: ', featureService.referenceMaterials);

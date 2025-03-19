@@ -13,6 +13,7 @@ import IdentityManager from '@arcgis/core/identity/IdentityManager';
 import Portal from '@arcgis/core/portal/Portal';
 // components
 import {
+  EditAoiCharacterization,
   EditCustomSampleTypesTable,
   EditScenario,
   SaveResultsType,
@@ -258,6 +259,9 @@ function Publish({ appType }: Props) {
   const [aoiCharNameCheckStatus, setAoiCharNameNameCheckStatus] = useState<
     'none' | 'available' | 'not-available'
   >('none');
+  const [aoiLayersNotAvailable, setAoiLayersNotAvailable] = useState<
+    LayerAoiAnalysisEditsType[]
+  >([]);
 
   // Check if the scenario name is available
   const [hasNameBeenChecked, setHasNameBeenChecked] = useState(false);
@@ -272,9 +276,40 @@ function Publish({ appType }: Props) {
     const sampleTypesNameChecked =
       !includeCustomSampleTypes ||
       (publishSamplesMode === 'existing' && publishSampleTableMetaData?.value);
-    const aoiCharNameChecked = includeAoiCharacterization ? false : true;
 
-    // TODO get the aoiCharNameChecked working
+    // figure out what aoi characterizations are included
+    let allAoisPublished = true;
+    const aoiCharIdsToInclude = selectedAoiCharacterizations.map(
+      (aoi) => aoi.value,
+    );
+    const aoiLayersToInclude: any[] = edits.edits.filter(
+      (edit) =>
+        edit.type === 'layer-aoi-analysis' &&
+        aoiCharIdsToInclude.includes(edit.value),
+    );
+    if (selectedScenario?.type === 'scenario-decon') {
+      edits.edits
+        .filter(
+          (edit) =>
+            selectedScenario.linkedLayerIds.includes(edit.layerId) &&
+            edit.type === 'layer-decon',
+        )
+        .forEach((linkedLayer) => {
+          if (linkedLayer.type !== 'layer-decon') return;
+          const aoiLayer = edits.edits.find(
+            (edit) => edit.layerId === linkedLayer.analysisLayerId,
+          ) as LayerAoiAnalysisEditsType;
+          if (aoiLayer && !aoiCharIdsToInclude.includes(aoiLayer.layerId)) {
+            aoiLayersToInclude.push(aoiLayer);
+          }
+        });
+    }
+    aoiLayersToInclude.forEach((aoiLayer) => {
+      if (!['published', 'edited'].includes(aoiLayer.status))
+        allAoisPublished = false;
+    });
+    const aoiCharNameChecked = !includeAoiCharacterization || allAoisPublished;
+
     if (planNameChecked && sampleTypesNameChecked && aoiCharNameChecked) {
       setHasNameBeenChecked(true);
       return;
@@ -307,20 +342,22 @@ function Publish({ appType }: Props) {
       sampleTypesIndex = requests.length - 1;
     }
 
-    // TODO remove this testing code
-    console.log('requests: ', requests);
-    if (requests.length === 0) {
-      setAoiCharNameNameCheckStatus('available');
-      setHasNameBeenChecked(true);
-      return;
-    }
+    const aoiIndexes: number[] = [];
+    const aoiLayerIndexes: { [key: number]: LayerAoiAnalysisEditsType } = {};
+    aoiLayersToInclude.forEach((aoiLayer) => {
+      if (['published', 'edited'].includes(aoiLayer.status)) return;
+      const request = isServiceNameAvailable(portal, aoiLayer.name);
+      requests.push(request);
+      aoiIndexes.push(requests.length - 1);
+      aoiLayerIndexes[requests.length - 1] = aoiLayer;
+    });
 
     Promise.all(requests)
       .then((responses: any[]) => {
         let stopEarly = false;
         let errorOccurred = false;
 
-        function checkResponse(res: any, setter: Function) {
+        function checkResponse(res: any, setter?: Function) {
           if (res.error) {
             stopEarly = true;
             errorOccurred = true;
@@ -337,7 +374,8 @@ function Publish({ appType }: Props) {
 
           if (!res.available) {
             stopEarly = true;
-            setter('not-available');
+            if (setter) setter('not-available');
+            else return 'not-available';
           }
         }
 
@@ -350,6 +388,22 @@ function Publish({ appType }: Props) {
             responses[sampleTypesIndex],
             setCustomSampleNameCheckStatus,
           );
+        }
+
+        const aoiLayersNotAvailable: LayerAoiAnalysisEditsType[] = [];
+        if (aoiIndexes.length > 0) {
+          let anyUnavailable = false;
+          aoiIndexes.forEach((index) => {
+            if (checkResponse(responses[index]) === 'not-available') {
+              anyUnavailable = true;
+              aoiLayersNotAvailable.push(aoiLayerIndexes[index]);
+            }
+          });
+
+          if (anyUnavailable) {
+            setAoiCharNameNameCheckStatus('not-available');
+            setAoiLayersNotAvailable(aoiLayersNotAvailable);
+          }
         }
 
         if (stopEarly || errorOccurred) {
@@ -381,10 +435,12 @@ function Publish({ appType }: Props) {
       });
   }, [
     appType,
+    edits,
     includeAoiCharacterization,
     includeCustomSampleTypes,
     includePlan,
     portal,
+    selectedAoiCharacterizations,
     selectedScenario,
     sketchLayer,
     publishButtonClicked,
@@ -1280,10 +1336,6 @@ function Publish({ appType }: Props) {
               ...calculationResults,
             ];
 
-            console.log('operationSettings: ', operationSettings);
-            console.log('operationDetails: ', operationDetails);
-            console.log('calculationResults: ', calculationResults);
-
             featureServices.push({
               category: 'contains-epa-tods-decon-layer',
               label: editsScenario.scenarioName,
@@ -2003,6 +2055,9 @@ function Publish({ appType }: Props) {
   });
   const [sampleTypesNameCheck, setSampleTypesNameCheck] =
     useState<SaveResultsType>({ status: 'none' });
+  const [aoiCharNameCheck, setAoiCharNameCheck] = useState<SaveResultsType>({
+    status: 'none',
+  });
 
   const isPublishPlanReady =
     !includePlan ||
@@ -2032,13 +2087,15 @@ function Publish({ appType }: Props) {
       (sampleTypesNameCheck.status === 'none' ||
         sampleTypesNameCheck.status === 'success'));
 
-  // TODO make sure this is correct
   const isPublishAoiCharReady =
     !includeAoiCharacterization ||
     ((aoiCharNameCheckStatus !== 'not-available' ||
       (aoiCharNameCheckStatus === 'not-available' &&
-        sampleTypesNameCheck.status === 'success')) &&
-      selectedAoiCharacterizations.length > 0);
+        aoiCharNameCheck.status === 'success' &&
+        aoiLayersNotAvailable.length === 0)) &&
+      (selectedAoiCharacterizations.length > 0 ||
+        (calculateResultsDecon.status === 'success' &&
+          calculateResultsDecon.data)));
 
   let appName = '';
   if (appType === 'sampling') appName = 'TOTS';
@@ -2291,6 +2348,34 @@ function Publish({ appType }: Props) {
             }}
           />
         )}
+      {aoiCharNameCheckStatus === 'not-available' &&
+        aoiLayersNotAvailable.map((layer) => {
+          return (
+            <div key={layer.value}>
+              <EditAoiCharacterization
+                aoiLayer={layer}
+                initialStatus="name-not-available"
+                onSave={(saveResults) => {
+                  if (!saveResults) return;
+
+                  if (saveResults.status === 'success') {
+                    setAoiLayersNotAvailable((aoiLayersNotAvailable) => {
+                      const newAoiLayersNotAvailable =
+                        aoiLayersNotAvailable.filter(
+                          (l) => l.value !== layer.value,
+                        );
+                      if (newAoiLayersNotAvailable.length === 0)
+                        setAoiCharNameNameCheckStatus('available');
+                      return newAoiLayersNotAvailable;
+                    });
+                  }
+                  setAoiCharNameCheck(saveResults);
+                }}
+              />
+            </div>
+          );
+        })}
+
       {(includePlan ||
         includeCustomSampleTypes ||
         includeAoiCharacterization) &&

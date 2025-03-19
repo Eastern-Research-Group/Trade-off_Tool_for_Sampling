@@ -75,6 +75,7 @@ export type LayerAoiAnalysisEditsType = {
   layerId: string; // id from esri group layer
   portalId: string; // id from portal layer
   name: string; // layer/scenario name
+  description: string; // layer/scenario description
   label: string; // layer/scenario label
   value: string; // layer/scenario value for React-Select
   layerType: LayerTypeName; // type of tots layer (sample, contamination, etc.)

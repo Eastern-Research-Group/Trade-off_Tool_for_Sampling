@@ -427,7 +427,7 @@ export const publishSuccessMessage = (appName: string, itemData?: any[]) => {
 export const scenarioNameTakenMessage = (scenarioName: string) => (
   <MessageBox
     severity="warning"
-    title="Plan Name Not Available"
+    title="Name Not Available"
     message={`The "${scenarioName}" name is already in use within your organization. Please rename the plan and try again.`}
   />
 );

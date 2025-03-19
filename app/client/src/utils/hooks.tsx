@@ -1103,15 +1103,18 @@ export function useStartOver() {
     setTrainingMode,
   } = useContext(NavigationContext);
   const {
-    setIncludePartialPlan,
-    setIncludePartialPlanWebMap,
-    setIncludePartialPlanWebScene,
+    setIncludeAoiCharacterization,
     setIncludeCustomSampleTypes,
+    setIncludePlan,
+    setIncludePlanWebMap,
+    setIncludePlanWebScene,
     setPublishSamplesMode,
     setPublishSampleTableMetaData,
     setSampleTableDescription,
     setSampleTableName,
+    setSampleTableNameAvailable,
     setSampleTypeSelections,
+    setSelectedAoiCharacterizations,
     setSelectedService,
     setWebMapReferenceLayerSelections,
     setWebSceneReferenceLayerSelections,
@@ -1197,12 +1200,15 @@ export function useStartOver() {
     setPublishSampleTableMetaData(null);
     setSampleTableDescription('');
     setSampleTableName('');
+    setSampleTableNameAvailable('unknown');
     setSampleTypeSelections([]);
+    setSelectedAoiCharacterizations([]);
     setSelectedService(null);
-    setIncludePartialPlan(true);
-    setIncludePartialPlanWebMap(true);
-    setIncludePartialPlanWebScene(true);
+    setIncludeAoiCharacterization(false);
     setIncludeCustomSampleTypes(false);
+    setIncludePlan(true);
+    setIncludePlanWebMap(true);
+    setIncludePlanWebScene(true);
     setWebMapReferenceLayerSelections([]);
     setWebSceneReferenceLayerSelections([]);
 

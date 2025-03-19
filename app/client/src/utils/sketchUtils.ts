@@ -2860,6 +2860,7 @@ export function createScenarioDeconLayer(
       layerId: groupLayer.id,
       portalId: '',
       name: layerName,
+      description: '',
       label: layerName,
       value: groupLayer.id,
       layerType: 'AOI Analysis',
