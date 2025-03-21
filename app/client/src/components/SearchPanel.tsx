@@ -2111,6 +2111,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       // define items used for updating states
       let editsCopy: EditsType = editsCopyParam ?? deepCopyObject(edits);
       let aoiInfo: any | null = null;
+      let numAois = 0;
       const mapLayersToAdd: __esri.Layer[] = [];
       const layersToAdd: LayerType[] = [];
       const refLayersToAdd: any[] = [];
@@ -2267,6 +2268,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
           );
           aoiCharLayers.push(editsLayer);
           groupLayer.add(graphicsLayer);
+          if (isAoiLayer) numAois = graphics.length;
         } else {
           // add non-sample layers as feature layers
           fields = [];
@@ -2344,25 +2346,28 @@ function ResultCard({ appType, result }: ResultCardProps) {
         importedAoiLayer: null,
         aoiLayerMode: 'draw',
         aoiPercentages: {
-          asphalt: 0,
-          concrete: 0,
-          numAois: 0,
-          soil: 0,
+          asphalt: aoiInfo?.GROUND_PCT_ASPHALT ?? 0,
+          asphaltSqM: aoiInfo?.GROUND_AREA_ASPHALT ?? 0,
+          concrete: aoiInfo?.GROUND_PCT_CONCRETE ?? 0,
+          concreteSqM: aoiInfo?.GROUND_AREA_CONCRETE ?? 0,
+          numAois,
+          soil: aoiInfo?.GROUND_PCT_SOIL ?? 0,
+          soilSqM: aoiInfo?.GROUND_AREA_SOIL ?? 0,
         },
         aoiSummary: {
           areaByMedia: [],
-          totalAoiSqM: 0,
-          totalBuildingExtSqM: 0,
-          totalBuildingIntSqM: 0,
+          totalAoiSqM: aoiInfo?.AOI_AREA ?? 0,
+          totalBuildingExtSqM: aoiInfo?.BUILDING_AREA_EXTERIOR ?? 0,
+          totalBuildingIntSqM: aoiInfo?.BUILDING_AREA_INTERIOR ?? 0,
           totalBuildingVolumeCubM: 0,
           totalBuildingVolumeContentsCubM: 0,
           totalBuildingExtWallsSqM: 0,
           totalBuildingFloorsSqM: 0,
-          totalBuildingFootprintSqM: 0,
+          totalBuildingFootprintSqM: aoiInfo?.BUILDING_AREA_FOOTPRINT ?? 0,
           totalBuildingIntWallsSqM: 0,
           totalBuildingRoofSqM: 0,
           totalBuildingCeilingsSqM: 0,
-          totalBuildingSqM: 0,
+          totalBuildingSqM: aoiInfo?.BUILDING_AREA_TOTAL ?? 0,
         },
         deconTechSelections: defaultDeconSelections.map((tech) => ({
           ...tech,

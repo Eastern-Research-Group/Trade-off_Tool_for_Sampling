@@ -601,9 +601,12 @@ function CharacterizeAOI({
           if (aoiAnalysis) {
             aoiAnalysis.aoiPercentages = {
               asphalt: planData.aoiPercentages.asphalt,
+              asphaltSqM: planData.aoiPercentages.asphaltSqM,
               concrete: planData.aoiPercentages.concrete,
+              concreteSqM: planData.aoiPercentages.concreteSqM,
               numAois: planData.aoiPercentages.numAois,
               soil: planData.aoiPercentages.soil,
+              soilSqM: planData.aoiPercentages.soilSqM,
             };
             aoiAnalysis.aoiSummary = {
               totalAoiSqM: planData.summary.totalAoiSqM,

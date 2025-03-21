@@ -91,9 +91,12 @@ export type LayerAoiAnalysisEditsType = {
   aoiLayerMode: '' | 'draw' | 'file';
   aoiPercentages: {
     asphalt: number;
+    asphaltSqM: number;
     concrete: number;
+    concreteSqM: number;
     numAois: number;
     soil: number;
+    soilSqM: number;
   };
   aoiSummary: {
     totalAoiSqM: number;

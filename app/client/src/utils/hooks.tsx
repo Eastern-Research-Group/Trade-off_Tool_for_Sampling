@@ -1069,18 +1069,25 @@ export async function fetchBuildingData(
       planGraphics[planId].aoiPercentages = {
         numAois,
         asphalt: (imageAreas['asphalt'] / totalArea) * 100,
+        asphaltSqM: imageAreas['asphalt'],
         concrete: (imageAreas['concrete'] / totalArea) * 100,
+        concreteSqM: imageAreas['concrete'],
         soil:
           ((imageAreas['soil'] + imageAreas['vegetation']) / totalArea) * 100,
+        soilSqM: imageAreas['soil'] + imageAreas['vegetation'],
       };
     } else {
+      const totalArea = planGraphics[planId].aoiArea;
       const { numAois, asphalt, concrete, soil } =
         planGraphics[planId].aoiPercentages;
       planGraphics[planId].aoiPercentages = {
         numAois,
         asphalt: asphalt / numAois,
+        asphaltSqM: totalArea * (asphalt / 100),
         concrete: concrete / numAois,
+        concreteSqM: totalArea * (concrete / 100),
         soil: soil / numAois,
+        soilSqM: totalArea * (soil / 100),
       };
     }
 

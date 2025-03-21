@@ -1592,6 +1592,17 @@
       "defaultValue": null
     },
     {
+      "name": "BUILDING_AREA_FOOTPRINT",
+      "alias": "Surface area of Building Footprints in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
       "name": "BUILDING_AREA_TOTAL",
       "alias": "Total Surface Area of Buildings to Decon in meters squared (interior and exterior surfaces)",
       "type": "esriFieldTypeDouble",
@@ -1616,6 +1627,72 @@
     {
       "name": "BUILDING_AREA_INTERIOR",
       "alias": "Interior Surface Area of Buildings to Decon in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GROUND_AREA_SOIL",
+      "alias": "Surface area of Soil in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GROUND_PCT_SOIL",
+      "alias": "Percent of AOI is Soil",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GROUND_AREA_ASPHALT",
+      "alias": "Surface area of Asphalt in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GROUND_PCT_ASPHALT",
+      "alias": "Percent of AOI is Asphalt",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GROUND_AREA_CONCRETE",
+      "alias": "Surface area of Concrete in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GROUND_PCT_CONCRETE",
+      "alias": "Percent of AOI is Concrete",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -3225,6 +3302,17 @@
       "defaultValue": null
     },
     {
+      "name": "BUILDING_AREA_FOOTPRINT",
+      "alias": "Surface area of Building Footprints in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
       "name": "BUILDING_AREA_TOTAL",
       "alias": "Total Surface Area of Buildings to Decon in meters squared (interior and exterior surfaces)",
       "type": "esriFieldTypeDouble",
@@ -3249,6 +3337,72 @@
     {
       "name": "BUILDING_AREA_INTERIOR",
       "alias": "Interior Surface Area of Buildings to Decon in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GROUND_AREA_SOIL",
+      "alias": "Surface area of Soil in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GROUND_PCT_SOIL",
+      "alias": "Percent of AOI is Soil",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GROUND_AREA_ASPHALT",
+      "alias": "Surface area of Asphalt in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GROUND_PCT_ASPHALT",
+      "alias": "Percent of AOI is Asphalt",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GROUND_AREA_CONCRETE",
+      "alias": "Surface area of Concrete in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GROUND_PCT_CONCRETE",
+      "alias": "Percent of AOI is Concrete",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",

@@ -2874,9 +2874,12 @@ export function createScenarioDeconLayer(
       aoiLayerMode: 'draw',
       aoiPercentages: {
         asphalt: 0,
+        asphaltSqM: 0,
         concrete: 0,
+        concreteSqM: 0,
         numAois: 0,
         soil: 0,
+        soilSqM: 0,
       },
       aoiSummary: {
         areaByMedia: [],
