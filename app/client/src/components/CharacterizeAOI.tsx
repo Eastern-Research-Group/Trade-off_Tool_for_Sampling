@@ -395,7 +395,11 @@ function CharacterizeAOI({
 
     let exitEarly = false;
     try {
-      if (portal && signedIn) {
+      if (
+        portal &&
+        signedIn &&
+        !['published', 'edited'].includes(deconSketchLayer.status)
+      ) {
         const nameRes: any = await isServiceNameAvailable(
           portal,
           newDeconLayerName,
@@ -465,6 +469,7 @@ function CharacterizeAOI({
         deconLayer.name = newDeconLayerName;
         deconLayer.label = newDeconLayerName;
         deconLayer.description = newDeconDescription;
+        if (deconLayer.version) deconLayer.version += 1;
         editsCopy.count += 1;
 
         let gsgFile;

@@ -2233,6 +2233,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
             id: layerUuid,
             title: title,
             listMode: 'show',
+            visible: !isAoiLayer,
             graphics,
           });
 
@@ -2326,6 +2327,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       const layerAoiAnalysis: LayerAoiAnalysisEditsType = {
         type: 'layer-aoi-analysis',
         id: 0,
+        version: aoiInfo?.AOI_VERSION ?? 1,
         layerId: groupLayer.id,
         portalId: result.id,
         name: result.title,

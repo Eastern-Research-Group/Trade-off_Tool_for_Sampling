@@ -173,6 +173,7 @@ function Publish({ appType }: Props) {
     webSceneReferenceLayerSelections,
   } = useContext(PublishContext);
   const {
+    setDeconSketchLayer,
     defaultSymbols,
     edits,
     setEdits,
@@ -1183,7 +1184,7 @@ function Publish({ appType }: Props) {
                 OPERATION_UUID: linkedLayer.layerId,
                 OPERATION_NAME: linkedLayer.name,
                 AOI_LAYER_ID: linkedLayer.analysisLayerId,
-                AOI_VERSION: (aoiLayer.version ?? 0) + 1,
+                AOI_VERSION: aoiLayer.version ?? 1,
                 BUILDING_COUNT: numBuildings,
                 BUILDING_AREA_TOTAL: aoiLayer.aoiSummary.totalBuildingSqM,
                 BUILDING_AREA_EXTERIOR: aoiLayer.aoiSummary.totalBuildingExtSqM,
@@ -1836,7 +1837,7 @@ function Publish({ appType }: Props) {
                   data: [
                     {
                       AOI_LAYER_ID: aoiLayer.layerId,
-                      AOI_VERSION: (aoiLayer.version ?? 0) + 1,
+                      AOI_VERSION: aoiLayer.version ?? 1,
                       BUILDING_COUNT: numBuildings,
                       BUILDING_AREA_TOTAL: aoiLayer.aoiSummary.totalBuildingSqM,
                       BUILDING_AREA_EXTERIOR:
@@ -1860,7 +1861,16 @@ function Publish({ appType }: Props) {
                   ) as LayerAoiAnalysisEditsType;
                   editsAoi.status = 'published';
                   editsAoi.portalId = portalId;
-                  editsAoi.version = (editsAoi.version ?? 0) + 1;
+                  editsAoi.version = editsAoi.version ?? 1;
+
+                  setDeconSketchLayer((layer) => {
+                    if (layer?.layerId === editsAoi.layerId) {
+                      layer.status = 'published';
+                      layer.portalId = portalId;
+                      layer.version = editsAoi.version ?? 1;
+                    }
+                    return layer;
+                  });
 
                   editsAoi.layers.forEach((editedLayer) => {
                     // update the ids
