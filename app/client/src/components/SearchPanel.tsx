@@ -2463,12 +2463,14 @@ function ResultCard({ appType, result }: ResultCardProps) {
       editsCopy,
       layersToAdd,
       refLayersToAdd,
+      newScenario,
     }: {
       mapLayersToAdd: __esri.Layer[];
       zoomToGraphics: __esri.Graphic[];
       editsCopy: EditsType;
       layersToAdd: LayerType[];
       refLayersToAdd: any[];
+      newScenario: ScenarioDeconEditsType;
     }) {
       if (!map) return;
 
@@ -2486,6 +2488,11 @@ function ResultCard({ appType, result }: ResultCardProps) {
       setEdits(editsCopy);
       setLayers((layers) => [...layers, ...layersToAdd]);
       setReferenceLayers((layers: any) => [...layers, ...refLayersToAdd]);
+
+      setSelectedScenario((scenario) => {
+        if (scenario) return scenario;
+        else return newScenario;
+      });
 
       // add the portal id to portal layers. This needed so the card on
       // the search panel shows up as the layer having been added.
@@ -2879,10 +2886,6 @@ function ResultCard({ appType, result }: ResultCardProps) {
         table: null,
         referenceLayersTable,
       };
-      setSelectedScenario((scenario) => {
-        if (scenario) return scenario;
-        else return newScenario;
-      });
 
       // make a copy of the edits context variable
       editsCopy = {
@@ -2895,17 +2898,23 @@ function ResultCard({ appType, result }: ResultCardProps) {
       const curTime: number = Date.now();
       const duration = (curTime - created) / 1000;
 
+      // aoi version number check
+      const aoisWithMismatch: string[] = [];
+      operationSettings?.forEach((op) => {
+        // find the associated aoi
+        const aoiLayer = editsCopy.edits.find(
+          (edit) =>
+            edit.type === 'layer-aoi-analysis' &&
+            edit.layerId === op.AOI_LAYER_ID,
+        ) as LayerAoiAnalysisEditsType;
+        if (aoiLayer && aoiLayer.version !== op.AOI_VERSION) {
+          aoisWithMismatch.push(aoiLayer.label);
+        }
+      });
+
       // validate the area and attributes of features of the uploads. If there is an
       // issue, display a popup asking the user if they would like the samples to be updated.
-      if (zoomToGraphics.length > 0) {
-        finalizeLayerAdd({
-          mapLayersToAdd,
-          zoomToGraphics,
-          editsCopy,
-          layersToAdd,
-          refLayersToAdd,
-        });
-      } else if (zoomToGraphics.length === 0 && duration < 300) {
+      if (zoomToGraphics.length === 0 && duration < 300) {
         // display a message if the layer is empty and the layer is less
         // than 5 minutes old
         setOptions({
@@ -2914,6 +2923,22 @@ function ResultCard({ appType, result }: ResultCardProps) {
           description: `The "${result.title}" layer was recently added and currently does not have any data. This could be due to a delay in processing the new data. Please try again later.`,
           onCancel: () => setStatus('no-data'),
         });
+      } else if (aoisWithMismatch.length > 0) {
+        setOptions({
+          title: 'AOI Version Mismatch',
+          ariaLabel: 'AOI Version Mismatch',
+          description: `The following AOI Characterization layers have a version mismatch: ${aoisWithMismatch.join(',')}. The AOI Characterization data may have changed, including AOI location. Calculations will be re-ran.`,
+          onCancel: () => {
+            finalizeLayerAdd({
+              mapLayersToAdd,
+              zoomToGraphics,
+              editsCopy,
+              layersToAdd,
+              refLayersToAdd,
+              newScenario,
+            });
+          },
+        });
       } else {
         finalizeLayerAdd({
           mapLayersToAdd,
@@ -2921,6 +2946,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
           editsCopy,
           layersToAdd,
           refLayersToAdd,
+          newScenario,
         });
       }
     } catch (err) {
