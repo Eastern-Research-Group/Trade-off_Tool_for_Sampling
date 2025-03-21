@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
 
-import React, { useContext, useEffect, useState } from 'react';
+import React, { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
 import { DialogOverlay, DialogContent } from '@reach/dialog';
 // components
@@ -464,8 +464,354 @@ function ConfigureOutput({ appType }: Props) {
             />
           </p>
         </div>
-        {appType === 'sampling' && (
-          <AccordionList>
+        <AccordionList>
+          {appType === 'sampling' && (
+            <Fragment>
+              <AccordionItem
+                isOpenParam={isPlanOpen}
+                onChange={(isOpen) => {
+                  setIsPlanOpen(!isPlanOpen);
+                  if (!isOpen) return;
+
+                  setIncludePlan(true);
+                }}
+                title={
+                  <label css={labelStyles}>
+                    <strong>
+                      Include TOTS Sampling Plan (and optional custom
+                      attributes)
+                    </strong>
+                    <div
+                      css={switchStyles}
+                      onClick={(ev) => ev.stopPropagation()}
+                    >
+                      <Switch
+                        checked={includePlan}
+                        onChange={() => {
+                          setIncludePlan(!includePlan);
+                          setIsPlanOpen(!includePlan);
+                        }}
+                        ariaLabel="Include TOTS Sampling Plan"
+                      />
+                    </div>
+                  </label>
+                }
+              >
+                <div css={sectionContainer}>
+                  <p>
+                    A subset of TOTS output will be published by default. Click
+                    Add User-Defined Attributes to optionally add additional
+                    attributes to use with field data collection apps.
+                  </p>
+                </div>
+                <div css={nestedAccordionStyles}>
+                  <AccordionList>
+                    <AccordionItem
+                      isOpenParam={isIncludeWebMapOpen}
+                      onChange={(isOpen) => {
+                        setIsIncludeWebMapOpen(!isIncludeWebMapOpen);
+                        if (!isOpen) return;
+
+                        setIncludePlanWebMap(true);
+                      }}
+                      title={
+                        <label css={subLabelStyles}>
+                          <span>
+                            Include Web Map
+                            {webMapIcon('partial-web-map-icon')}
+                          </span>
+                          <div
+                            css={switchStyles}
+                            onClick={(ev) => ev.stopPropagation()}
+                          >
+                            <Switch
+                              checked={includePlanWebMap}
+                              onChange={() => {
+                                setIsIncludeWebMapOpen(!includePlanWebMap);
+                                setIncludePlanWebMap(!includePlanWebMap);
+                              }}
+                              ariaLabel="Include Web Map"
+                            />
+                          </div>
+                        </label>
+                      }
+                    >
+                      <div>
+                        <label htmlFor="webmap-reference-layers-select">
+                          Reference Layers to Include with web map
+                        </label>
+                        <Select
+                          inputId="webmap-reference-layers-select"
+                          isMulti={true}
+                          isSearchable={false}
+                          options={webMapRefOptions}
+                          value={webMapReferenceLayerSelections}
+                          onChange={(ev) =>
+                            setWebMapReferenceLayerSelections(ev as any)
+                          }
+                          css={multiSelectStyles}
+                        />
+                      </div>
+                    </AccordionItem>
+                    <AccordionItem
+                      isOpenParam={isIncludeWebMapSceneOpen}
+                      onChange={(isOpen) => {
+                        setIsIncludeWebSceneOpen(!isIncludeWebMapSceneOpen);
+                        if (!isOpen) return;
+
+                        setIncludePlanWebScene(true);
+                      }}
+                      title={
+                        <label css={subLabelStyles}>
+                          <span>
+                            Include Web Scene
+                            {webSceneIcon('partial-web-scene-icon', appName)}
+                          </span>
+                          <div
+                            css={switchStyles}
+                            onClick={(ev) => ev.stopPropagation()}
+                          >
+                            <Switch
+                              checked={includePlanWebScene}
+                              onChange={() => {
+                                setIsIncludeWebSceneOpen(!includePlanWebScene);
+                                setIncludePlanWebScene(!includePlanWebScene);
+                              }}
+                              ariaLabel="Include Web Scene"
+                            />
+                          </div>
+                        </label>
+                      }
+                    >
+                      <div>
+                        <label htmlFor="webscene-reference-layers-select">
+                          Reference Layers to Include with web scene
+                        </label>
+                        <Select
+                          inputId="webscene-reference-layers-select"
+                          isMulti={true}
+                          isSearchable={false}
+                          options={webSceneRefOptions}
+                          value={webSceneReferenceLayerSelections}
+                          onChange={(ev) =>
+                            setWebSceneReferenceLayerSelections(ev as any)
+                          }
+                          css={multiSelectStyles}
+                        />
+                      </div>
+                    </AccordionItem>
+                    <AccordionItem title="Add User-Defined Attributes">
+                      <div css={tableContainer}>
+                        <p>
+                          Default attributes are shown. Click
+                          <strong> Add New Attribute</strong> to add
+                          user-defined attributes. A new window will open to
+                          assist you with defining the attribute. Click the{' '}
+                          <strong>Edit</strong> or <strong>Delete</strong> icons
+                          to modify attributes previously added.
+                        </p>
+                        <button
+                          disabled={!selectedScenario}
+                          onClick={() => {
+                            setAttributesIndex(-1);
+                            setEditAttributesOpen(true);
+                          }}
+                        >
+                          Add New Attribute
+                        </button>
+                        <br />
+                        <label htmlFor="">
+                          <strong>Attributes to Include:</strong>
+                        </label>
+                        <ReactTable
+                          id="tots-survey123-attributes-table"
+                          data={[
+                            ...defaultPlanAttributes,
+                            ...(trainingMode ? trainingModePlanAttributes : []),
+                            ...(selectedScenario?.type === 'scenario'
+                              ? selectedScenario.customAttributes
+                              : []),
+                          ]}
+                          striped={true}
+                          getColumns={(_tableWidth: any) => {
+                            return [
+                              {
+                                header: 'Field',
+                                accessorKey: 'label',
+                                size: 128,
+                              },
+                              {
+                                header: 'Type',
+                                accessorKey: 'dataType',
+                                size: 50,
+                              },
+                              {
+                                header: () => null,
+                                id: 'edit-column',
+                                renderCell: true,
+                                size: 70,
+                                cell: ({ row }: { row: any }) => {
+                                  if (row.index <= 10) return <span></span>;
+
+                                  return (
+                                    <div css={editColumnContainerStyles}>
+                                      <button
+                                        css={editButtonStyles}
+                                        disabled={!selectedScenario}
+                                        onClick={(_event) => {
+                                          setAttributesIndex(row.index);
+                                          setEditAttributesOpen(true);
+                                        }}
+                                      >
+                                        <i className="fas fa-edit" />
+                                      </button>
+                                      <button
+                                        css={editButtonStyles}
+                                        disabled={!selectedScenario}
+                                        onClick={(_event) => {
+                                          if (!selectedScenario) return;
+
+                                          const index = edits.edits.findIndex(
+                                            (item) =>
+                                              item.type === 'scenario' &&
+                                              item.layerId ===
+                                                selectedScenario.layerId,
+                                          );
+                                          setEdits((edits) => {
+                                            const editedScenario = edits.edits[
+                                              index
+                                            ] as ScenarioEditsType;
+
+                                            editedScenario.customAttributes =
+                                              editedScenario.customAttributes.filter(
+                                                (x) =>
+                                                  x.id !== row.original.id ||
+                                                  x.name !==
+                                                    row.original.name ||
+                                                  x.label !==
+                                                    row.original.label,
+                                              );
+
+                                            return {
+                                              count: edits.count + 1,
+                                              edits: [
+                                                ...edits.edits.slice(0, index),
+                                                editedScenario,
+                                                ...edits.edits.slice(index + 1),
+                                              ],
+                                            };
+                                          });
+                                        }}
+                                      >
+                                        <i className="fas fa-trash-alt" />
+                                      </button>
+                                    </div>
+                                  );
+                                },
+                              },
+                            ];
+                          }}
+                        />
+                      </div>
+                    </AccordionItem>
+                  </AccordionList>
+                </div>
+              </AccordionItem>
+              <AccordionItem
+                isOpenParam={isSampleTypesOpen}
+                onChange={(isOpen) => {
+                  setIsSampleTypesOpen(!isSampleTypesOpen);
+                  if (!isOpen) return;
+
+                  setIncludeCustomSampleTypes(true);
+                }}
+                title={
+                  <label css={labelStyles}>
+                    <strong>Include Custom Sample Types</strong>
+                    <div
+                      css={switchStyles}
+                      onClick={(ev) => ev.stopPropagation()}
+                    >
+                      <Switch
+                        checked={includeCustomSampleTypes}
+                        onChange={() => {
+                          setIsSampleTypesOpen(!includeCustomSampleTypes);
+                          setIncludeCustomSampleTypes(
+                            !includeCustomSampleTypes,
+                          );
+                        }}
+                        ariaLabel="Include Custom Sample Types"
+                      />
+                    </div>
+                  </label>
+                }
+              >
+                <div css={sectionContainer}>
+                  <p>
+                    Publish custom sample types to ArcGIS Online. Select one or
+                    more custom sample types from the drop-down list and specify
+                    whether to publish output to a new or existing feature
+                    service. If appending output to an existing feature service,
+                    select the feature service from the drop-down list.
+                  </p>
+                  <div>
+                    <label htmlFor="publish-sample-select">
+                      Sample Types to Publish
+                    </label>
+                    <Select
+                      inputId="publish-sample-select"
+                      isMulti={true}
+                      isSearchable={false}
+                      options={sampleTypeOptions}
+                      value={sampleTypeSelections}
+                      onChange={(ev) => setSampleTypeSelections(ev as any)}
+                      css={multiSelectStyles}
+                    />
+                  </div>
+
+                  <div>
+                    <input
+                      id="publish-sample-types-existing"
+                      type="radio"
+                      name="mode"
+                      value="Publish to Existing Service"
+                      checked={publishSamplesMode === 'new'}
+                      onChange={(_ev) => {
+                        setPublishSamplesMode('new');
+                      }}
+                    />
+                    <label
+                      htmlFor="publish-sample-types-existing"
+                      css={radioLabelStyles}
+                    >
+                      Publish to new Feature Service
+                    </label>
+                  </div>
+                  <div>
+                    <input
+                      id="publish-sample-types-new"
+                      type="radio"
+                      name="mode"
+                      value="Publish to New Service"
+                      checked={publishSamplesMode === 'existing'}
+                      onChange={(_ev) => {
+                        setPublishSamplesMode('existing');
+                      }}
+                    />
+                    <label
+                      htmlFor="publish-sample-types-new"
+                      css={radioLabelStyles}
+                    >
+                      Publish to existing Feature Service
+                    </label>
+                  </div>
+
+                  <EditCustomSampleTypesTable appType={appType} />
+                </div>
+              </AccordionItem>
+            </Fragment>
+          )}
+          {appType === 'decon' && (
             <AccordionItem
               isOpenParam={isPlanOpen}
               onChange={(isOpen) => {
@@ -476,9 +822,7 @@ function ConfigureOutput({ appType }: Props) {
               }}
               title={
                 <label css={labelStyles}>
-                  <strong>
-                    Include TOTS Sampling Plan (and optional custom attributes)
-                  </strong>
+                  <strong>Include TODS Decon Plan</strong>
                   <div
                     css={switchStyles}
                     onClick={(ev) => ev.stopPropagation()}
@@ -489,394 +833,82 @@ function ConfigureOutput({ appType }: Props) {
                         setIncludePlan(!includePlan);
                         setIsPlanOpen(!includePlan);
                       }}
-                      ariaLabel="Include TOTS Sampling Plan"
+                      ariaLabel="Include TODS Decon Plan"
                     />
                   </div>
                 </label>
               }
             >
               <div css={sectionContainer}>
-                <p>
-                  A subset of TOTS output will be published by default. Click
-                  Add User-Defined Attributes to optionally add additional
-                  attributes to use with field data collection apps.
-                </p>
-              </div>
-              <div css={nestedAccordionStyles}>
-                <AccordionList>
-                  <AccordionItem
-                    isOpenParam={isIncludeWebMapOpen}
-                    onChange={(isOpen) => {
-                      setIsIncludeWebMapOpen(!isIncludeWebMapOpen);
-                      if (!isOpen) return;
-
-                      setIncludePlanWebMap(true);
-                    }}
-                    title={
-                      <label css={subLabelStyles}>
-                        <span>
-                          Include Web Map
-                          {webMapIcon('partial-web-map-icon')}
-                        </span>
-                        <div
-                          css={switchStyles}
-                          onClick={(ev) => ev.stopPropagation()}
-                        >
-                          <Switch
-                            checked={includePlanWebMap}
-                            onChange={() => {
-                              setIsIncludeWebMapOpen(!includePlanWebMap);
-                              setIncludePlanWebMap(!includePlanWebMap);
-                            }}
-                            ariaLabel="Include Web Map"
-                          />
-                        </div>
-                      </label>
-                    }
-                  >
-                    <div>
-                      <label htmlFor="webmap-reference-layers-select">
-                        Reference Layers to Include with web map
-                      </label>
-                      <Select
-                        inputId="webmap-reference-layers-select"
-                        isMulti={true}
-                        isSearchable={false}
-                        options={webMapRefOptions}
-                        value={webMapReferenceLayerSelections}
-                        onChange={(ev) =>
-                          setWebMapReferenceLayerSelections(ev as any)
-                        }
-                        css={multiSelectStyles}
-                      />
-                    </div>
-                  </AccordionItem>
-                  <AccordionItem
-                    isOpenParam={isIncludeWebMapSceneOpen}
-                    onChange={(isOpen) => {
-                      setIsIncludeWebSceneOpen(!isIncludeWebMapSceneOpen);
-                      if (!isOpen) return;
-
-                      setIncludePlanWebScene(true);
-                    }}
-                    title={
-                      <label css={subLabelStyles}>
-                        <span>
-                          Include Web Scene
-                          {webSceneIcon('partial-web-scene-icon', appName)}
-                        </span>
-                        <div
-                          css={switchStyles}
-                          onClick={(ev) => ev.stopPropagation()}
-                        >
-                          <Switch
-                            checked={includePlanWebScene}
-                            onChange={() => {
-                              setIsIncludeWebSceneOpen(!includePlanWebScene);
-                              setIncludePlanWebScene(!includePlanWebScene);
-                            }}
-                            ariaLabel="Include Web Scene"
-                          />
-                        </div>
-                      </label>
-                    }
-                  >
-                    <div>
-                      <label htmlFor="webscene-reference-layers-select">
-                        Reference Layers to Include with web scene
-                      </label>
-                      <Select
-                        inputId="webscene-reference-layers-select"
-                        isMulti={true}
-                        isSearchable={false}
-                        options={webSceneRefOptions}
-                        value={webSceneReferenceLayerSelections}
-                        onChange={(ev) =>
-                          setWebSceneReferenceLayerSelections(ev as any)
-                        }
-                        css={multiSelectStyles}
-                      />
-                    </div>
-                  </AccordionItem>
-                  <AccordionItem title="Add User-Defined Attributes">
-                    <div css={tableContainer}>
-                      <p>
-                        Default attributes are shown. Click
-                        <strong> Add New Attribute</strong> to add user-defined
-                        attributes. A new window will open to assist you with
-                        defining the attribute. Click the <strong>Edit</strong>{' '}
-                        or <strong>Delete</strong> icons to modify attributes
-                        previously added.
-                      </p>
-                      <button
-                        disabled={!selectedScenario}
-                        onClick={() => {
-                          setAttributesIndex(-1);
-                          setEditAttributesOpen(true);
-                        }}
-                      >
-                        Add New Attribute
-                      </button>
-                      <br />
-                      <label htmlFor="">
-                        <strong>Attributes to Include:</strong>
-                      </label>
-                      <ReactTable
-                        id="tots-survey123-attributes-table"
-                        data={[
-                          ...defaultPlanAttributes,
-                          ...(trainingMode ? trainingModePlanAttributes : []),
-                          ...(selectedScenario?.type === 'scenario'
-                            ? selectedScenario.customAttributes
-                            : []),
-                        ]}
-                        striped={true}
-                        getColumns={(_tableWidth: any) => {
-                          return [
-                            {
-                              header: 'Field',
-                              accessorKey: 'label',
-                              size: 128,
-                            },
-                            {
-                              header: 'Type',
-                              accessorKey: 'dataType',
-                              size: 50,
-                            },
-                            {
-                              header: () => null,
-                              id: 'edit-column',
-                              renderCell: true,
-                              size: 70,
-                              cell: ({ row }: { row: any }) => {
-                                if (row.index <= 10) return <span></span>;
-
-                                return (
-                                  <div css={editColumnContainerStyles}>
-                                    <button
-                                      css={editButtonStyles}
-                                      disabled={!selectedScenario}
-                                      onClick={(_event) => {
-                                        setAttributesIndex(row.index);
-                                        setEditAttributesOpen(true);
-                                      }}
-                                    >
-                                      <i className="fas fa-edit" />
-                                    </button>
-                                    <button
-                                      css={editButtonStyles}
-                                      disabled={!selectedScenario}
-                                      onClick={(_event) => {
-                                        if (!selectedScenario) return;
-
-                                        const index = edits.edits.findIndex(
-                                          (item) =>
-                                            item.type === 'scenario' &&
-                                            item.layerId ===
-                                              selectedScenario.layerId,
-                                        );
-                                        setEdits((edits) => {
-                                          const editedScenario = edits.edits[
-                                            index
-                                          ] as ScenarioEditsType;
-
-                                          editedScenario.customAttributes =
-                                            editedScenario.customAttributes.filter(
-                                              (x) =>
-                                                x.id !== row.original.id ||
-                                                x.name !== row.original.name ||
-                                                x.label !== row.original.label,
-                                            );
-
-                                          return {
-                                            count: edits.count + 1,
-                                            edits: [
-                                              ...edits.edits.slice(0, index),
-                                              editedScenario,
-                                              ...edits.edits.slice(index + 1),
-                                            ],
-                                          };
-                                        });
-                                      }}
-                                    >
-                                      <i className="fas fa-trash-alt" />
-                                    </button>
-                                  </div>
-                                );
-                              },
-                            },
-                          ];
-                        }}
-                      />
-                    </div>
-                  </AccordionItem>
-                </AccordionList>
-              </div>
-            </AccordionItem>
-            <AccordionItem
-              isOpenParam={isSampleTypesOpen}
-              onChange={(isOpen) => {
-                setIsSampleTypesOpen(!isSampleTypesOpen);
-                if (!isOpen) return;
-
-                setIncludeCustomSampleTypes(true);
-              }}
-              title={
-                <label css={labelStyles}>
-                  <strong>Include Custom Sample Types</strong>
-                  <div
-                    css={switchStyles}
-                    onClick={(ev) => ev.stopPropagation()}
-                  >
-                    <Switch
-                      checked={includeCustomSampleTypes}
-                      onChange={() => {
-                        setIsSampleTypesOpen(!includeCustomSampleTypes);
-                        setIncludeCustomSampleTypes(!includeCustomSampleTypes);
-                      }}
-                      ariaLabel="Include Custom Sample Types"
-                    />
-                  </div>
-                </label>
-              }
-            >
-              <div css={sectionContainer}>
-                <p>
-                  Publish custom sample types to ArcGIS Online. Select one or
-                  more custom sample types from the drop-down list and specify
-                  whether to publish output to a new or existing feature
-                  service. If appending output to an existing feature service,
-                  select the feature service from the drop-down list.
-                </p>
                 <div>
-                  <label htmlFor="publish-sample-select">
-                    Sample Types to Publish
+                  <label htmlFor="tods-output-reference-layers-select">
+                    Reference Layers to Include with output
                   </label>
                   <Select
-                    inputId="publish-sample-select"
+                    inputId="tods-output-reference-layers-select"
                     isMulti={true}
                     isSearchable={false}
-                    options={sampleTypeOptions}
-                    value={sampleTypeSelections}
-                    onChange={(ev) => setSampleTypeSelections(ev as any)}
-                    css={multiSelectStyles}
-                  />
-                </div>
-
-                <div>
-                  <input
-                    id="publish-sample-types-existing"
-                    type="radio"
-                    name="mode"
-                    value="Publish to Existing Service"
-                    checked={publishSamplesMode === 'new'}
-                    onChange={(_ev) => {
-                      setPublishSamplesMode('new');
-                    }}
-                  />
-                  <label
-                    htmlFor="publish-sample-types-existing"
-                    css={radioLabelStyles}
-                  >
-                    Publish to new Feature Service
-                  </label>
-                </div>
-                <div>
-                  <input
-                    id="publish-sample-types-new"
-                    type="radio"
-                    name="mode"
-                    value="Publish to New Service"
-                    checked={publishSamplesMode === 'existing'}
-                    onChange={(_ev) => {
-                      setPublishSamplesMode('existing');
-                    }}
-                  />
-                  <label
-                    htmlFor="publish-sample-types-new"
-                    css={radioLabelStyles}
-                  >
-                    Publish to existing Feature Service
-                  </label>
-                </div>
-
-                <EditCustomSampleTypesTable appType={appType} />
-              </div>
-            </AccordionItem>
-            <AccordionItem
-              isOpenParam={isAoiCharOpen}
-              onChange={(isOpen) => {
-                setIsAoiCharOpen(!isAoiCharOpen);
-                if (!isOpen) return;
-
-                setIncludeAoiCharacterization(true);
-              }}
-              title={
-                <label css={labelStyles}>
-                  <strong>Include AOI Characterization</strong>
-                  <div
-                    css={switchStyles}
-                    onClick={(ev) => ev.stopPropagation()}
-                  >
-                    <Switch
-                      checked={includeAoiCharacterization}
-                      onChange={() => {
-                        setIsAoiCharOpen(!includeAoiCharacterization);
-                        setIncludeAoiCharacterization(
-                          !includeAoiCharacterization,
-                        );
-                      }}
-                      ariaLabel="Include AOI Characterization"
-                    />
-                  </div>
-                </label>
-              }
-            >
-              <div css={sectionContainer}>
-                <p>
-                  Publish AOI characterization data to ArcGIS Online. Select an
-                  AOI characterization item from the drop-down list.
-                </p>
-                <div>
-                  <label htmlFor="publish-aoi-char-select">
-                    AOI Characterization to Publish
-                  </label>
-                  <Select
-                    inputId="publish-aoi-char-select"
-                    isMulti={true}
-                    isSearchable={false}
-                    options={aoiCharOptions}
-                    value={selectedAoiCharacterizations}
+                    options={webMapRefOptions}
+                    value={webMapReferenceLayerSelections}
                     onChange={(ev) =>
-                      setSelectedAoiCharacterizations(ev as any)
+                      setWebMapReferenceLayerSelections(ev as any)
                     }
                     css={multiSelectStyles}
                   />
                 </div>
-
-                {/* <EditCustomSampleTypesTable appType={appType} /> */}
               </div>
             </AccordionItem>
-          </AccordionList>
-        )}
-        {appType === 'decon' && (
-          <div css={sectionContainer}>
-            <div>
-              <label htmlFor="tods-output-reference-layers-select">
-                Reference Layers to Include with output
+          )}
+          <AccordionItem
+            isOpenParam={isAoiCharOpen}
+            onChange={(isOpen) => {
+              setIsAoiCharOpen(!isAoiCharOpen);
+              if (!isOpen) return;
+
+              setIncludeAoiCharacterization(true);
+            }}
+            title={
+              <label css={labelStyles}>
+                <strong>Include AOI Characterization</strong>
+                <div css={switchStyles} onClick={(ev) => ev.stopPropagation()}>
+                  <Switch
+                    checked={includeAoiCharacterization}
+                    onChange={() => {
+                      setIsAoiCharOpen(!includeAoiCharacterization);
+                      setIncludeAoiCharacterization(
+                        !includeAoiCharacterization,
+                      );
+                    }}
+                    ariaLabel="Include AOI Characterization"
+                  />
+                </div>
               </label>
-              <Select
-                inputId="tods-output-reference-layers-select"
-                isMulti={true}
-                isSearchable={false}
-                options={webMapRefOptions}
-                value={webMapReferenceLayerSelections}
-                onChange={(ev) => setWebMapReferenceLayerSelections(ev as any)}
-                css={multiSelectStyles}
-              />
+            }
+          >
+            <div css={sectionContainer}>
+              <p>
+                Publish AOI characterization data to ArcGIS Online. Select an
+                AOI characterization item from the drop-down list.
+              </p>
+              <div>
+                <label htmlFor="publish-aoi-char-select">
+                  AOI Characterization to Publish
+                </label>
+                <Select
+                  inputId="publish-aoi-char-select"
+                  isMulti={true}
+                  isSearchable={false}
+                  options={aoiCharOptions}
+                  value={selectedAoiCharacterizations}
+                  onChange={(ev) => setSelectedAoiCharacterizations(ev as any)}
+                  css={multiSelectStyles}
+                />
+              </div>
+
+              {/* <EditCustomSampleTypesTable appType={appType} /> */}
             </div>
-          </div>
-        )}
+          </AccordionItem>
+        </AccordionList>
       </div>
 
       <div css={sectionContainer}>

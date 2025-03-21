@@ -461,7 +461,7 @@ function Publish({ appType }: Props) {
         const featureServices: any[] = [];
         const errorMessages: string[] = [];
         const includeSamplePlan = includePlan && !isDecon();
-        const includeDeconPlan = isDecon();
+        const includeDeconPlan = includePlan && isDecon();
         const aoiIdsToInclude = selectedAoiCharacterizations.map(
           (aoi) => aoi.value,
         );
@@ -1169,7 +1169,11 @@ function Publish({ appType }: Props) {
               const aoiLayer = edits.edits.find(
                 (edit) => edit.layerId === linkedLayer.analysisLayerId,
               ) as LayerAoiAnalysisEditsType;
-              if (aoiLayer) aoiLayersToInclude.push(aoiLayer);
+              const alreadyAdded =
+                aoiLayersToInclude.findIndex(
+                  (a) => a.layerId === aoiLayer?.layerId,
+                ) > -1;
+              if (aoiLayer && !alreadyAdded) aoiLayersToInclude.push(aoiLayer);
 
               let numBuildings = 0;
               aoiLayer?.layers?.forEach((layer) => {

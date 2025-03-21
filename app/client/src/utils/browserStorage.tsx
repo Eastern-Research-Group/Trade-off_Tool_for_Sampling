@@ -41,7 +41,7 @@ import { LayerType, PortalLayerType, UrlLayerType } from 'types/Layer';
 import { AppType, GoToOptions } from 'types/Navigation';
 import { SampleTypeOptions } from 'types/Publish';
 // config
-import { isDecon, PanelValueType } from 'config/navigation';
+import { PanelValueType } from 'config/navigation';
 import {
   SampleSelectType,
   UserDefinedAttributes,
