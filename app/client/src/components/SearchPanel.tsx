@@ -2805,7 +2805,9 @@ function ResultCard({ appType, result }: ResultCardProps) {
               : null,
             id: tech.SURFACE_UUID,
             isHazardous: { label: 'Non-Hazardous', value: 'non-hazardous' },
-            media: tech.SURFACE,
+            media: tech.PARENT_SURFACE_UUID
+              ? tech.SURFACE_SUB_CATEGORY
+              : tech.SURFACE,
             numIterativeApplications: tech.NUM_ITERATIVE_APPLICATIONS,
             pctAoi: tech.PCT_AOI,
             pctDeconed: tech.PCT_DECONED,
