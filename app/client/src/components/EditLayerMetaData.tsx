@@ -24,6 +24,7 @@ import {
 import { createErrorObject } from 'utils/utils';
 // types
 import {
+  LayerAoiAnalysisEditsType,
   LayerDeconEditsType,
   LayerEditsType,
   ScenarioDeconEditsType,
@@ -50,6 +51,7 @@ export type SaveStatusType =
   | 'name-not-available';
 
 export type SaveResultsType = {
+  name?: string;
   status: SaveStatusType;
   error?: ErrorType;
 };
@@ -111,7 +113,7 @@ type Props = {
   onSave?: (saveResults?: SaveResultsType) => void;
 };
 
-function EditScenario({
+export function EditScenario({
   appType,
   initialScenario = null,
   buttonText = 'Save',
@@ -137,6 +139,7 @@ function EditScenario({
   }, []);
 
   const [saveStatus, setSaveStatus] = useState<SaveResultsType>({
+    name: initialScenario ? initialScenario.scenarioName : '',
     status: initialStatus,
   });
 
@@ -360,7 +363,10 @@ function EditScenario({
       map.add(groupLayer);
     }
 
-    const saveStatus: SaveResultsType = { status: 'success' };
+    const saveStatus: SaveResultsType = {
+      status: 'success',
+      name: scenarioName,
+    };
     setSaveStatus(saveStatus);
     if (onSave) onSave(saveStatus);
   }
@@ -463,7 +469,10 @@ function EditScenario({
       setSelectedScenario(newScenario);
     }
 
-    const saveStatus: SaveResultsType = { status: 'success' };
+    const saveStatus: SaveResultsType = {
+      status: 'success',
+      name: scenarioName,
+    };
     setSaveStatus(saveStatus);
     if (onSave) onSave(saveStatus);
   }
@@ -478,7 +487,10 @@ function EditScenario({
       return;
     }
 
-    setSaveStatus({ status: 'fetching' });
+    setSaveStatus({
+      status: 'fetching',
+      name: scenarioName,
+    });
 
     // if the user is signed in, go ahead and check if the
     // service (scenario) name is availble before continuing
@@ -487,6 +499,7 @@ function EditScenario({
         if (res.error) {
           const saveStatus: SaveResultsType = {
             status: 'failure',
+            name: scenarioName,
             error: {
               error: createErrorObject(res),
               message: res.error.message,
@@ -498,7 +511,10 @@ function EditScenario({
         }
 
         if (!res.available) {
-          const saveStatus: SaveResultsType = { status: 'name-not-available' };
+          const saveStatus: SaveResultsType = {
+            name: scenarioName,
+            status: 'name-not-available',
+          };
           setSaveStatus(saveStatus);
           if (onSave) onSave(saveStatus);
           return;
@@ -558,7 +574,7 @@ function EditScenario({
       {saveStatus.status === 'failure' &&
         webServiceErrorMessage(saveStatus.error)}
       {saveStatus.status === 'name-not-available' &&
-        scenarioNameTakenMessage(scenarioName ? scenarioName : '')}
+        scenarioNameTakenMessage(saveStatus.name)}
       {(!initialScenario || initialScenario.status === 'added') && (
         <div css={saveButtonContainerStyles}>
           <button
@@ -608,7 +624,7 @@ type EditLayerProps = {
   onSave?: () => void;
 };
 
-function EditLayer({
+export function EditLayer({
   appType,
   initialLayer = null,
   buttonText = 'Save',
@@ -879,7 +895,7 @@ const fullWidthSelectStyles = css`
   margin-right: 10px;
 `;
 
-function EditCustomSampleTypesTable({
+export function EditCustomSampleTypesTable({
   appType,
   initialStatus = 'none',
   onSave,
@@ -903,7 +919,10 @@ function EditCustomSampleTypesTable({
   const [
     saveStatus,
     setSaveStatus, //
-  ] = useState<SaveResultsType>({ status: initialStatus });
+  ] = useState<SaveResultsType>({
+    status: initialStatus,
+    name: sampleTableName,
+  });
 
   const [queryInitialized, setQueryInitialized] = useState(false);
   const [featureServices, setFeatureServices] = useState<FeatureServices>({
@@ -954,7 +973,10 @@ function EditCustomSampleTypesTable({
       description: sampleTableDescription,
       url: '',
     });
-    const saveStatus: SaveResultsType = { status: 'success' };
+    const saveStatus: SaveResultsType = {
+      status: 'success',
+      name: sampleTableName,
+    };
     setSaveStatus(saveStatus);
     if (onSave) onSave(saveStatus);
   };
@@ -1014,7 +1036,7 @@ function EditCustomSampleTypesTable({
       {saveStatus.status === 'failure' &&
         webServiceErrorMessage(saveStatus.error)}
       {saveStatus.status === 'name-not-available' &&
-        scenarioNameTakenMessage(sampleTableName ? sampleTableName : '')}
+        scenarioNameTakenMessage(saveStatus.name)}
       <div css={saveButtonContainerStyles}>
         <button
           css={saveButtonStyles(saveStatus.status)}
@@ -1027,7 +1049,10 @@ function EditCustomSampleTypesTable({
                 return;
               }
 
-              setSaveStatus({ status: 'fetching' });
+              setSaveStatus({
+                status: 'fetching',
+                name: sampleTableName,
+              });
 
               // if the user is signed in, go ahead and check if the
               // service (scenario) name is availble before continuing
@@ -1036,6 +1061,7 @@ function EditCustomSampleTypesTable({
                   if (res.error) {
                     const saveStatus: SaveResultsType = {
                       status: 'failure',
+                      name: sampleTableName,
                       error: {
                         error: createErrorObject(res),
                         message: res.error.message,
@@ -1049,6 +1075,7 @@ function EditCustomSampleTypesTable({
                   if (!res.available) {
                     const saveStatus: SaveResultsType = {
                       status: 'name-not-available',
+                      name: sampleTableName,
                     };
                     setSaveStatus(saveStatus);
                     if (onSave) onSave(saveStatus);
@@ -1061,6 +1088,7 @@ function EditCustomSampleTypesTable({
                   console.error('isServiceNameAvailable error', err);
                   const saveStatus: SaveResultsType = {
                     status: 'failure',
+                    name: sampleTableName,
                     error: {
                       error: createErrorObject(err),
                       message: err.message,
@@ -1110,4 +1138,208 @@ function EditCustomSampleTypesTable({
   );
 }
 
-export { EditLayer, EditCustomSampleTypesTable, EditScenario };
+// --- components (EditCustomSampleTypesTable) ---
+type EditAoiCharacterizationProps = {
+  aoiLayer: LayerAoiAnalysisEditsType;
+  initialStatus?: SaveStatusType;
+  onSave?: (saveResults?: SaveResultsType) => void;
+};
+
+export function EditAoiCharacterization({
+  aoiLayer,
+  initialStatus = 'none',
+  onSave,
+}: EditAoiCharacterizationProps) {
+  const {
+    portal,
+    signedIn, //
+  } = useContext(AuthenticationContext);
+  const { setEdits, setLayers } = useContext(SketchContext);
+  const { setSelectedAoiCharacterizations } = useContext(PublishContext);
+
+  const [aoiCharName, setAoiCharName] = useState(aoiLayer.label);
+  const [aoiCharDescription, setAoiCharDescription] = useState(
+    aoiLayer.description,
+  );
+
+  const [
+    saveStatus,
+    setSaveStatus, //
+  ] = useState<SaveResultsType>({
+    status: initialStatus,
+    name: aoiLayer.label,
+  });
+
+  useEffect(() => {
+    setSaveStatus({
+      status: initialStatus,
+      name: aoiLayer.label,
+    });
+  }, [aoiLayer, initialStatus]);
+
+  const handleSave = () => {
+    // set edits
+    setEdits((edits) => {
+      const aoiLayerEdit = edits.edits.find(
+        (edit) =>
+          edit.layerId === aoiLayer.layerId &&
+          edit.type === 'layer-aoi-analysis',
+      ) as LayerAoiAnalysisEditsType | undefined;
+      if (!aoiLayerEdit) return edits;
+
+      aoiLayerEdit.name = aoiCharName;
+      aoiLayerEdit.label = aoiCharName;
+      aoiLayerEdit.description = aoiCharDescription;
+
+      return {
+        count: edits.count + 1,
+        edits: edits.edits,
+      };
+    });
+
+    // set layers
+    setLayers((layers) => {
+      const aoiLayerEdit = layers.find(
+        (layer) => layer.layerId === aoiLayer.layerId,
+      );
+      if (!aoiLayerEdit) return layers;
+
+      aoiLayerEdit.label = aoiCharName;
+      aoiLayerEdit.name = aoiCharName;
+      if (aoiLayerEdit.sketchLayer)
+        aoiLayerEdit.sketchLayer.title = aoiCharName;
+
+      return layers;
+    });
+
+    // set selected aoi chars
+    setSelectedAoiCharacterizations((aoiChars) => {
+      const aoiChar = aoiChars.find((char) => char.value === aoiLayer.layerId);
+      if (!aoiChar) return aoiChars;
+      aoiChar.label = aoiCharName;
+      return aoiChars;
+    });
+
+    const saveStatus: SaveResultsType = {
+      status: 'success',
+      name: aoiCharName,
+    };
+    setSaveStatus(saveStatus);
+    if (onSave) onSave(saveStatus);
+  };
+
+  return (
+    <Fragment>
+      <label htmlFor="aoi-char-name-input">AOI Characterization Name</label>
+      <input
+        id="aoi-char-name-input"
+        css={inputStyles}
+        maxLength={250}
+        placeholder="Enter AOI Characterization Name"
+        value={aoiCharName}
+        onChange={(ev) => setAoiCharName(ev.target.value)}
+      />
+      <label htmlFor="aoi-char-description-input">
+        AOI Characterization Description
+      </label>
+      <input
+        id="aoi-char-description-input"
+        css={inputStyles}
+        maxLength={2048}
+        placeholder="Enter AOI Characterization Description (2048 characters)"
+        value={aoiCharDescription}
+        onChange={(ev) => setAoiCharDescription(ev.target.value)}
+      />
+
+      {saveStatus.status === 'fetching' && <LoadingSpinner />}
+      {saveStatus.status === 'failure' &&
+        webServiceErrorMessage(saveStatus.error)}
+      {saveStatus.status === 'name-not-available' &&
+        scenarioNameTakenMessage(saveStatus.name)}
+      <div css={saveButtonContainerStyles}>
+        <button
+          css={saveButtonStyles(saveStatus.status)}
+          onClick={() => {
+            if (!portal || !signedIn) {
+              handleSave();
+              return;
+            }
+
+            setSaveStatus({
+              status: 'fetching',
+              name: aoiCharName,
+            });
+
+            // if the user is signed in, go ahead and check if the
+            // service (scenario) name is availble before continuing
+            isServiceNameAvailable(portal, aoiCharName)
+              .then((res: any) => {
+                if (res.error) {
+                  const saveStatus: SaveResultsType = {
+                    status: 'failure',
+                    name: aoiCharName,
+                    error: {
+                      error: createErrorObject(res),
+                      message: res.error.message,
+                    },
+                  };
+                  setSaveStatus(saveStatus);
+                  if (onSave) onSave(saveStatus);
+                  return;
+                }
+
+                if (!res.available) {
+                  const saveStatus: SaveResultsType = {
+                    status: 'name-not-available',
+                    name: aoiCharName,
+                  };
+                  setSaveStatus(saveStatus);
+                  if (onSave) onSave(saveStatus);
+                  return;
+                }
+
+                handleSave();
+              })
+              .catch((err: any) => {
+                console.error('isServiceNameAvailable error', err);
+                const saveStatus: SaveResultsType = {
+                  status: 'failure',
+                  name: aoiCharName,
+                  error: {
+                    error: createErrorObject(err),
+                    message: err.message,
+                  },
+                };
+                setSaveStatus(saveStatus);
+                if (onSave) onSave(saveStatus);
+
+                window.logErrorToGa(err);
+              });
+          }}
+          disabled={
+            !aoiCharName ||
+            (aoiLayer.name === aoiCharName &&
+              aoiLayer.description === aoiCharDescription)
+          }
+        >
+          {(saveStatus.status === 'none' ||
+            saveStatus.status === 'changes' ||
+            saveStatus.status === 'fetching') &&
+            'Save'}
+          {saveStatus.status === 'success' && (
+            <Fragment>
+              <i className="fas fa-check" /> Saved
+            </Fragment>
+          )}
+          {(saveStatus.status === 'failure' ||
+            saveStatus.status === 'fetch-failure' ||
+            saveStatus.status === 'name-not-available') && (
+            <Fragment>
+              <i className="fas fa-exclamation-triangle" /> Error
+            </Fragment>
+          )}
+        </button>
+      </div>
+    </Fragment>
+  );
+}

@@ -4,23 +4,31 @@ import React, { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
+import { SaveResultsType } from 'components/EditLayerMetaData';
 import InfoIcon from 'components/InfoIcon';
 import MessageBox from 'components/MessageBox';
 import Select from 'components/Select';
 // contexts
+import { AuthenticationContext } from 'contexts/Authentication';
 import { CalculateContext } from 'contexts/Calculate';
+import { useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { PlanGraphics, SketchContext } from 'contexts/Sketch';
 // utils
+import { isServiceNameAvailable } from 'utils/arcGisRestUtils';
+import { fetchPost, fetchPostFile } from 'utils/fetchUtils';
+import { fetchBuildingData, GsgParam, processScenario } from 'utils/hooks';
 import {
   activateSketchButton,
   calculateArea,
   createScenarioDeconLayer,
+  findLayerInEdits,
   generateUUID,
   getDefaultSamplingMaskLayer,
   getScenariosDecon,
   updateLayerEdits,
 } from 'utils/sketchUtils';
+import { convertBase64ToFile, createErrorObject } from 'utils/utils';
 // types
 import {
   ScenarioDeconEditsType,
@@ -33,11 +41,10 @@ import { LayerType } from 'types/Layer';
 import { AppType } from 'types/Navigation';
 // styles
 import { infoIconStyles, reactSelectStyles } from 'styles';
-import { webServiceErrorMessage } from 'config/errorMessages';
-import { fetchPost, fetchPostFile } from 'utils/fetchUtils';
-import { fetchBuildingData, GsgParam, processScenario } from 'utils/hooks';
-import { convertBase64ToFile } from 'utils/utils';
-import { useLookupFiles } from 'contexts/LookupFiles';
+import {
+  scenarioNameTakenMessage,
+  webServiceErrorMessage,
+} from 'config/errorMessages';
 
 const helpText = `
   Select "Draw Area of Interest" to draw a boundary on your map to<br/>
@@ -165,6 +172,7 @@ function CharacterizeAOI({
   showHelpText = true,
   showOnEdit = false,
 }: Props) {
+  const { portal, signedIn } = useContext(AuthenticationContext);
   const { calculateResultsDecon, setCalculateResultsDecon } =
     useContext(CalculateContext);
   const { setGoTo, setGoToOptions } = useContext(NavigationContext);
@@ -195,6 +203,13 @@ function CharacterizeAOI({
     sketchVM,
   } = useContext(SketchContext);
   const { defaultGsg, technologyTypes, services } = useLookupFiles().data;
+
+  const [newDeconLayerName, setNewDeconLayerName] = useState('');
+  const [newDeconDescription, setNewDeconDescription] = useState('');
+  const [saveStatus, setSaveStatus] = useState<SaveResultsType>({
+    status: 'none',
+    name: newDeconLayerName,
+  });
 
   // Initializes the aoi layer for performance reasons
   useEffect(() => {
@@ -281,7 +296,10 @@ function CharacterizeAOI({
     }
   }
 
-  function getAoiLayer() {
+  function getAoiLayer(
+    deconSketchLayer: LayerAoiAnalysisEditsType,
+    layers: LayerType[],
+  ) {
     let aoiLayer: LayerType | undefined = undefined;
 
     // locate the layer
@@ -313,13 +331,15 @@ function CharacterizeAOI({
   async function assessAoi() {
     if (!deconSketchLayer || !deconSketchLayer.aoiLayerMode) return;
 
-    const aoiLayer = getAoiLayer();
+    const aoiLayer = getAoiLayer(deconSketchLayer, layers);
     const aoiGraphics: __esri.Graphic[] = [];
     if (aoiLayer?.sketchLayer && aoiLayer.sketchLayer.type === 'graphics') {
       aoiGraphics.push(...aoiLayer.sketchLayer.graphics.toArray());
     }
 
     if (aoiGraphics.length === 0 || !deconSketchLayer) return;
+
+    let editsCopy: EditsType = edits;
 
     setAoiCharacterizationData({
       status: 'fetching',
@@ -376,233 +396,315 @@ function CharacterizeAOI({
       planGraphics[deconSketchLayer.layerId].summary.totalAoiSqM = planAoiArea;
     }
 
+    let exitEarly = false;
     try {
-      let gsgFile;
-      if (gsgFiles && gsgFiles.selectedIndex !== null) {
-        const file = gsgFiles.files[gsgFiles.selectedIndex];
-        gsgFile = await convertBase64ToFile(file.file, file.path);
+      if (
+        portal &&
+        signedIn &&
+        !['published', 'edited'].includes(deconSketchLayer.status)
+      ) {
+        const nameRes: any = await isServiceNameAvailable(
+          portal,
+          newDeconLayerName,
+        );
+        if (nameRes.error) {
+          const saveStatus: SaveResultsType = {
+            status: 'failure',
+            name: newDeconLayerName,
+            error: {
+              error: createErrorObject(nameRes),
+              message: nameRes.error.message,
+            },
+          };
+          setSaveStatus(saveStatus);
+          exitEarly = true;
+        }
+
+        if (!nameRes.available) {
+          const saveStatus: SaveResultsType = {
+            status: 'name-not-available',
+            name: newDeconLayerName,
+          };
+          setSaveStatus(saveStatus);
+          exitEarly = true;
+        } else {
+          setSaveStatus({
+            status: 'success',
+            name: newDeconLayerName,
+          });
+        }
       } else {
-        gsgFile = await convertBase64ToFile(defaultGsg, 'defaultGsg.gsg');
+        const aoiLayerNamesTaken = edits.edits
+          .filter(
+            (edit) =>
+              edit.type === 'layer-aoi-analysis' &&
+              edit.layerId !== deconSketchLayer.layerId,
+          )
+          .map((edit) => edit.name);
+
+        if (aoiLayerNamesTaken.includes(newDeconLayerName)) {
+          const saveStatus: SaveResultsType = {
+            status: 'name-not-available',
+            name: newDeconLayerName,
+          };
+          setSaveStatus(saveStatus);
+          exitEarly = true;
+        } else {
+          setSaveStatus({
+            status: 'success',
+            name: newDeconLayerName,
+          });
+        }
       }
 
-      const gsgFileUploaded: any = await fetchPostFile(
-        `${services.totsGPServer}/uploads/upload`,
-        {
-          f: 'json',
-        },
-        gsgFile,
-      );
-      const gsgParam: GsgParam = {
-        itemID: gsgFileUploaded.item.itemID,
-      };
+      if (exitEarly) {
+        setAoiCharacterizationData((aoiCharacterizationData) => {
+          return {
+            ...aoiCharacterizationData,
+            status: 'none',
+          };
+        });
+      } else {
+        // update name and description
+        const deconLayer = editsCopy.edits.find(
+          (l) => l.layerId === deconSketchLayer.layerId,
+        ) as LayerAoiAnalysisEditsType;
+        deconLayer.name = newDeconLayerName;
+        deconLayer.label = newDeconLayerName;
+        deconLayer.description = newDeconDescription;
+        if (deconLayer.version) deconLayer.version += 1;
+        editsCopy.count += 1;
 
-      // TODO - look into adding more queries here
-      await fetchBuildingData(
-        aoiGraphics,
-        services,
-        planGraphics,
-        responseIndexes,
-        gsgParam,
-        sceneViewForArea,
-        true,
-        technologyTypes,
-      );
+        let gsgFile;
+        if (gsgFiles && gsgFiles.selectedIndex !== null) {
+          const file = gsgFiles.files[gsgFiles.selectedIndex];
+          gsgFile = await convertBase64ToFile(file.file, file.path);
+        } else {
+          gsgFile = await convertBase64ToFile(defaultGsg, 'defaultGsg.gsg');
+        }
 
-      if (gsgParam) {
-        await fetchPost(
-          `${services.totsGPServer}/uploads/${gsgParam.itemID}/delete`,
+        const gsgFileUploaded: any = await fetchPostFile(
+          `${services.totsGPServer}/uploads/upload`,
           {
             f: 'json',
           },
+          gsgFile,
         );
-      }
+        const gsgParam: GsgParam = {
+          itemID: gsgFileUploaded.item.itemID,
+        };
 
-      let editsCopy: EditsType = edits;
-      const newDeconTechSelections = processScenario(
-        deconSketchLayer,
-        {
-          status: 'success',
+        // TODO - look into adding more queries here
+        await fetchBuildingData(
+          aoiGraphics,
+          services,
           planGraphics,
-        },
-        {},
-        {},
-        defaultDeconSelections,
-      );
-
-      // Figure out what to add graphics to
-      const aoiAssessed = deconSketchLayer.layers.find(
-        (l) => l.layerType === 'AOI Assessed',
-      );
-      const imageAnalysis = deconSketchLayer.layers.find(
-        (l: any) => l.layerType === 'Image Analysis',
-      );
-      const deconAoi = deconSketchLayer.layers.find(
-        (l: any) => l.layerType === 'Decon Mask',
-      );
-
-      if (aoiAssessed && imageAnalysis && deconAoi) {
-        const aoiAssessedLayer = layers.find(
-          (l) => l.layerId === aoiAssessed.layerId,
-        );
-        const imageAnalysisLayer = layers.find(
-          (l: any) => l.layerId === imageAnalysis.layerId,
-        );
-        const deconAoiLayer = layers.find(
-          (l: any) => l.layerId === deconAoi.layerId,
+          responseIndexes,
+          gsgParam,
+          sceneViewForArea,
+          true,
+          technologyTypes,
         );
 
-        // tie graphics and imageryGraphics to a scenario
-        const planData = planGraphics[deconSketchLayer.layerId];
-        if (
-          aoiAssessedLayer?.sketchLayer?.type === 'graphics' &&
-          planData?.graphics
-        ) {
-          aoiAssessedLayer.sketchLayer.graphics.removeAll();
-          aoiAssessedLayer.sketchLayer.graphics.addMany(planData.graphics);
-
-          editsCopy = updateLayerEdits({
-            appType: 'decon',
-            edits: editsCopy,
-            layer: aoiAssessedLayer,
-            type: 'replace',
-            changes: planData.graphics,
-          });
+        if (gsgParam) {
+          await fetchPost(
+            `${services.totsGPServer}/uploads/${gsgParam.itemID}/delete`,
+            {
+              f: 'json',
+            },
+          );
         }
-        if (
-          imageAnalysisLayer?.sketchLayer?.type === 'graphics' &&
-          planData?.imageGraphics
-        ) {
-          imageAnalysisLayer?.sketchLayer.graphics.removeAll();
-          imageAnalysisLayer?.sketchLayer.graphics.addMany(
-            planData.imageGraphics,
+
+        const newDeconTechSelections = processScenario(
+          deconSketchLayer,
+          {
+            status: 'success',
+            planGraphics,
+          },
+          {},
+          {},
+          defaultDeconSelections,
+        );
+
+        // Figure out what to add graphics to
+        const aoiAssessed = deconSketchLayer.layers.find(
+          (l) => l.layerType === 'AOI Assessed',
+        );
+        const imageAnalysis = deconSketchLayer.layers.find(
+          (l: any) => l.layerType === 'Image Analysis',
+        );
+        const deconAoi = deconSketchLayer.layers.find(
+          (l: any) => l.layerType === 'Decon Mask',
+        );
+
+        if (aoiAssessed && imageAnalysis && deconAoi) {
+          const aoiAssessedLayer = layers.find(
+            (l) => l.layerId === aoiAssessed.layerId,
+          );
+          const imageAnalysisLayer = layers.find(
+            (l: any) => l.layerId === imageAnalysis.layerId,
+          );
+          const deconAoiLayer = layers.find(
+            (l: any) => l.layerId === deconAoi.layerId,
           );
 
-          editsCopy = updateLayerEdits({
-            appType: 'decon',
-            edits: editsCopy,
-            layer: imageAnalysisLayer,
-            type: 'replace',
-            changes: planData.imageGraphics,
-          });
-        }
-        if (deconAoiLayer) {
-          if (deconAoiLayer.sketchLayer)
-            deconAoiLayer.sketchLayer.visible = false;
-          editsCopy = updateLayerEdits({
-            appType: 'decon',
-            edits: editsCopy,
-            layer: deconAoiLayer,
-            type: 'properties',
-          });
-        }
+          // tie graphics and imageryGraphics to a scenario
+          const planData = planGraphics[deconSketchLayer.layerId];
+          if (
+            aoiAssessedLayer?.sketchLayer?.type === 'graphics' &&
+            planData?.graphics
+          ) {
+            aoiAssessedLayer.sketchLayer.graphics.removeAll();
+            aoiAssessedLayer.sketchLayer.graphics.addMany(planData.graphics);
 
-        const aoiAnalysis = editsCopy.edits.find(
-          (e) =>
-            e.type === 'layer-aoi-analysis' &&
-            e.layerId === deconSketchLayer.layerId,
-        ) as LayerAoiAnalysisEditsType | undefined;
-        if (aoiAnalysis) {
-          aoiAnalysis.aoiPercentages = {
-            asphalt: planData.aoiPercentages.asphalt,
-            concrete: planData.aoiPercentages.concrete,
-            numAois: planData.aoiPercentages.numAois,
-            soil: planData.aoiPercentages.soil,
-          };
-          aoiAnalysis.aoiSummary = {
-            totalAoiSqM: planData.summary.totalAoiSqM,
-            totalBuildingExtSqM: planData.summary.totalBuildingExtSqM,
-            totalBuildingIntSqM: planData.summary.totalBuildingIntSqM,
-            totalBuildingVolumeCubM: planData.summary.totalBuildingVolumeCubM,
-            totalBuildingVolumeContentsCubM:
-              planData.summary.totalBuildingVolumeContentsCubM,
-            totalBuildingExtWallsSqM: planData.summary.totalBuildingExtWallsSqM,
-            totalBuildingFloorsSqM: planData.summary.totalBuildingFloorsSqM,
-            totalBuildingFootprintSqM:
-              planData.summary.totalBuildingFootprintSqM,
-            totalBuildingIntWallsSqM: planData.summary.totalBuildingIntWallsSqM,
-            totalBuildingRoofSqM: planData.summary.totalBuildingRoofSqM,
-            totalBuildingCeilingsSqM: planData.summary.totalBuildingCeilingsSqM,
-            totalBuildingSqM: planData.summary.totalBuildingSqM,
-            areaByMedia: newDeconTechSelections.map((media: any) => {
-              return {
-                id: media.id,
-                media: media.media,
-                pctAoi: media.pctAoi,
-                surfaceArea: media.surfaceArea,
-                volume: media.volume,
-                subMedia: media.subRows
-                  ? media.subRows.map((r) => ({
-                      id: r.id ?? generateUUID(),
-                      media: r.media,
-                      pctAoi: r.pctAoi,
-                      surfaceArea: r.surfaceArea,
-                      volume: r.volume,
-                      subMedia: [],
-                    }))
-                  : [],
-              };
-            }),
-          };
-
-          editsCopy.edits.forEach((edit) => {
-            if (
-              (edit.type !== 'layer-decon' ||
-                edit.analysisLayerId !== aoiAnalysis?.layerId) &&
-              (edit.type !== 'layer-aoi-analysis' ||
-                edit.layerId !== aoiAnalysis?.layerId)
-            )
-              return;
-
-            edit.deconTechSelections = newDeconTechSelections.map((tech) => {
-              const media = edit.deconTechSelections.find(
-                (a) => a.media === tech.media,
-              );
-
-              return {
-                ...tech,
-                deconTech: media?.deconTech ?? tech.deconTech,
-                isHazardous: media?.isHazardous ?? tech.isHazardous,
-                numIterativeApplications:
-                  media?.numIterativeApplications ??
-                  tech.numIterativeApplications,
-                removeContents: media?.removeContents ?? tech.removeContents,
-                subRows: tech.subRows?.map((sub: any) => {
-                  const mediaSubRow = media?.subRows?.find(
-                    (s: any) => s.media === sub.media,
-                  );
-                  return {
-                    ...sub,
-                    id: sub.id ?? generateUUID(),
-                    deconTech: mediaSubRow?.deconTech ?? sub.deconTech,
-                    isHazardous: mediaSubRow?.isHazardous ?? sub.isHazardous,
-                    numIterativeApplications:
-                      mediaSubRow?.numIterativeApplications ??
-                      sub.numIterativeApplications,
-                    removeContents:
-                      mediaSubRow?.removeContents ?? sub.removeContents,
-                  };
-                }),
-              };
+            editsCopy = updateLayerEdits({
+              appType: 'decon',
+              edits: editsCopy,
+              layer: aoiAssessedLayer,
+              type: 'replace',
+              changes: planData.graphics,
             });
+          }
+          if (
+            imageAnalysisLayer?.sketchLayer?.type === 'graphics' &&
+            planData?.imageGraphics
+          ) {
+            imageAnalysisLayer?.sketchLayer.graphics.removeAll();
+            imageAnalysisLayer?.sketchLayer.graphics.addMany(
+              planData.imageGraphics,
+            );
+
+            editsCopy = updateLayerEdits({
+              appType: 'decon',
+              edits: editsCopy,
+              layer: imageAnalysisLayer,
+              type: 'replace',
+              changes: planData.imageGraphics,
+            });
+          }
+          if (deconAoiLayer) {
+            if (deconAoiLayer.sketchLayer)
+              deconAoiLayer.sketchLayer.visible = false;
+            editsCopy = updateLayerEdits({
+              appType: 'decon',
+              edits: editsCopy,
+              layer: deconAoiLayer,
+              type: 'properties',
+            });
+          }
+
+          const aoiAnalysis = editsCopy.edits.find(
+            (e) =>
+              e.type === 'layer-aoi-analysis' &&
+              e.layerId === deconSketchLayer.layerId,
+          ) as LayerAoiAnalysisEditsType | undefined;
+          if (aoiAnalysis) {
+            aoiAnalysis.aoiPercentages = {
+              asphalt: planData.aoiPercentages.asphalt,
+              asphaltSqM: planData.aoiPercentages.asphaltSqM,
+              concrete: planData.aoiPercentages.concrete,
+              concreteSqM: planData.aoiPercentages.concreteSqM,
+              numAois: planData.aoiPercentages.numAois,
+              soil: planData.aoiPercentages.soil,
+              soilSqM: planData.aoiPercentages.soilSqM,
+            };
+            aoiAnalysis.aoiSummary = {
+              totalAoiSqM: planData.summary.totalAoiSqM,
+              totalBuildingExtSqM: planData.summary.totalBuildingExtSqM,
+              totalBuildingIntSqM: planData.summary.totalBuildingIntSqM,
+              totalBuildingVolumeCubM: planData.summary.totalBuildingVolumeCubM,
+              totalBuildingVolumeContentsCubM:
+                planData.summary.totalBuildingVolumeContentsCubM,
+              totalBuildingExtWallsSqM:
+                planData.summary.totalBuildingExtWallsSqM,
+              totalBuildingFloorsSqM: planData.summary.totalBuildingFloorsSqM,
+              totalBuildingFootprintSqM:
+                planData.summary.totalBuildingFootprintSqM,
+              totalBuildingIntWallsSqM:
+                planData.summary.totalBuildingIntWallsSqM,
+              totalBuildingRoofSqM: planData.summary.totalBuildingRoofSqM,
+              totalBuildingCeilingsSqM:
+                planData.summary.totalBuildingCeilingsSqM,
+              totalBuildingSqM: planData.summary.totalBuildingSqM,
+              areaByMedia: newDeconTechSelections.map((media: any) => {
+                return {
+                  id: media.id,
+                  media: media.media,
+                  pctAoi: media.pctAoi,
+                  surfaceArea: media.surfaceArea,
+                  volume: media.volume,
+                  subMedia: media.subRows
+                    ? media.subRows.map((r) => ({
+                        id: r.id ?? generateUUID(),
+                        media: r.media,
+                        pctAoi: r.pctAoi,
+                        surfaceArea: r.surfaceArea,
+                        volume: r.volume,
+                        subMedia: [],
+                      }))
+                    : [],
+                };
+              }),
+            };
+
+            editsCopy.edits.forEach((edit) => {
+              if (
+                (edit.type !== 'layer-decon' ||
+                  edit.analysisLayerId !== aoiAnalysis?.layerId) &&
+                (edit.type !== 'layer-aoi-analysis' ||
+                  edit.layerId !== aoiAnalysis?.layerId)
+              )
+                return;
+
+              edit.deconTechSelections = newDeconTechSelections.map((tech) => {
+                const media = edit.deconTechSelections.find(
+                  (a) => a.media === tech.media,
+                );
+
+                return {
+                  ...tech,
+                  deconTech: media?.deconTech ?? tech.deconTech,
+                  isHazardous: media?.isHazardous ?? tech.isHazardous,
+                  numIterativeApplications:
+                    media?.numIterativeApplications ??
+                    tech.numIterativeApplications,
+                  removeContents: media?.removeContents ?? tech.removeContents,
+                  subRows: tech.subRows?.map((sub: any) => {
+                    const mediaSubRow = media?.subRows?.find(
+                      (s: any) => s.media === sub.media,
+                    );
+                    return {
+                      ...sub,
+                      id: sub.id ?? generateUUID(),
+                      deconTech: mediaSubRow?.deconTech ?? sub.deconTech,
+                      isHazardous: mediaSubRow?.isHazardous ?? sub.isHazardous,
+                      numIterativeApplications:
+                        mediaSubRow?.numIterativeApplications ??
+                        sub.numIterativeApplications,
+                      removeContents:
+                        mediaSubRow?.removeContents ?? sub.removeContents,
+                    };
+                  }),
+                };
+              });
+            });
+          }
+        }
+
+        setAoiCharacterizationData({
+          status: 'success',
+          planGraphics,
+        });
+
+        if (selectedScenario?.type === 'scenario-decon') {
+          setCalculateResultsDecon((calculateResultsDecon) => {
+            return {
+              status: 'fetching',
+              panelOpen: calculateResultsDecon.panelOpen,
+              data: null,
+            };
           });
         }
-      }
-
-      setEdits(editsCopy);
-
-      setAoiCharacterizationData({
-        status: 'success',
-        planGraphics,
-      });
-
-      if (selectedScenario?.type === 'scenario-decon') {
-        setCalculateResultsDecon((calculateResultsDecon) => {
-          return {
-            status: 'fetching',
-            panelOpen: calculateResultsDecon.panelOpen,
-            data: null,
-          };
-        });
       }
     } catch (ex: any) {
       console.error(ex);
@@ -612,8 +714,44 @@ function CharacterizeAOI({
       });
     }
 
-    setAddScenarioVisible(false);
-    setEditScenarioVisible(false);
+    setEdits(editsCopy);
+    if (exitEarly) {
+      setEditScenarioVisible(true);
+    } else {
+      const layer = layers.find((l) => l.layerId === deconSketchLayer?.layerId);
+      if (!deconSketchLayer || !layer) return;
+
+      // update title on layer
+      if (layer.sketchLayer) layer.sketchLayer.title = newDeconLayerName;
+
+      // update selected decon layer
+      setDeconSketchLayer((layer) => {
+        if (!layer) return null;
+        return {
+          ...layer,
+          name: newDeconLayerName,
+          label: newDeconLayerName,
+          description: newDeconDescription,
+        };
+      });
+
+      setDeconLayers((deconLayers) => {
+        return deconLayers.map((layer) => {
+          if (layer.layerId === deconSketchLayer.layerId) {
+            return {
+              ...layer,
+              name: newDeconLayerName,
+              label: newDeconLayerName,
+              description: newDeconDescription,
+            };
+          }
+          return layer;
+        });
+      });
+
+      setAddScenarioVisible(false);
+      setEditScenarioVisible(false);
+    }
   }
 
   const [generateRandomMode, setGenerateRandomMode] = useState<
@@ -659,15 +797,22 @@ function CharacterizeAOI({
   //   if (layer) setSelectedAoiFile(layer);
   // }, [layers, selectedScenario]);
 
-  const aoiLayer = getAoiLayer();
-  const hasAoiGraphics =
-    aoiLayer?.sketchLayer &&
-    aoiLayer.sketchLayer.type === 'graphics' &&
-    aoiLayer.sketchLayer.graphics.length > 0;
-
   const [addScenarioVisible, setAddScenarioVisible] = useState(false);
-  const [editScenarioVisible, setEditScenarioVisible] =
-    useState(!hasAoiGraphics);
+  const [editScenarioVisible, setEditScenarioVisible] = useState(false);
+
+  useEffect(() => {
+    if (!deconSketchLayer) {
+      setEditScenarioVisible(false);
+      return;
+    }
+
+    const aoiLayer = getAoiLayer(deconSketchLayer, layers);
+    const hasAoiGraphics =
+      aoiLayer?.sketchLayer &&
+      aoiLayer.sketchLayer.type === 'graphics' &&
+      aoiLayer.sketchLayer.graphics.length > 0;
+    setEditScenarioVisible(!hasAoiGraphics);
+  }, [deconSketchLayer, layers]);
 
   // get decon layers for showing in select
   const [deconLayers, setDeconLayers] = useState<LayerAoiAnalysisEditsType[]>(
@@ -779,7 +924,6 @@ function CharacterizeAOI({
     setSelectedScenario,
   ]);
 
-  const [newDeconLayerName, setNewDeconLayerName] = useState('');
   const [lastDeconSketchLayer, setLastDeconSketchLayer] =
     useState<LayerAoiAnalysisEditsType | null>(null);
 
@@ -853,49 +997,6 @@ function CharacterizeAOI({
 
     // add the scenario group layer to the map
     map.add(groupLayer);
-  }
-
-  // Saves the scenario name and description to the layer and edits objects.
-  function handleSave() {
-    if (!map) return;
-
-    const layer = layers.find((l) => l.layerId === deconSketchLayer?.layerId);
-    if (!deconSketchLayer || !layer) return;
-
-    // update title on layer
-    if (layer.sketchLayer) layer.sketchLayer.title = newDeconLayerName;
-
-    // update selected decon layer
-    setDeconSketchLayer((layer) => {
-      if (!layer) return null;
-      return {
-        ...layer,
-        name: newDeconLayerName,
-        label: newDeconLayerName,
-      };
-    });
-
-    setDeconLayers((deconLayers) => {
-      return deconLayers.map((layer) => {
-        if (layer.layerId === deconSketchLayer.layerId) {
-          return {
-            ...layer,
-            name: newDeconLayerName,
-            label: newDeconLayerName,
-          };
-        }
-        return layer;
-      });
-    });
-
-    // update the layer in edits and the decisionunit attribute for each graphic
-    const editsCopy = updateLayerEdits({
-      appType,
-      edits,
-      layer: { ...layer, name: newDeconLayerName, label: newDeconLayerName },
-      type: 'update',
-    });
-    setEdits(editsCopy);
   }
 
   function handleDelete(
@@ -978,6 +1079,7 @@ function CharacterizeAOI({
 
   useEffect(() => {
     setNewDeconLayerName(deconSketchLayer?.name ?? '');
+    setNewDeconDescription(deconSketchLayer?.description ?? '');
   }, [deconSketchLayer]);
 
   return (
@@ -1139,15 +1241,23 @@ function CharacterizeAOI({
               type="text"
               css={inputStyles}
               maxLength={250}
-              placeholder="Enter decon Layer Name"
+              placeholder="Enter Decon Layer Name"
               value={newDeconLayerName}
               onChange={(ev) => {
                 setNewDeconLayerName(ev.target.value);
               }}
-              onBlur={handleSave}
-              onKeyUp={(ev) => {
-                if (ev.key !== 'Enter') return;
-                handleSave();
+            />
+          </label>
+          <label>
+            <span>Decon Layer Description</span>
+            <input
+              type="text"
+              css={inputStyles}
+              maxLength={2048}
+              placeholder="Enter Decon Layer Description (2048 characters)"
+              value={newDeconDescription}
+              onChange={(ev) => {
+                setNewDeconDescription(ev.target.value);
               }}
             />
           </label>
@@ -1427,6 +1537,10 @@ function CharacterizeAOI({
             <Fragment>
               {calculateResultsDecon.status === 'failure' &&
                 webServiceErrorMessage(calculateResultsDecon.error)}
+              {saveStatus.status === 'failure' &&
+                webServiceErrorMessage(saveStatus.error)}
+              {saveStatus.status === 'name-not-available' &&
+                scenarioNameTakenMessage(saveStatus.name)}
               <div css={submitButtonStyles}>
                 <button
                   disabled={calculateResultsDecon.status === 'fetching'}

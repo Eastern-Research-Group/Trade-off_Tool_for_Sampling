@@ -253,56 +253,57 @@ export const backupImagerySymbol = new SimpleFillSymbol({
     style: 'solid',
   },
 });
-export const imageAnalysisSymbols = {
-  Asphalt: new SimpleFillSymbol({
-    color: [0, 0, 0, 0.5],
-    outline: {
-      color: [0, 0, 0, 1],
-      width: 1,
-      style: 'solid',
-    },
-  }),
-  Concrete: new SimpleFillSymbol({
-    color: [156, 156, 156, 0.5],
-    outline: {
-      color: [156, 156, 156, 1],
-      width: 1,
-      style: 'solid',
-    },
-  }),
-  // Soil: new SimpleFillSymbol({
-  //   color: [181, 53, 53, 0.5],
-  //   outline: {
-  //     color: [181, 53, 53, 1],
-  //     width: 1,
-  //     style: 'solid',
-  //   },
-  // }),
-  Soil: new SimpleFillSymbol({
-    color: [191, 217, 153, 0.5],
-    outline: {
-      color: [191, 217, 153, 1],
-      width: 1,
-      style: 'solid',
-    },
-  }),
-  Vegetation: new SimpleFillSymbol({
-    color: [191, 217, 153, 0.5],
-    outline: {
-      color: [191, 217, 153, 1],
-      width: 1,
-      style: 'solid',
-    },
-  }),
-  Water: new SimpleFillSymbol({
-    color: [191, 217, 242, 0.5],
-    outline: {
-      color: [191, 217, 242, 1],
-      width: 1,
-      style: 'solid',
-    },
-  }),
-};
+export const imageAnalysisSymbols: { [key: string]: __esri.SimpleFillSymbol } =
+  {
+    Asphalt: new SimpleFillSymbol({
+      color: [0, 0, 0, 0.5],
+      outline: {
+        color: [0, 0, 0, 1],
+        width: 1,
+        style: 'solid',
+      },
+    }),
+    Concrete: new SimpleFillSymbol({
+      color: [156, 156, 156, 0.5],
+      outline: {
+        color: [156, 156, 156, 1],
+        width: 1,
+        style: 'solid',
+      },
+    }),
+    // Soil: new SimpleFillSymbol({
+    //   color: [181, 53, 53, 0.5],
+    //   outline: {
+    //     color: [181, 53, 53, 1],
+    //     width: 1,
+    //     style: 'solid',
+    //   },
+    // }),
+    Soil: new SimpleFillSymbol({
+      color: [191, 217, 153, 0.5],
+      outline: {
+        color: [191, 217, 153, 1],
+        width: 1,
+        style: 'solid',
+      },
+    }),
+    Vegetation: new SimpleFillSymbol({
+      color: [191, 217, 153, 0.5],
+      outline: {
+        color: [191, 217, 153, 1],
+        width: 1,
+        style: 'solid',
+      },
+    }),
+    Water: new SimpleFillSymbol({
+      color: [191, 217, 242, 0.5],
+      outline: {
+        color: [191, 217, 242, 1],
+        width: 1,
+        style: 'solid',
+      },
+    }),
+  };
 
 type ContaminationPercentages = {
   [planId: string]: { [key: number]: number };
@@ -1068,18 +1069,25 @@ export async function fetchBuildingData(
       planGraphics[planId].aoiPercentages = {
         numAois,
         asphalt: (imageAreas['asphalt'] / totalArea) * 100,
+        asphaltSqM: imageAreas['asphalt'],
         concrete: (imageAreas['concrete'] / totalArea) * 100,
+        concreteSqM: imageAreas['concrete'],
         soil:
           ((imageAreas['soil'] + imageAreas['vegetation']) / totalArea) * 100,
+        soilSqM: imageAreas['soil'] + imageAreas['vegetation'],
       };
     } else {
+      const totalArea = planGraphics[planId].aoiArea;
       const { numAois, asphalt, concrete, soil } =
         planGraphics[planId].aoiPercentages;
       planGraphics[planId].aoiPercentages = {
         numAois,
         asphalt: asphalt / numAois,
+        asphaltSqM: totalArea * (asphalt / 100),
         concrete: concrete / numAois,
+        concreteSqM: totalArea * (concrete / 100),
         soil: soil / numAois,
+        soilSqM: totalArea * (soil / 100),
       };
     }
 
@@ -1102,15 +1110,18 @@ export function useStartOver() {
     setTrainingMode,
   } = useContext(NavigationContext);
   const {
-    setIncludePartialPlan,
-    setIncludePartialPlanWebMap,
-    setIncludePartialPlanWebScene,
+    setIncludeAoiCharacterization,
     setIncludeCustomSampleTypes,
+    setIncludePlan,
+    setIncludePlanWebMap,
+    setIncludePlanWebScene,
     setPublishSamplesMode,
     setPublishSampleTableMetaData,
     setSampleTableDescription,
     setSampleTableName,
+    setSampleTableNameAvailable,
     setSampleTypeSelections,
+    setSelectedAoiCharacterizations,
     setSelectedService,
     setWebMapReferenceLayerSelections,
     setWebSceneReferenceLayerSelections,
@@ -1196,12 +1207,15 @@ export function useStartOver() {
     setPublishSampleTableMetaData(null);
     setSampleTableDescription('');
     setSampleTableName('');
+    setSampleTableNameAvailable('unknown');
     setSampleTypeSelections([]);
+    setSelectedAoiCharacterizations([]);
     setSelectedService(null);
-    setIncludePartialPlan(true);
-    setIncludePartialPlanWebMap(true);
-    setIncludePartialPlanWebScene(true);
+    setIncludeAoiCharacterization(false);
     setIncludeCustomSampleTypes(false);
+    setIncludePlan(true);
+    setIncludePlanWebMap(true);
+    setIncludePlanWebScene(true);
     setWebMapReferenceLayerSelections([]);
     setWebSceneReferenceLayerSelections([]);
 

@@ -386,11 +386,10 @@ export const noServiceNameMessage = (
   />
 );
 
-export const publishSuccessMessage = (
-  appName: string,
-  itemData?: { name: string; serviceUrl: string }[],
-) => {
-  const items = itemData?.filter((data) => data?.serviceUrl);
+export const publishSuccessMessage = (appName: string, itemData?: any[]) => {
+  const items = itemData
+    ?.filter((data) => data?.itemData?.itemServiceUrl)
+    .map((data) => data.itemData);
   return (
     <MessageBox
       severity="info"
@@ -406,9 +405,9 @@ export const publishSuccessMessage = (
           {items && items.length > 0 && (
             <ul>
               {items.map((item) => (
-                <li key={item.serviceUrl}>
+                <li key={item.itemServiceUrl}>
                   <a
-                    href={item.serviceUrl}
+                    href={item.itemServiceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -425,11 +424,11 @@ export const publishSuccessMessage = (
 };
 
 // scenario name / description component messages
-export const scenarioNameTakenMessage = (scenarioName: string) => (
+export const scenarioNameTakenMessage = (scenarioName?: string) => (
   <MessageBox
     severity="warning"
-    title="Plan Name Not Available"
-    message={`The "${scenarioName}" name is already in use within your organization. Please rename the plan and try again.`}
+    title="Name Not Available"
+    message={`The "${scenarioName ?? ''}" name is already in use within your organization. Please rename the plan and try again.`}
   />
 );
 

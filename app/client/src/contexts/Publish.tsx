@@ -7,6 +7,8 @@ import React, {
   SetStateAction,
   useState,
 } from 'react';
+// styles
+import { isDecon } from 'styles';
 // types
 import { ServiceMetaDataType } from 'types/Edits';
 import {
@@ -16,6 +18,11 @@ import {
 } from 'types/Publish';
 
 type NameAvailableStatus = 'unknown' | 'yes' | 'no';
+
+type SelectedAoiCharacterizations = {
+  label: string;
+  value: string;
+}[];
 
 type PublishType = {
   publishSamplesMode: 'new' | 'existing' | '';
@@ -34,16 +41,18 @@ type PublishType = {
   setSampleTableNameAvailable: Dispatch<SetStateAction<NameAvailableStatus>>;
   selectedService: ServiceMetaDataType | null;
   setSelectedService: Dispatch<SetStateAction<ServiceMetaDataType | null>>;
-  includeFullPlan: boolean;
-  setIncludeFullPlan: Dispatch<SetStateAction<boolean>>;
-  includeFullPlanWebMap: boolean;
-  setIncludeFullPlanWebMap: Dispatch<SetStateAction<boolean>>;
-  includePartialPlan: boolean;
-  setIncludePartialPlan: Dispatch<SetStateAction<boolean>>;
-  includePartialPlanWebMap: boolean;
-  setIncludePartialPlanWebMap: Dispatch<SetStateAction<boolean>>;
-  includePartialPlanWebScene: boolean;
-  setIncludePartialPlanWebScene: Dispatch<SetStateAction<boolean>>;
+  selectedAoiCharacterizations: SelectedAoiCharacterizations;
+  setSelectedAoiCharacterizations: Dispatch<
+    SetStateAction<SelectedAoiCharacterizations>
+  >;
+  includeAoiCharacterization: boolean;
+  setIncludeAoiCharacterization: Dispatch<SetStateAction<boolean>>;
+  includePlan: boolean;
+  setIncludePlan: Dispatch<SetStateAction<boolean>>;
+  includePlanWebMap: boolean;
+  setIncludePlanWebMap: Dispatch<SetStateAction<boolean>>;
+  includePlanWebScene: boolean;
+  setIncludePlanWebScene: Dispatch<SetStateAction<boolean>>;
   includeCustomSampleTypes: boolean;
   setIncludeCustomSampleTypes: Dispatch<SetStateAction<boolean>>;
   webMapReferenceLayerSelections: ReferenceLayerSelections[];
@@ -280,16 +289,16 @@ export const PublishContext = createContext<PublishType>({
   setSampleTableNameAvailable: () => {},
   selectedService: null,
   setSelectedService: () => {},
-  includeFullPlan: false,
-  setIncludeFullPlan: () => {},
-  includeFullPlanWebMap: true,
-  setIncludeFullPlanWebMap: () => {},
-  includePartialPlan: true,
-  setIncludePartialPlan: () => {},
-  includePartialPlanWebMap: true,
-  setIncludePartialPlanWebMap: () => {},
-  includePartialPlanWebScene: true,
-  setIncludePartialPlanWebScene: () => {},
+  selectedAoiCharacterizations: [],
+  setSelectedAoiCharacterizations: () => {},
+  includeAoiCharacterization: false,
+  setIncludeAoiCharacterization: () => {},
+  includePlan: true,
+  setIncludePlan: () => {},
+  includePlanWebMap: true,
+  setIncludePlanWebMap: () => {},
+  includePlanWebScene: true,
+  setIncludePlanWebScene: () => {},
   includeCustomSampleTypes: false,
   setIncludeCustomSampleTypes: () => {},
   webMapReferenceLayerSelections: [],
@@ -314,13 +323,13 @@ export function PublishProvider({ children }: Props) {
     useState<NameAvailableStatus>('unknown');
   const [selectedService, setSelectedService] =
     useState<ServiceMetaDataType | null>(null);
-  const [includeFullPlan, setIncludeFullPlan] = useState(false);
-  const [includeFullPlanWebMap, setIncludeFullPlanWebMap] = useState(true);
-  const [includePartialPlan, setIncludePartialPlan] = useState(true);
-  const [includePartialPlanWebMap, setIncludePartialPlanWebMap] =
-    useState(true);
-  const [includePartialPlanWebScene, setIncludePartialPlanWebScene] =
-    useState(true);
+  const [selectedAoiCharacterizations, setSelectedAoiCharacterizations] =
+    useState<SelectedAoiCharacterizations>([]);
+  const [includeAoiCharacterization, setIncludeAoiCharacterization] =
+    useState(isDecon());
+  const [includePlan, setIncludePlan] = useState(true);
+  const [includePlanWebMap, setIncludePlanWebMap] = useState(true);
+  const [includePlanWebScene, setIncludePlanWebScene] = useState(true);
   const [includeCustomSampleTypes, setIncludeCustomSampleTypes] =
     useState(false);
   const [webMapReferenceLayerSelections, setWebMapReferenceLayerSelections] =
@@ -333,35 +342,35 @@ export function PublishProvider({ children }: Props) {
   return (
     <PublishContext.Provider
       value={{
-        publishSamplesMode,
-        setPublishSamplesMode,
-        publishSampleTableMetaData,
-        setPublishSampleTableMetaData,
-        sampleTableDescription,
-        setSampleTableDescription,
-        sampleTableName,
-        setSampleTableName,
-        sampleTypeSelections,
-        setSampleTypeSelections,
-        sampleTableNameAvailable,
-        setSampleTableNameAvailable,
-        selectedService,
-        setSelectedService,
-        includeFullPlan,
-        setIncludeFullPlan,
-        includeFullPlanWebMap,
-        setIncludeFullPlanWebMap,
-        includePartialPlan,
-        setIncludePartialPlan,
-        includePartialPlanWebMap,
-        setIncludePartialPlanWebMap,
-        includePartialPlanWebScene,
-        setIncludePartialPlanWebScene,
+        includeAoiCharacterization,
         includeCustomSampleTypes,
-        setIncludeCustomSampleTypes,
+        includePlan,
+        includePlanWebMap,
+        includePlanWebScene,
+        publishSamplesMode,
+        publishSampleTableMetaData,
+        sampleTableDescription,
+        sampleTableName,
+        sampleTableNameAvailable,
+        sampleTypeSelections,
+        selectedAoiCharacterizations,
+        selectedService,
         webMapReferenceLayerSelections,
-        setWebMapReferenceLayerSelections,
         webSceneReferenceLayerSelections,
+        setIncludeAoiCharacterization,
+        setIncludeCustomSampleTypes,
+        setIncludePlan,
+        setIncludePlanWebMap,
+        setIncludePlanWebScene,
+        setPublishSamplesMode,
+        setPublishSampleTableMetaData,
+        setSampleTableDescription,
+        setSampleTableName,
+        setSampleTableNameAvailable,
+        setSampleTypeSelections,
+        setSelectedAoiCharacterizations,
+        setSelectedService,
+        setWebMapReferenceLayerSelections,
         setWebSceneReferenceLayerSelections,
       }}
     >

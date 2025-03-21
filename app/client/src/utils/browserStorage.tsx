@@ -41,7 +41,7 @@ import { LayerType, PortalLayerType, UrlLayerType } from 'types/Layer';
 import { AppType, GoToOptions } from 'types/Navigation';
 import { SampleTypeOptions } from 'types/Publish';
 // config
-import { isDecon, PanelValueType } from 'config/navigation';
+import { PanelValueType } from 'config/navigation';
 import {
   SampleSelectType,
   UserDefinedAttributes,
@@ -690,16 +690,12 @@ function usePortalLayerStorage(dbInitialized: boolean) {
       // The only reason tots layers are also in portal layers is
       // so the search panel will show the layer as having been
       // added.
-      if (portalLayer.type === 'tots' && !isDecon()) return;
+      if (portalLayer.type === 'tots') return;
 
       const layer = Layer.fromPortalItem({
         portalItem: new PortalItem({ id }),
       });
       map.add(layer);
-
-      if (isDecon() && portalLayer.type === 'tots') {
-        addTotsLayerForTods(layer);
-      }
     });
   }, [map, portalLayers]);
 }
@@ -1547,37 +1543,46 @@ function usePublishStorage(dbInitialized: boolean) {
 
   const { setOptions } = useContext(DialogContext);
   const {
-    publishSamplesMode,
-    setPublishSamplesMode,
-    publishSampleTableMetaData,
-    setPublishSampleTableMetaData,
-    sampleTableDescription,
-    setSampleTableDescription,
-    sampleTableName,
-    setSampleTableName,
-    sampleTypeSelections,
-    setSampleTypeSelections,
-    selectedService,
-    setSelectedService,
-    includePartialPlan,
-    setIncludePartialPlan,
-    includePartialPlanWebMap,
-    setIncludePartialPlanWebMap,
-    includePartialPlanWebScene,
-    setIncludePartialPlanWebScene,
+    includeAoiCharacterization,
     includeCustomSampleTypes,
+    includePlan,
+    includePlanWebMap,
+    includePlanWebScene,
+    publishSamplesMode,
+    publishSampleTableMetaData,
+    sampleTableDescription,
+    sampleTableName,
+    sampleTypeSelections,
+    selectedAoiCharacterizations,
+    selectedService,
+    setIncludeAoiCharacterization,
     setIncludeCustomSampleTypes,
-    webMapReferenceLayerSelections,
+    setIncludePlan,
+    setIncludePlanWebMap,
+    setIncludePlanWebScene,
+    setPublishSamplesMode,
+    setPublishSampleTableMetaData,
+    setSampleTableDescription,
+    setSampleTableName,
+    setSampleTypeSelections,
+    setSelectedAoiCharacterizations,
+    setSelectedService,
     setWebMapReferenceLayerSelections,
-    webSceneReferenceLayerSelections,
     setWebSceneReferenceLayerSelections,
+    webMapReferenceLayerSelections,
+    webSceneReferenceLayerSelections,
   } = useContext(PublishContext);
 
   type OutputSettingsType = {
-    includePartialPlan: boolean;
-    includePartialPlanWebMap: boolean;
-    includePartialPlanWebScene: boolean;
+    includeAoiCharacterization: boolean;
     includeCustomSampleTypes: boolean;
+    includePlan: boolean;
+    includePlanWebMap: boolean;
+    includePlanWebScene: boolean;
+    selectedAoiCharacterizations: {
+      label: string;
+      value: string;
+    }[];
     webMapReferenceLayerSelections: any[];
     webSceneReferenceLayerSelections: any[];
   };
@@ -1623,12 +1628,16 @@ function usePublishStorage(dbInitialized: boolean) {
       // set the publish output settings
       if (records.length > 3 && records[3]) {
         const outputSettings: OutputSettingsType = records[3];
-        setIncludePartialPlan(outputSettings.includePartialPlan);
-        setIncludePartialPlanWebMap(outputSettings.includePartialPlanWebMap);
-        setIncludePartialPlanWebScene(
-          outputSettings.includePartialPlanWebScene,
+        setIncludeAoiCharacterization(
+          outputSettings.includeAoiCharacterization,
         );
         setIncludeCustomSampleTypes(outputSettings.includeCustomSampleTypes);
+        setIncludePlan(outputSettings.includePlan);
+        setIncludePlanWebMap(outputSettings.includePlanWebMap);
+        setIncludePlanWebScene(outputSettings.includePlanWebScene);
+        setSelectedAoiCharacterizations(
+          outputSettings.selectedAoiCharacterizations ?? [],
+        );
         setWebMapReferenceLayerSelections(
           outputSettings.webMapReferenceLayerSelections,
         );
@@ -1640,15 +1649,17 @@ function usePublishStorage(dbInitialized: boolean) {
   }, [
     dbInitialized,
     readInitialized,
+    setIncludeAoiCharacterization,
     setIncludeCustomSampleTypes,
-    setIncludePartialPlan,
-    setIncludePartialPlanWebMap,
-    setIncludePartialPlanWebScene,
+    setIncludePlan,
+    setIncludePlanWebMap,
+    setIncludePlanWebScene,
     setPublishSamplesMode,
     setPublishSampleTableMetaData,
     setSampleTableDescription,
     setSampleTableName,
     setSampleTypeSelections,
+    setSelectedAoiCharacterizations,
     setSelectedService,
     setWebMapReferenceLayerSelections,
     setWebSceneReferenceLayerSelections,
@@ -1693,21 +1704,30 @@ function usePublishStorage(dbInitialized: boolean) {
     if (!readDone) return;
 
     const settings: OutputSettingsType = {
-      includePartialPlan,
-      includePartialPlanWebMap,
-      includePartialPlanWebScene,
+      includeAoiCharacterization,
       includeCustomSampleTypes,
+      includePlan,
+      includePlanWebMap,
+      includePlanWebScene,
+      selectedAoiCharacterizations: selectedAoiCharacterizations.map(
+        (item) => ({
+          label: item.label,
+          value: item.value,
+        }),
+      ),
       webMapReferenceLayerSelections,
       webSceneReferenceLayerSelections,
     };
 
     writeToStorage(key4, settings, setOptions);
   }, [
+    includeAoiCharacterization,
     includeCustomSampleTypes,
-    includePartialPlan,
-    includePartialPlanWebMap,
-    includePartialPlanWebScene,
+    includePlan,
+    includePlanWebMap,
+    includePlanWebScene,
     readDone,
+    selectedAoiCharacterizations,
     setOptions,
     webMapReferenceLayerSelections,
     webSceneReferenceLayerSelections,

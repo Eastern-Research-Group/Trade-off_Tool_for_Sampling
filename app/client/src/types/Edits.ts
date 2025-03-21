@@ -31,6 +31,7 @@ export type TableType = {
 export type ReferenceLayerTableType = {
   globalId: string;
   layerId: string;
+  totsLayerId?: string;
   label: string;
   layerType: string;
   objectId: number;
@@ -74,7 +75,9 @@ export type LayerAoiAnalysisEditsType = {
   id: number; // scenario layer id
   layerId: string; // id from esri group layer
   portalId: string; // id from portal layer
+  version?: number; // version of the layer
   name: string; // layer/scenario name
+  description: string; // layer/scenario description
   label: string; // layer/scenario label
   value: string; // layer/scenario value for React-Select
   layerType: LayerTypeName; // type of tots layer (sample, contamination, etc.)
@@ -88,9 +91,12 @@ export type LayerAoiAnalysisEditsType = {
   aoiLayerMode: '' | 'draw' | 'file';
   aoiPercentages: {
     asphalt: number;
+    asphaltSqM: number;
     concrete: number;
+    concreteSqM: number;
     numAois: number;
     soil: number;
+    soilSqM: number;
   };
   aoiSummary: {
     totalAoiSqM: number;

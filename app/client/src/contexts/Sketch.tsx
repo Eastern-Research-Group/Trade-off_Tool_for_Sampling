@@ -107,8 +107,11 @@ export type PlanGraphics = {
     aoiPercentages: {
       numAois: number;
       asphalt: number;
+      asphaltSqM: number;
       concrete: number;
+      concreteSqM: number;
       soil: number;
+      soilSqM: number;
     };
   };
 };
