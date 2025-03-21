@@ -31,6 +31,7 @@ export type TableType = {
 export type ReferenceLayerTableType = {
   globalId: string;
   layerId: string;
+  totsLayerId?: string;
   label: string;
   layerType: string;
   objectId: number;

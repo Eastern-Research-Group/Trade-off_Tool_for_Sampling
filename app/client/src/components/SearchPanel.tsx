@@ -58,8 +58,10 @@ import {
   CalculateSettingsBaseType,
   EditsType,
   LayerAoiAnalysisEditsType,
+  LayerDeconEditsType,
   LayerEditsType,
   ReferenceLayersTableType,
+  ReferenceLayerTableType,
   ScenarioDeconEditsType,
   ScenarioEditsType,
 } from 'types/Edits';
@@ -2002,7 +2004,8 @@ function ResultCard({ appType, result }: ResultCardProps) {
       title: string;
       url: string;
     },
-    zoomToLayer: boolean = false,
+    editsCopyParam: EditsType | null = null,
+    zoomToLayer: boolean = true,
   ) {
     if (!map || !portal) return;
 
@@ -2039,7 +2042,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       }
 
       // set the state for session storage
-      setEdits(editsCopy);
+      if (!editsCopyParam) setEdits(editsCopy);
       setLayers((layers) => [...layers, ...layersToAdd]);
       setReferenceLayers((layers: any) => [...layers, ...refLayersToAdd]);
 
@@ -2106,7 +2109,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       const featureResponses = await Promise.all(featurePromises);
 
       // define items used for updating states
-      let editsCopy: EditsType = deepCopyObject(edits);
+      let editsCopy: EditsType = editsCopyParam ?? deepCopyObject(edits);
       let aoiInfo: any | null = null;
       const mapLayersToAdd: __esri.Layer[] = [];
       const layersToAdd: LayerType[] = [];
@@ -2371,6 +2374,29 @@ function ResultCard({ appType, result }: ResultCardProps) {
         edits: [...editsCopy.edits, layerAoiAnalysis],
       };
 
+      layersToAdd.push({
+        addedFrom: 'sketch',
+        editType: 'add',
+        geometryType: 'esriGeometryPolygon',
+        hybridLayer: null,
+        id: 0,
+        label: layerAoiAnalysis.label,
+        layerId: layerAoiAnalysis.layerId,
+        layerType: 'AOI Analysis',
+        listMode: 'show',
+        name: layerAoiAnalysis.label,
+        parentLayer: null,
+        pointsId: -1,
+        pointsLayer: null,
+        portalId: layerAoiAnalysis.portalId,
+        sketchLayer: groupLayer,
+        sort: 0,
+        status: 'published',
+        uuid: layerAoiAnalysis.layerId,
+        value: layerAoiAnalysis.layerId,
+        visible: true,
+      });
+
       // get the age of the layer in seconds
       const created: number = new Date(result.created).getTime();
       const curTime: number = Date.now();
@@ -2402,6 +2428,11 @@ function ResultCard({ appType, result }: ResultCardProps) {
           refLayersToAdd,
         });
       }
+
+      return {
+        editsCopy,
+        zoomToGraphics,
+      };
     } catch (err) {
       console.error(err);
       setStatus('error');
@@ -2421,84 +2452,23 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
     const tempPortal = portal as any;
     const token = tempPortal.credential.token;
-    let addedSampleTypesViaTable = false;
-
-    function getAddedSampleTypesViaTable() {
-      return addedSampleTypesViaTable;
-    }
 
     // function used for finalizing the adding of layers. This function is needed
     // for displaying a popup mesage if there is an issue with any of the samples
     function finalizeLayerAdd({
       mapLayersToAdd,
-      newUserSampleTypes,
-      newAttributes,
       zoomToGraphics,
       editsCopy,
       layersToAdd,
       refLayersToAdd,
     }: {
       mapLayersToAdd: __esri.Layer[];
-      newUserSampleTypes: SampleSelectType[];
-      newAttributes: Attributes;
       zoomToGraphics: __esri.Graphic[];
       editsCopy: EditsType;
       layersToAdd: LayerType[];
       refLayersToAdd: any[];
     }) {
       if (!map) return;
-
-      // replace sample attributes the correct ones
-      mapLayersToAdd.forEach((parentLayer) => {
-        if (parentLayer.type !== 'group') return;
-
-        const tempParentLayer = parentLayer as __esri.GroupLayer;
-        tempParentLayer.layers.forEach((layer) => {
-          const tempLayer = layer as __esri.GraphicsLayer;
-
-          tempLayer.graphics.forEach((graphic) => {
-            if (
-              !Object.prototype.hasOwnProperty.call(
-                sampleAttributes,
-                graphic.attributes.TYPEUUID,
-              )
-            )
-              return;
-
-            const predefinedAttributes: any =
-              sampleAttributes[graphic.attributes.TYPEUUID];
-            Object.keys(predefinedAttributes).forEach((key) => {
-              if (!sampleTypes?.attributesToCheck.includes(key)) {
-                return;
-              }
-
-              graphic.attributes[key] = predefinedAttributes[key];
-            });
-          });
-        });
-      });
-
-      // add custom sample types to browser storage
-      if (newUserSampleTypes.length > 0) {
-        setUserDefinedAttributes((item) => {
-          Object.keys(newAttributes).forEach((key) => {
-            const attributes = newAttributes[key];
-            sampleAttributes[attributes.attributes.TYPEUUID as any] =
-              attributes.attributes;
-            item.sampleTypes[attributes.attributes.TYPEUUID as any] =
-              attributes;
-          });
-
-          return {
-            editCount: item.editCount + 1,
-            sampleTypes: item.sampleTypes,
-          };
-        });
-
-        setUserDefinedOptions((options) => {
-          return [...options, ...newUserSampleTypes];
-        });
-      }
 
       // add all of the layers to the map
       map.addMany(mapLayersToAdd);
@@ -2515,9 +2485,6 @@ function ResultCard({ appType, result }: ResultCardProps) {
       setLayers((layers) => [...layers, ...layersToAdd]);
       setReferenceLayers((layers: any) => [...layers, ...refLayersToAdd]);
 
-      // set the sketchLayer to the first tots sample layer
-      if (layersToAdd.length > -1) setSketchLayer(layersToAdd[0]);
-
       // add the portal id to portal layers. This needed so the card on
       // the search panel shows up as the layer having been added.
       setPortalLayers((portalLayers) => [
@@ -2533,120 +2500,6 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
       // reset the status
       setStatus('');
-    }
-
-    function addUserDefinedType(
-      graphic: any,
-      newUserSampleTypes: SampleSelectType[],
-      newAttributes: Attributes,
-    ) {
-      // get the type uuid or generate it if necessary
-      const attributes = graphic.attributes;
-      let typeUuid = attributes.TYPEUUID;
-      if (!typeUuid) {
-        const keysToCheck = [
-          'TYPE',
-          'ShapeType',
-          'TTPK',
-          'TTC',
-          'TTA',
-          'TTPS',
-          'LOD_P',
-          'LOD_NON',
-          'MCPS',
-          'TCPS',
-          'WVPS',
-          'WWPS',
-          'SA',
-          'ALC',
-          'AMC',
-        ];
-        // check if the udt has already been added
-        Object.values(userDefinedAttributes.sampleTypes).forEach((udt: any) => {
-          const tempUdt: any = {};
-          const tempAtt: any = {};
-          keysToCheck.forEach((key) => {
-            tempUdt[key] = udt[key];
-            tempAtt[key] = attributes[key];
-          });
-
-          if (JSON.stringify(tempUdt) === JSON.stringify(tempAtt)) {
-            typeUuid = udt.TYPEUUID;
-          }
-        });
-
-        if (!typeUuid) {
-          if (
-            Object.prototype.hasOwnProperty.call(
-              sampleTypes?.sampleAttributes,
-              attributes.TYPE,
-            )
-          ) {
-            typeUuid = attributes.TYPE;
-          } else {
-            typeUuid = generateUUID();
-          }
-        }
-
-        graphic.attributes['TYPEUUID'] = typeUuid;
-      }
-
-      if (
-        !Object.prototype.hasOwnProperty.call(
-          sampleAttributes,
-          attributes.TYPEUUID,
-        ) &&
-        !Object.prototype.hasOwnProperty.call(
-          newAttributes,
-          attributes.TYPEUUID,
-        )
-      ) {
-        newUserSampleTypes.push({
-          value: attributes.TYPEUUID,
-          label: attributes.TYPE,
-          isPredefined: false,
-        });
-        newAttributes[attributes.TYPEUUID] = {
-          status: newAttributes[attributes.TYPEUUID]?.status
-            ? newAttributes[attributes.TYPEUUID].status
-            : 'add',
-          serviceId: '',
-          attributes: {
-            OBJECTID: '-1',
-            PERMANENT_IDENTIFIER: null,
-            GLOBALID: null,
-            TYPEUUID: attributes.TYPEUUID,
-            TYPE: attributes.TYPE,
-            ShapeType: attributes.ShapeType,
-            POINT_STYLE: attributes.POINT_STYLE || 'circle',
-            TTPK: attributes.TTPK ? Number(attributes.TTPK) : null,
-            TTC: attributes.TTC ? Number(attributes.TTC) : null,
-            TTA: attributes.TTA ? Number(attributes.TTA) : null,
-            TTPS: attributes.TTPS ? Number(attributes.TTPS) : null,
-            LOD_P: attributes.LOD_P ? Number(attributes.LOD_P) : null,
-            LOD_NON: attributes.LOD_NON ? Number(attributes.LOD_NON) : null,
-            MCPS: attributes.MCPS ? Number(attributes.MCPS) : null,
-            TCPS: attributes.TCPS ? Number(attributes.TCPS) : null,
-            WVPS: attributes.WVPS ? Number(attributes.WVPS) : null,
-            WWPS: attributes.WWPS ? Number(attributes.WWPS) : null,
-            SA: attributes.SA ? Number(attributes.SA) : null,
-            AA: null,
-            ALC: attributes.ALC ? Number(attributes.ALC) : null,
-            AMC: attributes.AMC ? Number(attributes.AMC) : null,
-            Notes: '',
-            CONTAMTYPE: null,
-            CONTAMVAL: null,
-            CONTAMUNIT: null,
-            CREATEDDATE: null,
-            UPDATEDDATE: null,
-            USERNAME: null,
-            ORGANIZATION: null,
-            DECISIONUNITUUID: null,
-            DECISIONUNIT: null,
-            DECISIONUNITSORT: 0,
-          },
-        };
-      }
     }
 
     try {
@@ -2684,10 +2537,10 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
       // fire off the calls with the points layers last
       const resCombined = [
-        ...resCalculationResults,
         ...resRefLayersTypes,
-        ...resOperationDetails,
         ...resOperationSettings,
+        ...resOperationDetails,
+        ...resCalculationResults,
         // ...resDeconTypes,
         ...resLayers,
       ];
@@ -2717,359 +2570,132 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
       // define items used for updating states
       let editsCopy: EditsType = deepCopyObject(edits);
+      let operationSettings: any[] | null = null;
+      let operationDetails: any[] | null = null;
+      let calculationResults: any[] | null = null;
       const mapLayersToAdd: __esri.Layer[] = [];
-      const newAttributes: Attributes = {};
-      const newCustomAttributes: AttributesType[] = [];
-      const newUserSampleTypes: SampleSelectType[] = [];
       const layersToAdd: LayerType[] = [];
       const refLayersToAdd: any[] = [];
       const zoomToGraphics: __esri.Graphic[] = [];
-      const table: any = {};
+      const linkedLayerIds: string[] = [];
       let referenceLayersTable: ReferenceLayersTableType = {
         id: -1,
         referenceLayers: [],
       };
 
       // TODO this might need to be swapped out for updated contamination map
-      let isDeconLayer = false;
-      const typesLoop = (type: __esri.FeatureType) => {
-        if (type.id === 'epa-tods-decon-layer') isDeconLayer = true;
-      };
+      // const typesLoop = (type: __esri.FeatureType) => {
+      //   if (type.id === 'epa-tods-decon-layer') isDeconLayer = true;
+      // };
 
       let fields: __esri.Field[] = [];
       const fieldsLoop = (field: __esri.Field) => {
         fields.push(Field.fromJSON(field));
       };
 
-      // get the popup template
-      const popupTemplate = getPopupTemplate('Samples', true); //trainingMode);
-
       // create the layers to be added to the map
       for (let i = 0; i < layerDetailResponses.length; i++) {
         const layerDetails = layerDetailResponses[i];
         const layerFeatures = featureResponses[i];
-        const scenarioName = layerDetails.name;
 
-        // figure out if this layer is a sample layer or not
-        isDeconLayer = false;
-        if (layerDetails?.types) {
-          layerDetails.types.forEach(typesLoop);
-        }
+        // // figure out if this layer is a sample layer or not
+        // if (layerDetails?.types) {
+        //   layerDetails.types.forEach(typesLoop);
+        // }
 
         // add sample layers as graphics layers
         if (
-          layerDetails.type === 'Table' &&
-          layerDetails.name.endsWith('-decon-tech')
-        ) {
-          table.id = layerDetails.id;
-          table.sampleTypes = {};
-
-          layerFeatures.features.forEach((feature: any) => {
-            addUserDefinedType(feature, newUserSampleTypes, newAttributes);
-            table.sampleTypes[feature.attributes.TYPEUUID] = feature.attributes;
-          });
-
-          addedSampleTypesViaTable = true;
-        } else if (
           layerDetails.type === 'Table' &&
           layerDetails.name.endsWith('-reference-layers')
         ) {
           const newUrlLayers: UrlLayerType[] = [];
           const newPortalLayers: PortalLayerType[] = [];
-          referenceLayersTable = {
-            id: layerDetails.id,
-            referenceLayers: layerFeatures.features.map((f: any) => {
-              if (f.attributes.TYPE === 'arcgis') {
-                newPortalLayers.push({
-                  id: f.attributes.LAYERID,
-                  label: f.attributes.LABEL,
-                  layerType: f.attributes.LAYERTYPE,
-                  type: f.attributes.TYPE,
-                  url: f.attributes.URL,
-                });
-              }
-              if (f.attributes.TYPE === 'url') {
-                newUrlLayers.push({
-                  layerId: f.attributes.LAYERID,
-                  label: f.attributes.LABEL,
-                  layerType: f.attributes.LAYERTYPE,
-                  type: f.attributes.URLTYPE,
-                  url: f.attributes.URL,
-                });
-              }
-
-              return {
-                globalId: f.attributes.GLOBALID,
+          const referenceLayers: ReferenceLayerTableType[] = [];
+          for (const f of layerFeatures.features) {
+            if (f.attributes.TYPE === 'arcgis') {
+              newPortalLayers.push({
+                id: f.attributes.LAYERID,
+                label: f.attributes.LABEL,
+                layerType: f.attributes.LAYERTYPE,
+                type: f.attributes.TYPE,
+                url: f.attributes.URL,
+              });
+            }
+            if (f.attributes.TYPE === 'url') {
+              newUrlLayers.push({
                 layerId: f.attributes.LAYERID,
                 label: f.attributes.LABEL,
                 layerType: f.attributes.LAYERTYPE,
-                objectId: f.attributes.OBJECTID,
-                onWebMap: f.attributes.ONWEBMAP,
-                onWebScene: f.attributes.ONWEBSCENE,
-                type: f.attributes.TYPE,
+                type: f.attributes.URLTYPE,
                 url: f.attributes.URL,
-                urlType: f.attributes.URLTYPE,
-              };
-            }),
+              });
+            }
+            if (f.attributes.TYPE === 'tots' && f.attributes.TOTSLAYERID) {
+              console.log('addAoiCharacterization...');
+              const output = await addAoiCharacterizationLayer(
+                {
+                  id: f.attributes.LAYERID,
+                  title: f.attributes.LABEL,
+                  url: f.attributes.URL,
+                  created: '',
+                  description: '',
+                },
+                editsCopy,
+                false,
+              );
+              if (output?.zoomToGraphics)
+                zoomToGraphics.push(...output.zoomToGraphics);
+              if (output?.editsCopy) editsCopy = output.editsCopy;
+            }
+
+            referenceLayers.push({
+              globalId: f.attributes.GLOBALID,
+              layerId: f.attributes.LAYERID,
+              totsLayerId: f.attributes.TOTSLAYERID,
+              label: f.attributes.LABEL,
+              layerType: f.attributes.LAYERTYPE,
+              objectId: f.attributes.OBJECTID,
+              onWebMap: f.attributes.ONWEBMAP,
+              onWebScene: f.attributes.ONWEBSCENE,
+              type: f.attributes.TYPE,
+              url: f.attributes.URL,
+              urlType: f.attributes.URLTYPE,
+            });
+          }
+          referenceLayersTable = {
+            id: layerDetails.id,
+            referenceLayers: referenceLayers,
           };
 
           if (newPortalLayers.length > 0) setPortalLayers(newPortalLayers);
           if (newUrlLayers.length > 0) setUrlLayers(newUrlLayers);
         } else if (
           layerDetails.type === 'Table' &&
-          layerDetails.name.endsWith('-calculate-settings')
+          layerDetails.name.endsWith('-operation-settings')
         ) {
-          // do nothing
-        } else if (isDeconLayer) {
-          let newSymbolsAdded = false;
-          const newDefaultSymbols: DefaultSymbolsType = {
-            editCount: defaultSymbols.editCount + 1,
-            symbols: { ...defaultSymbols.symbols },
-          };
-
-          // add symbol styles if necessary
-          const uniqueValueInfos =
-            layerDetails?.drawingInfo?.renderer?.uniqueValueInfos;
-          if (uniqueValueInfos) {
-            uniqueValueInfos.forEach((value: any) => {
-              // exit if value exists already
-              if (
-                Object.prototype.hasOwnProperty.call(
-                  defaultSymbols.symbols,
-                  value.value,
-                )
-              ) {
-                return;
-              }
-
-              newSymbolsAdded = true;
-
-              newDefaultSymbols.symbols[value.value] = {
-                type: 'simple-fill',
-                color: [
-                  value.symbol.color[0],
-                  value.symbol.color[1],
-                  value.symbol.color[2],
-                  value.symbol.color[3] / 255,
-                ],
-                outline: {
-                  color: [
-                    value.symbol.outline.color[0],
-                    value.symbol.outline.color[1],
-                    value.symbol.outline.color[2],
-                    value.symbol.outline.color[3] / 255,
-                  ],
-                  width: value.symbol.outline.width,
-                },
-              };
-            });
-
-            if (newSymbolsAdded) setDefaultSymbols(newDefaultSymbols);
+          if (layerFeatures.features.length > 0) {
+            operationSettings = layerFeatures.features.map(
+              (f: any) => f.attributes,
+            );
           }
-
-          // get the graphics from the layer
-          const graphics: LayerGraphics = {};
-          layerFeatures.features.forEach((feature: any) => {
-            const graphic: any = Graphic.fromJSON(feature);
-            graphic.geometry.spatialReference = {
-              wkid: 3857,
-            };
-            graphic.popupTemplate = popupTemplate;
-
-            const newGraphic: any = {
-              geometry: graphic.geometry,
-              symbol: graphic.symbol,
-              popupTemplate: graphic.popupTemplate,
-            };
-
-            // Add the user defined type if it does not exist
-            if (!getAddedSampleTypesViaTable()) {
-              newGraphic.attributes = { ...graphic.attributes };
-              addUserDefinedType(graphic, newUserSampleTypes, newAttributes);
-            } else {
-              const typeUuid = graphic.attributes.TYPEUUID;
-              let customAttributes = {};
-              if (
-                Object.prototype.hasOwnProperty.call(newAttributes, typeUuid)
-              ) {
-                customAttributes = newAttributes[typeUuid].attributes;
-              } else if (
-                Object.prototype.hasOwnProperty.call(sampleAttributes, typeUuid)
-              ) {
-                customAttributes = sampleAttributes[typeUuid];
-              }
-              newGraphic.attributes = {
-                ...customAttributes,
-                ...graphic.attributes,
-              };
-            }
-
-            const typeUuid = feature.attributes.TYPEUUID;
-            newGraphic.symbol =
-              newDefaultSymbols.symbols[
-                Object.prototype.hasOwnProperty.call(
-                  newDefaultSymbols.symbols,
-                  typeUuid,
-                )
-                  ? typeUuid
-                  : 'Samples'
-              ];
-            if (
-              Object.prototype.hasOwnProperty.call(
-                newDefaultSymbols.symbols,
-                typeUuid,
-              )
-            ) {
-              graphic.symbol = newDefaultSymbols.symbols[typeUuid];
-            }
-
-            zoomToGraphics.push(graphic);
-
-            // add the graphic to the correct layer uuid
-            const decisionUuid = newGraphic.attributes.DECISIONUNITUUID;
-            if (Object.prototype.hasOwnProperty.call(graphics, decisionUuid)) {
-              graphics[decisionUuid].push(newGraphic);
-            } else {
-              graphics[decisionUuid] = [newGraphic];
-            }
-          });
-
-          // need to build the scenario and group layer here
-          const groupLayer = new GroupLayer({
-            title: scenarioName,
-          });
-
-          const defaultFields = layerProps.defaultFields;
-          layerDetails.fields.forEach((field: any, index: number) => {
-            if (['Shape__Area', 'Shape__Length'].includes(field.name)) return;
-
-            const wasAlreadyAdded =
-              newCustomAttributes.findIndex((f: any) => f.name === field.name) >
-              -1;
-            if (wasAlreadyAdded) return;
-
-            const isDefaultField =
-              defaultFields.findIndex((f: any) => f.name === field.name) > -1;
-            if (isDefaultField) return;
-
-            const id = defaultDeconPlanAttributes.length + index;
-
-            newCustomAttributes.push(buildCustomAttributeFromField(field, id));
-          });
-
-          const newScenario: ScenarioDeconEditsType = {
-            type: 'scenario-decon',
-            id: layerDetails.id,
-            layerId: groupLayer.id,
-            portalId: result.id,
-            name: scenarioName,
-            label: scenarioName,
-            value: groupLayer.id,
-            layerType: 'Samples',
-            addedFrom: 'tots',
-            status: 'published',
-            editType: 'add',
-            visible: true,
-            listMode: 'show',
-            scenarioName: scenarioName,
-            scenarioDescription: layerDetails.description,
-            linkedLayerIds: [],
-            table,
-            referenceLayersTable,
-          };
-
-          // make a copy of the edits context variable
-          editsCopy = {
-            count: editsCopy.count + 1,
-            edits: [...editsCopy.edits, newScenario],
-          };
-
-          // loop through the graphics uuids and add the necessary
-          // layers to the scenario along with the graphics
-          const keys = Object.keys(graphics);
-          for (let j = 0; j < keys.length; j++) {
-            const uuid = keys[j];
-            const graphicsList = graphics[uuid];
-            const firstAttributes = graphicsList[0].attributes;
-            const layerName = firstAttributes.DECISIONUNIT
-              ? firstAttributes.DECISIONUNIT
-              : scenarioName;
-
-            // build the graphics layer
-            const graphicsLayer = new GraphicsLayer({
-              id: firstAttributes.DECISIONUNITUUID,
-              graphics: graphicsList,
-              title: layerName,
-            });
-
-            // convert the polygon graphics into points
-            const pointGraphics: __esri.Graphic[] = [];
-            const hybridGraphics: __esri.Graphic[] = [];
-            graphicsList.forEach((graphicParams) => {
-              const graphic = new Graphic(graphicParams);
-              pointGraphics.push(convertToPoint(graphic));
-              hybridGraphics.push(
-                graphic.attributes.ShapeType === 'point'
-                  ? convertToPoint(graphic)
-                  : graphic.clone(),
-              );
-            });
-
-            const pointsLayer = new GraphicsLayer({
-              id: firstAttributes.DECISIONUNITUUID + '-points',
-              graphics: pointGraphics,
-              title: layerName,
-              visible: false,
-              listMode: 'hide',
-            });
-
-            const hybridLayer = new GraphicsLayer({
-              id: firstAttributes.DECISIONUNITUUID + '-hybrid',
-              graphics: hybridGraphics,
-              title: layerName,
-              visible: false,
-              listMode: 'hide',
-            });
-
-            groupLayer.addMany([graphicsLayer, pointsLayer, hybridLayer]);
-
-            // build the layer
-            const layerToAdd: LayerType = {
-              id: layerDetails.id,
-              pointsId: -1,
-              uuid: firstAttributes.DECISIONUNITUUID,
-              layerId: graphicsLayer.id,
-              portalId: result.id,
-              value: layerName,
-              name: layerName,
-              label: layerName,
-              layerType: 'Samples',
-              editType: 'add',
-              visible: true,
-              listMode: 'show',
-              sort: firstAttributes.DECISIONUNITSORT,
-              geometryType: layerDetails.geometryType,
-              addedFrom: 'tots',
-              status: 'published',
-              sketchLayer: graphicsLayer,
-              pointsLayer,
-              hybridLayer,
-              parentLayer: groupLayer,
-            };
-            layersToAdd.push(layerToAdd);
-
-            // make a copy of the edits context variable
-            editsCopy = updateLayerEdits({
-              appType,
-              edits: editsCopy,
-              scenario: newScenario,
-              layer: layerToAdd,
-              type: 'arcgis',
-              changes: graphicsLayer.graphics,
-            });
+        } else if (
+          layerDetails.type === 'Table' &&
+          layerDetails.name.endsWith('-operation-details')
+        ) {
+          if (layerFeatures.features.length > 0) {
+            operationDetails = layerFeatures.features.map(
+              (f: any) => f.attributes,
+            );
           }
-
-          mapLayersToAdd.push(groupLayer); // replace with group layer
+        } else if (
+          layerDetails.type === 'Table' &&
+          layerDetails.name.endsWith('-calculation-results')
+        ) {
+          if (layerFeatures.features.length > 0) {
+            calculationResults = layerFeatures.features.map(
+              (f: any) => f.attributes,
+            );
+          }
         } else {
           // add non-sample layers as feature layers
           fields = [];
@@ -3124,6 +2750,144 @@ function ResultCard({ appType, result }: ResultCardProps) {
         }
       }
 
+      const deconOperations: LayerDeconEditsType[] = [];
+      operationSettings?.forEach((setting: any) => {
+        linkedLayerIds.push(setting.OPERATION_UUID);
+
+        const operationDetailsFiltered =
+          operationDetails?.filter(
+            (detail: any) => detail.OPERATION_UUID === setting.OPERATION_UUID,
+          ) ?? [];
+
+        const calcResultsFiltered =
+          calculationResults?.filter(
+            (detail: any) => detail.OPERATION_UUID === setting.OPERATION_UUID,
+          ) ?? [];
+
+        const opResults = calcResultsFiltered.find(
+          (c) => c.AGGREGATION_LEVEL === 'SUMMARY',
+        );
+
+        const deconTechSelections: any[] = [];
+        operationDetailsFiltered.forEach((tech) => {
+          const newRecord = {
+            aboveDetectionLimit: 0,
+            avgCfu: 0,
+            avgFinalContamination: null,
+            deconTech: tech.DECON_TECH_UUID
+              ? {
+                  isPredefined: true,
+                  label: tech.DECON_TECH,
+                  value: tech.DECON_TECH_UUID,
+                }
+              : null,
+            id: tech.SURFACE_UUID,
+            isHazardous: { label: 'Non-Hazardous', value: 'non-hazardous' },
+            media: tech.SURFACE,
+            numIterativeApplications: tech.NUM_ITERATIVE_APPLICATIONS,
+            pctAoi: tech.PCT_AOI,
+            pctDeconed: tech.PCT_DECONED,
+            removeContents: tech.REMOVE_BLDG_CONTENTS === 1 ? true : false,
+            surfaceArea: tech.SURFACE_AREA,
+            volume: tech.VOLUME,
+            volumeContents: 0, // TODO - may need to add to publish output
+          };
+
+          if (tech.PARENT_SURFACE_UUID) {
+            const parentTech = deconTechSelections.find(
+              (parent) => parent.id === tech.PARENT_SURFACE_UUID,
+            );
+            if (parentTech) {
+              if (!Object.prototype.hasOwnProperty.call(parentTech, 'subRows'))
+                parentTech.subRows = [];
+              parentTech.subRows.push(newRecord);
+            }
+          } else {
+            deconTechSelections.push(newRecord);
+          }
+        });
+
+        deconOperations.push({
+          type: 'layer-decon',
+          analysisLayerId: setting.AOI_LAYER_ID,
+          approach: setting.DECON_EST_APPROACH,
+          buildingApproach: setting.DECON_BLDG_EST_APPROACH,
+          deconLayerResults: {
+            cost: opResults.COST,
+            resultsTable: [],
+            time: opResults.TIME,
+            wasteMass: opResults.SOLID_WASTE_MASS,
+            wasteVolume: opResults.SOLID_WASTE_M3,
+          },
+          deconSummaryResults: {},
+          deconTechSelections,
+          editType: 'add',
+          id: 0,
+          label: setting.OPERATION_NAME,
+          layerId: setting.OPERATION_UUID,
+          layerType: 'Decon',
+          listMode: 'show',
+          name: setting.OPERATION_NAME,
+          portalId: result.id,
+          status: 'published',
+          value: setting.OPERATION_UUID,
+          visible: true,
+        });
+        layersToAdd.push({
+          addedFrom: 'sketch',
+          editType: 'add',
+          geometryType: 'esriGeometryPolygon',
+          hybridLayer: null,
+          id: 0,
+          label: setting.OPERATION_NAME,
+          layerId: setting.OPERATION_UUID,
+          layerType: 'Decon',
+          listMode: 'show',
+          name: setting.OPERATION_NAME,
+          parentLayer: null,
+          pointsId: -1,
+          pointsLayer: null,
+          portalId: result.id,
+          sketchLayer: null,
+          sort: 0,
+          status: 'published',
+          uuid: setting.OPERATION_UUID,
+          value: setting.OPERATION_UUID,
+          visible: true,
+        });
+      });
+
+      const newScenario: ScenarioDeconEditsType = {
+        type: 'scenario-decon',
+        id: 0,
+        layerId: result.id,
+        portalId: result.id,
+        name: result.title,
+        label: result.title,
+        value: result.id,
+        layerType: 'Decon Scenario',
+        addedFrom: 'sketch',
+        status: 'published',
+        editType: 'add',
+        visible: true,
+        listMode: 'show',
+        scenarioName: result.title,
+        scenarioDescription: result.description,
+        linkedLayerIds,
+        table: null,
+        referenceLayersTable,
+      };
+      setSelectedScenario((scenario) => {
+        if (scenario) return scenario;
+        else return newScenario;
+      });
+
+      // make a copy of the edits context variable
+      editsCopy = {
+        count: editsCopy.count + 1,
+        edits: [...editsCopy.edits, newScenario, ...deconOperations],
+      };
+
       // get the age of the layer in seconds
       const created: number = new Date(result.created).getTime();
       const curTime: number = Date.now();
@@ -3132,45 +2896,13 @@ function ResultCard({ appType, result }: ResultCardProps) {
       // validate the area and attributes of features of the uploads. If there is an
       // issue, display a popup asking the user if they would like the samples to be updated.
       if (zoomToGraphics.length > 0) {
-        const output = await sampleValidation(
-          sampleTypes,
-          sceneViewForArea,
+        finalizeLayerAdd({
+          mapLayersToAdd,
           zoomToGraphics,
-          true,
-          false,
-        );
-
-        if (output?.areaOutOfTolerance || output?.attributeMismatch) {
-          setOptions({
-            title: 'Decon Issues',
-            ariaLabel: 'Decon Issues',
-            description: sampleIssuesPopupMessage(
-              output,
-              sampleTypes?.areaTolerance ?? 1,
-            ),
-            onContinue: () =>
-              finalizeLayerAdd({
-                mapLayersToAdd,
-                newUserSampleTypes,
-                newAttributes,
-                zoomToGraphics,
-                editsCopy,
-                layersToAdd,
-                refLayersToAdd,
-              }),
-            onCancel: () => setStatus('canceled'),
-          });
-        } else {
-          finalizeLayerAdd({
-            mapLayersToAdd,
-            newUserSampleTypes,
-            newAttributes,
-            zoomToGraphics,
-            editsCopy,
-            layersToAdd,
-            refLayersToAdd,
-          });
-        }
+          editsCopy,
+          layersToAdd,
+          refLayersToAdd,
+        });
       } else if (zoomToGraphics.length === 0 && duration < 300) {
         // display a message if the layer is empty and the layer is less
         // than 5 minutes old
@@ -3183,8 +2915,6 @@ function ResultCard({ appType, result }: ResultCardProps) {
       } else {
         finalizeLayerAdd({
           mapLayersToAdd,
-          newUserSampleTypes,
-          newAttributes,
           zoomToGraphics,
           editsCopy,
           layersToAdd,
@@ -4091,16 +3821,13 @@ function ResultCard({ appType, result }: ResultCardProps) {
                       'contains-epa-tots-aoi-characterization',
                     )
                   ) {
-                    addAoiCharacterizationLayer(
-                      {
-                        created: result.created,
-                        description: result.description,
-                        id: result.id,
-                        title: result.title,
-                        url: result.url,
-                      },
-                      true,
-                    );
+                    addAoiCharacterizationLayer({
+                      created: result.created,
+                      description: result.description,
+                      id: result.id,
+                      title: result.title,
+                      url: result.url,
+                    });
                   } else if (
                     categories?.includes(
                       'contains-epa-tods-user-defined-decon-tech',

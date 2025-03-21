@@ -690,16 +690,12 @@ function usePortalLayerStorage(dbInitialized: boolean) {
       // The only reason tots layers are also in portal layers is
       // so the search panel will show the layer as having been
       // added.
-      if (portalLayer.type === 'tots' && !isDecon()) return;
+      if (portalLayer.type === 'tots') return;
 
       const layer = Layer.fromPortalItem({
         portalItem: new PortalItem({ id }),
       });
       map.add(layer);
-
-      if (isDecon() && portalLayer.type === 'tots') {
-        addTotsLayerForTods(layer);
-      }
     });
   }, [map, portalLayers]);
 }
