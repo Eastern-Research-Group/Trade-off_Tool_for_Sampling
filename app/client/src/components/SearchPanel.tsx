@@ -2399,6 +2399,14 @@ function ResultCard({ appType, result }: ResultCardProps) {
         visible: true,
       });
 
+      const layerIdsAlreadyAdded = edits.edits
+        .filter((e) => e.type === 'layer-aoi-analysis')
+        .map((e) => e.layerId);
+      if (layerIdsAlreadyAdded.includes(groupLayer.id)) {
+        // already added bail early
+        return;
+      }
+
       // get the age of the layer in seconds
       const created: number = new Date(result.created).getTime();
       const curTime: number = Date.now();
@@ -3717,7 +3725,23 @@ function ResultCard({ appType, result }: ResultCardProps) {
   function removeAoiCharacterizationLayer() {
     if (!map) return;
 
-    // TODO add checks to prevent removal if it is linked to something
+    // prevent removal if it is linked to something
+    const aoiEditId = edits.edits.find(
+      (e) => e.type === 'layer-aoi-analysis' && e.portalId === result.id,
+    )?.layerId;
+    const linkedAoiLayers = edits.edits.filter(
+      (e) => e.type === 'layer-decon' && e.analysisLayerId === aoiEditId,
+    );
+
+    if (linkedAoiLayers.length > 0) {
+      setOptions({
+        title: 'Cannot Remove',
+        ariaLabel: 'Cannot Remove',
+        description: `Cannot remove the "${result.title}" layer since it is linked to atleast one decon operation. Please unlink the layer and try again.`,
+        onCancel: () => {},
+      });
+      return;
+    }
 
     const newEdits = {
       count: edits.count + 1,

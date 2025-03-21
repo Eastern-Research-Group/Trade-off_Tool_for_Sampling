@@ -1619,7 +1619,10 @@ function Publish({ appType }: Props) {
           }
         }
 
-        if (includeAoiCharacterization && aoiLayersToInclude.length > 0) {
+        if (
+          (includeAoiCharacterization || isDecon()) &&
+          aoiLayersToInclude.length > 0
+        ) {
           aoiLayersToInclude.forEach((aoiLayer) => {
             const layersToPublish = [];
             let extent: __esri.Extent | null = null;
