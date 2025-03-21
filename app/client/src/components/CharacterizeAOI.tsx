@@ -296,7 +296,10 @@ function CharacterizeAOI({
     }
   }
 
-  function getAoiLayer() {
+  function getAoiLayer(
+    deconSketchLayer: LayerAoiAnalysisEditsType,
+    layers: LayerType[],
+  ) {
     let aoiLayer: LayerType | undefined = undefined;
 
     // locate the layer
@@ -328,7 +331,7 @@ function CharacterizeAOI({
   async function assessAoi() {
     if (!deconSketchLayer || !deconSketchLayer.aoiLayerMode) return;
 
-    const aoiLayer = getAoiLayer();
+    const aoiLayer = getAoiLayer(deconSketchLayer, layers);
     const aoiGraphics: __esri.Graphic[] = [];
     if (aoiLayer?.sketchLayer && aoiLayer.sketchLayer.type === 'graphics') {
       aoiGraphics.push(...aoiLayer.sketchLayer.graphics.toArray());
@@ -791,15 +794,22 @@ function CharacterizeAOI({
   //   if (layer) setSelectedAoiFile(layer);
   // }, [layers, selectedScenario]);
 
-  const aoiLayer = getAoiLayer();
-  const hasAoiGraphics =
-    aoiLayer?.sketchLayer &&
-    aoiLayer.sketchLayer.type === 'graphics' &&
-    aoiLayer.sketchLayer.graphics.length > 0;
-
   const [addScenarioVisible, setAddScenarioVisible] = useState(false);
-  const [editScenarioVisible, setEditScenarioVisible] =
-    useState(!hasAoiGraphics);
+  const [editScenarioVisible, setEditScenarioVisible] = useState(false);
+
+  useEffect(() => {
+    if (!deconSketchLayer) {
+      setEditScenarioVisible(false);
+      return;
+    }
+
+    const aoiLayer = getAoiLayer(deconSketchLayer, layers);
+    const hasAoiGraphics =
+      aoiLayer?.sketchLayer &&
+      aoiLayer.sketchLayer.type === 'graphics' &&
+      aoiLayer.sketchLayer.graphics.length > 0;
+    setEditScenarioVisible(!hasAoiGraphics);
+  }, [deconSketchLayer, layers]);
 
   // get decon layers for showing in select
   const [deconLayers, setDeconLayers] = useState<LayerAoiAnalysisEditsType[]>(

@@ -424,11 +424,11 @@ export const publishSuccessMessage = (appName: string, itemData?: any[]) => {
 };
 
 // scenario name / description component messages
-export const scenarioNameTakenMessage = (scenarioName: string) => (
+export const scenarioNameTakenMessage = (scenarioName?: string) => (
   <MessageBox
     severity="warning"
     title="Name Not Available"
-    message={`The "${scenarioName}" name is already in use within your organization. Please rename the plan and try again.`}
+    message={`The "${scenarioName ?? ''}" name is already in use within your organization. Please rename the plan and try again.`}
   />
 );
 

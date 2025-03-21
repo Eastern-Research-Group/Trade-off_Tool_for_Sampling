@@ -2336,7 +2336,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
         value: groupLayer.id,
         layerType: 'AOI Analysis',
         addedFrom: 'sketch',
-        status: 'added',
+        status: 'published',
         editType: 'add',
         visible: true,
         listMode: 'show',
