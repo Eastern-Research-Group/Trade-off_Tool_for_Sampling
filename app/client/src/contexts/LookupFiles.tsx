@@ -177,7 +177,9 @@ type Content = {
     message: string;
   };
   services: {
+    governmentLands: string;
     gpServerInputMaxRecordCount: number;
+    parcel: string;
     proxyUrl: string;
     structures: string;
     suitability: string;

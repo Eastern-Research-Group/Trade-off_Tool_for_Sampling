@@ -3,6 +3,8 @@
 import { Fragment, useContext, useEffect, useState } from 'react';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import ImageryLayer from '@arcgis/core/layers/ImageryLayer.js';
+import MapImageLayer from '@arcgis/core/layers/MapImageLayer.js';
+import TileLayer from '@arcgis/core/layers/TileLayer.js';
 import PopupTemplate from '@arcgis/core/PopupTemplate.js';
 import { css } from '@emotion/react';
 // components
@@ -23,8 +25,9 @@ import {
   getDefaultSamplingMaskLayer,
 } from 'utils/sketchUtils';
 
+const GOVERNMENT_LANDS_LAYER_ID = generateUUID();
+const PARCEL_LAYER_ID = generateUUID();
 const SUITABILITY_LAYER_ID = generateUUID();
-const STAGING_AOI_LAYER_NAME = 'Sketched Staging AOI';
 
 function hasAoiGraphics(
   layers: LayerType[],
@@ -103,15 +106,6 @@ const iconButtonStyles = css`
   }
 `;
 
-const inputStyles = css`
-  width: 100%;
-  height: 36px;
-  margin: 0 0 10px 0;
-  padding-left: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-`;
-
 const layerButtonContainerStyles = css`
   display: flex;
   flex-direction: column;
@@ -153,14 +147,17 @@ const verticalCenterTextStyles = css`
 function StagingAreas() {
   const {
     aoiSketchVM,
-    aoiSketchLayer,
     edits,
+    governmentLandsLayerVisible,
     layers,
     layersInitialized,
     map,
+    parcelLayerVisible,
     setAoiSketchLayer,
     setEdits,
+    setGovernmentLandsLayerVisible,
     setLayers,
+    setParcelLayerVisible,
     setSuitabilityLayerVisible,
     setStagingAreaLayer,
     stagingAreaLayer,
@@ -168,6 +165,8 @@ function StagingAreas() {
   } = useContext(SketchContext);
 
   useSuitabilityLayer();
+  useGovernmentLandsLayer();
+  useParcelLayer();
 
   const [addScenarioVisible, setAddScenarioVisible] = useState(false);
   const [editScenarioVisible, setEditScenarioVisible] = useState(false);
@@ -360,6 +359,22 @@ function StagingAreas() {
           onChange={(ev) => setSuitabilityLayerVisible(ev.target.checked)}
         />
         <span>Staging Suitability Analysis</span>
+      </label>
+      <label css={layerItemStyles}>
+        <input
+          type="checkbox"
+          checked={parcelLayerVisible}
+          onChange={(ev) => setParcelLayerVisible(ev.target.checked)}
+        />
+        <span>Local Parcel Information</span>
+      </label>
+      <label css={layerItemStyles}>
+        <input
+          type="checkbox"
+          checked={governmentLandsLayerVisible}
+          onChange={(ev) => setGovernmentLandsLayerVisible(ev.target.checked)}
+        />
+        <span>Government-Owned Lands</span>
       </label>
 
       <div css={layerSectionStyles}>
@@ -576,6 +591,76 @@ function useAoiCalculations(aoiLayer?: LayerType | null) {
     totalSolidWasteCapacity: sumValues('SOLID_WASTE_CAPACITY'),
     totalLiquidWasteCapacity: sumValues('LIQUID_WASTE_CAPACITY'),
   };
+}
+
+function useGovernmentLandsLayer() {
+  const { services } = useLookupFiles().data;
+  const { map, governmentLandsLayerVisible } = useContext(SketchContext);
+
+  const governmentLandsLayer = (() => {
+    if (!map) return;
+    return (
+      map.findLayerById(GOVERNMENT_LANDS_LAYER_ID) ??
+      new MapImageLayer({
+        id: GOVERNMENT_LANDS_LAYER_ID,
+        listMode: 'show',
+        url: services.governmentLands,
+      })
+    );
+  })();
+
+  if (governmentLandsLayer) {
+    if (map && !map.allLayers.includes(governmentLandsLayer)) {
+      map.add(governmentLandsLayer);
+    }
+    if (governmentLandsLayer.visible !== governmentLandsLayerVisible) {
+      governmentLandsLayer.visible = governmentLandsLayerVisible;
+    }
+  }
+
+  // Hide the government lands layer when the component unmounts.
+  useEffect(() => {
+    return function cleanup() {
+      if (governmentLandsLayer) governmentLandsLayer.visible = false;
+    };
+  }, [governmentLandsLayer]);
+
+  return governmentLandsLayer;
+}
+
+function useParcelLayer() {
+  const { services } = useLookupFiles().data;
+  const { map, parcelLayerVisible } = useContext(SketchContext);
+
+  const parcelLayer = (() => {
+    if (!map) return;
+    return (
+      map.findLayerById(PARCEL_LAYER_ID) ??
+      new TileLayer({
+        id: PARCEL_LAYER_ID,
+        listMode: 'show',
+        url: services.parcel,
+      })
+    );
+  })();
+
+  if (parcelLayer) {
+    if (map && !map.allLayers.includes(parcelLayer)) {
+      map.add(parcelLayer);
+    }
+    if (parcelLayer.visible !== parcelLayerVisible) {
+      parcelLayer.visible = parcelLayerVisible;
+    }
+  }
+
+  // Hide the parcel layer when the component unmounts.
+  useEffect(() => {
+    return function cleanup() {
+      if (parcelLayer) parcelLayer.visible = false;
+    };
+  }, [parcelLayer]);
+
+  return parcelLayer;
 }
 
 function useSuitabilityLayer() {

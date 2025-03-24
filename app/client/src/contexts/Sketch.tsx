@@ -229,6 +229,10 @@ type SketchType = {
   setResultsOpen: Dispatch<SetStateAction<boolean>>;
   efficacyResults: any;
   setEfficacyResults: Dispatch<SetStateAction<any>>;
+  governmentLandsLayerVisible: boolean;
+  setGovernmentLandsLayerVisible: Dispatch<SetStateAction<boolean>>;
+  parcelLayerVisible: boolean;
+  setParcelLayerVisible: Dispatch<SetStateAction<boolean>>;
   suitabilityLayerVisible: boolean;
   setSuitabilityLayerVisible: Dispatch<SetStateAction<boolean>>;
 };
@@ -336,6 +340,10 @@ export const SketchContext = createContext<SketchType>({
   setResultsOpen: () => {},
   efficacyResults: null,
   setEfficacyResults: () => {},
+  governmentLandsLayerVisible: true,
+  setGovernmentLandsLayerVisible: () => {},
+  parcelLayerVisible: true,
+  setParcelLayerVisible: () => {},
   suitabilityLayerVisible: true,
   setSuitabilityLayerVisible: () => {},
 });
@@ -460,6 +468,9 @@ export function SketchProvider({ children }: Props) {
   const [viewUnderground3d, setViewUnderground3d] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(false);
   const [efficacyResults, setEfficacyResults] = useState(null);
+  const [governmentLandsLayerVisible, setGovernmentLandsLayerVisible] =
+    useState(true);
+  const [parcelLayerVisible, setParcelLayerVisible] = useState(true);
   const [suitabilityLayerVisible, setSuitabilityLayerVisible] = useState(true);
 
   // Update totsLayers variable on the window object. This is a workaround
@@ -757,6 +768,10 @@ export function SketchProvider({ children }: Props) {
         setResultsOpen,
         efficacyResults,
         setEfficacyResults,
+        governmentLandsLayerVisible,
+        setGovernmentLandsLayerVisible,
+        parcelLayerVisible,
+        setParcelLayerVisible,
         suitabilityLayerVisible,
         setSuitabilityLayerVisible,
       }}
