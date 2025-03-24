@@ -1,15 +1,15 @@
 /** @jsxImportSource @emotion/react */
 
-import { useContext, useEffect } from 'react';
+import { useContext } from 'react';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import { css } from '@emotion/react';
 // contexts
+import { DialogContext } from 'contexts/Dialog';
 import { SketchContext } from 'contexts/Sketch';
+// types
+import { LayerEditsType } from 'types/Edits';
 // utils
-import {
-  activateSketchButton,
-  getDefaultSamplingMaskLayer,
-} from 'utils/sketchUtils';
+import { activateSketchButton } from 'utils/sketchUtils';
 
 // --- styles (Calculate) ---
 const sketchAoiTextStyles = css`
@@ -35,10 +35,11 @@ const sketchAoiButtonStyles = css`
 
 // --- components ---
 
-const BUTTON_ID = 'decon-mask';
+const BUTTON_ID = 'staging-aoi';
 
 type Props = {
   className?: string;
+  replaceGraphics?: boolean;
   sketchLayer?:
     | __esri.FeatureLayer
     | __esri.GraphicsLayer
@@ -46,28 +47,68 @@ type Props = {
     | null;
 };
 
-function AoiButton({ className, sketchLayer }: Props) {
+function AoiSketchButton({
+  className,
+  replaceGraphics = false,
+  sketchLayer,
+}: Props) {
+  const { setOptions } = useContext(DialogContext);
   const {
     aoiSketchLayer,
     aoiSketchVM,
     displayDimensions,
-    layers,
-    layersInitialized,
     map,
     mapView,
     sceneView,
-    setAoiSketchLayer,
-    setLayers,
+    setEdits,
     sketchVM,
   } = useContext(SketchContext);
-
-  window.totsLayers = layers;
 
   // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
   // dropdown this will create an AOI layer. This also sets the sketchVM to use the
   // selected AOI and triggers a React useEffect to allow the user to sketch on the map.
   const sketchAoiButtonClick = () => {
     if (!map || !aoiSketchVM || !sceneView || !mapView) return;
+
+    if (
+      replaceGraphics &&
+      aoiSketchLayer?.sketchLayer?.type === 'graphics' &&
+      aoiSketchLayer.sketchLayer.graphics.length > 0
+    ) {
+      setOptions({
+        title: 'Would you like to continue?',
+        ariaLabel: 'Would you like to continue?',
+        description:
+          'Staging Area Boundary layers are only allowed to have one graphic. ' +
+          'This operation will delete any graphics on the Staging Area Boundary. ' +
+          'If you want to keep the graphic, click Cancel and add a new Staging Area Boundary Layer.',
+        onContinue: () => {
+          if (aoiSketchLayer?.sketchLayer?.type === 'graphics')
+            aoiSketchLayer.sketchLayer.graphics.removeAll();
+
+          setEdits((edits) => {
+            const editLayer = edits.edits.find(
+              (edit) =>
+                edit.type === 'layer' &&
+                edit.layerId === aoiSketchLayer.layerId,
+            ) as LayerEditsType | undefined;
+            if (editLayer) editLayer.adds = [];
+
+            return {
+              count: edits.count + 1,
+              edits: edits.edits,
+            };
+          });
+
+          // save changes from other sketchVM and disable to prevent
+          // interference
+          if (sketchVM) sketchVM[displayDimensions].cancel();
+
+          // let the user draw/place the shape
+          aoiSketchVM.create('polygon');
+        },
+      });
+    }
 
     // save changes from other sketchVM and disable to prevent
     // interference
@@ -84,34 +125,6 @@ function AoiButton({ className, sketchLayer }: Props) {
     }
   };
 
-  // Initializes the aoi layer for performance reasons
-  useEffect(() => {
-    if (!map || !layersInitialized || aoiSketchLayer) return;
-
-    const maskLayer = layers.find((l) => l.name === 'Sketched Sampling Mask');
-    if (maskLayer) {
-      setAoiSketchLayer(maskLayer);
-      return;
-    }
-
-    const newAoiSketchLayer = getDefaultSamplingMaskLayer();
-    const sketchLayer = newAoiSketchLayer.sketchLayer;
-    if (sketchLayer) map.add(sketchLayer);
-
-    // add the layer to the map
-    setLayers((layers) => [...layers, newAoiSketchLayer]);
-
-    // set the active sketch layer
-    setAoiSketchLayer(newAoiSketchLayer);
-  }, [
-    map,
-    aoiSketchLayer,
-    layers,
-    setAoiSketchLayer,
-    layersInitialized,
-    setLayers,
-  ]);
-
   // Set the sketch VM layer to the aoi sketch layer.
   const targetLayer = sketchLayer ?? aoiSketchLayer?.sketchLayer;
   if (
@@ -125,16 +138,17 @@ function AoiButton({ className, sketchLayer }: Props) {
   return (
     <button
       id={BUTTON_ID}
-      title="Draw Decon Mask"
+      title="Draw Staging Area Boundary"
       className={`sketch-button ${className}`}
       onClick={sketchAoiButtonClick}
       css={sketchAoiButtonStyles}
     >
       <span css={sketchAoiTextStyles}>
-        <i className="fas fa-draw-polygon" /> <span>Draw Area of Interest</span>
+        <i className="fas fa-draw-polygon" />{' '}
+        <span>Draw Staging Area Boundary</span>
       </span>
     </button>
   );
 }
 
-export default AoiButton;
+export default AoiSketchButton;

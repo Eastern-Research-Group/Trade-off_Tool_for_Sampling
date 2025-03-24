@@ -718,7 +718,11 @@ export function getCurrentDateTime() {
  *
  * @returns LayerType The default sampling mask layer
  */
-export function getDefaultSamplingMaskLayer(name = 'Sketched Sampling Mask') {
+export function getDefaultSamplingMaskLayer(
+  name = 'Sketched Sampling Mask',
+  layerType = 'Sampling Mask',
+  useUuidForValue = false,
+) {
   const layerUuid = generateUUID();
   const graphicsLayer = new GraphicsLayer({
     id: layerUuid,
@@ -732,10 +736,10 @@ export function getDefaultSamplingMaskLayer(name = 'Sketched Sampling Mask') {
     uuid: layerUuid,
     layerId: layerUuid,
     portalId: '',
-    value: 'sketchAoi',
+    value: useUuidForValue ? layerUuid : 'sketchAoi',
     name,
     label: name,
-    layerType: 'Sampling Mask',
+    layerType,
     scenarioName: '',
     scenarioDescription: '',
     editType: 'add',

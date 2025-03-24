@@ -230,6 +230,7 @@ export type LayerEditsType = {
   layerId: string; // id from esri layer
   portalId: string; // id from portal layer
   name: string; // layer name
+  description?: string;
   label: string; // layer label
   layerType: LayerTypeName; // type of tots layer (sample, contamination, etc.)
   addedFrom: AddedFrom; // how the layer was added (file, url, etc.)

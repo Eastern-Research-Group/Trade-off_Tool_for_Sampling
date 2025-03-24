@@ -1,21 +1,24 @@
 /** @jsxImportSource @emotion/react */
 
-import { useContext, useEffect } from 'react';
+import { Fragment, useContext, useEffect, useState } from 'react';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import ImageryLayer from '@arcgis/core/layers/ImageryLayer.js';
 import PopupTemplate from '@arcgis/core/PopupTemplate.js';
 import { css } from '@emotion/react';
 // components
 import AoiSketchButton from 'components/AoiSketchButton';
-import Switch from 'components/Switch';
+import { EditStagingAreaCharacterization } from 'components/EditLayerMetaData';
 // contexts
 import { useLookupFiles } from 'contexts/LookupFiles';
+import Select from 'components/Select';
 import { SketchContext } from 'contexts/Sketch';
 // types
+import { EditsType, LayerEditsType } from 'types/Edits';
 import { LayerType } from 'types/Layer';
 // utils
 import {
   calculateArea,
+  createLayerEditTemplate,
   generateUUID,
   getDefaultSamplingMaskLayer,
 } from 'utils/sketchUtils';
@@ -23,7 +26,29 @@ import {
 const SUITABILITY_LAYER_ID = generateUUID();
 const STAGING_AOI_LAYER_NAME = 'Sketched Staging AOI';
 
+function hasAoiGraphics(
+  layers: LayerType[],
+  stagingAreaLayer: LayerType | null,
+) {
+  if (!stagingAreaLayer) return false;
+
+  const aoiLayer = layers.find(
+    (l) =>
+      l.layerType === 'Staging Area Mask' &&
+      l.layerId === stagingAreaLayer.layerId,
+  );
+  return (
+    aoiLayer?.sketchLayer &&
+    aoiLayer.sketchLayer.type === 'graphics' &&
+    aoiLayer.sketchLayer.graphics.length > 0
+  );
+}
+
 // --- styles ---
+
+const calculationSectionHeadingStyles = css`
+  font-size: 1.125rem;
+`;
 
 const calculationSectionStyles = css`
   column-gap: 1em;
@@ -44,39 +69,404 @@ const calculationSectionStyles = css`
   }
 `;
 
+const headingStyles = css`
+  display: flex;
+  align-items: center;
+  font-size: 1.25rem;
+  gap: 6px;
+  margin-top: 1rem;
+
+  i {
+    color: #005ea2;
+    font-size: 1.5rem;
+  }
+`;
+
+const iconButtonContainerStyles = css`
+  display: flex;
+  justify-content: space-between;
+`;
+
+const iconButtonStyles = css`
+  width: 25px;
+  margin: 0 2px;
+  padding: 0.25em 0;
+  color: black;
+  background-color: white;
+  border-radius: 0;
+  line-height: 16px;
+  text-decoration-line: none;
+  font-weight: bold;
+
+  &:hover {
+    background-color: white;
+  }
+`;
+
+const inputStyles = css`
+  width: 100%;
+  height: 36px;
+  margin: 0 0 10px 0;
+  padding-left: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+`;
+
+const layerButtonContainerStyles = css`
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+
+  div {
+    display: flex;
+    justify-content: flex-end;
+  }
+`;
+
+const layerItemStyles = css`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 1rem;
+
+  input {
+    height: 18px;
+    width: 18px;
+  }
+`;
+
+const layerSectionStyles = css`
+  margin-top: 1rem;
+`;
+
+const layerSelectStyles = css`
+  margin-bottom: 10px;
+`;
+
+const verticalCenterTextStyles = css`
+  display: flex;
+  align-items: center;
+`;
+
 // --- components ---
 
 function StagingAreas() {
-  const { setSuitabilityLayerVisible, suitabilityLayerVisible } =
-    useContext(SketchContext);
+  const {
+    aoiSketchVM,
+    aoiSketchLayer,
+    edits,
+    layers,
+    layersInitialized,
+    map,
+    setAoiSketchLayer,
+    setEdits,
+    setLayers,
+    setSuitabilityLayerVisible,
+    setStagingAreaLayer,
+    stagingAreaLayer,
+    suitabilityLayerVisible,
+  } = useContext(SketchContext);
 
   useSuitabilityLayer();
 
-  const stagingAoiLayer = useStagingAoiLayer();
+  const [addScenarioVisible, setAddScenarioVisible] = useState(false);
+  const [editScenarioVisible, setEditScenarioVisible] = useState(false);
+  const [stagingLayers, setStagingLayers] = useState<LayerType[]>([]);
 
-  const sketchLayer = stagingAoiLayer?.sketchLayer;
+  const sketchLayer = stagingAreaLayer?.sketchLayer;
+
+  const [lastAoiSketchLayer, setLastAoiSketchLayer] =
+    useState<__esri.GraphicsLayer | null>(null);
+  useEffect(() => {
+    if (!aoiSketchVM) return;
+
+    const stagingLayer = edits.edits.find(
+      (item) =>
+        item.type === 'layer' &&
+        item.layerType === 'Staging Area Mask' &&
+        item.layerId === stagingAreaLayer?.layerId,
+    ) as LayerEditsType | undefined;
+    if (!stagingLayer) return;
+
+    const sketchLayer = layers.find(
+      (l) =>
+        l.layerType === 'Staging Area Mask' &&
+        l.layerId === stagingLayer.layerId,
+    );
+    if (
+      sketchLayer &&
+      sketchLayer?.sketchLayer?.id !== aoiSketchVM?.layer?.id
+    ) {
+      setLastAoiSketchLayer(aoiSketchVM.layer);
+      aoiSketchVM.layer = sketchLayer.sketchLayer as __esri.GraphicsLayer;
+    }
+
+    return function cleanup() {
+      if (lastAoiSketchLayer) aoiSketchVM.layer = lastAoiSketchLayer;
+    };
+  }, [aoiSketchVM, edits, lastAoiSketchLayer, layers]);
+
+  const [initializedLayers, setInitializedLayers] = useState(false);
+  useEffect(() => {
+    if (!layersInitialized) return;
+
+    const newLayers: LayerType[] = [];
+    layers.forEach((layer) => {
+      if (layer.layerType === 'Staging Area Mask') newLayers.push(layer);
+    });
+    setStagingLayers(newLayers);
+    setInitializedLayers(true);
+  }, [edits, layersInitialized]);
+
+  const [initializedLayer, setInitializedDeconLayer] = useState(false);
+  useEffect(() => {
+    if (
+      stagingAreaLayer ||
+      initializedLayer ||
+      !initializedLayers ||
+      !layersInitialized ||
+      !map
+    )
+      return;
+
+    setInitializedDeconLayer(true);
+
+    if (stagingLayers.length > 0) {
+      setStagingAreaLayer(stagingLayers[0]);
+    } else {
+      const newAoiSketchLayer = getDefaultSamplingMaskLayer(
+        'Staging Area Mask',
+        'Staging Area Mask',
+        true,
+      );
+      const newAoiEdits = createLayerEditTemplate(newAoiSketchLayer, 'add');
+
+      // make a copy of the edits context variable
+      setEdits((edits) => {
+        return {
+          count: edits.count + 1,
+          edits: [...edits.edits, newAoiEdits],
+        };
+      });
+
+      setStagingAreaLayer(newAoiSketchLayer);
+
+      const tLayers = [...layers, newAoiSketchLayer];
+
+      // update layers (set parent layer)
+      window.totsLayers = tLayers;
+      setLayers(tLayers);
+
+      // add the scenario group layer to the map
+      if (newAoiSketchLayer.sketchLayer) map.add(newAoiSketchLayer.sketchLayer);
+    }
+  }, [
+    initializedLayer,
+    initializedLayers,
+    layers,
+    layersInitialized,
+    map,
+    setEdits,
+    setLayers,
+  ]);
+
+  useEffect(() => {
+    setAoiSketchLayer(stagingAreaLayer);
+  }, [stagingAreaLayer, setAoiSketchLayer]);
+
+  function handleAdd() {
+    if (!map) return;
+
+    const newAoiSketchLayer = getDefaultSamplingMaskLayer(
+      'Staging Area Mask',
+      'Staging Area Mask',
+      true,
+    );
+    const newAoiEdits = createLayerEditTemplate(newAoiSketchLayer, 'add');
+
+    // make a copy of the edits context variable
+    setEdits((edits) => {
+      return {
+        count: edits.count + 1,
+        edits: [...edits.edits, newAoiEdits],
+      };
+    });
+
+    setStagingAreaLayer(newAoiSketchLayer);
+
+    const tLayers = [...layers];
+    if (newAoiSketchLayer) tLayers.push(newAoiSketchLayer);
+
+    // update layers (set parent layer)
+    window.totsLayers = tLayers;
+    setLayers(tLayers);
+
+    // add the layer to the map
+    if (newAoiSketchLayer.sketchLayer) map.add(newAoiSketchLayer.sketchLayer);
+  }
+
+  function handleDelete(lastDeconSketchLayer?: LayerType | null) {
+    if (!stagingAreaLayer) return;
+
+    const idsToDelete: string[] = [stagingAreaLayer.layerId];
+
+    const newLayers = stagingLayers.filter(
+      (layer) => stagingAreaLayer.layerId !== layer.layerId,
+    );
+    setStagingLayers(newLayers);
+    if (lastDeconSketchLayer) setStagingAreaLayer(lastDeconSketchLayer);
+    else setStagingAreaLayer(newLayers.length > 0 ? newLayers[0] : null);
+
+    // remove all of the child layers
+    setLayers((layers) => {
+      return layers.filter((layer) => !idsToDelete.includes(layer.layerId));
+    });
+
+    // remove the scenario from edits
+    const newEdits: EditsType = {
+      count: edits.count + 1,
+      edits: edits.edits.filter(
+        (item) => item.layerId !== stagingAreaLayer.layerId,
+      ),
+    };
+    setEdits(newEdits);
+
+    if (!map) return;
+
+    // remove the scenario from the map
+    const mapLayer = map.layers.find(
+      (layer) => layer.id === stagingAreaLayer?.layerId,
+    );
+    if (mapLayer) map.remove(mapLayer);
+  }
+
+  const stagingAreaEdits = edits.edits.find(
+    (edit) =>
+      edit.type === 'layer' &&
+      edit.layerType === 'Staging Area Mask' &&
+      edit.layerId === stagingAreaLayer?.layerId,
+  ) as LayerEditsType | undefined;
 
   return (
     <div>
-      <label className="display-flex flex-align-center flex-justify margin-0">
-        <strong>Display Staging Suitability Layer</strong>
-        <Switch
-          ariaLabel="Display Staging Suitability Layer"
+      <h2 css={headingStyles}>
+        <i className="fas fa-layer-group" />
+        Add Layers
+      </h2>
+      <label css={layerItemStyles}>
+        <input
+          type="checkbox"
           checked={suitabilityLayerVisible}
-          onChange={setSuitabilityLayerVisible}
+          onChange={(ev) => setSuitabilityLayerVisible(ev.target.checked)}
         />
+        <span>Staging Suitability Analysis</span>
       </label>
-      <AoiSketchButton className="margin-top-1" sketchLayer={sketchLayer} />
+
+      <div css={layerSectionStyles}>
+        <div css={iconButtonContainerStyles}>
+          <div css={verticalCenterTextStyles}>
+            <label htmlFor="suitability-aoi-select-input">
+              Active AOI Layer
+            </label>
+          </div>
+          <div css={layerButtonContainerStyles}>
+            <div>
+              {stagingAreaLayer && (
+                <Fragment>
+                  <button
+                    css={iconButtonStyles}
+                    title="Delete Layer"
+                    onClick={() => handleDelete()}
+                  >
+                    <i className="fas fa-trash-alt" />
+                    <span className="sr-only">Delete Layer</span>
+                  </button>
+
+                  {stagingAreaLayer.status !== 'published' && (
+                    <button
+                      css={iconButtonStyles}
+                      title={editScenarioVisible ? 'Cancel' : 'Edit Layer'}
+                      onClick={() => {
+                        setAddScenarioVisible(false);
+                        setEditScenarioVisible(!editScenarioVisible);
+                      }}
+                    >
+                      <i
+                        className={
+                          editScenarioVisible ? 'fas fa-times' : 'fas fa-edit'
+                        }
+                      />
+                      <span className="sr-only">
+                        {editScenarioVisible ? 'Cancel' : 'Edit Layer'}
+                      </span>
+                    </button>
+                  )}
+                </Fragment>
+              )}
+              <button
+                css={iconButtonStyles}
+                title={addScenarioVisible ? 'Cancel' : 'Add Layer'}
+                onClick={() => {
+                  setEditScenarioVisible(false);
+                  setAddScenarioVisible(!addScenarioVisible);
+
+                  if (!addScenarioVisible) {
+                    handleAdd();
+                  } else {
+                    // delete the newly added layer
+                    handleDelete(stagingAreaLayer);
+                  }
+                }}
+              >
+                <i
+                  className={
+                    addScenarioVisible ? 'fas fa-times' : 'fas fa-plus'
+                  }
+                />
+                <span className="sr-only">
+                  {addScenarioVisible ? 'Cancel' : 'Add Layer'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <Select
+          id="suitability-aoi-select-input-container"
+          inputId="suitability-aoi-select-input"
+          css={layerSelectStyles}
+          isDisabled={addScenarioVisible || editScenarioVisible}
+          options={stagingLayers}
+          value={stagingAreaLayer}
+          onChange={(ev) => setStagingAreaLayer(ev as LayerType)}
+        />
+      </div>
+
+      {(addScenarioVisible || editScenarioVisible) && stagingAreaEdits && (
+        <EditStagingAreaCharacterization
+          aoiLayer={stagingAreaEdits}
+          onSave={(saveResults) => {
+            if (saveResults?.status !== 'success') return;
+            setAddScenarioVisible(false);
+            setEditScenarioVisible(false);
+          }}
+        />
+      )}
+
+      <AoiSketchButton
+        className="margin-top-1"
+        replaceGraphics={true}
+        sketchLayer={sketchLayer}
+      />
       <CalculationResults />
     </div>
   );
 }
 
 function CalculationResults() {
-  const stagingAoiLayer = useStagingAoiLayer();
+  const { stagingAreaLayer } = useContext(SketchContext);
 
   const { totalArea, totalSolidWasteCapacity, totalLiquidWasteCapacity } =
-    useAoiCalculations(stagingAoiLayer);
+    useAoiCalculations(stagingAreaLayer);
 
   const formatNumber = (value: number) =>
     value.toLocaleString('en-US', { maximumFractionDigits: 2 });
@@ -87,21 +477,20 @@ function CalculationResults() {
     'Liquid Waste Capacity': { value: totalLiquidWasteCapacity, unit: 'm³' },
   };
 
-  const sketchLayer = stagingAoiLayer?.sketchLayer;
+  const sketchLayer = stagingAreaLayer?.sketchLayer;
 
-  // TODO: Format this nicely.
   return sketchLayer instanceof GraphicsLayer && sketchLayer.graphics.length ? (
     <>
-      <h3>AOI Calculation Results</h3>
+      <h3 css={calculationSectionHeadingStyles}>AOI Calculation Results</h3>
       <section css={calculationSectionStyles}>
         {Object.entries(rows).map(([label, { value, unit }]) => (
-          <>
+          <Fragment key={label}>
             <div>{label}:</div>
             <div>
               {' '}
               {formatNumber(value)} {unit}{' '}
             </div>
-          </>
+          </Fragment>
         ))}
       </section>
     </>
@@ -110,7 +499,7 @@ function CalculationResults() {
 
 // --- custom hooks ---
 
-function useAoiCalculations(aoiLayer?: LayerType) {
+function useAoiCalculations(aoiLayer?: LayerType | null) {
   const { aoiSketchLayer, aoiSketchVM, sceneViewForArea } =
     useContext(SketchContext);
 
@@ -189,31 +578,6 @@ function useAoiCalculations(aoiLayer?: LayerType) {
   };
 }
 
-function useStagingAoiLayer() {
-  const { map, layers, layersInitialized, setLayers } =
-    useContext(SketchContext);
-
-  const stagingAoiLayer = layers.find(
-    (layer) => layer.name === STAGING_AOI_LAYER_NAME,
-  );
-
-  useEffect(() => {
-    if (!map || !layersInitialized) return;
-    if (stagingAoiLayer) return;
-
-    const newStagingAoiLayer = getDefaultSamplingMaskLayer(
-      STAGING_AOI_LAYER_NAME,
-    );
-    const sketchLayer = newStagingAoiLayer.sketchLayer;
-    if (sketchLayer) map.add(sketchLayer);
-
-    // add the layer to the map
-    setLayers((layers) => [...layers, newStagingAoiLayer]);
-  }, [layersInitialized, map, setLayers, stagingAoiLayer]);
-
-  return stagingAoiLayer;
-}
-
 function useSuitabilityLayer() {
   const { services } = useLookupFiles().data;
   const { map, suitabilityLayerVisible } = useContext(SketchContext);
@@ -238,8 +602,6 @@ function useSuitabilityLayer() {
       suitabilityLayer.visible = suitabilityLayerVisible;
     }
   }
-
-  // TODO: Add the sketch layer to the `edits` context attribute.
 
   // Hide the suitability layer when the component unmounts.
   useEffect(() => {

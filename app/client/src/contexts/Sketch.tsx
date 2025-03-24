@@ -180,6 +180,8 @@ type SketchType = {
   >;
   deconOperation: LayerType | null;
   setDeconOperation: Dispatch<SetStateAction<LayerType | null>>;
+  stagingAreaLayer: LayerType | null;
+  setStagingAreaLayer: Dispatch<SetStateAction<LayerType | null>>;
 
   map: __esri.Map | null;
   setMap: Dispatch<SetStateAction<__esri.Map | null>>;
@@ -293,6 +295,8 @@ export const SketchContext = createContext<SketchType>({
   setDeconSketchLayer: () => {},
   deconOperation: null,
   setDeconOperation: () => {},
+  stagingAreaLayer: null,
+  setStagingAreaLayer: () => {},
 
   map: null,
   setMap: () => {},
@@ -412,6 +416,9 @@ export function SketchProvider({ children }: Props) {
   const [deconSketchLayer, setDeconSketchLayer] =
     useState<LayerAoiAnalysisEditsType | null>(null);
   const [deconOperation, setDeconOperation] = useState<LayerType | null>(null);
+  const [stagingAreaLayer, setStagingAreaLayer] = useState<LayerType | null>(
+    null,
+  );
   const [homeWidget, setHomeWidget] = useState<HomeWidgetType | null>(null);
   const [symbolsInitialized, setSymbolsInitialized] = useState(false);
   const [map, setMap] = useState<__esri.Map | null>(null);
@@ -709,6 +716,8 @@ export function SketchProvider({ children }: Props) {
         setDeconSketchLayer,
         deconOperation,
         setDeconOperation,
+        stagingAreaLayer,
+        setStagingAreaLayer,
 
         map,
         setMap,
