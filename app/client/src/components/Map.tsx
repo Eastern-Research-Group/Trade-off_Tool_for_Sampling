@@ -95,7 +95,7 @@ function Map({ appType, height }: Props) {
     const newMap = new EsriMap({
       basemap: new Basemap({
         portalItem: new PortalItem({
-          id: 'e833fc01f447451f93ec0dfdfe12eed7',
+          id: '22fb75c0fa5a4c88b8ca4c4b8ae5c90b',
         }),
       }),
       ground: 'world-elevation',
