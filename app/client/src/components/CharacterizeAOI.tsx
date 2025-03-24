@@ -475,13 +475,11 @@ function CharacterizeAOI({
         if (deconLayer.version) deconLayer.version += 1;
         editsCopy.count += 1;
 
-        let gsgFile;
-        if (gsgFiles && gsgFiles.selectedIndex !== null) {
-          const file = gsgFiles.files[gsgFiles.selectedIndex];
-          gsgFile = await convertBase64ToFile(file.file, file.path);
-        } else {
-          gsgFile = await convertBase64ToFile(defaultGsg, 'defaultGsg.gsg');
-        }
+        const file = gsgFiles.files[gsgFiles.selectedIndex ?? 0];
+        const gsgFile = await convertBase64ToFile(
+          file.file ?? defaultGsg,
+          file.path,
+        );
 
         const gsgFileUploaded: any = await fetchPostFile(
           `${services.totsGPServer}/uploads/upload`,
@@ -773,8 +771,7 @@ function CharacterizeAOI({
 
   // initialize the selected gsg file
   useEffect(() => {
-    if (gsgFiles.selectedIndex === null) return;
-    setSelectedGsgFile(gsgFileOptions[gsgFiles.selectedIndex]);
+    setSelectedGsgFile(gsgFileOptions[gsgFiles.selectedIndex ?? 0]);
   }, [gsgFileOptions, gsgFiles]);
 
   // useEffect(() => {
@@ -1502,7 +1499,6 @@ function CharacterizeAOI({
                   inputId="gsg-file-select-input"
                   css={inlineSelectStyles}
                   styles={reactSelectStyles as any}
-                  isClearable={true}
                   value={selectedGsgFile}
                   onChange={(ev) => {
                     setSelectedGsgFile(ev);

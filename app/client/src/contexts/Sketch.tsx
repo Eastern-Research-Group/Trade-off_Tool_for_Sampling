@@ -118,7 +118,7 @@ export type PlanGraphics = {
 
 export type GsgFile = {
   esriFileType: 'gsg';
-  file: string;
+  file: string | null;
   name: string;
   path: string;
 };
@@ -265,7 +265,17 @@ export const SketchContext = createContext<SketchType>({
   setPortalLayers: () => {},
   referenceLayers: [],
   setReferenceLayers: () => {},
-  gsgFiles: { files: [], selectedIndex: null },
+  gsgFiles: {
+    files: [
+      {
+        esriFileType: 'gsg',
+        file: null,
+        name: 'Default',
+        path: 'defaultGsg.gsg',
+      },
+    ],
+    selectedIndex: 0,
+  },
   setGsgFiles: () => {},
   urlLayers: [],
   setUrlLayers: () => {},
@@ -382,8 +392,15 @@ export function SketchProvider({ children }: Props) {
   const [portalLayers, setPortalLayers] = useState<PortalLayerType[]>([]);
   const [referenceLayers, setReferenceLayers] = useState<any[]>([]);
   const [gsgFiles, setGsgFiles] = useState<GsgFiles>({
-    files: [],
-    selectedIndex: null,
+    files: [
+      {
+        esriFileType: 'gsg',
+        file: null,
+        name: 'Default',
+        path: 'defaultGsg.gsg',
+      },
+    ],
+    selectedIndex: 0,
   });
   const [urlLayers, setUrlLayers] = useState<UrlLayerType[]>([]);
   const [sketchLayer, setSketchLayer] = useState<LayerType | null>(null);
