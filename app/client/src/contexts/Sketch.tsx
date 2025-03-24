@@ -227,6 +227,8 @@ type SketchType = {
   setResultsOpen: Dispatch<SetStateAction<boolean>>;
   efficacyResults: any;
   setEfficacyResults: Dispatch<SetStateAction<any>>;
+  suitabilityLayerVisible: boolean;
+  setSuitabilityLayerVisible: Dispatch<SetStateAction<boolean>>;
 };
 
 export const SketchContext = createContext<SketchType>({
@@ -330,6 +332,8 @@ export const SketchContext = createContext<SketchType>({
   setResultsOpen: () => {},
   efficacyResults: null,
   setEfficacyResults: () => {},
+  suitabilityLayerVisible: true,
+  setSuitabilityLayerVisible: () => {},
 });
 
 type Props = { children: ReactNode };
@@ -449,6 +453,7 @@ export function SketchProvider({ children }: Props) {
   const [viewUnderground3d, setViewUnderground3d] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(false);
   const [efficacyResults, setEfficacyResults] = useState(null);
+  const [suitabilityLayerVisible, setSuitabilityLayerVisible] = useState(true);
 
   // Update totsLayers variable on the window object. This is a workaround
   // to an issue where the layers state variable is not available within esri
@@ -743,6 +748,8 @@ export function SketchProvider({ children }: Props) {
         setResultsOpen,
         efficacyResults,
         setEfficacyResults,
+        suitabilityLayerVisible,
+        setSuitabilityLayerVisible,
       }}
     >
       {children}

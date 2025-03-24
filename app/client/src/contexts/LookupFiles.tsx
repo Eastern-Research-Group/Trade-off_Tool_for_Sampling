@@ -180,6 +180,7 @@ type Content = {
     gpServerInputMaxRecordCount: number;
     proxyUrl: string;
     structures: string;
+    suitability: string;
     totsGPServer: string;
     totsTestGPServer: string;
     useProxyForGPServer: boolean;
