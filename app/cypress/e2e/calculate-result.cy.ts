@@ -129,7 +129,7 @@ describe('Calculate results tests', () => {
     cy.contains(planDescription).should('exist');
   });
 
-  it('Verify traning-mode View Contamination Hits without file', () => {
+  it('Verify traning-mode Analyze Sample Results without file', () => {
     initializeDb();
     setIndexedDbValue('training_mode', true);
 
@@ -147,7 +147,7 @@ describe('Calculate results tests', () => {
     cy.findByText('Include Contamination Map (Optional)')
       .should('exist')
       .click({ force: true });
-    cy.findByRole('button', { name: 'View Contamination Hits' })
+    cy.findByRole('button', { name: 'Analyze Sample Results' })
       .should('exist')
       .click({ force: true });
     cy.findByRole('button', { name: 'Add' })
@@ -155,7 +155,7 @@ describe('Calculate results tests', () => {
       .click({ force: true });
   });
 
-  it('Verify traning-mode View Contamination Hits with file', () => {
+  it('Verify traning-mode Analyze Sample Results with file', () => {
     setIndexedDbValue('training_mode', true);
     cy.fixture('wet-vac.json').then((file) => {
       setIndexedDbValue('edits', file);
@@ -183,7 +183,7 @@ describe('Calculate results tests', () => {
     cy.findByText('Include Contamination Map (Optional)')
       .should('exist')
       .click({ force: true });
-    cy.findByRole('button', { name: 'View Contamination Hits' })
+    cy.findByRole('button', { name: 'Analyze Sample Results' })
       .should('exist')
       .click({ force: true });
 

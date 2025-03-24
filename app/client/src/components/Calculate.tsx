@@ -782,7 +782,7 @@ function Calculate({ appType }: Props) {
               {trainingMode && (
                 <Fragment>
                   If you have a contamination map layer, click{' '}
-                  <strong>View Contamination Hits</strong> to see if any of your
+                  <strong>Analyze Sample Results</strong> to see if any of your
                   samples would have resulted in contamination hits.{' '}
                 </Fragment>
               )}
@@ -1024,7 +1024,7 @@ function Calculate({ appType }: Props) {
                     css={submitButtonStyles}
                     onClick={runContaminationCalculation}
                   >
-                    View Contamination Hits
+                    Analyze Sample Results
                   </button>
                 </div>
               </AccordionItem>
