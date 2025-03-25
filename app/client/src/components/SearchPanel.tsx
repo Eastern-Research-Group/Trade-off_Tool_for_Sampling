@@ -986,6 +986,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
       // set the state for session storage
       setEdits(editsCopy);
+      window.totsLayers = [...layers, ...layersToAdd];
       setLayers((layers) => [...layers, ...layersToAdd]);
       setReferenceLayers((layers: any) => [...layers, ...refLayersToAdd]);
 
@@ -2053,6 +2054,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
       // set the state for session storage
       if (!editsCopyParam) setEdits(editsCopy);
+      window.totsLayers = [...layers, ...layersToAdd];
       setLayers((layers) => [...layers, ...layersToAdd]);
       setReferenceLayers((layers: any) => [...layers, ...refLayersToAdd]);
 
@@ -2505,6 +2507,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
       // set the state for session storage
       setEdits(editsCopy);
+      window.totsLayers = [...layers, ...layersToAdd];
       setLayers((layers) => [...layers, ...layersToAdd]);
       setReferenceLayers((layers: any) => [...layers, ...refLayersToAdd]);
 
@@ -2811,6 +2814,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
       // set the state for session storage
       setEdits(editsCopy);
+      window.totsLayers = [...layers, ...layersToAdd];
       setLayers((layers) => [...layers, ...layersToAdd]);
       setReferenceLayers((layers: any) => [...layers, ...refLayersToAdd]);
 
