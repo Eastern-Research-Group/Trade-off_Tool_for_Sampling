@@ -11,11 +11,13 @@ import { css } from '@emotion/react';
 import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import IdentityManager from '@arcgis/core/identity/IdentityManager';
 import Portal from '@arcgis/core/portal/Portal';
+import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 // components
 import {
   EditAoiCharacterization,
   EditCustomSampleTypesTable,
   EditScenario,
+  EditStagingAreaCharacterization,
   SaveResultsType,
 } from 'components/EditLayerMetaData';
 import LoadingSpinner from 'components/LoadingSpinner';
@@ -51,6 +53,7 @@ import {
   DeleteFeatureType,
   FeatureEditsType,
   LayerAoiAnalysisEditsType,
+  LayerEditsType,
   ScenarioDeconEditsType,
   ScenarioEditsType,
 } from 'types/Edits';
@@ -159,6 +162,7 @@ function Publish({ appType }: Props) {
     includePlan,
     includePlanWebMap,
     includePlanWebScene,
+    includeStagingAreas,
     publishSamplesMode,
     publishSampleTableMetaData,
     sampleTableDescription,
@@ -166,6 +170,7 @@ function Publish({ appType }: Props) {
     sampleTypeSelections,
     selectedAoiCharacterizations,
     selectedService,
+    selectedStagingAreas,
     setSampleTableDescription,
     setSampleTableName,
     setSelectedService,
@@ -173,19 +178,20 @@ function Publish({ appType }: Props) {
     webSceneReferenceLayerSelections,
   } = useContext(PublishContext);
   const {
-    setDeconSketchLayer,
     defaultSymbols,
     edits,
-    setEdits,
     layers,
-    setLayers,
     map,
     sampleAttributes,
     selectedScenario,
+    setDeconSketchLayer,
+    setEdits,
+    setLayers,
     setSelectedScenario,
+    setStagingAreaLayer,
+    setUserDefinedAttributes,
     sketchLayer,
     userDefinedAttributes,
-    setUserDefinedAttributes,
   } = useContext(SketchContext);
 
   const layerProps = useLookupFiles().data.layerProps;
@@ -257,12 +263,17 @@ function Publish({ appType }: Props) {
   >('none');
   const [customSampleNameCheckStatus, setCustomSampleNameCheckStatus] =
     useState<'none' | 'available' | 'not-available'>('none');
-  const [aoiCharNameCheckStatus, setAoiCharNameNameCheckStatus] = useState<
+  const [aoiCharNameCheckStatus, setAoiCharNameCheckStatus] = useState<
     'none' | 'available' | 'not-available'
   >('none');
   const [aoiLayersNotAvailable, setAoiLayersNotAvailable] = useState<
     LayerAoiAnalysisEditsType[]
   >([]);
+  const [stagingAreaNameCheckStatus, setStagingAreaNameCheckStatus] = useState<
+    'none' | 'available' | 'not-available'
+  >('none');
+  const [stagingAreaLayersNotAvailable, setStagingAreaLayersNotAvailable] =
+    useState<LayerEditsType[]>([]);
 
   // Check if the scenario name is available
   const [hasNameBeenChecked, setHasNameBeenChecked] = useState(false);
@@ -311,7 +322,28 @@ function Publish({ appType }: Props) {
     });
     const aoiCharNameChecked = !includeAoiCharacterization || allAoisPublished;
 
-    if (planNameChecked && sampleTypesNameChecked && aoiCharNameChecked) {
+    // figure out what staging areas are included
+    let allStagingAreasPublished = true;
+    const stagingAreaIdsToInclude = selectedStagingAreas.map((sa) => sa.value);
+    const stagingAreaLayersToInclude: any[] = edits.edits.filter(
+      (edit) =>
+        edit.type === 'layer' &&
+        edit.layerType === 'Staging Area Mask' &&
+        stagingAreaIdsToInclude.includes(edit.layerId),
+    );
+    stagingAreaLayersToInclude.forEach((saLayer) => {
+      if (!['published', 'edited'].includes(saLayer.status))
+        allStagingAreasPublished = false;
+    });
+    const stagingAreaNameChecked =
+      !includeStagingAreas || allStagingAreasPublished;
+
+    if (
+      planNameChecked &&
+      sampleTypesNameChecked &&
+      aoiCharNameChecked &&
+      stagingAreaNameChecked
+    ) {
       setHasNameBeenChecked(true);
       return;
     }
@@ -351,6 +383,16 @@ function Publish({ appType }: Props) {
       requests.push(request);
       aoiIndexes.push(requests.length - 1);
       aoiLayerIndexes[requests.length - 1] = aoiLayer;
+    });
+
+    const stagingAreaIndexes: number[] = [];
+    const stagingAreaLayerIndexes: { [key: number]: LayerEditsType } = {};
+    stagingAreaLayersToInclude.forEach((saLayer) => {
+      if (['published', 'edited'].includes(saLayer.status)) return;
+      const request = isServiceNameAvailable(portal, saLayer.name);
+      requests.push(request);
+      stagingAreaIndexes.push(requests.length - 1);
+      stagingAreaLayerIndexes[requests.length - 1] = saLayer;
     });
 
     Promise.all(requests)
@@ -402,8 +444,26 @@ function Publish({ appType }: Props) {
           });
 
           if (anyUnavailable) {
-            setAoiCharNameNameCheckStatus('not-available');
+            setAoiCharNameCheckStatus('not-available');
             setAoiLayersNotAvailable(aoiLayersNotAvailable);
+          }
+        }
+
+        const stagingAreaLayersNotAvailable: LayerEditsType[] = [];
+        if (stagingAreaIndexes.length > 0) {
+          let anyUnavailable = false;
+          stagingAreaIndexes.forEach((index) => {
+            if (checkResponse(responses[index]) === 'not-available') {
+              anyUnavailable = true;
+              stagingAreaLayersNotAvailable.push(
+                stagingAreaLayerIndexes[index],
+              );
+            }
+          });
+
+          if (anyUnavailable) {
+            setStagingAreaNameCheckStatus('not-available');
+            setStagingAreaLayersNotAvailable(stagingAreaLayersNotAvailable);
           }
         }
 
@@ -437,18 +497,20 @@ function Publish({ appType }: Props) {
   }, [
     appType,
     edits,
+    hasNameBeenChecked,
     includeAoiCharacterization,
     includeCustomSampleTypes,
     includePlan,
+    includeStagingAreas,
+    layers,
     portal,
-    selectedAoiCharacterizations,
-    selectedScenario,
-    sketchLayer,
     publishButtonClicked,
     publishSamplesMode,
     publishSampleTableMetaData,
-    hasNameBeenChecked,
-    layers,
+    selectedAoiCharacterizations,
+    selectedScenario,
+    selectedStagingAreas,
+    sketchLayer,
   ]);
 
   const publishItems = useCallback(() => {
@@ -469,6 +531,15 @@ function Publish({ appType }: Props) {
           (edit) =>
             edit.type === 'layer-aoi-analysis' &&
             aoiIdsToInclude.includes(edit.value),
+        );
+        const stagingAreaIdsToInclude = selectedStagingAreas.map(
+          (aoi) => aoi.value,
+        );
+        const stagingAreaLayersToInclude: any[] = edits.edits.filter(
+          (edit) =>
+            edit.type === 'layer' &&
+            edit.layerType === 'Staging Area Mask' &&
+            stagingAreaIdsToInclude.includes(edit.layerId),
         );
 
         const tempPortal = portal as any;
@@ -1919,6 +1990,116 @@ function Publish({ appType }: Props) {
           });
         }
 
+        if (includeStagingAreas && stagingAreaLayersToInclude.length > 0) {
+          stagingAreaLayersToInclude.forEach((stagingAreaLayer) => {
+            // get the extent
+            let extent: __esri.Extent | null = null;
+            const maskLayerSketch = layers.find(
+              (l) => l.layerId === stagingAreaLayer.layerId,
+            );
+            if (maskLayerSketch?.sketchLayer?.type === 'graphics') {
+              const unionGeometry = geometryEngine.union(
+                maskLayerSketch.sketchLayer.graphics
+                  .toArray()
+                  .map((g) => g.geometry),
+              );
+              extent = unionGeometry.extent;
+            }
+
+            const symbol = new SimpleFillSymbol(
+              defaultSymbols.symbols['Staging Area Mask'],
+            );
+
+            featureServices.push({
+              category: 'contains-epa-tots-staging-area',
+              label: stagingAreaLayer.label,
+              description: stagingAreaLayer.description,
+              url: '',
+              value: '',
+              layerId: stagingAreaLayer.layerId,
+              layers: [
+                {
+                  id: stagingAreaLayer.id,
+                  layerId: stagingAreaLayer.layerId,
+                  layerDefinitionProps: {
+                    ...layerProps.defaultLayerProps,
+                    fields: layerProps.defaultAoiStagingAreaMaskLayerFields,
+                    name: 'Staging Area',
+                    description: '',
+                    extent,
+                    drawingInfo: {
+                      renderer: {
+                        type: 'simple',
+                        symbol: symbol.toJSON(),
+                      },
+                    },
+                    types: [
+                      {
+                        id: 'epa-tods-staging-area-layer',
+                        name: 'epa-tods-staging-area-layer',
+                      },
+                    ],
+                  },
+                  adds: stagingAreaLayer.adds,
+                  updates: stagingAreaLayer.updates,
+                  deletes: stagingAreaLayer.deletes,
+                  published: stagingAreaLayer.published,
+                },
+              ],
+              tables: [],
+              onPublishComplete: (res: any) => {
+                const portalId = res.portalId;
+
+                // make a copy of the edits context variable
+                // update the edits state
+                setEdits((edits) => {
+                  const editsAoi = edits.edits.find(
+                    (edit) => edit.layerId === stagingAreaLayer.layerId,
+                  ) as LayerEditsType;
+                  editsAoi.status = 'published';
+                  editsAoi.portalId = portalId;
+
+                  // update the id
+                  if (
+                    Object.prototype.hasOwnProperty.call(
+                      res.idMapping,
+                      editsAoi.layerId,
+                    )
+                  ) {
+                    editsAoi.portalId = portalId;
+                    editsAoi.id = res.idMapping[editsAoi.layerId].id;
+                  }
+
+                  setLayers((layers) => {
+                    const layer = layers.find(
+                      (layer) => layer.layerId === stagingAreaLayer.layerId,
+                    );
+                    if (!layer) return layers;
+
+                    layer.status = 'published';
+                    layer.portalId = portalId;
+                    layer.id = editsAoi.id;
+                    return layers;
+                  });
+
+                  setStagingAreaLayer((layer) => {
+                    if (!layer) return layer;
+                    layer.status = 'published';
+                    layer.portalId = portalId;
+                    layer.id = editsAoi.id;
+                    return layer;
+                  });
+
+                  return {
+                    count: edits.count + 1,
+                    edits: edits.edits,
+                  };
+                });
+              },
+            });
+          });
+        }
+
         if (errorMessages.length > 0) {
           setPublishResponse({
             status: 'fetch-failure',
@@ -2040,6 +2221,7 @@ function Publish({ appType }: Props) {
     includePlan,
     includePlanWebMap,
     includePlanWebScene,
+    includeStagingAreas,
     layerProps,
     layers,
     map,
@@ -2051,12 +2233,15 @@ function Publish({ appType }: Props) {
     selectedAoiCharacterizations,
     selectedScenario,
     selectedService,
+    selectedStagingAreas,
+    setDeconSketchLayer,
     setEdits,
     setLayers,
     setSampleTableDescription,
     setSampleTableName,
     setSelectedScenario,
     setSelectedService,
+    setStagingAreaLayer,
     setUserDefinedAttributes,
     trainingMode,
     userDefinedAttributes,
@@ -2117,14 +2302,18 @@ function Publish({ appType }: Props) {
     });
   }
 
+  const [aoiCharNameCheck, setAoiCharNameCheck] = useState<SaveResultsType>({
+    status: 'none',
+  });
   const [publishNameCheck, setPublishNameCheck] = useState<SaveResultsType>({
     status: 'none',
   });
   const [sampleTypesNameCheck, setSampleTypesNameCheck] =
     useState<SaveResultsType>({ status: 'none' });
-  const [aoiCharNameCheck, setAoiCharNameCheck] = useState<SaveResultsType>({
-    status: 'none',
-  });
+  const [stagingAreaNameCheck, setStagingAreaNameCheck] =
+    useState<SaveResultsType>({
+      status: 'none',
+    });
 
   const isPublishPlanReady =
     !includePlan ||
@@ -2163,6 +2352,14 @@ function Publish({ appType }: Props) {
       (selectedAoiCharacterizations.length > 0 ||
         (calculateResultsDecon.status === 'success' &&
           calculateResultsDecon.data)));
+
+  const isPublishStagingAreaReady =
+    !includeStagingAreas ||
+    ((stagingAreaNameCheckStatus !== 'not-available' ||
+      (stagingAreaNameCheckStatus === 'not-available' &&
+        stagingAreaNameCheck.status === 'success' &&
+        stagingAreaLayersNotAvailable.length === 0)) &&
+      selectedStagingAreas.length > 0);
 
   let appName = '';
   if (appType === 'sampling') appName = 'TOTS';
@@ -2362,6 +2559,20 @@ function Publish({ appType }: Props) {
             </ul>
           </div>
         )}
+
+        {includeStagingAreas && (
+          <div>
+            <strong>
+              <i className="fas fa-check" css={checkedStyles}></i>
+              Include Staging Area Output Files:
+            </strong>
+            <ul>
+              {selectedStagingAreas.map((item, index) => {
+                return <li key={index}>{item.label}</li>;
+              })}
+            </ul>
+          </div>
+        )}
       </div>
 
       {publishResponse.status === 'fetching' && <LoadingSpinner />}
@@ -2432,7 +2643,7 @@ function Publish({ appType }: Props) {
                           (l) => l.value !== layer.value,
                         );
                       if (newAoiLayersNotAvailable.length === 0)
-                        setAoiCharNameNameCheckStatus('available');
+                        setAoiCharNameCheckStatus('available');
                       return newAoiLayersNotAvailable;
                     });
                   }
@@ -2442,13 +2653,44 @@ function Publish({ appType }: Props) {
             </div>
           );
         })}
+      {stagingAreaNameCheckStatus === 'not-available' &&
+        stagingAreaLayersNotAvailable.map((layer) => {
+          return (
+            <div key={layer.layerId}>
+              <EditStagingAreaCharacterization
+                aoiLayer={layer}
+                initialStatus="name-not-available"
+                onSave={(saveResults) => {
+                  if (!saveResults) return;
+
+                  if (saveResults.status === 'success') {
+                    setStagingAreaLayersNotAvailable(
+                      (stagingAreaLayersNotAvailable) => {
+                        const newStagingAreaLayersNotAvailable =
+                          stagingAreaLayersNotAvailable.filter(
+                            (l) => l.layerId !== layer.layerId,
+                          );
+                        if (newStagingAreaLayersNotAvailable.length === 0)
+                          setStagingAreaNameCheckStatus('available');
+                        return newStagingAreaLayersNotAvailable;
+                      },
+                    );
+                  }
+                  setStagingAreaNameCheck(saveResults);
+                }}
+              />
+            </div>
+          );
+        })}
 
       {(includePlan ||
         includeCustomSampleTypes ||
-        includeAoiCharacterization) &&
+        includeAoiCharacterization ||
+        includeStagingAreas) &&
         isPublishPlanReady &&
         isPublishSamplesReady &&
-        isPublishAoiCharReady && (
+        isPublishAoiCharReady &&
+        isPublishStagingAreaReady && (
           <div css={publishButtonContainerStyles}>
             <button
               css={publishButtonStyles}

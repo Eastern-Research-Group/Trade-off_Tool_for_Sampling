@@ -159,25 +159,29 @@ function ConfigureOutput({ appType }: Props) {
   const { signedIn } = useContext(AuthenticationContext);
   const { trainingMode } = useContext(NavigationContext);
   const {
-    publishSamplesMode,
-    setPublishSamplesMode,
-    sampleTypeSelections,
-    setSampleTypeSelections,
-    selectedAoiCharacterizations,
-    setSelectedAoiCharacterizations,
     includeAoiCharacterization,
-    setIncludeAoiCharacterization,
-    includePlan,
-    setIncludePlan,
-    includePlanWebMap,
-    setIncludePlanWebMap,
-    includePlanWebScene,
-    setIncludePlanWebScene,
     includeCustomSampleTypes,
-    setIncludeCustomSampleTypes,
+    includePlan,
+    includePlanWebMap,
+    includePlanWebScene,
+    includeStagingAreas,
+    publishSamplesMode,
+    sampleTypeSelections,
+    selectedAoiCharacterizations,
+    selectedStagingAreas,
     webMapReferenceLayerSelections,
-    setWebMapReferenceLayerSelections,
     webSceneReferenceLayerSelections,
+    setIncludeAoiCharacterization,
+    setIncludeCustomSampleTypes,
+    setIncludePlan,
+    setIncludePlanWebMap,
+    setIncludePlanWebScene,
+    setIncludeStagingAreas,
+    setPublishSamplesMode,
+    setSampleTypeSelections,
+    setSelectedAoiCharacterizations,
+    setSelectedStagingAreas,
+    setWebMapReferenceLayerSelections,
     setWebSceneReferenceLayerSelections,
   } = useContext(PublishContext);
   const {
@@ -212,6 +216,14 @@ function ConfigureOutput({ appType }: Props) {
       label: edit.label,
       value: edit.value,
     }));
+  const stagingAreaOptions = edits.edits
+    .filter(
+      (edit) => edit.type === 'layer' && edit.layerType === 'Staging Area Mask',
+    )
+    .map((edit) => ({
+      label: edit.label,
+      value: edit.layerId,
+    }));
 
   const [editAttributesOpen, setEditAttributesOpen] = useState(false);
   const [attributesIndex, setAttributesIndex] = useState(-1);
@@ -220,6 +232,9 @@ function ConfigureOutput({ appType }: Props) {
     includeCustomSampleTypes,
   );
   const [isAoiCharOpen, setIsAoiCharOpen] = useState(
+    includeAoiCharacterization,
+  );
+  const [isStagingAreaOpen, setIsStagingAreaOpen] = useState(
     includeAoiCharacterization,
   );
   const [isIncludeWebMapOpen, setIsIncludeWebMapOpen] = useState(false);
@@ -887,8 +902,8 @@ function ConfigureOutput({ appType }: Props) {
           >
             <div css={sectionContainer}>
               <p>
-                Publish AOI characterization data to ArcGIS Online. Select an
-                AOI characterization item from the drop-down list.
+                Publish AOI characterization data to ArcGIS Online. Select
+                atleast one AOI characterization item from the drop-down list.
               </p>
               <div>
                 <label htmlFor="publish-aoi-char-select">
@@ -904,8 +919,51 @@ function ConfigureOutput({ appType }: Props) {
                   css={multiSelectStyles}
                 />
               </div>
+            </div>
+          </AccordionItem>
+          <AccordionItem
+            isOpenParam={isStagingAreaOpen}
+            onChange={(isOpen) => {
+              setIsStagingAreaOpen(!isStagingAreaOpen);
+              if (!isOpen) return;
 
-              {/* <EditCustomSampleTypesTable appType={appType} /> */}
+              setIncludeStagingAreas(true);
+            }}
+            title={
+              <label css={labelStyles}>
+                <strong>Include Staging Area(s)</strong>
+                <div css={switchStyles} onClick={(ev) => ev.stopPropagation()}>
+                  <Switch
+                    checked={includeStagingAreas}
+                    onChange={() => {
+                      setIsStagingAreaOpen(!includeStagingAreas);
+                      setIncludeStagingAreas(!includeStagingAreas);
+                    }}
+                    ariaLabel="Include Staging Area(s)"
+                  />
+                </div>
+              </label>
+            }
+          >
+            <div css={sectionContainer}>
+              <p>
+                Publish Staging Area data to ArcGIS Online. Select atleast one
+                Staging Area item from the drop-down list.
+              </p>
+              <div>
+                <label htmlFor="publish-staging-area-select">
+                  Staging Area(s) to Publish
+                </label>
+                <Select
+                  inputId="publish-staging-area-select"
+                  isMulti={true}
+                  isSearchable={false}
+                  options={stagingAreaOptions}
+                  value={selectedStagingAreas}
+                  onChange={(ev) => setSelectedStagingAreas(ev as any)}
+                  css={multiSelectStyles}
+                />
+              </div>
             </div>
           </AccordionItem>
         </AccordionList>

@@ -1548,6 +1548,7 @@ function usePublishStorage(dbInitialized: boolean) {
     includePlan,
     includePlanWebMap,
     includePlanWebScene,
+    includeStagingAreas,
     publishSamplesMode,
     publishSampleTableMetaData,
     sampleTableDescription,
@@ -1555,11 +1556,13 @@ function usePublishStorage(dbInitialized: boolean) {
     sampleTypeSelections,
     selectedAoiCharacterizations,
     selectedService,
+    selectedStagingAreas,
     setIncludeAoiCharacterization,
     setIncludeCustomSampleTypes,
     setIncludePlan,
     setIncludePlanWebMap,
     setIncludePlanWebScene,
+    setIncludeStagingAreas,
     setPublishSamplesMode,
     setPublishSampleTableMetaData,
     setSampleTableDescription,
@@ -1567,6 +1570,7 @@ function usePublishStorage(dbInitialized: boolean) {
     setSampleTypeSelections,
     setSelectedAoiCharacterizations,
     setSelectedService,
+    setSelectedStagingAreas,
     setWebMapReferenceLayerSelections,
     setWebSceneReferenceLayerSelections,
     webMapReferenceLayerSelections,
@@ -1579,7 +1583,12 @@ function usePublishStorage(dbInitialized: boolean) {
     includePlan: boolean;
     includePlanWebMap: boolean;
     includePlanWebScene: boolean;
+    includeStagingAreas: boolean;
     selectedAoiCharacterizations: {
+      label: string;
+      value: string;
+    }[];
+    selectedStagingAreas: {
       label: string;
       value: string;
     }[];
@@ -1635,9 +1644,11 @@ function usePublishStorage(dbInitialized: boolean) {
         setIncludePlan(outputSettings.includePlan);
         setIncludePlanWebMap(outputSettings.includePlanWebMap);
         setIncludePlanWebScene(outputSettings.includePlanWebScene);
+        setIncludeStagingAreas(outputSettings.includeStagingAreas);
         setSelectedAoiCharacterizations(
           outputSettings.selectedAoiCharacterizations ?? [],
         );
+        setSelectedStagingAreas(outputSettings.selectedStagingAreas);
         setWebMapReferenceLayerSelections(
           outputSettings.webMapReferenceLayerSelections,
         );
@@ -1654,6 +1665,7 @@ function usePublishStorage(dbInitialized: boolean) {
     setIncludePlan,
     setIncludePlanWebMap,
     setIncludePlanWebScene,
+    setIncludeStagingAreas,
     setPublishSamplesMode,
     setPublishSampleTableMetaData,
     setSampleTableDescription,
@@ -1661,6 +1673,7 @@ function usePublishStorage(dbInitialized: boolean) {
     setSampleTypeSelections,
     setSelectedAoiCharacterizations,
     setSelectedService,
+    setSelectedStagingAreas,
     setWebMapReferenceLayerSelections,
     setWebSceneReferenceLayerSelections,
   ]);
@@ -1709,12 +1722,17 @@ function usePublishStorage(dbInitialized: boolean) {
       includePlan,
       includePlanWebMap,
       includePlanWebScene,
+      includeStagingAreas,
       selectedAoiCharacterizations: selectedAoiCharacterizations.map(
         (item) => ({
           label: item.label,
           value: item.value,
         }),
       ),
+      selectedStagingAreas: selectedStagingAreas.map((item) => ({
+        label: item.label,
+        value: item.value,
+      })),
       webMapReferenceLayerSelections,
       webSceneReferenceLayerSelections,
     };
@@ -1726,8 +1744,10 @@ function usePublishStorage(dbInitialized: boolean) {
     includePlan,
     includePlanWebMap,
     includePlanWebScene,
+    includeStagingAreas,
     readDone,
     selectedAoiCharacterizations,
+    selectedStagingAreas,
     setOptions,
     webMapReferenceLayerSelections,
     webSceneReferenceLayerSelections,

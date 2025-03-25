@@ -231,6 +231,7 @@ function StagingAreas() {
         true,
       );
       const newAoiEdits = createLayerEditTemplate(newAoiSketchLayer, 'add');
+      newAoiEdits.description = '';
 
       // make a copy of the edits context variable
       setEdits((edits) => {
@@ -277,6 +278,7 @@ function StagingAreas() {
       true,
     );
     const newAoiEdits = createLayerEditTemplate(newAoiSketchLayer, 'add');
+    newAoiEdits.description = '';
 
     // make a copy of the edits context variable
     setEdits((edits) => {
