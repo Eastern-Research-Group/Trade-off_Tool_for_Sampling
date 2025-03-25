@@ -2347,7 +2347,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
         label: result.title,
         value: groupLayer.id,
         layerType: 'AOI Analysis',
-        addedFrom: 'sketch',
+        addedFrom: 'tots',
         status: 'published',
         editType: 'add',
         visible: true,
@@ -2392,7 +2392,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       };
 
       layersToAdd.push({
-        addedFrom: 'sketch',
+        addedFrom: 'tots',
         editType: 'add',
         geometryType: 'esriGeometryPolygon',
         hybridLayer: null,
@@ -2679,7 +2679,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
         description: result.description,
         label: result.title,
         layerType: 'Staging Area Mask',
-        addedFrom: 'sketch',
+        addedFrom: 'tots',
         status: 'published',
         editType: 'add',
         visible: true,
@@ -3170,7 +3170,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
           visible: true,
         });
         layersToAdd.push({
-          addedFrom: 'sketch',
+          addedFrom: 'tots',
           editType: 'add',
           geometryType: 'esriGeometryPolygon',
           hybridLayer: null,
@@ -3202,7 +3202,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
         label: result.title,
         value: result.id,
         layerType: 'Decon Scenario',
-        addedFrom: 'sketch',
+        addedFrom: 'tots',
         status: 'published',
         editType: 'add',
         visible: true,
