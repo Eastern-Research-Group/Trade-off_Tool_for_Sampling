@@ -378,6 +378,14 @@ export function SketchProvider({ children }: Props) {
           } as PolygonSymbol)
         : defaultSymbol,
       Samples: defaultSymbol,
+      'Staging Area Mask': {
+        type: 'simple-fill',
+        color: [150, 150, 150, 0.2],
+        outline: {
+          color: [117, 117, 117],
+          width: 2,
+        },
+      } as PolygonSymbol,
     },
     editCount: 0,
   };

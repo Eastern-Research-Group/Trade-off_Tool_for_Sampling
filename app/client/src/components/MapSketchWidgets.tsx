@@ -571,7 +571,11 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
           // get the button and it's id
           const button = document.querySelector('.sketch-button-selected');
           const id = button && button.id;
-          if (id?.includes('-sampling-mask') || id?.includes('decon-mask')) {
+          if (
+            id?.includes('-sampling-mask') ||
+            id?.includes('decon-mask') ||
+            id?.includes('staging-aoi')
+          ) {
             deactivateButtons();
           }
 
@@ -595,6 +599,14 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
               DECISIONUNITUUID: graphic.layer.id,
               DECISIONUNIT: graphic.layer.title,
               DECISIONUNITSORT: 0,
+              PERMANENT_IDENTIFIER: uuid,
+              GLOBALID: uuid,
+              OBJECTID: -1,
+              TYPE: layerType,
+            };
+          } else if (id.includes('staging-aoi')) {
+            layerType = 'Staging Area Mask';
+            graphic.attributes = {
               PERMANENT_IDENTIFIER: uuid,
               GLOBALID: uuid,
               OBJECTID: -1,

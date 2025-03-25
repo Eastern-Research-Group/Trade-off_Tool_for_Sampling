@@ -5,11 +5,13 @@ import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import ImageryLayer from '@arcgis/core/layers/ImageryLayer.js';
 import MapImageLayer from '@arcgis/core/layers/MapImageLayer.js';
 import TileLayer from '@arcgis/core/layers/TileLayer.js';
-import PopupTemplate from '@arcgis/core/PopupTemplate.js';
 import { css } from '@emotion/react';
 // components
 import AoiSketchButton from 'components/AoiSketchButton';
+import ColorPicker from 'components/ColorPicker';
 import { EditStagingAreaCharacterization } from 'components/EditLayerMetaData';
+// config
+import { PolygonSymbol } from 'config/sampleAttributes';
 // contexts
 import { useLookupFiles } from 'contexts/LookupFiles';
 import Select from 'components/Select';
@@ -29,29 +31,7 @@ const GOVERNMENT_LANDS_LAYER_ID = generateUUID();
 const PARCEL_LAYER_ID = generateUUID();
 const SUITABILITY_LAYER_ID = generateUUID();
 
-function hasAoiGraphics(
-  layers: LayerType[],
-  stagingAreaLayer: LayerType | null,
-) {
-  if (!stagingAreaLayer) return false;
-
-  const aoiLayer = layers.find(
-    (l) =>
-      l.layerType === 'Staging Area Mask' &&
-      l.layerId === stagingAreaLayer.layerId,
-  );
-  return (
-    aoiLayer?.sketchLayer &&
-    aoiLayer.sketchLayer.type === 'graphics' &&
-    aoiLayer.sketchLayer.graphics.length > 0
-  );
-}
-
 // --- styles ---
-
-const calculationSectionHeadingStyles = css`
-  font-size: 1.125rem;
-`;
 
 const calculationSectionStyles = css`
   column-gap: 1em;
@@ -75,7 +55,6 @@ const calculationSectionStyles = css`
 const headingStyles = css`
   display: flex;
   align-items: center;
-  font-size: 1.25rem;
   gap: 6px;
   margin-top: 1rem;
 
@@ -147,6 +126,7 @@ const verticalCenterTextStyles = css`
 function StagingAreas() {
   const {
     aoiSketchVM,
+    defaultSymbols,
     edits,
     governmentLandsLayerVisible,
     layers,
@@ -154,6 +134,7 @@ function StagingAreas() {
     map,
     parcelLayerVisible,
     setAoiSketchLayer,
+    setDefaultSymbolSingle,
     setEdits,
     setGovernmentLandsLayerVisible,
     setLayers,
@@ -179,6 +160,10 @@ function StagingAreas() {
   useEffect(() => {
     if (!aoiSketchVM) return;
 
+    aoiSketchVM.polygonSymbol = defaultSymbols.symbols[
+      'Staging Area Mask'
+    ] as any;
+
     const stagingLayer = edits.edits.find(
       (item) =>
         item.type === 'layer' &&
@@ -203,7 +188,14 @@ function StagingAreas() {
     return function cleanup() {
       if (lastAoiSketchLayer) aoiSketchVM.layer = lastAoiSketchLayer;
     };
-  }, [aoiSketchVM, edits, lastAoiSketchLayer, layers]);
+  }, [
+    aoiSketchVM,
+    defaultSymbols,
+    edits,
+    lastAoiSketchLayer,
+    layers,
+    stagingAreaLayer,
+  ]);
 
   const [initializedLayers, setInitializedLayers] = useState(false);
   useEffect(() => {
@@ -215,7 +207,7 @@ function StagingAreas() {
     });
     setStagingLayers(newLayers);
     setInitializedLayers(true);
-  }, [edits, layersInitialized]);
+  }, [edits, layers, layersInitialized]);
 
   const [initializedLayer, setInitializedDeconLayer] = useState(false);
   useEffect(() => {
@@ -267,6 +259,9 @@ function StagingAreas() {
     map,
     setEdits,
     setLayers,
+    setStagingAreaLayer,
+    stagingAreaLayer,
+    stagingLayers,
   ]);
 
   useEffect(() => {
@@ -348,10 +343,10 @@ function StagingAreas() {
 
   return (
     <div>
-      <h2 css={headingStyles}>
+      <h3 css={headingStyles}>
         <i className="fas fa-layer-group" />
         Add Layers
-      </h2>
+      </h3>
       <label css={layerItemStyles}>
         <input
           type="checkbox"
@@ -378,6 +373,14 @@ function StagingAreas() {
       </label>
 
       <div css={layerSectionStyles}>
+        <ColorPicker
+          title="Default Staging Area Symbology"
+          symbol={defaultSymbols.symbols['Staging Area Mask']}
+          onChange={(symbol: PolygonSymbol) => {
+            setDefaultSymbolSingle('Staging Area Mask', symbol);
+          }}
+        />
+
         <div css={iconButtonContainerStyles}>
           <div css={verticalCenterTextStyles}>
             <label htmlFor="suitability-aoi-select-input">
@@ -496,7 +499,7 @@ function CalculationResults() {
 
   return sketchLayer instanceof GraphicsLayer && sketchLayer.graphics.length ? (
     <>
-      <h3 css={calculationSectionHeadingStyles}>AOI Calculation Results</h3>
+      <h3>AOI Calculation Results</h3>
       <section css={calculationSectionStyles}>
         {Object.entries(rows).map(([label, { value, unit }]) => (
           <Fragment key={label}>
@@ -515,7 +518,7 @@ function CalculationResults() {
 // --- custom hooks ---
 
 function useAoiCalculations(aoiLayer?: LayerType | null) {
-  const { aoiSketchLayer, aoiSketchVM, sceneViewForArea } =
+  const { aoiSketchLayer, aoiSketchVM, defaultSymbols, sceneViewForArea } =
     useContext(SketchContext);
 
   const targetLayer = aoiLayer ?? aoiSketchLayer;
@@ -558,33 +561,12 @@ function useAoiCalculations(aoiLayer?: LayerType | null) {
           LIQUID_WASTE_CAPACITY: calculateLiquidWasteCapacity(areaSqM),
         };
       }
-
-      const numberFormat = { digitSeparator: true, places: 2 };
-      graphic.popupTemplate = new PopupTemplate({
-        title: 'Area of Interest',
-        content: [
-          {
-            type: 'fields',
-            fieldInfos: [
-              { fieldName: 'AREA', label: 'Area (m²)' },
-              {
-                fieldName: 'SOLID_WASTE_CAPACITY',
-                label: 'Solid Waste Capacity (m³)',
-              },
-              {
-                fieldName: 'LIQUID_WASTE_CAPACITY',
-                label: 'Liquid Waste Capacity (m³)',
-              },
-            ].map((fieldInfo) => ({ ...fieldInfo, format: numberFormat })),
-          },
-        ],
-      });
     });
 
     return function cleanup() {
       handle.remove();
     };
-  }, [aoiSketchVM, sceneViewForArea, sketchLayer]);
+  }, [aoiSketchVM, defaultSymbols, sceneViewForArea, sketchLayer]);
 
   return {
     totalArea: sumValues('AREA'),
