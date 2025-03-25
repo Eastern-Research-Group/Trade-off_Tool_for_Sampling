@@ -1437,23 +1437,23 @@ export function EditStagingAreaCharacterization({
 
   return (
     <Fragment>
-      <label htmlFor="aoi-char-name-input">AOI Characterization Name</label>
+      <label htmlFor="staging-area-name-input">Staging Area Name</label>
       <input
-        id="aoi-char-name-input"
+        id="staging-area-name-input"
         css={inputStyles}
         maxLength={250}
-        placeholder="Enter AOI Characterization Name"
+        placeholder="Enter Staging Area Name"
         value={aoiCharName}
         onChange={(ev) => setAoiCharName(ev.target.value)}
       />
-      <label htmlFor="aoi-char-description-input">
-        AOI Characterization Description
+      <label htmlFor="staging-area-description-input">
+        Staging Area Description
       </label>
       <input
-        id="aoi-char-description-input"
+        id="staging-area-description-input"
         css={inputStyles}
         maxLength={2048}
-        placeholder="Enter AOI Characterization Description (2048 characters)"
+        placeholder="Enter Staging Area Description (2048 characters)"
         value={aoiCharDescription}
         onChange={(ev) => setAoiCharDescription(ev.target.value)}
       />

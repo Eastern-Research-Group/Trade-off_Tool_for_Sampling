@@ -386,7 +386,7 @@ function StagingAreas() {
         <div css={iconButtonContainerStyles}>
           <div css={verticalCenterTextStyles}>
             <label htmlFor="suitability-aoi-select-input">
-              Active AOI Layer
+              Active Staging Area Layer
             </label>
           </div>
           <div css={layerButtonContainerStyles}>
