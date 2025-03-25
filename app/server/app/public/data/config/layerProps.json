@@ -3455,6 +3455,118 @@
       "defaultValue": null
     }
   ],
+  "defaultAoiStagingAreaMaskLayerFields": [
+    {
+      "name": "OBJECTID",
+      "alias": "OBJECTID",
+      "type": "esriFieldTypeOID",
+      "actualType": "int",
+      "sqlType": "sqlTypeInteger",
+      "length": 4,
+      "nullable": false,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GLOBALID",
+      "alias": "GlobalID",
+      "type": "esriFieldTypeGlobalID",
+      "sqlType": "sqlTypeOther",
+      "length": 38,
+      "nullable": false,
+      "editable": false,
+      "domain": null,
+      "defaultValue": "NEWID() WITH VALUES"
+    },
+    {
+      "name": "PERMANENT_IDENTIFIER",
+      "alias": "PERMANENT_IDENTIFIER",
+      "type": "esriFieldTypeGUID",
+      "sqlType": "sqlTypeOther",
+      "length": 38,
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": ""
+    },
+    {
+      "name": "TYPE",
+      "alias": "TYPE",
+      "type": "esriFieldTypeString",
+      "actualType": "nvarchar",
+      "sqlType": "sqlTypeNVarchar",
+      "length": 255,
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "AREA",
+      "alias": "Area (square meters)",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": ""
+    },
+    {
+      "name": "LIQUID_WASTE_CAPACITY",
+      "alias": "Liquid Waste Capacity (cubic meters)",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": ""
+    },
+    {
+      "name": "SOLID_WASTE_CAPACITY",
+      "alias": "Solid Waste Capacity (cubic meters)",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": ""
+    },
+    {
+      "name": "CREATEDDATE",
+      "alias": "CREATEDDATE",
+      "type": "esriFieldTypeDate",
+      "sqlType": "sqlTypeOther",
+      "nullable": true,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "USERNAME",
+      "alias": "USERNAME",
+      "type": "esriFieldTypeString",
+      "sqlType": "sqlTypeOther",
+      "length": 255,
+      "nullable": true,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "UPDATEDDATE",
+      "alias": "UPDATEDDATE",
+      "type": "esriFieldTypeDate",
+      "sqlType": "sqlTypeOther",
+      "nullable": true,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    }
+  ],
   "defaultLayerProps": {
     "type": "Feature Layer",
     "editFieldsInfo": {

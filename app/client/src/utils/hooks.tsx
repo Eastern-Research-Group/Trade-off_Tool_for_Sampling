@@ -1115,6 +1115,7 @@ export function useStartOver() {
     setIncludePlan,
     setIncludePlanWebMap,
     setIncludePlanWebScene,
+    setIncludeStagingAreas,
     setPublishSamplesMode,
     setPublishSampleTableMetaData,
     setSampleTableDescription,
@@ -1123,6 +1124,7 @@ export function useStartOver() {
     setSampleTypeSelections,
     setSelectedAoiCharacterizations,
     setSelectedService,
+    setSelectedStagingAreas,
     setWebMapReferenceLayerSelections,
     setWebSceneReferenceLayerSelections,
   } = useContext(PublishContext);
@@ -1211,11 +1213,13 @@ export function useStartOver() {
     setSampleTypeSelections([]);
     setSelectedAoiCharacterizations([]);
     setSelectedService(null);
+    setSelectedStagingAreas([]);
     setIncludeAoiCharacterization(false);
     setIncludeCustomSampleTypes(false);
     setIncludePlan(true);
     setIncludePlanWebMap(true);
     setIncludePlanWebScene(true);
+    setIncludeStagingAreas(false);
     setWebMapReferenceLayerSelections([]);
     setWebSceneReferenceLayerSelections([]);
 
@@ -2718,6 +2722,8 @@ export function useDynamicPopup(appType: AppType) {
     includeContaminationFields: boolean = false,
     includeControls: boolean = true,
   ) {
+    const numberFormat = { digitSeparator: true, places: 2 };
+
     if (type === 'Sampling Mask') {
       const actions = new Collection<any>();
       if (includeControls) {
@@ -2759,6 +2765,42 @@ export function useDynamicPopup(appType: AppType) {
           {
             type: 'fields',
             fieldInfos: [{ fieldName: 'TYPE', label: 'Type' }],
+          },
+        ],
+        actions,
+      };
+    }
+    if (type === 'Staging Area Mask') {
+      const actions = new Collection<any>();
+      if (includeControls) {
+        actions.addMany([
+          {
+            title: 'Delete Staging Area',
+            id: 'delete',
+            className: 'esri-icon-trash',
+          },
+        ]);
+      }
+
+      return {
+        title: 'Staging Area',
+        content: [
+          {
+            type: 'fields',
+            fieldInfos: [
+              { fieldName: 'TYPE', label: 'Type' },
+              { fieldName: 'AREA', label: 'Area (m²)', format: numberFormat },
+              {
+                fieldName: 'SOLID_WASTE_CAPACITY',
+                label: 'Solid Waste Capacity (m³)',
+                format: numberFormat,
+              },
+              {
+                fieldName: 'LIQUID_WASTE_CAPACITY',
+                label: 'Liquid Waste Capacity (m³)',
+                format: numberFormat,
+              },
+            ],
           },
         ],
         actions,

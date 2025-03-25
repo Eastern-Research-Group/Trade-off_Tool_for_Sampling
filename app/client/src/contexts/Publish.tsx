@@ -19,7 +19,7 @@ import {
 
 type NameAvailableStatus = 'unknown' | 'yes' | 'no';
 
-type SelectedAoiCharacterizations = {
+type Selections = {
   label: string;
   value: string;
 }[];
@@ -41,10 +41,10 @@ type PublishType = {
   setSampleTableNameAvailable: Dispatch<SetStateAction<NameAvailableStatus>>;
   selectedService: ServiceMetaDataType | null;
   setSelectedService: Dispatch<SetStateAction<ServiceMetaDataType | null>>;
-  selectedAoiCharacterizations: SelectedAoiCharacterizations;
-  setSelectedAoiCharacterizations: Dispatch<
-    SetStateAction<SelectedAoiCharacterizations>
-  >;
+  selectedAoiCharacterizations: Selections;
+  setSelectedAoiCharacterizations: Dispatch<SetStateAction<Selections>>;
+  selectedStagingAreas: Selections;
+  setSelectedStagingAreas: Dispatch<SetStateAction<Selections>>;
   includeAoiCharacterization: boolean;
   setIncludeAoiCharacterization: Dispatch<SetStateAction<boolean>>;
   includePlan: boolean;
@@ -55,6 +55,8 @@ type PublishType = {
   setIncludePlanWebScene: Dispatch<SetStateAction<boolean>>;
   includeCustomSampleTypes: boolean;
   setIncludeCustomSampleTypes: Dispatch<SetStateAction<boolean>>;
+  includeStagingAreas: boolean;
+  setIncludeStagingAreas: Dispatch<SetStateAction<boolean>>;
   webMapReferenceLayerSelections: ReferenceLayerSelections[];
   setWebMapReferenceLayerSelections: Dispatch<
     SetStateAction<ReferenceLayerSelections[]>
@@ -291,6 +293,8 @@ export const PublishContext = createContext<PublishType>({
   setSelectedService: () => {},
   selectedAoiCharacterizations: [],
   setSelectedAoiCharacterizations: () => {},
+  selectedStagingAreas: [],
+  setSelectedStagingAreas: () => {},
   includeAoiCharacterization: false,
   setIncludeAoiCharacterization: () => {},
   includePlan: true,
@@ -301,6 +305,8 @@ export const PublishContext = createContext<PublishType>({
   setIncludePlanWebScene: () => {},
   includeCustomSampleTypes: false,
   setIncludeCustomSampleTypes: () => {},
+  includeStagingAreas: false,
+  setIncludeStagingAreas: () => {},
   webMapReferenceLayerSelections: [],
   setWebMapReferenceLayerSelections: () => {},
   webSceneReferenceLayerSelections: [],
@@ -324,7 +330,10 @@ export function PublishProvider({ children }: Props) {
   const [selectedService, setSelectedService] =
     useState<ServiceMetaDataType | null>(null);
   const [selectedAoiCharacterizations, setSelectedAoiCharacterizations] =
-    useState<SelectedAoiCharacterizations>([]);
+    useState<Selections>([]);
+  const [selectedStagingAreas, setSelectedStagingAreas] = useState<Selections>(
+    [],
+  );
   const [includeAoiCharacterization, setIncludeAoiCharacterization] =
     useState(isDecon());
   const [includePlan, setIncludePlan] = useState(true);
@@ -332,6 +341,7 @@ export function PublishProvider({ children }: Props) {
   const [includePlanWebScene, setIncludePlanWebScene] = useState(true);
   const [includeCustomSampleTypes, setIncludeCustomSampleTypes] =
     useState(false);
+  const [includeStagingAreas, setIncludeStagingAreas] = useState(false);
   const [webMapReferenceLayerSelections, setWebMapReferenceLayerSelections] =
     useState<ReferenceLayerSelections[]>([]);
   const [
@@ -347,6 +357,7 @@ export function PublishProvider({ children }: Props) {
         includePlan,
         includePlanWebMap,
         includePlanWebScene,
+        includeStagingAreas,
         publishSamplesMode,
         publishSampleTableMetaData,
         sampleTableDescription,
@@ -355,6 +366,7 @@ export function PublishProvider({ children }: Props) {
         sampleTypeSelections,
         selectedAoiCharacterizations,
         selectedService,
+        selectedStagingAreas,
         webMapReferenceLayerSelections,
         webSceneReferenceLayerSelections,
         setIncludeAoiCharacterization,
@@ -362,6 +374,7 @@ export function PublishProvider({ children }: Props) {
         setIncludePlan,
         setIncludePlanWebMap,
         setIncludePlanWebScene,
+        setIncludeStagingAreas,
         setPublishSamplesMode,
         setPublishSampleTableMetaData,
         setSampleTableDescription,
@@ -370,6 +383,7 @@ export function PublishProvider({ children }: Props) {
         setSampleTypeSelections,
         setSelectedAoiCharacterizations,
         setSelectedService,
+        setSelectedStagingAreas,
         setWebMapReferenceLayerSelections,
         setWebSceneReferenceLayerSelections,
       }}

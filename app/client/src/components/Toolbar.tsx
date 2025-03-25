@@ -109,6 +109,15 @@ function buildLegendListItem(event: any, view: __esri.MapView) {
       type: 'polygon',
     });
   }
+  if (layer?.layerType === 'Staging Area Mask') {
+    legendItems.push({
+      value: 'Staging Area',
+      title: 'Staging Area',
+      symbol: defaultSymbols.symbols['Staging Area Mask'],
+      style: null,
+      type: 'polygon',
+    });
+  }
   if (layer?.layerType === 'Samples' || layer?.layerType === 'VSP') {
     subtitle = 'Sample Type';
 

@@ -22,7 +22,6 @@ import {
   activateSketchButton,
   calculateArea,
   createScenarioDeconLayer,
-  findLayerInEdits,
   generateUUID,
   getDefaultSamplingMaskLayer,
   getScenariosDecon,

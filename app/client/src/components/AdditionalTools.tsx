@@ -6,11 +6,10 @@ import { AccordionList, AccordionItem } from 'components/Accordion';
 import CharacterizeAOI from 'components/CharacterizeAOI';
 import CustomSampleType from 'components/CustomSampleType';
 import NavigationButton from 'components/NavigationButton';
+import StagingAreas from 'components/StagingAreas';
 // types
 import { ErrorType } from 'types/Misc';
 import { AppType } from 'types/Navigation';
-// styles
-import { isDecon } from 'styles';
 
 export type SaveStatusType =
   | 'none'
@@ -78,6 +77,11 @@ function AdditionalTools({ appType }: Props) {
           <AccordionItem title={'Characterize Area of Interest'}>
             <div css={sectionContainer}>
               <CharacterizeAOI appType={appType} />
+            </div>
+          </AccordionItem>
+          <AccordionItem title="Identify Staging Areas">
+            <div css={sectionContainer}>
+              <StagingAreas />
             </div>
           </AccordionItem>
           {appType === 'sampling' && (

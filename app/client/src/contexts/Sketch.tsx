@@ -180,6 +180,8 @@ type SketchType = {
   >;
   deconOperation: LayerType | null;
   setDeconOperation: Dispatch<SetStateAction<LayerType | null>>;
+  stagingAreaLayer: LayerType | null;
+  setStagingAreaLayer: Dispatch<SetStateAction<LayerType | null>>;
 
   map: __esri.Map | null;
   setMap: Dispatch<SetStateAction<__esri.Map | null>>;
@@ -227,6 +229,12 @@ type SketchType = {
   setResultsOpen: Dispatch<SetStateAction<boolean>>;
   efficacyResults: any;
   setEfficacyResults: Dispatch<SetStateAction<any>>;
+  governmentLandsLayerVisible: boolean;
+  setGovernmentLandsLayerVisible: Dispatch<SetStateAction<boolean>>;
+  parcelLayerVisible: boolean;
+  setParcelLayerVisible: Dispatch<SetStateAction<boolean>>;
+  suitabilityLayerVisible: boolean;
+  setSuitabilityLayerVisible: Dispatch<SetStateAction<boolean>>;
 };
 
 export const SketchContext = createContext<SketchType>({
@@ -291,6 +299,8 @@ export const SketchContext = createContext<SketchType>({
   setDeconSketchLayer: () => {},
   deconOperation: null,
   setDeconOperation: () => {},
+  stagingAreaLayer: null,
+  setStagingAreaLayer: () => {},
 
   map: null,
   setMap: () => {},
@@ -330,6 +340,12 @@ export const SketchContext = createContext<SketchType>({
   setResultsOpen: () => {},
   efficacyResults: null,
   setEfficacyResults: () => {},
+  governmentLandsLayerVisible: true,
+  setGovernmentLandsLayerVisible: () => {},
+  parcelLayerVisible: true,
+  setParcelLayerVisible: () => {},
+  suitabilityLayerVisible: true,
+  setSuitabilityLayerVisible: () => {},
 });
 
 type Props = { children: ReactNode };
@@ -362,6 +378,14 @@ export function SketchProvider({ children }: Props) {
           } as PolygonSymbol)
         : defaultSymbol,
       Samples: defaultSymbol,
+      'Staging Area Mask': {
+        type: 'simple-fill',
+        color: [150, 150, 150, 0.2],
+        outline: {
+          color: [117, 117, 117],
+          width: 2,
+        },
+      } as PolygonSymbol,
     },
     editCount: 0,
   };
@@ -408,6 +432,9 @@ export function SketchProvider({ children }: Props) {
   const [deconSketchLayer, setDeconSketchLayer] =
     useState<LayerAoiAnalysisEditsType | null>(null);
   const [deconOperation, setDeconOperation] = useState<LayerType | null>(null);
+  const [stagingAreaLayer, setStagingAreaLayer] = useState<LayerType | null>(
+    null,
+  );
   const [homeWidget, setHomeWidget] = useState<HomeWidgetType | null>(null);
   const [symbolsInitialized, setSymbolsInitialized] = useState(false);
   const [map, setMap] = useState<__esri.Map | null>(null);
@@ -449,6 +476,10 @@ export function SketchProvider({ children }: Props) {
   const [viewUnderground3d, setViewUnderground3d] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(false);
   const [efficacyResults, setEfficacyResults] = useState(null);
+  const [governmentLandsLayerVisible, setGovernmentLandsLayerVisible] =
+    useState(true);
+  const [parcelLayerVisible, setParcelLayerVisible] = useState(true);
+  const [suitabilityLayerVisible, setSuitabilityLayerVisible] = useState(true);
 
   // Update totsLayers variable on the window object. This is a workaround
   // to an issue where the layers state variable is not available within esri
@@ -704,6 +735,8 @@ export function SketchProvider({ children }: Props) {
         setDeconSketchLayer,
         deconOperation,
         setDeconOperation,
+        stagingAreaLayer,
+        setStagingAreaLayer,
 
         map,
         setMap,
@@ -743,6 +776,12 @@ export function SketchProvider({ children }: Props) {
         setResultsOpen,
         efficacyResults,
         setEfficacyResults,
+        governmentLandsLayerVisible,
+        setGovernmentLandsLayerVisible,
+        parcelLayerVisible,
+        setParcelLayerVisible,
+        suitabilityLayerVisible,
+        setSuitabilityLayerVisible,
       }}
     >
       {children}
