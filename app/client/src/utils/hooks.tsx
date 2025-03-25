@@ -1115,6 +1115,7 @@ export function useStartOver() {
     setIncludePlan,
     setIncludePlanWebMap,
     setIncludePlanWebScene,
+    setIncludeStagingAreas,
     setPublishSamplesMode,
     setPublishSampleTableMetaData,
     setSampleTableDescription,
@@ -1123,6 +1124,7 @@ export function useStartOver() {
     setSampleTypeSelections,
     setSelectedAoiCharacterizations,
     setSelectedService,
+    setSelectedStagingAreas,
     setWebMapReferenceLayerSelections,
     setWebSceneReferenceLayerSelections,
   } = useContext(PublishContext);
@@ -1211,11 +1213,13 @@ export function useStartOver() {
     setSampleTypeSelections([]);
     setSelectedAoiCharacterizations([]);
     setSelectedService(null);
+    setSelectedStagingAreas([]);
     setIncludeAoiCharacterization(false);
     setIncludeCustomSampleTypes(false);
     setIncludePlan(true);
     setIncludePlanWebMap(true);
     setIncludePlanWebScene(true);
+    setIncludeStagingAreas(false);
     setWebMapReferenceLayerSelections([]);
     setWebSceneReferenceLayerSelections([]);
 
