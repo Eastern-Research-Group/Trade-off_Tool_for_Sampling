@@ -46,7 +46,11 @@ import {
   publish,
 } from 'utils/arcGisRestUtils';
 import { buildingColors, imageAnalysisSymbols } from 'utils/hooks';
-import { findLayerInEdits, generateUUID } from 'utils/sketchUtils';
+import {
+  convertToSimpleGraphic,
+  findLayerInEdits,
+  generateUUID,
+} from 'utils/sketchUtils';
 import { createErrorObject } from 'utils/utils';
 // types
 import {
@@ -152,7 +156,7 @@ function Publish({ appType }: Props) {
   const { oAuthInfo, portal, setSignedIn, setPortal, signedIn } = useContext(
     AuthenticationContext,
   );
-  const { calculateResults, calculateResultsDecon } =
+  const { calculateResults, calculateResultsDecon, contaminationMap } =
     useContext(CalculateContext);
   const { goToOptions, setGoToOptions, trainingMode } =
     useContext(NavigationContext);
@@ -809,6 +813,52 @@ function Publish({ appType }: Props) {
               });
             });
 
+            if (
+              trainingMode &&
+              contaminationMap?.sketchLayer?.type === 'graphics'
+            ) {
+              const graphics = contaminationMap.sketchLayer.graphics.toArray();
+              const unionGeometry =
+                graphics.length > 0
+                  ? geometryEngine.union(graphics.map((g) => g.geometry))
+                  : undefined;
+
+              const symbol = new SimpleFillSymbol(
+                defaultSymbols.symbols['Contamination Map'],
+              );
+
+              layersToPublish.push({
+                id: contaminationMap.id,
+                layerId: contaminationMap.layerId,
+                layerDefinitionProps: {
+                  ...layerProps.defaultLayerProps,
+                  fields: layerProps.defaultContaminationMapLayerFields,
+                  geometryType: 'esriGeometryPolygon',
+                  name: selectedScenario.scenarioName + '-contamination-map',
+                  description: '',
+                  extent: unionGeometry?.extent,
+                  drawingInfo: {
+                    renderer: {
+                      type: 'simple',
+                      symbol: symbol.toJSON(),
+                    },
+                  },
+                  types: [
+                    {
+                      id: 'epa-tots-contamination-map-layer',
+                      name: 'epa-tots-contamination-map-layer',
+                    },
+                  ],
+                },
+                adds: graphics.map((graphic) =>
+                  convertToSimpleGraphic(graphic),
+                ),
+                updates: [],
+                deletes: [],
+                published: [],
+              });
+            }
+
             console.log('layersToPublish: ', layersToPublish);
             featureServices.push({
               category: 'contains-epa-tots-sample-layer',
@@ -1223,6 +1273,7 @@ function Publish({ appType }: Props) {
           ) {
             errorMessages.push('No data to publish');
           } else {
+            const layersToPublish: any[] = [];
             const linkedLayers = edits.edits.filter(
               (edit) =>
                 editsScenario.linkedLayerIds.includes(edit.layerId) &&
@@ -1423,6 +1474,57 @@ function Publish({ appType }: Props) {
               ...calculationResults,
             ];
 
+            const updatedContamMap = map.allLayers.find(
+              (l) => l.id === 'contaminationMapUpdated',
+            ) as __esri.GraphicsLayer;
+            if (
+              trainingMode &&
+              contaminationMap &&
+              updatedContamMap?.type === 'graphics'
+            ) {
+              const graphics = updatedContamMap.graphics.toArray();
+              const unionGeometry =
+                graphics.length > 0
+                  ? geometryEngine.union(graphics.map((g) => g.geometry))
+                  : undefined;
+
+              const symbol = new SimpleFillSymbol(
+                defaultSymbols.symbols['Contamination Map'],
+              );
+
+              const uuid = generateUUID();
+              layersToPublish.push({
+                id: 0,
+                layerId: uuid,
+                layerDefinitionProps: {
+                  ...layerProps.defaultLayerProps,
+                  fields: layerProps.defaultContaminationMapLayerFields,
+                  geometryType: 'esriGeometryPolygon',
+                  name: selectedScenario.scenarioName + '-contamination-map',
+                  description: '',
+                  extent: unionGeometry?.extent,
+                  drawingInfo: {
+                    renderer: {
+                      type: 'simple',
+                      symbol: symbol.toJSON(),
+                    },
+                  },
+                  types: [
+                    {
+                      id: 'epa-tots-contamination-map-layer',
+                      name: 'epa-tots-contamination-map-layer',
+                    },
+                  ],
+                },
+                adds: graphics.map((graphic) =>
+                  convertToSimpleGraphic(graphic),
+                ),
+                updates: [],
+                deletes: [],
+                published: [],
+              });
+            }
+
             featureServices.push({
               category: 'contains-epa-tods-decon-layer',
               label: editsScenario.scenarioName,
@@ -1430,7 +1532,7 @@ function Publish({ appType }: Props) {
               description: editsScenario.scenarioDescription,
               url: '',
               layerId: editsScenario.layerId,
-              layers: [],
+              layers: layersToPublish,
               tables: [
                 {
                   tableDefinitionProps: {

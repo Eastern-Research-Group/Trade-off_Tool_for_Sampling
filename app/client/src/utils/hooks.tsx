@@ -2562,10 +2562,13 @@ export function useCalculateDeconPlan() {
               if (CONTAMVALWOOD > newCfu) newCfu = CONTAMVALWOOD;
               if (CONTAMVALOTHER > newCfu) newCfu = CONTAMVALOTHER;
 
+              const uuid = generateUUID();
               newContamGraphics.push(
                 new Graphic({
                   attributes: {
                     ...contamGraphic.attributes,
+                    GLOBALID: uuid,
+                    PERMANENT_IDENTIFIER: uuid,
                     CONTAMVAL, // plume reductions
                     EXTERIOR: CONTAMVALEXTERIOR,
                     INTERIOR: CONTAMVALINTERIOR,
