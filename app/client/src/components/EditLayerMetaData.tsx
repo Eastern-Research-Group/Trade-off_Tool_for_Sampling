@@ -1361,7 +1361,7 @@ export function EditStagingAreaCharacterization({
     signedIn, //
   } = useContext(AuthenticationContext);
   const { setEdits, setLayers } = useContext(SketchContext);
-  // const { setSelectedAoiCharacterizations } = useContext(PublishContext);
+  const { setSelectedStagingAreas } = useContext(PublishContext);
 
   const [aoiCharName, setAoiCharName] = useState(aoiLayer.label);
   const [aoiCharDescription, setAoiCharDescription] = useState(
@@ -1419,14 +1419,13 @@ export function EditStagingAreaCharacterization({
       return layers;
     });
 
-    // TODO bring this back for publishing logic
-    // // set selected aoi chars
-    // setSelectedAoiCharacterizations((aoiChars) => {
-    //   const aoiChar = aoiChars.find((char) => char.value === aoiLayer.layerId);
-    //   if (!aoiChar) return aoiChars;
-    //   aoiChar.label = aoiCharName;
-    //   return aoiChars;
-    // });
+    // set selected aoi chars
+    setSelectedStagingAreas((sa) => {
+      const saSel = sa.find((char) => char.value === aoiLayer.layerId);
+      if (!saSel) return sa;
+      saSel.label = aoiCharName;
+      return sa;
+    });
 
     const saveStatus: SaveResultsType = {
       status: 'success',
