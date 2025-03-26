@@ -2670,7 +2670,7 @@ function CalculateResultsPopup({
           >
             Download Summary Data
           </button>
-          {trainingMode && contaminationMap && contamMapUpdated && (
+          {devMode && trainingMode && contaminationMap && contamMapUpdated && (
             <button
               css={saveAttributesButtonStyles}
               onClick={async () => {
