@@ -2277,7 +2277,6 @@ export function useCalculateDeconPlan() {
   ]);
 
   useEffect(() => {
-    if (!resultsOpen) return;
     if (calculateResultsDecon.status === 'failure') return;
     if (!selectedScenario || selectedScenario.type !== 'scenario-decon') return;
 
@@ -2651,8 +2650,6 @@ export function useCalculateDeconPlan() {
           g.attributes.FID = index;
         });
         contamMapUpdated.addMany(newContamGraphics);
-        if (window.location.search.includes('devMode=true'))
-          contamMapUpdated.listMode = 'show';
       }
     }
 
@@ -2664,7 +2661,6 @@ export function useCalculateDeconPlan() {
     defaultDeconSelections,
     edits,
     layers,
-    resultsOpen,
     sampleAttributesDecon,
     sceneViewForArea,
     selectedScenario,
@@ -2676,7 +2672,15 @@ export function useCalculateDeconPlan() {
       return;
     if (window.location.search.includes('devMode=true'))
       contaminationMap.sketchLayer.listMode = 'show';
-  }, [contaminationMap, resultsOpen]);
+
+    const contamMapUpdated = mapView?.map.layers.find(
+      (l) => l.id === 'contaminationMapUpdated',
+    ) as __esri.GraphicsLayer;
+    if (contamMapUpdated) {
+      if (window.location.search.includes('devMode=true'))
+        contamMapUpdated.listMode = 'show';
+    }
+  }, [contaminationMap, mapView, resultsOpen]);
 
   useEffect(() => {
     console.log('calculateResultsDecon: ', calculateResultsDecon);
