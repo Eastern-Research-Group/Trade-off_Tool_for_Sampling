@@ -55,7 +55,7 @@ import {
 } from 'utils/sketchUtils';
 import { getEnvironment } from 'utils/utils';
 
-let appKey = 'tots';
+let appKey = isDecon() ? 'tods' : 'tots';
 
 const environment = getEnvironment();
 const dataTableName = 'tots-data';
