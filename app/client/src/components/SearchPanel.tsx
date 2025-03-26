@@ -19,7 +19,7 @@ import LoadingSpinner from 'components/LoadingSpinner';
 import Select from 'components/Select';
 // contexts
 import { AuthenticationContext } from 'contexts/Authentication';
-import { settingDefaults } from 'contexts/Calculate';
+import { CalculateContext, settingDefaults } from 'contexts/Calculate';
 import { DialogContext } from 'contexts/Dialog';
 import { LookupFilesContext, useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
@@ -825,6 +825,8 @@ type ResultCardProps = {
 
 function ResultCard({ appType, result }: ResultCardProps) {
   const { portal } = useContext(AuthenticationContext);
+  const { contaminationMap, setContaminationMap } =
+    useContext(CalculateContext);
   const { setOptions } = useContext(DialogContext);
   const { sampleTypes } = useContext(LookupFilesContext);
   const { trainingMode } = useContext(NavigationContext);
@@ -993,11 +995,18 @@ function ResultCard({ appType, result }: ResultCardProps) {
       // set the sketchLayer to the first tots sample layer
       if (layersToAdd.length > -1) setSketchLayer(layersToAdd[0]);
 
+      // set the contamination map if one hasn't already been selected
+      const contamMap = layersToAdd.find(
+        (l) => l.layerType === 'Contamination Map',
+      );
+      if (contamMap && !contaminationMap) setContaminationMap(contamMap);
+
       // add the portal id to portal layers. This needed so the card on
       // the search panel shows up as the layer having been added.
       setPortalLayers((portalLayers) => [
         ...portalLayers,
         {
+          categories: result.categories,
           id: result.id,
           label: result.title,
           layerType: 'Feature Service',
@@ -1247,6 +1256,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       let isVspLayer = false;
       let isPointsSampleLayer = false;
       let isVspPointsSampleLayer = false;
+      let isContamMapLayer = false;
       const typesLoop = (type: __esri.FeatureType) => {
         if (type.id === 'epa-tots-vsp-layer') isVspLayer = true;
         if (type.id === 'epa-tots-sample-layer') isSampleLayer = true;
@@ -1254,6 +1264,8 @@ function ResultCard({ appType, result }: ResultCardProps) {
           isPointsSampleLayer = true;
         if (type.id === 'epa-tots-vsp-points-layer')
           isVspPointsSampleLayer = true;
+        if (type.id === 'epa-tots-contamination-map-layer')
+          isContamMapLayer = true;
       };
 
       let fields: __esri.Field[] = [];
@@ -1273,6 +1285,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
         // figure out if this layer is a sample layer or not
         isSampleLayer = false;
         isVspLayer = false;
+        isContamMapLayer = false;
         if (layerDetails?.types) {
           layerDetails.types.forEach(typesLoop);
         }
@@ -1302,6 +1315,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
             referenceLayers: layerFeatures.features.map((f: any) => {
               if (f.attributes.TYPE === 'arcgis') {
                 newPortalLayers.push({
+                  categories: [],
                   id: f.attributes.LAYERID,
                   label: f.attributes.LABEL,
                   layerType: f.attributes.LAYERTYPE,
@@ -1616,6 +1630,89 @@ function ResultCard({ appType, result }: ResultCardProps) {
           }
 
           mapLayersToAdd.push(groupLayer); // replace with group layer
+        } else if (isContamMapLayer) {
+          const layerType: LayerTypeName = 'Contamination Map';
+          const symbol = SimpleFillSymbol.fromJSON(
+            layerDetails.drawingInfo.renderer.symbol,
+          );
+
+          // get the graphics from the layer
+          const graphics: __esri.Graphic[] = [];
+          layerFeatures.features.forEach((feature: any) => {
+            const graphic: any = Graphic.fromJSON(feature);
+            graphic.geometry.spatialReference = {
+              wkid: 3857,
+            };
+            graphic.popupTemplate = getPopupTemplate(layerType, false);
+            graphic.symbol = symbol;
+            graphics.push(graphic);
+          });
+
+          const name = layerDetails.name.replace(
+            '-contamination-map',
+            ' Contamination Map',
+          );
+          const sketchLayer = new GraphicsLayer({
+            id: generateUUID(),
+            listMode: 'hide',
+            title: name,
+            visible: false,
+            graphics,
+          });
+          mapLayersToAdd.push(sketchLayer);
+
+          const layerContamMap: LayerEditsType = {
+            type: 'layer',
+            id: layerDetails.id,
+            layerId: sketchLayer.id,
+            portalId: result.id,
+            name,
+            label: name,
+            layerType: 'Contamination Map',
+            addedFrom: 'tots',
+            status: 'published',
+            editType: 'add',
+            visible: sketchLayer.visible,
+            listMode: sketchLayer.listMode,
+            pointsId: -1,
+            uuid: sketchLayer.id,
+            hasContaminationRan: true,
+            sort: 0,
+            adds: sketchLayer.graphics
+              .toArray()
+              .map((graphic) => convertToSimpleGraphic(graphic)),
+            updates: [],
+            deletes: [],
+            published: [],
+          };
+          // make a copy of the edits context variable
+          editsCopy = {
+            count: editsCopy.count + 1,
+            edits: [...editsCopy.edits, layerContamMap],
+          };
+
+          layersToAdd.push({
+            addedFrom: layerContamMap.addedFrom,
+            editType: layerContamMap.editType,
+            geometryType: 'esriGeometryPolygon',
+            hybridLayer: null,
+            id: layerContamMap.id,
+            label: layerContamMap.label,
+            layerId: layerContamMap.layerId,
+            layerType: layerContamMap.layerType,
+            listMode: layerContamMap.listMode,
+            name: layerContamMap.label,
+            parentLayer: null,
+            pointsId: layerContamMap.pointsId,
+            pointsLayer: null,
+            portalId: layerContamMap.portalId,
+            sketchLayer: sketchLayer,
+            sort: layerContamMap.sort,
+            status: layerContamMap.status,
+            uuid: layerContamMap.layerId,
+            value: layerContamMap.layerId,
+            visible: layerContamMap.visible,
+          });
         } else {
           // add non-sample layers as feature layers
           fields = [];
@@ -1967,29 +2064,37 @@ function ResultCard({ appType, result }: ResultCardProps) {
   }
 
   async function addTotsLayerForTods() {
-    if (!map) return;
+    if (!map || !portal) return;
+
+    setStatus('loading');
+
+    const tempPortal = portal as any;
+    const token = tempPortal.credential.token;
+    const mapLayersToAdd: __esri.Layer[] = [];
 
     const layer = await Layer.fromPortalItem({
       portalItem: new PortalItem({
         id: result.id,
       }),
     });
-    map.add(layer);
+    mapLayersToAdd.push(layer);
 
-    try {
-      await applyRendererForTotsLayer(layer);
+    // function used for finalizing the adding of layers. This function is needed
+    // for displaying a popup mesage if there is an issue with any of the samples
+    function finalizeLayerAdd({
+      mapLayersToAdd,
+      editsCopy,
+      layersToAdd,
+    }: {
+      mapLayersToAdd: __esri.Layer[];
+      editsCopy: EditsType;
+      layersToAdd: LayerType[];
+    }) {
+      if (!map) return;
 
-      setPortalLayers((portalLayers) => [
-        ...portalLayers,
-        {
-          id: result.id,
-          label: result.title,
-          layerType: result.type,
-          type: 'tots',
-          url: result.url,
-        },
-      ]);
-      setStatus('');
+      // add all of the layers to the map
+      map.addMany(mapLayersToAdd);
+      applyRendererForTotsLayer(layer);
 
       // zoom to the layer if it has an extent
       if (layer.fullExtent) {
@@ -1998,6 +2103,180 @@ function ResultCard({ appType, result }: ResultCardProps) {
         if (sceneView && displayDimensions === '3d')
           sceneView.goTo(layer.fullExtent);
       }
+
+      // set the state for session storage
+      setEdits(editsCopy);
+      window.totsLayers = [...layers, ...layersToAdd];
+      setLayers((layers) => [...layers, ...layersToAdd]);
+
+      // set the contamination map if one hasn't already been selected
+      const contamMap = layersToAdd.find(
+        (l) => l.layerType === 'Contamination Map',
+      );
+      if (contamMap && !contaminationMap) setContaminationMap(contamMap);
+
+      // add the portal id to portal layers. This needed so the card on
+      // the search panel shows up as the layer having been added.
+      setPortalLayers((portalLayers) => [
+        ...portalLayers,
+        {
+          categories: result.categories,
+          id: result.id,
+          label: result.title,
+          layerType: 'Feature Service',
+          type: 'tots',
+          url: result.url,
+        },
+      ]);
+
+      // reset the status
+      setStatus('');
+    }
+
+    try {
+      // get the list of feature layers in this feature server
+      const featureLayersRes: any = await getFeatureLayers(result.url, token);
+
+      // fire off requests to get the details and features for each layer
+      const layerPromises: Promise<any>[] = [];
+
+      featureLayersRes.layers.forEach((layer: any) => {
+        // get the layer details promise
+        const layerCall = getFeatureLayer(result.url, token, layer.id);
+        layerPromises.push(layerCall);
+      });
+
+      // wait for layer detail promises to resolve
+      const layerDetailResponses = await Promise.all(layerPromises);
+
+      // fire off requests for features of each layer using the objectIdField
+      const featurePromises: any[] = [];
+      layerDetailResponses.forEach((layerDetails: any) => {
+        // get the layer features promise
+        const featuresCall = getAllFeatures(
+          portal,
+          result.url + '/' + layerDetails.id,
+          layerDetails.objectIdField,
+        );
+        featurePromises.push(featuresCall);
+      });
+
+      // wait for feature promises to resolve
+      const featureResponses = await Promise.all(featurePromises);
+
+      // define items used for updating states
+      let editsCopy: EditsType = deepCopyObject(edits);
+      const layersToAdd: LayerType[] = [];
+
+      let isContamMapLayer = false;
+      const typesLoop = (type: __esri.FeatureType) => {
+        if (type.id === 'epa-tots-contamination-map-layer')
+          isContamMapLayer = true;
+      };
+
+      // create the layers to be added to the map
+      for (let i = 0; i < layerDetailResponses.length; i++) {
+        const layerDetails = layerDetailResponses[i];
+        const layerFeatures = featureResponses[i];
+
+        // figure out if this layer is a sample layer or not
+        isContamMapLayer = false;
+        if (layerDetails?.types) {
+          layerDetails.types.forEach(typesLoop);
+        }
+
+        // add staging area layers as graphics layers
+        if (isContamMapLayer) {
+          const layerType: LayerTypeName = 'Contamination Map';
+          const symbol = SimpleFillSymbol.fromJSON(
+            layerDetails.drawingInfo.renderer.symbol,
+          );
+
+          // get the graphics from the layer
+          const graphics: __esri.Graphic[] = [];
+          layerFeatures.features.forEach((feature: any) => {
+            const graphic: any = Graphic.fromJSON(feature);
+            graphic.geometry.spatialReference = {
+              wkid: 3857,
+            };
+            graphic.popupTemplate = getPopupTemplate(layerType, false);
+            graphic.symbol = symbol;
+            graphics.push(graphic);
+          });
+
+          const name = layerDetails.name.replace(
+            '-contamination-map',
+            ' Contamination Map',
+          );
+          const sketchLayer = new GraphicsLayer({
+            id: generateUUID(),
+            listMode: 'hide',
+            title: name,
+            visible: false,
+            graphics,
+          });
+          mapLayersToAdd.push(sketchLayer);
+
+          const layerContamMap: LayerEditsType = {
+            type: 'layer',
+            id: layerDetails.id,
+            layerId: sketchLayer.id,
+            portalId: result.id,
+            name,
+            label: name,
+            layerType: 'Contamination Map',
+            addedFrom: 'tots',
+            status: 'published',
+            editType: 'add',
+            visible: sketchLayer.visible,
+            listMode: sketchLayer.listMode,
+            pointsId: -1,
+            uuid: sketchLayer.id,
+            hasContaminationRan: true,
+            sort: 0,
+            adds: sketchLayer.graphics
+              .toArray()
+              .map((graphic) => convertToSimpleGraphic(graphic)),
+            updates: [],
+            deletes: [],
+            published: [],
+          };
+          // make a copy of the edits context variable
+          editsCopy = {
+            count: editsCopy.count + 1,
+            edits: [...editsCopy.edits, layerContamMap],
+          };
+
+          layersToAdd.push({
+            addedFrom: layerContamMap.addedFrom,
+            editType: layerContamMap.editType,
+            geometryType: 'esriGeometryPolygon',
+            hybridLayer: null,
+            id: layerContamMap.id,
+            label: layerContamMap.label,
+            layerId: layerContamMap.layerId,
+            layerType: layerContamMap.layerType,
+            listMode: layerContamMap.listMode,
+            name: layerContamMap.label,
+            parentLayer: null,
+            pointsId: layerContamMap.pointsId,
+            pointsLayer: null,
+            portalId: layerContamMap.portalId,
+            sketchLayer: sketchLayer,
+            sort: layerContamMap.sort,
+            status: layerContamMap.status,
+            uuid: layerContamMap.layerId,
+            value: layerContamMap.layerId,
+            visible: layerContamMap.visible,
+          });
+        }
+      }
+
+      finalizeLayerAdd({
+        mapLayersToAdd,
+        editsCopy,
+        layersToAdd,
+      });
     } catch (err) {
       console.error(err);
       setStatus('error');
@@ -2009,6 +2288,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
    */
   async function addAoiCharacterizationLayer(
     result: {
+      categories: string[];
       created: string;
       description: string;
       id: string;
@@ -2063,6 +2343,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       setPortalLayers((portalLayers) => [
         ...portalLayers,
         {
+          categories: result.categories,
           id: result.id,
           label: result.title,
           layerType: 'Feature Service',
@@ -2516,6 +2797,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       setPortalLayers((portalLayers) => [
         ...portalLayers,
         {
+          categories: result.categories,
           id: result.id,
           label: result.title,
           layerType: 'Feature Service',
@@ -2823,11 +3105,18 @@ function ResultCard({ appType, result }: ResultCardProps) {
         else return newScenario;
       });
 
+      // set the contamination map if one hasn't already been selected
+      const contamMap = layersToAdd.find(
+        (l) => l.layerType === 'Contamination Map',
+      );
+      if (contamMap && !contaminationMap) setContaminationMap(contamMap);
+
       // add the portal id to portal layers. This needed so the card on
       // the search panel shows up as the layer having been added.
       setPortalLayers((portalLayers) => [
         ...portalLayers,
         {
+          categories: result.categories,
           id: result.id,
           label: result.title,
           layerType: 'Feature Service',
@@ -2921,10 +3210,11 @@ function ResultCard({ appType, result }: ResultCardProps) {
         referenceLayers: [],
       };
 
-      // TODO this might need to be swapped out for updated contamination map
-      // const typesLoop = (type: __esri.FeatureType) => {
-      //   if (type.id === 'epa-tods-decon-layer') isDeconLayer = true;
-      // };
+      let isContamMapLayer = false;
+      const typesLoop = (type: __esri.FeatureType) => {
+        if (type.id === 'epa-tots-contamination-map-layer')
+          isContamMapLayer = true;
+      };
 
       let fields: __esri.Field[] = [];
       const fieldsLoop = (field: __esri.Field) => {
@@ -2936,10 +3226,11 @@ function ResultCard({ appType, result }: ResultCardProps) {
         const layerDetails = layerDetailResponses[i];
         const layerFeatures = featureResponses[i];
 
-        // // figure out if this layer is a sample layer or not
-        // if (layerDetails?.types) {
-        //   layerDetails.types.forEach(typesLoop);
-        // }
+        // figure out if this layer is a sample layer or not
+        isContamMapLayer = false;
+        if (layerDetails?.types) {
+          layerDetails.types.forEach(typesLoop);
+        }
 
         // add sample layers as graphics layers
         if (
@@ -2952,6 +3243,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
           for (const f of layerFeatures.features) {
             if (f.attributes.TYPE === 'arcgis') {
               newPortalLayers.push({
+                categories: [],
                 id: f.attributes.LAYERID,
                 label: f.attributes.LABEL,
                 layerType: f.attributes.LAYERTYPE,
@@ -2969,9 +3261,9 @@ function ResultCard({ appType, result }: ResultCardProps) {
               });
             }
             if (f.attributes.TYPE === 'tots' && f.attributes.TOTSLAYERID) {
-              console.log('addAoiCharacterization...');
               const output = await addAoiCharacterizationLayer(
                 {
+                  categories: ['contains-epa-tots-aoi-characterization'],
                   id: f.attributes.LAYERID,
                   title: f.attributes.LABEL,
                   url: f.attributes.URL,
@@ -3034,6 +3326,89 @@ function ResultCard({ appType, result }: ResultCardProps) {
               (f: any) => f.attributes,
             );
           }
+        } else if (isContamMapLayer) {
+          const layerType: LayerTypeName = 'Contamination Map';
+          const symbol = SimpleFillSymbol.fromJSON(
+            layerDetails.drawingInfo.renderer.symbol,
+          );
+
+          // get the graphics from the layer
+          const graphics: __esri.Graphic[] = [];
+          layerFeatures.features.forEach((feature: any) => {
+            const graphic: any = Graphic.fromJSON(feature);
+            graphic.geometry.spatialReference = {
+              wkid: 3857,
+            };
+            graphic.popupTemplate = getPopupTemplate(layerType, false);
+            graphic.symbol = symbol;
+            graphics.push(graphic);
+          });
+
+          const name = layerDetails.name.replace(
+            '-contamination-map',
+            ' Contamination Map',
+          );
+          const sketchLayer = new GraphicsLayer({
+            id: generateUUID(),
+            listMode: 'hide',
+            title: name,
+            visible: false,
+            graphics,
+          });
+          mapLayersToAdd.push(sketchLayer);
+
+          const layerContamMap: LayerEditsType = {
+            type: 'layer',
+            id: layerDetails.id,
+            layerId: sketchLayer.id,
+            portalId: result.id,
+            name,
+            label: name,
+            layerType: 'Contamination Map',
+            addedFrom: 'tots',
+            status: 'published',
+            editType: 'add',
+            visible: sketchLayer.visible,
+            listMode: sketchLayer.listMode,
+            pointsId: -1,
+            uuid: sketchLayer.id,
+            hasContaminationRan: true,
+            sort: 0,
+            adds: sketchLayer.graphics
+              .toArray()
+              .map((graphic) => convertToSimpleGraphic(graphic)),
+            updates: [],
+            deletes: [],
+            published: [],
+          };
+          // make a copy of the edits context variable
+          editsCopy = {
+            count: editsCopy.count + 1,
+            edits: [...editsCopy.edits, layerContamMap],
+          };
+
+          layersToAdd.push({
+            addedFrom: layerContamMap.addedFrom,
+            editType: layerContamMap.editType,
+            geometryType: 'esriGeometryPolygon',
+            hybridLayer: null,
+            id: layerContamMap.id,
+            label: layerContamMap.label,
+            layerId: layerContamMap.layerId,
+            layerType: layerContamMap.layerType,
+            listMode: layerContamMap.listMode,
+            name: layerContamMap.label,
+            parentLayer: null,
+            pointsId: layerContamMap.pointsId,
+            pointsLayer: null,
+            portalId: layerContamMap.portalId,
+            sketchLayer: sketchLayer,
+            sort: layerContamMap.sort,
+            status: layerContamMap.status,
+            uuid: layerContamMap.layerId,
+            value: layerContamMap.layerId,
+            visible: layerContamMap.visible,
+          });
         } else {
           // add non-sample layers as feature layers
           fields = [];
@@ -3533,6 +3908,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
             setPortalLayers((portalLayers) => [
               ...portalLayers,
               {
+                categories: [],
                 id: result.id,
                 label: result.title,
                 layerType: result.type,
@@ -4246,6 +4622,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
                     )
                   ) {
                     addAoiCharacterizationLayer({
+                      categories: result.categories,
                       created: result.created,
                       description: result.description,
                       id: result.id,

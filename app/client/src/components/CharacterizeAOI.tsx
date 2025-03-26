@@ -807,7 +807,7 @@ function CharacterizeAOI({
       aoiLayer?.sketchLayer &&
       aoiLayer.sketchLayer.type === 'graphics' &&
       aoiLayer.sketchLayer.graphics.length > 0;
-    setEditScenarioVisible(!hasAoiGraphics);
+    if (!hasAoiGraphics) setEditScenarioVisible(true);
   }, [deconSketchLayer, layers]);
 
   // get decon layers for showing in select

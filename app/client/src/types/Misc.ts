@@ -17,6 +17,7 @@ export type LayerProps = {
   defaultDeconMaskLayerFields: __esri.FieldProperties[];
   defaultAoiInfoTableFields: __esri.FieldProperties[];
   defaultAoiStagingAreaMaskLayerFields: __esri.FieldProperties[];
+  defaultContaminationMapLayerFields: __esri.FieldProperties[];
   defaultLayerProps: __esri.FeatureLayerProperties;
   defaultTableProps: any;
   webMapFieldProps: any;

@@ -77,6 +77,7 @@ export type PortalLayerTypes =
 export type PortalUrlLayerTypes = PortalLayerTypes & UrlLayerTypes;
 
 export type PortalLayerType = {
+  categories: string[];
   id: string;
   type: 'arcgis' | 'tots';
   label: string;

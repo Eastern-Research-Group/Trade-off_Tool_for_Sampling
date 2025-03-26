@@ -3567,6 +3567,273 @@
       "defaultValue": null
     }
   ],
+  "defaultContaminationMapLayerFields": [
+    {
+      "name": "OBJECTID",
+      "alias": "OBJECTID",
+      "type": "esriFieldTypeOID",
+      "actualType": "int",
+      "sqlType": "sqlTypeInteger",
+      "length": 4,
+      "nullable": false,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GLOBALID",
+      "alias": "GlobalID",
+      "type": "esriFieldTypeGlobalID",
+      "sqlType": "sqlTypeOther",
+      "length": 38,
+      "nullable": false,
+      "editable": false,
+      "domain": null,
+      "defaultValue": "NEWID() WITH VALUES"
+    },
+    {
+      "name": "PERMANENT_IDENTIFIER",
+      "alias": "PERMANENT_IDENTIFIER",
+      "type": "esriFieldTypeGUID",
+      "sqlType": "sqlTypeOther",
+      "length": 38,
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": ""
+    },
+    {
+      "name": "FID",
+      "alias": "FID",
+      "type": "esriFieldTypeInteger",
+      "actualType": "int",
+      "sqlType": "sqlTypeInteger",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": 0
+    },
+    {
+      "name": "ID",
+      "alias": "ID",
+      "type": "esriFieldTypeInteger",
+      "actualType": "int",
+      "sqlType": "sqlTypeInteger",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": 0
+    },
+    {
+      "name": "TYPE",
+      "alias": "TYPE",
+      "type": "esriFieldTypeString",
+      "actualType": "nvarchar",
+      "sqlType": "sqlTypeNVarchar",
+      "length": 255,
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "CONTAMHIT",
+      "alias": "CONTAMHIT",
+      "type": "esriFieldTypeSmallInteger",
+      "actualType": "int",
+      "sqlType": "sqlTypeInt2",
+      "nullable": true,
+      "editable": true,
+      "domain": {
+        "type": "codedValue",
+        "name": "ContamHitDomain",
+        "codedValues": [
+          { "code": 0, "name": "No" },
+          { "code": 1, "name": "Yes" }
+        ]
+      },
+      "defaultValue": 0
+    },
+    {
+      "name": "CONTAMINATED",
+      "alias": "Is Contaminated",
+      "type": "esriFieldTypeSmallInteger",
+      "actualType": "int",
+      "sqlType": "sqlTypeInt2",
+      "nullable": true,
+      "editable": true,
+      "domain": {
+        "type": "codedValue",
+        "name": "ContamHitDomain",
+        "codedValues": [
+          { "code": 0, "name": "No" },
+          { "code": 1, "name": "Yes" }
+        ]
+      },
+      "defaultValue": 0
+    },
+    {
+      "name": "CONTAMREDUCED",
+      "alias": "Was Contamination Reduced",
+      "type": "esriFieldTypeSmallInteger",
+      "actualType": "int",
+      "sqlType": "sqlTypeInt2",
+      "nullable": true,
+      "editable": true,
+      "domain": {
+        "type": "codedValue",
+        "name": "ContamHitDomain",
+        "codedValues": [
+          { "code": 0, "name": "No" },
+          { "code": 1, "name": "Yes" }
+        ]
+      },
+      "defaultValue": 0
+    },
+    {
+      "name": "BRICK",
+      "alias": "Brick Contamination (cfu)",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "CONCRETE",
+      "alias": "Concrete Contamination (cfu)",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "OTHER",
+      "alias": "Other Contamination (cfu)",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "STEEL",
+      "alias": "Steel Contamination (cfu)",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "WOOD",
+      "alias": "Wood Contamination (cfu)",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "EXTERIOR",
+      "alias": "Building Exteriors Contamination (cfu)",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "INTERIOR",
+      "alias": "Building Interiors Contamination (cfu)",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "CONTAMTYPE",
+      "alias": "CONTAMTYPE",
+      "type": "esriFieldTypeString",
+      "actualType": "nvarchar",
+      "sqlType": "sqlTypeNVarchar",
+      "length": 20,
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "CONTAMVAL",
+      "alias": "CONTAMVAL",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "CONTAMUNIT",
+      "alias": "CONTAMUNIT",
+      "type": "esriFieldTypeString",
+      "actualType": "nvarchar",
+      "sqlType": "sqlTypeNVarchar",
+      "length": 10,
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "CREATEDDATE",
+      "alias": "CREATEDDATE",
+      "type": "esriFieldTypeDate",
+      "sqlType": "sqlTypeOther",
+      "nullable": true,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "USERNAME",
+      "alias": "USERNAME",
+      "type": "esriFieldTypeString",
+      "sqlType": "sqlTypeOther",
+      "length": 255,
+      "nullable": true,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "UPDATEDDATE",
+      "alias": "UPDATEDDATE",
+      "type": "esriFieldTypeDate",
+      "sqlType": "sqlTypeOther",
+      "nullable": true,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    }
+  ],
   "defaultLayerProps": {
     "type": "Feature Layer",
     "editFieldsInfo": {

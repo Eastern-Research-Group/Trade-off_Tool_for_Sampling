@@ -3104,6 +3104,10 @@ export async function applyRendererForTotsLayer(layer: __esri.Layer) {
     for (const l of (layer as __esri.GroupLayer).layers) {
       await loadLayer(l);
       setRenderer(l as __esri.FeatureLayer, l.title.includes('-points'));
+      if (l.title.endsWith('-contamination-map')) {
+        l.visible = false;
+        l.listMode = 'hide';
+      }
     }
   }
 

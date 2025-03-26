@@ -158,6 +158,9 @@
                     "defaultAoiStagingAreaMaskLayerFields": {
                       "type": "object"
                     },
+                    "defaultContaminationMapLayerFields": {
+                      "type": "object"
+                    },
                     "defaultFields": {
                       "type": "object"
                     },

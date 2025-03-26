@@ -474,83 +474,92 @@ export async function fetchBuildingData(
     );
   });
 
+  const buildingMaterialOptions: {
+    [planId: string]: {
+      [key: string]: any;
+    };
+  } = {};
   const responses = await Promise.all(requests);
   responses.forEach((results, index) => {
     const planId = responseIndexes[index];
-    const buildingMaterialOptions: { [key: string]: any } = {
-      'Buildings (Interior and Exterior)': {
-        surfaceArea: 0,
-        volume: 0,
-        extVolume: 0,
-        intVolume: 0,
-        intVolumeContents: 0,
-        extSurfaceArea: 0,
-        intSurfaceArea: 0,
-      },
-      'Building Exteriors': {
-        surfaceArea: 0,
-        volume: 0,
-        extVolume: 0,
-        intVolume: 0,
-        intVolumeContents: 0,
-        extSurfaceArea: 0,
-        intSurfaceArea: 0,
-      },
-      'Building Interiors': {
-        surfaceArea: 0,
-        volume: 0,
-        extVolume: 0,
-        intVolume: 0,
-        intVolumeContents: 0,
-        extSurfaceArea: 0,
-        intSurfaceArea: 0,
-      },
-      'Brick Buildings': {
-        surfaceArea: 0,
-        volume: 0,
-        extVolume: 0,
-        intVolume: 0,
-        intVolumeContents: 0,
-        extSurfaceArea: 0,
-        intSurfaceArea: 0,
-      },
-      'Concrete Buildings': {
-        surfaceArea: 0,
-        volume: 0,
-        extVolume: 0,
-        intVolume: 0,
-        intVolumeContents: 0,
-        extSurfaceArea: 0,
-        intSurfaceArea: 0,
-      },
-      'Steel Buildings': {
-        surfaceArea: 0,
-        volume: 0,
-        extVolume: 0,
-        intVolume: 0,
-        intVolumeContents: 0,
-        extSurfaceArea: 0,
-        intSurfaceArea: 0,
-      },
-      'Wood Buildings': {
-        surfaceArea: 0,
-        volume: 0,
-        extVolume: 0,
-        intVolume: 0,
-        intVolumeContents: 0,
-        extSurfaceArea: 0,
-        intSurfaceArea: 0,
-      },
-      'Other Buildings': {
-        surfaceArea: 0,
-        volume: 0,
-        extVolume: 0,
-        intVolume: 0,
-        intVolumeContents: 0,
-        extSurfaceArea: 0,
-        intSurfaceArea: 0,
-      },
-    };
+    if (
+      !Object.prototype.hasOwnProperty.call(buildingMaterialOptions, planId)
+    ) {
+      buildingMaterialOptions[planId] = {
+        'Buildings (Interior and Exterior)': {
+          surfaceArea: 0,
+          volume: 0,
+          extVolume: 0,
+          intVolume: 0,
+          intVolumeContents: 0,
+          extSurfaceArea: 0,
+          intSurfaceArea: 0,
+        },
+        'Building Exteriors': {
+          surfaceArea: 0,
+          volume: 0,
+          extVolume: 0,
+          intVolume: 0,
+          intVolumeContents: 0,
+          extSurfaceArea: 0,
+          intSurfaceArea: 0,
+        },
+        'Building Interiors': {
+          surfaceArea: 0,
+          volume: 0,
+          extVolume: 0,
+          intVolume: 0,
+          intVolumeContents: 0,
+          extSurfaceArea: 0,
+          intSurfaceArea: 0,
+        },
+        'Brick Buildings': {
+          surfaceArea: 0,
+          volume: 0,
+          extVolume: 0,
+          intVolume: 0,
+          intVolumeContents: 0,
+          extSurfaceArea: 0,
+          intSurfaceArea: 0,
+        },
+        'Concrete Buildings': {
+          surfaceArea: 0,
+          volume: 0,
+          extVolume: 0,
+          intVolume: 0,
+          intVolumeContents: 0,
+          extSurfaceArea: 0,
+          intSurfaceArea: 0,
+        },
+        'Steel Buildings': {
+          surfaceArea: 0,
+          volume: 0,
+          extVolume: 0,
+          intVolume: 0,
+          intVolumeContents: 0,
+          extSurfaceArea: 0,
+          intSurfaceArea: 0,
+        },
+        'Wood Buildings': {
+          surfaceArea: 0,
+          volume: 0,
+          extVolume: 0,
+          intVolume: 0,
+          intVolumeContents: 0,
+          extSurfaceArea: 0,
+          intSurfaceArea: 0,
+        },
+        'Other Buildings': {
+          surfaceArea: 0,
+          volume: 0,
+          extVolume: 0,
+          intVolume: 0,
+          intVolumeContents: 0,
+          extSurfaceArea: 0,
+          intSurfaceArea: 0,
+        },
+      };
+    }
 
     results.features.forEach((feature: any) => {
       const { HEIGHT, OCC_CLS, PRIM_OCC, SQMETERS } = feature.attributes;
@@ -668,85 +677,104 @@ export async function fetchBuildingData(
       );
 
       // add up surface area for summary building
-      buildingMaterialOptions[
+      buildingMaterialOptions[planId][
         'Buildings (Interior and Exterior)'
       ].surfaceArea += intSqM + extSqM;
-      buildingMaterialOptions['Buildings (Interior and Exterior)'].volume +=
-        extVolumeCubM + intVolumeCubM;
+      buildingMaterialOptions[planId][
+        'Buildings (Interior and Exterior)'
+      ].volume += extVolumeCubM + intVolumeCubM;
 
-      buildingMaterialOptions['Building Exteriors'].surfaceArea += extSqM;
-      buildingMaterialOptions['Building Exteriors'].extSurfaceArea += extSqM;
-      buildingMaterialOptions['Building Exteriors'].volume += extVolumeCubM;
-      buildingMaterialOptions['Building Exteriors'].extVolume += extVolumeCubM;
-      buildingMaterialOptions['Building Interiors'].surfaceArea += intSqM;
-      buildingMaterialOptions['Building Interiors'].intSurfaceArea += intSqM;
-      buildingMaterialOptions['Building Interiors'].volume += intVolumeCubM;
-      buildingMaterialOptions['Building Interiors'].intVolume += intVolumeCubM;
-      buildingMaterialOptions['Building Interiors'].intVolumeContents +=
+      buildingMaterialOptions[planId]['Building Exteriors'].surfaceArea +=
+        extSqM;
+      buildingMaterialOptions[planId]['Building Exteriors'].extSurfaceArea +=
+        extSqM;
+      buildingMaterialOptions[planId]['Building Exteriors'].volume +=
+        extVolumeCubM;
+      buildingMaterialOptions[planId]['Building Exteriors'].extVolume +=
+        extVolumeCubM;
+      buildingMaterialOptions[planId]['Building Interiors'].surfaceArea +=
+        intSqM;
+      buildingMaterialOptions[planId]['Building Interiors'].intSurfaceArea +=
+        intSqM;
+      buildingMaterialOptions[planId]['Building Interiors'].volume +=
+        intVolumeCubM;
+      buildingMaterialOptions[planId]['Building Interiors'].intVolume +=
+        intVolumeCubM;
+      buildingMaterialOptions[planId]['Building Interiors'].intVolumeContents +=
         intVolumeContentsCubM;
 
       // add up surface area per building type
-      buildingMaterialOptions['Brick Buildings'].surfaceArea +=
+      buildingMaterialOptions[planId]['Brick Buildings'].surfaceArea +=
         intBrickSqM + extBrickSqM;
-      buildingMaterialOptions['Brick Buildings'].intSurfaceArea += intBrickSqM;
-      buildingMaterialOptions['Brick Buildings'].extSurfaceArea += extBrickSqM;
-      buildingMaterialOptions['Brick Buildings'].volume +=
+      buildingMaterialOptions[planId]['Brick Buildings'].intSurfaceArea +=
+        intBrickSqM;
+      buildingMaterialOptions[planId]['Brick Buildings'].extSurfaceArea +=
+        extBrickSqM;
+      buildingMaterialOptions[planId]['Brick Buildings'].volume +=
         intVolumeBrickCubM + extVolumeBrickCubM;
-      buildingMaterialOptions['Brick Buildings'].extVolume +=
+      buildingMaterialOptions[planId]['Brick Buildings'].extVolume +=
         extVolumeBrickCubM;
-      buildingMaterialOptions['Brick Buildings'].intVolume +=
+      buildingMaterialOptions[planId]['Brick Buildings'].intVolume +=
         intVolumeBrickCubM;
-      buildingMaterialOptions['Brick Buildings'].intVolumeContents +=
+      buildingMaterialOptions[planId]['Brick Buildings'].intVolumeContents +=
         intVolumeBrickContentsCubM;
 
-      buildingMaterialOptions['Concrete Buildings'].surfaceArea +=
+      buildingMaterialOptions[planId]['Concrete Buildings'].surfaceArea +=
         intConcreteSqM + extConcreteSqM;
-      buildingMaterialOptions['Concrete Buildings'].intSurfaceArea +=
+      buildingMaterialOptions[planId]['Concrete Buildings'].intSurfaceArea +=
         intConcreteSqM;
-      buildingMaterialOptions['Concrete Buildings'].extSurfaceArea +=
+      buildingMaterialOptions[planId]['Concrete Buildings'].extSurfaceArea +=
         extConcreteSqM;
-      buildingMaterialOptions['Concrete Buildings'].extVolume +=
+      buildingMaterialOptions[planId]['Concrete Buildings'].extVolume +=
         extVolumeConcreteCubM;
-      buildingMaterialOptions['Concrete Buildings'].intVolume +=
+      buildingMaterialOptions[planId]['Concrete Buildings'].intVolume +=
         intVolumeConcreteCubM;
-      buildingMaterialOptions['Concrete Buildings'].intVolumeContents +=
+      buildingMaterialOptions[planId]['Concrete Buildings'].intVolumeContents +=
         intVolumeConcreteContentsCubM;
 
-      buildingMaterialOptions['Steel Buildings'].surfaceArea +=
+      buildingMaterialOptions[planId]['Steel Buildings'].surfaceArea +=
         intSteelSqM + extSteelSqM;
-      buildingMaterialOptions['Steel Buildings'].intSurfaceArea += intSteelSqM;
-      buildingMaterialOptions['Steel Buildings'].extSurfaceArea += extSteelSqM;
-      buildingMaterialOptions['Steel Buildings'].volume +=
+      buildingMaterialOptions[planId]['Steel Buildings'].intSurfaceArea +=
+        intSteelSqM;
+      buildingMaterialOptions[planId]['Steel Buildings'].extSurfaceArea +=
+        extSteelSqM;
+      buildingMaterialOptions[planId]['Steel Buildings'].volume +=
         extVolumeSteelCubM + intVolumeSteelCubM;
-      buildingMaterialOptions['Steel Buildings'].extVolume +=
+      buildingMaterialOptions[planId]['Steel Buildings'].extVolume +=
         extVolumeSteelCubM;
-      buildingMaterialOptions['Steel Buildings'].intVolume +=
+      buildingMaterialOptions[planId]['Steel Buildings'].intVolume +=
         intVolumeSteelCubM;
-      buildingMaterialOptions['Steel Buildings'].intVolumeContents +=
+      buildingMaterialOptions[planId]['Steel Buildings'].intVolumeContents +=
         intVolumeSteelContentsCubM;
 
-      buildingMaterialOptions['Wood Buildings'].surfaceArea +=
+      buildingMaterialOptions[planId]['Wood Buildings'].surfaceArea +=
         intWoodSqM + extWoodSqM;
-      buildingMaterialOptions['Wood Buildings'].intSurfaceArea += intWoodSqM;
-      buildingMaterialOptions['Wood Buildings'].extSurfaceArea += extWoodSqM;
-      buildingMaterialOptions['Wood Buildings'].volume +=
+      buildingMaterialOptions[planId]['Wood Buildings'].intSurfaceArea +=
+        intWoodSqM;
+      buildingMaterialOptions[planId]['Wood Buildings'].extSurfaceArea +=
+        extWoodSqM;
+      buildingMaterialOptions[planId]['Wood Buildings'].volume +=
         extVolumeWoodCubM + intVolumeWoodCubM;
-      buildingMaterialOptions['Wood Buildings'].extVolume += extVolumeWoodCubM;
-      buildingMaterialOptions['Wood Buildings'].intVolume += intVolumeWoodCubM;
-      buildingMaterialOptions['Wood Buildings'].intVolumeContents +=
+      buildingMaterialOptions[planId]['Wood Buildings'].extVolume +=
+        extVolumeWoodCubM;
+      buildingMaterialOptions[planId]['Wood Buildings'].intVolume +=
+        intVolumeWoodCubM;
+      buildingMaterialOptions[planId]['Wood Buildings'].intVolumeContents +=
         intVolumeWoodContentsCubM;
 
-      buildingMaterialOptions['Other Buildings'].surfaceArea +=
+      buildingMaterialOptions[planId]['Other Buildings'].surfaceArea +=
         intOtherSqM + extOtherSqM;
-      buildingMaterialOptions['Other Buildings'].intSurfaceArea += intOtherSqM;
-      buildingMaterialOptions['Other Buildings'].extSurfaceArea += extOtherSqM;
-      buildingMaterialOptions['Other Buildings'].volume +=
+      buildingMaterialOptions[planId]['Other Buildings'].intSurfaceArea +=
+        intOtherSqM;
+      buildingMaterialOptions[planId]['Other Buildings'].extSurfaceArea +=
+        extOtherSqM;
+      buildingMaterialOptions[planId]['Other Buildings'].volume +=
         extVolumeOtherCubM + intVolumeOtherCubM;
-      buildingMaterialOptions['Other Buildings'].extVolume +=
+      buildingMaterialOptions[planId]['Other Buildings'].extVolume +=
         extVolumeOtherCubM;
-      buildingMaterialOptions['Other Buildings'].intVolume +=
+      buildingMaterialOptions[planId]['Other Buildings'].intVolume +=
         intVolumeOtherCubM;
-      buildingMaterialOptions['Other Buildings'].intVolumeContents +=
+      buildingMaterialOptions[planId]['Other Buildings'].intVolumeContents +=
         intVolumeOtherContentsCubM;
 
       const actions = new Collection<any>();
@@ -883,9 +911,11 @@ export async function fetchBuildingData(
       planGraphics[planId].summary.totalBuildingVolumeContentsCubM +=
         intVolumeContentsCubM;
     });
+  });
 
-    console.log('buildingMaterialOptions: ', buildingMaterialOptions);
-    Object.entries(buildingMaterialOptions).forEach(([key, value]) => {
+  console.log('buildingMaterialOptions: ', buildingMaterialOptions);
+  Object.entries(buildingMaterialOptions).forEach(([planId, options]) => {
+    Object.entries(options).forEach(([key, value]) => {
       if (!planGraphics[planId].summary.areaByMedia)
         planGraphics[planId].summary.areaByMedia = [];
       planGraphics[planId].summary.areaByMedia.push({
@@ -2277,7 +2307,6 @@ export function useCalculateDeconPlan() {
   ]);
 
   useEffect(() => {
-    if (!resultsOpen) return;
     if (calculateResultsDecon.status === 'failure') return;
     if (!selectedScenario || selectedScenario.type !== 'scenario-decon') return;
 
@@ -2642,9 +2671,15 @@ export function useCalculateDeconPlan() {
       ) as __esri.GraphicsLayer;
       if (contamMapUpdated) {
         contamMapUpdated.removeAll();
+        newContamGraphics.forEach((g, index) => {
+          const uuid = generateUUID();
+          g.attributes.GLOBALID = uuid;
+          g.attributes.PERMANENT_IDENTIFIER = uuid;
+          g.attributes.OBJECTID = index;
+          g.attributes.ID = index;
+          g.attributes.FID = index;
+        });
         contamMapUpdated.addMany(newContamGraphics);
-        if (window.location.search.includes('devMode=true'))
-          contamMapUpdated.listMode = 'show';
       }
     }
 
@@ -2656,7 +2691,6 @@ export function useCalculateDeconPlan() {
     defaultDeconSelections,
     edits,
     layers,
-    resultsOpen,
     sampleAttributesDecon,
     sceneViewForArea,
     selectedScenario,
@@ -2668,7 +2702,15 @@ export function useCalculateDeconPlan() {
       return;
     if (window.location.search.includes('devMode=true'))
       contaminationMap.sketchLayer.listMode = 'show';
-  }, [contaminationMap, resultsOpen]);
+
+    const contamMapUpdated = mapView?.map.layers.find(
+      (l) => l.id === 'contaminationMapUpdated',
+    ) as __esri.GraphicsLayer;
+    if (contamMapUpdated) {
+      if (window.location.search.includes('devMode=true'))
+        contamMapUpdated.listMode = 'show';
+    }
+  }, [contaminationMap, mapView, resultsOpen]);
 
   useEffect(() => {
     console.log('calculateResultsDecon: ', calculateResultsDecon);
