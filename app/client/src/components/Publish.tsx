@@ -2316,6 +2316,7 @@ function Publish({ appType }: Props) {
   }, [
     calculateResults,
     calculateResultsDecon,
+    contaminationMap,
     defaultSymbols,
     edits,
     includeAoiCharacterization,
