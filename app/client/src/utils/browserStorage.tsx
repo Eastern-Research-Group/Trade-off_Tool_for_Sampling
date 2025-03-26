@@ -41,7 +41,7 @@ import { LayerType, PortalLayerType, UrlLayerType } from 'types/Layer';
 import { AppType, GoToOptions } from 'types/Navigation';
 import { SampleTypeOptions } from 'types/Publish';
 // config
-import { PanelValueType } from 'config/navigation';
+import { isDecon, PanelValueType } from 'config/navigation';
 import {
   SampleSelectType,
   UserDefinedAttributes,
@@ -690,12 +690,19 @@ function usePortalLayerStorage(dbInitialized: boolean) {
       // The only reason tots layers are also in portal layers is
       // so the search panel will show the layer as having been
       // added.
-      if (portalLayer.type === 'tots') return;
+      const isTotsLayerForTods =
+        portalLayer.categories.includes('contains-epa-tots-sample-layer') &&
+        isDecon();
+      if (portalLayer.type === 'tots' && !isTotsLayerForTods) return;
 
       const layer = Layer.fromPortalItem({
         portalItem: new PortalItem({ id }),
       });
       map.add(layer);
+
+      if (isTotsLayerForTods && portalLayer.type === 'tots') {
+        addTotsLayerForTods(layer);
+      }
     });
   }, [map, portalLayers]);
 }

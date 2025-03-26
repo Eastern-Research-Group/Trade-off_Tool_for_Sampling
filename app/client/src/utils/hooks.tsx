@@ -2562,13 +2562,10 @@ export function useCalculateDeconPlan() {
               if (CONTAMVALWOOD > newCfu) newCfu = CONTAMVALWOOD;
               if (CONTAMVALOTHER > newCfu) newCfu = CONTAMVALOTHER;
 
-              const uuid = generateUUID();
               newContamGraphics.push(
                 new Graphic({
                   attributes: {
                     ...contamGraphic.attributes,
-                    GLOBALID: uuid,
-                    PERMANENT_IDENTIFIER: uuid,
                     CONTAMVAL, // plume reductions
                     EXTERIOR: CONTAMVALEXTERIOR,
                     INTERIOR: CONTAMVALINTERIOR,
@@ -2645,6 +2642,14 @@ export function useCalculateDeconPlan() {
       ) as __esri.GraphicsLayer;
       if (contamMapUpdated) {
         contamMapUpdated.removeAll();
+        newContamGraphics.forEach((g, index) => {
+          const uuid = generateUUID();
+          g.attributes.GLOBALID = uuid;
+          g.attributes.PERMANENT_IDENTIFIER = uuid;
+          g.attributes.OBJECTID = index;
+          g.attributes.ID = index;
+          g.attributes.FID = index;
+        });
         contamMapUpdated.addMany(newContamGraphics);
         if (window.location.search.includes('devMode=true'))
           contamMapUpdated.listMode = 'show';
