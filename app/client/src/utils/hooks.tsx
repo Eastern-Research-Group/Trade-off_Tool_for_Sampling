@@ -1127,7 +1127,6 @@ export async function fetchBuildingData(
 
 // Hook that allows the user to easily start over without
 // having to manually start a new session.
-// TODO fix this for decon
 export function useStartOver() {
   const { resetCalculateContext } = useContext(CalculateContext);
   const { setOptions } = useContext(DialogContext);
@@ -1166,6 +1165,7 @@ export function useStartOver() {
     resetDefaultSymbols,
     sceneView,
     setAoiSketchLayer,
+    setDeconSketchLayer,
     setDisplayDimensions,
     setDisplayGeometryType,
     setEdits,
@@ -1174,6 +1174,7 @@ export function useStartOver() {
     setReferenceLayers,
     setSelectedScenario,
     setSketchLayer,
+    setStagingAreaLayer,
     setTerrain3dUseElevation,
     setTerrain3dVisible,
     setUrlLayers,
@@ -1196,9 +1197,11 @@ export function useStartOver() {
       console.error(ex);
     }
 
+    setAoiSketchLayer(null);
+    setDeconSketchLayer(null);
     setSelectedScenario(null);
     setSketchLayer(null);
-    setAoiSketchLayer(null);
+    setStagingAreaLayer(null);
 
     // clear the map
     map?.removeAll();
