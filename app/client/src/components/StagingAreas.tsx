@@ -155,8 +155,21 @@ function StagingAreas() {
   const [addScenarioVisible, setAddScenarioVisible] = useState(false);
   const [editScenarioVisible, setEditScenarioVisible] = useState(false);
   const [stagingLayers, setStagingLayers] = useState<LayerType[]>([]);
+  const [calcsVisible, setCalcsVisible] = useState(false);
+  const [lastStagingAreaLayer, setLastStagingAreaLayer] =
+    useState<LayerType | null>(null);
 
-  const sketchLayer = stagingAreaLayer?.sketchLayer;
+  useEffect(() => {
+    if (!stagingAreaLayer) {
+      setEditScenarioVisible(false);
+      return;
+    }
+
+    const hasAoiGraphics =
+      stagingAreaLayer?.sketchLayer?.type === 'graphics' &&
+      stagingAreaLayer.sketchLayer.graphics.length > 0;
+    if (!hasAoiGraphics) setEditScenarioVisible(true);
+  }, [stagingAreaLayer]);
 
   const [lastAoiSketchLayer, setLastAoiSketchLayer] =
     useState<__esri.GraphicsLayer | null>(null);
@@ -229,6 +242,7 @@ function StagingAreas() {
       setStagingAreaLayer(stagingLayers[0]);
     } else {
       const newAoiSketchLayer = getDefaultSamplingMaskLayer(
+        '',
         'Staging Area Mask',
         'Staging Area Mask',
         true,
@@ -269,6 +283,15 @@ function StagingAreas() {
   ]);
 
   useEffect(() => {
+    const sketchLayer = stagingAreaLayer?.sketchLayer;
+    setCalcsVisible(
+      !addScenarioVisible &&
+        sketchLayer?.type === 'graphics' &&
+        sketchLayer.graphics.length > 0,
+    );
+  }, [addScenarioVisible, stagingAreaLayer]);
+
+  useEffect(() => {
     setAoiSketchLayer(stagingAreaLayer);
   }, [stagingAreaLayer, setAoiSketchLayer]);
 
@@ -276,6 +299,7 @@ function StagingAreas() {
     if (!map) return;
 
     const newAoiSketchLayer = getDefaultSamplingMaskLayer(
+      '',
       'Staging Area Mask',
       'Staging Area Mask',
       true,
@@ -291,6 +315,7 @@ function StagingAreas() {
       };
     });
 
+    setLastStagingAreaLayer(stagingAreaLayer);
     setStagingAreaLayer(newAoiSketchLayer);
 
     const tLayers = [...layers];
@@ -470,7 +495,7 @@ function StagingAreas() {
                     handleAdd();
                   } else {
                     // delete the newly added layer
-                    handleDelete(stagingAreaLayer);
+                    handleDelete(lastStagingAreaLayer);
                   }
                 }}
               >
@@ -497,28 +522,36 @@ function StagingAreas() {
         />
       </div>
 
-      {(addScenarioVisible || editScenarioVisible) && stagingAreaEdits && (
+      {stagingAreaEdits && (
         <EditStagingAreaCharacterization
           aoiLayer={stagingAreaEdits}
+          disabled={
+            stagingAreaLayer?.sketchLayer?.type === 'graphics' &&
+            stagingAreaLayer.sketchLayer.graphics.length === 0
+          }
+          editVisible={addScenarioVisible || editScenarioVisible}
           onSave={(saveResults) => {
             if (saveResults?.status !== 'success') return;
             setAddScenarioVisible(false);
             setEditScenarioVisible(false);
+            setCalcsVisible(true);
           }}
-        />
+        >
+          <AoiSketchButton
+            className="margin-top-1"
+            onContinue={() => setCalcsVisible(false)}
+            replaceGraphics={true}
+            sketchLayer={stagingAreaLayer?.sketchLayer}
+          />
+        </EditStagingAreaCharacterization>
       )}
 
-      <AoiSketchButton
-        className="margin-top-1"
-        replaceGraphics={true}
-        sketchLayer={sketchLayer}
-      />
-      <CalculationResults />
+      <CalculationResults calcsVisible={calcsVisible} />
     </div>
   );
 }
 
-function CalculationResults() {
+function CalculationResults({ calcsVisible }: { calcsVisible: boolean }) {
   const { stagingAreaLayer } = useContext(SketchContext);
 
   const { totalArea, totalSolidWasteCapacity, totalLiquidWasteCapacity } =
@@ -535,7 +568,9 @@ function CalculationResults() {
 
   const sketchLayer = stagingAreaLayer?.sketchLayer;
 
-  return sketchLayer instanceof GraphicsLayer && sketchLayer.graphics.length ? (
+  return calcsVisible &&
+    sketchLayer instanceof GraphicsLayer &&
+    sketchLayer.graphics.length ? (
     <>
       <h3>AOI Calculation Results</h3>
       <section css={calculationSectionStyles}>

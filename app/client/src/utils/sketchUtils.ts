@@ -720,6 +720,7 @@ export function getCurrentDateTime() {
  */
 export function getDefaultSamplingMaskLayer(
   name = 'Sketched Sampling Mask',
+  label = 'Sketched Sampling Mask',
   layerType = 'Sampling Mask',
   useUuidForValue = false,
 ) {
@@ -738,7 +739,7 @@ export function getDefaultSamplingMaskLayer(
     portalId: '',
     value: useUuidForValue ? layerUuid : 'sketchAoi',
     name,
-    label: name,
+    label,
     layerType,
     scenarioName: '',
     scenarioDescription: '',

@@ -39,6 +39,7 @@ const BUTTON_ID = 'staging-aoi';
 
 type Props = {
   className?: string;
+  onContinue?: () => void;
   replaceGraphics?: boolean;
   sketchLayer?:
     | __esri.FeatureLayer
@@ -49,6 +50,7 @@ type Props = {
 
 function AoiSketchButton({
   className,
+  onContinue,
   replaceGraphics = false,
   sketchLayer,
 }: Props) {
@@ -106,6 +108,8 @@ function AoiSketchButton({
 
           // let the user draw/place the shape
           aoiSketchVM.create('polygon');
+
+          if (onContinue) onContinue();
         },
       });
     }
