@@ -288,7 +288,7 @@
       "PERMANENT_IDENTIFIER": null,
       "GLOBALID": null,
       "TYPEUUID": "Low-Conc. Hydrogen Peroxide",
-      "TYPE": "Low-Conc. Hydrogen Peroxide Vapor",
+      "TYPE": "Low-Conc. Hydrogen Peroxide",
       "APPLICATION_MAX_AREA": 4500,
       "APPLICATION_METHOD": "Volumetric",
       "SETUP_TIME": 6,
@@ -369,6 +369,95 @@
           "SOLID_WASTE_MASS": 345.985675144833,
           "AQUEOUS_WASTE_VOLUME": 0,
           "AQUEOUS_WASTE_MASS": 0
+        }
+      }
+    },
+    "Chlorine Dioxide Liquid": {
+      "OBJECTID": "-1",
+      "PERMANENT_IDENTIFIER": null,
+      "GLOBALID": null,
+      "TYPEUUID": "Chlorine Dioxide Liquid",
+      "TYPE": "Chlorine Dioxide Liquid",
+      "APPLICATION_MAX_AREA": 4500,
+      "APPLICATION_METHOD": "Surface",
+      "SETUP_TIME": 6,
+      "BREAKDOWN_TIME": 6,
+      "APPLICATION_TIME": 0.0018,
+      "RESIDENCE_TIME": 24,
+      "FIXED_COSTS": 0,
+      "SIZE_BASED_COSTS": 33.1596114140006,
+      "IC_COST": 6.82072724027929,
+      "Notes": "",
+      "CREATEDDATE": null,
+      "UPDATEDDATE": null,
+      "USERNAME": null,
+      "MATERIAL_SPECIFIC_PARAMS": {
+        "Brick": {
+          "LOG_REDUCTION": 1.7,
+          "CONTAM_REMOVAL_FACTOR": 0.977612788614317,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Concrete": {
+          "LOG_REDUCTION": 1.7,
+          "CONTAM_REMOVAL_FACTOR": 0.977612788614317,
+          "DESTRUCTIVENESS": "Low"
+        },
+        "Steel": {
+          "LOG_REDUCTION": 7.55,
+          "CONTAM_REMOVAL_FACTOR": 0.999999971816171,
+          "DESTRUCTIVENESS": "Moderate"
+        },
+        "Wood": {
+          "LOG_REDUCTION": 1.25,
+          "CONTAM_REMOVAL_FACTOR": 0.943114706915616,
+          "DESTRUCTIVENESS": "Moderate"
+        },
+        "Other": {
+          "LOG_REDUCTION": 5,
+          "CONTAM_REMOVAL_FACTOR": 0.974585063990105,
+          "DESTRUCTIVENESS": "Uncertain"
+        }
+      },
+      "SURFACE_SPECIFIC_PARAMS": {
+        "Building Exteriors": {
+          "CONTAM_REMOVAL_FACTOR": 0.999,
+          "LOG_REDUCTION": 3,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Building Interiors": {
+          "CONTAM_REMOVAL_FACTOR": 0.990234597318363,
+          "LOG_REDUCTION": 3.1,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Soil/Vegetation": {
+          "CONTAM_REMOVAL_FACTOR": 0.999,
+          "LOG_REDUCTION": 3,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets - Asphalt": {
+          "CONTAM_REMOVAL_FACTOR": 0.999,
+          "LOG_REDUCTION": 3,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
+        },
+        "Streets/Sidewalks - Concrete": {
+          "CONTAM_REMOVAL_FACTOR": 0.999,
+          "LOG_REDUCTION": 3,
+          "SOLID_WASTE_VOLUME": 0.532316857930945,
+          "SOLID_WASTE_MASS": 109.778869415058,
+          "AQUEOUS_WASTE_VOLUME": 0.0014045903700587,
+          "AQUEOUS_WASTE_MASS": 1.4036802792383
         }
       }
     },
@@ -555,7 +644,7 @@
       "PERMANENT_IDENTIFIER": null,
       "GLOBALID": null,
       "TYPEUUID": "Bleach Spray",
-      "TYPE": "Dilute Bleach Spray (2% hypochlorite)",
+      "TYPE": "Bleach Spray",
       "APPLICATION_MAX_AREA": 4500,
       "APPLICATION_METHOD": "Surface",
       "SETUP_TIME": 6,
