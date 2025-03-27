@@ -256,7 +256,7 @@ export type DeconBuildingFactorsType = {
 export type SampleTypesS3 = {
   areaTolerance: number;
   attributesToCheck: string[];
-  deconAttributes: DeconAttributeItems;
+  deconAttributes: { [key: string]: DeconAttributeItems };
   deconBuildingFactors: DeconBuildingFactorsType;
   sampleAttributes: AttributesType;
 };
