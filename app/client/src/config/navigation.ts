@@ -1,3 +1,5 @@
+import { LayerTypeOption } from 'types/Navigation';
+
 export const isDecon = () => window.location.pathname === '/decon';
 
 export const samplingPanels: PanelType[] = [
@@ -64,6 +66,80 @@ export const deconPanels: PanelType[] = [
     label: 'Publish Output',
     iconClass: 'fas fa-upload',
   },
+];
+
+const layerTypeOptionsSampling: LayerTypeOption[] = [
+  {
+    label: 'TOTS Sampling Plans',
+    type: 'category',
+    value: 'contains-epa-tots-sample-layer',
+  },
+  {
+    label: 'TOTS Custom Sample Types',
+    type: 'category',
+    value: 'contains-epa-tots-user-defined-sample-types',
+  },
+  {
+    label: 'TOTS/TODS AOI Characterizations',
+    type: 'category',
+    value: 'contains-epa-tots-aoi-characterization',
+  },
+  {
+    label: 'TOTS/TODS Staging Areas',
+    type: 'category',
+    value: 'contains-epa-tots-staging-area',
+  },
+  {
+    label: 'TODS Decon Plans',
+    type: 'category',
+    value: 'contains-epa-tods-decon-layer',
+  },
+];
+
+const layerTypeOptionsDecon: LayerTypeOption[] = [
+  {
+    label: 'TODS Decon Plans',
+    type: 'category',
+    value: 'contains-epa-tods-decon-layer',
+  },
+  {
+    label: 'TOTS/TODS AOI Characterizations',
+    type: 'category',
+    value: 'contains-epa-tots-aoi-characterization',
+  },
+  {
+    label: 'TOTS/TODS Staging Areas',
+    type: 'category',
+    value: 'contains-epa-tots-staging-area',
+  },
+  // {
+  //   label: 'TODS Custom Decon Technologies',
+  //   type: 'category',
+  //   value: 'contains-epa-tods-user-defined-decon-tech',
+  // },
+  {
+    label: 'TOTS Sampling Plans',
+    type: 'category',
+    value: 'contains-epa-tots-sample-layer',
+  },
+];
+
+const layerTypeOptionsBase: LayerTypeOption[] = [
+  { label: 'Feature Service', value: 'Feature Service' },
+  { label: 'Image Service', value: 'Image Service' },
+  { label: 'KML', value: 'KML' },
+  { label: 'Map Service', value: 'Map Service' },
+  { label: 'Scene Service (3D)', value: 'Scene Service' },
+  {
+    label: 'Vector Tile Service',
+    value: 'Vector Tile Service',
+  },
+  { label: 'WMS', value: 'WMS' },
+];
+
+export const layerTypeOptions = [
+  ...(isDecon() ? layerTypeOptionsDecon : layerTypeOptionsSampling),
+  ...layerTypeOptionsBase,
 ];
 
 export type PanelValueType =

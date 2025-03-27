@@ -1,10 +1,12 @@
 /** @jsxImportSource @emotion/react */
 
+import { Fragment } from 'react';
 import { css } from '@emotion/react';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import CharacterizeAOI from 'components/CharacterizeAOI';
 import CustomSampleType from 'components/CustomSampleType';
+import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 import StagingAreas from 'components/StagingAreas';
 // types
@@ -71,6 +73,18 @@ function AdditionalTools({ appType }: Props) {
               to identify staging areas.​
             </p>
           )}
+
+          <MessageBox
+            severity="warning"
+            title=""
+            message={
+              <Fragment>
+                Note: Your work only persists as long as your current browser
+                session. Be sure to publish your selections for future reference
+                and use.
+              </Fragment>
+            }
+          />
         </div>
 
         <AccordionList>

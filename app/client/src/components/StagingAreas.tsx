@@ -10,12 +10,17 @@ import { css } from '@emotion/react';
 import AoiSketchButton from 'components/AoiSketchButton';
 import ColorPicker from 'components/ColorPicker';
 import { EditStagingAreaCharacterization } from 'components/EditLayerMetaData';
+import InfoIcon from 'components/InfoIcon';
 // config
+import { layerTypeOptions } from 'config/navigation';
 import { PolygonSymbol } from 'config/sampleAttributes';
 // contexts
 import { useLookupFiles } from 'contexts/LookupFiles';
+import { NavigationContext } from 'contexts/Navigation';
 import Select from 'components/Select';
 import { SketchContext } from 'contexts/Sketch';
+// styles
+import { infoIconStyles } from 'styles';
 // types
 import { EditsType, LayerEditsType } from 'types/Edits';
 import { LayerType } from 'types/Layer';
@@ -36,16 +41,13 @@ const SUITABILITY_LAYER_ID = generateUUID();
 const calculationSectionStyles = css`
   column-gap: 1em;
   display: grid;
-  font-size: 0.9em;
-  grid-template-columns: 2fr 3fr;
+  font-size: 0.87em;
+  grid-template-columns: 4fr 1fr;
   grid-template-rows: auto;
-  justify-items: end;
   padding: 0;
   row-gap: 0.5em;
 
   & > div {
-    text-align: right;
-
     &:nth-of-type(odd) {
       font-weight: bold;
     }
@@ -124,6 +126,7 @@ const verticalCenterTextStyles = css`
 // --- components ---
 
 function StagingAreas() {
+  const { setGoTo, setGoToOptions } = useContext(NavigationContext);
   const {
     aoiSketchVM,
     defaultSymbols,
@@ -345,6 +348,12 @@ function StagingAreas() {
 
   return (
     <div>
+      <p>
+        EPA’s suitability feature layer and other relevant boundary layers are
+        enabled. Use map features to zoom to a location of interest to assess
+        reference layers. Use the Legend to control visibility of the layers or
+        click Add Data to incorporate additional layers.
+      </p>
       <h3 css={headingStyles}>
         <i className="fas fa-layer-group" />
         Add Layers
@@ -356,6 +365,11 @@ function StagingAreas() {
           onChange={(ev) => setSuitabilityLayerVisible(ev.target.checked)}
         />
         <span>Staging Suitability Analysis</span>
+        <InfoIcon
+          id={'suitability-analysis-layer-info-icon'}
+          cssStyles={infoIconStyles}
+          tooltip="A national-level suitability map layer to inform waste<br/>staging/storage location selection based on suitability factors<br/>such as soil type, land cover, topography, ease of transportation,<br/>and proximity to surface waters. Suitability values range from<br/>0 to 500 where higher values (green) or more suitable. You<br/>can use his layer in conjunction with other parcel data to identify<br/>a candidate staging area."
+        />
       </label>
       <label css={layerItemStyles}>
         <input
@@ -375,6 +389,21 @@ function StagingAreas() {
       </label>
 
       <div css={layerSectionStyles}>
+        <button
+          onClick={(_ev) => {
+            const layerType = layerTypeOptions.find(
+              (o) => o.value === 'contains-epa-tots-aoi-characterization',
+            );
+            setGoTo('addData');
+            setGoToOptions({
+              from: 'search',
+              layerTypesAgo: layerType ? [layerType] : undefined,
+            });
+          }}
+        >
+          Add Data
+        </button>
+
         <ColorPicker
           title="Default Staging Area Symbology"
           symbol={defaultSymbols.symbols['Staging Area Mask']}
@@ -382,6 +411,13 @@ function StagingAreas() {
             setDefaultSymbolSingle('Staging Area Mask', symbol);
           }}
         />
+
+        <p>
+          Edit the staging area name and add a description. Select "Draw Staging
+          Area" to designate the staging area boundary. Click Save to view
+          estimated solid and aqueous waste capacity. Click + to add an
+          additional staging area.
+        </p>
 
         <div css={iconButtonContainerStyles}>
           <div css={verticalCenterTextStyles}>
@@ -494,7 +530,7 @@ function CalculationResults() {
   const rows = {
     Area: { value: totalArea, unit: 'm²' },
     'Solid Waste Capacity': { value: totalSolidWasteCapacity, unit: 'm³' },
-    'Liquid Waste Capacity': { value: totalLiquidWasteCapacity, unit: 'm³' },
+    'Aqueous Waste Capacity': { value: totalLiquidWasteCapacity, unit: 'm³' },
   };
 
   const sketchLayer = stagingAreaLayer?.sketchLayer;
@@ -505,11 +541,10 @@ function CalculationResults() {
       <section css={calculationSectionStyles}>
         {Object.entries(rows).map(([label, { value, unit }]) => (
           <Fragment key={label}>
-            <div>{label}:</div>
             <div>
-              {' '}
-              {formatNumber(value)} {unit}{' '}
+              {label} ({unit}):{' '}
             </div>
+            <div>{formatNumber(value)}</div>
           </Fragment>
         ))}
       </section>

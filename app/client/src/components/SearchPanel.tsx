@@ -72,98 +72,24 @@ import {
   UrlLayerType,
 } from 'types/Layer';
 import { ErrorType } from 'types/Misc';
-import { AppType } from 'types/Navigation';
+import { AppType, LayerTypeOption } from 'types/Navigation';
 import { AttributesType } from 'types/Publish';
-import {
-  Attributes,
-  DefaultSymbolsType,
-  SampleSelectType,
-} from 'config/sampleAttributes';
 // config
 import {
   notLoggedInMessage,
   sampleIssuesPopupMessage,
   webServiceErrorMessage,
 } from 'config/errorMessages';
+import { layerTypeOptions } from 'config/navigation';
+import {
+  Attributes,
+  DefaultSymbolsType,
+  SampleSelectType,
+} from 'config/sampleAttributes';
 
 type LayerGraphics = {
   [key: string]: __esri.Graphic[];
 };
-
-type LayerTypeOption = {
-  label: string;
-  type?: 'category';
-  value: string;
-};
-
-const layerTypeOptionsSampling: LayerTypeOption[] = [
-  {
-    label: 'TOTS Sampling Plans',
-    type: 'category',
-    value: 'contains-epa-tots-sample-layer',
-  },
-  {
-    label: 'TOTS Custom Sample Types',
-    type: 'category',
-    value: 'contains-epa-tots-user-defined-sample-types',
-  },
-  {
-    label: 'TOTS/TODS AOI Characterizations',
-    type: 'category',
-    value: 'contains-epa-tots-aoi-characterization',
-  },
-  {
-    label: 'TOTS/TODS Staging Areas',
-    type: 'category',
-    value: 'contains-epa-tots-staging-area',
-  },
-  {
-    label: 'TODS Decon Plans',
-    type: 'category',
-    value: 'contains-epa-tods-decon-layer',
-  },
-];
-
-const layerTypeOptionsDecon: LayerTypeOption[] = [
-  {
-    label: 'TODS Decon Plans',
-    type: 'category',
-    value: 'contains-epa-tods-decon-layer',
-  },
-  {
-    label: 'TOTS/TODS AOI Characterizations',
-    type: 'category',
-    value: 'contains-epa-tots-aoi-characterization',
-  },
-  {
-    label: 'TOTS/TODS Staging Areas',
-    type: 'category',
-    value: 'contains-epa-tots-staging-area',
-  },
-  // {
-  //   label: 'TODS Custom Decon Technologies',
-  //   type: 'category',
-  //   value: 'contains-epa-tods-user-defined-decon-tech',
-  // },
-  {
-    label: 'TOTS Sampling Plans',
-    type: 'category',
-    value: 'contains-epa-tots-sample-layer',
-  },
-];
-
-const layerTypeOptionsBase: LayerTypeOption[] = [
-  { label: 'Feature Service', value: 'Feature Service' },
-  { label: 'Image Service', value: 'Image Service' },
-  { label: 'KML', value: 'KML' },
-  { label: 'Map Service', value: 'Map Service' },
-  { label: 'Scene Service (3D)', value: 'Scene Service' },
-  {
-    label: 'Vector Tile Service',
-    value: 'Vector Tile Service',
-  },
-  { label: 'WMS', value: 'WMS' },
-];
 
 // --- styles (SearchPanel) ---
 const searchContainerStyles = css`
@@ -313,6 +239,7 @@ type Props = {
 
 function SearchPanel({ appType }: Props) {
   const { portal, userInfo } = useContext(AuthenticationContext);
+  const { goToOptions, setGoToOptions } = useContext(NavigationContext);
   const { mapView, sceneView } = useContext(SketchContext);
 
   // filters
@@ -347,6 +274,14 @@ function SearchPanel({ appType }: Props) {
     LayerTypeOption[] | null
   >(null);
 
+  // Handle navigation options
+  useEffect(() => {
+    if (goToOptions?.from !== 'search') return;
+    if (goToOptions.layerTypesAgo)
+      setLayerTypeSelections(goToOptions.layerTypesAgo);
+    setGoToOptions(null);
+  }, [goToOptions, setGoToOptions]);
+
   // Initializes the group selection
   useEffect(() => {
     if (group || !userInfo?.groups || userInfo.groups.length === 0) return;
@@ -363,6 +298,8 @@ function SearchPanel({ appType }: Props) {
 
   // Builds and executes the search query on search button click
   useEffect(() => {
+    if (goToOptions) return;
+
     setSearchResults({ status: 'fetching', data: null });
 
     const tmpPortal = portal ? portal : new Portal();
@@ -479,6 +416,7 @@ function SearchPanel({ appType }: Props) {
       });
   }, [
     currentExtent,
+    goToOptions,
     group,
     layerTypeSelections,
     location,
@@ -617,12 +555,7 @@ function SearchPanel({ appType }: Props) {
           inputId="layer-type-select"
           isMulti={true}
           isSearchable={false}
-          options={[
-            ...(appType === 'decon'
-              ? layerTypeOptionsDecon
-              : layerTypeOptionsSampling),
-            ...layerTypeOptionsBase,
-          ]}
+          options={layerTypeOptions}
           value={layerTypeSelections}
           onChange={(ev) => setLayerTypeSelections(ev as any)}
           css={multiSelectStyles}
