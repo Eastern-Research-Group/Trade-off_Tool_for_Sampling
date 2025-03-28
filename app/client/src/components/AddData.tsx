@@ -11,12 +11,7 @@ import NavigationButton from 'components/NavigationButton';
 // contexts
 import { NavigationContext } from 'contexts/Navigation';
 // types
-import { AppType } from 'types/Navigation';
-
-type LocationType =
-  | { value: 'search'; label: 'Search for Layers' }
-  | { value: 'url'; label: 'Add Layer from Web' }
-  | { value: 'file'; label: 'Add Layer from File' };
+import { AppType, LocationType } from 'types/Navigation';
 
 const addFromOptions: LocationType[] = [
   { value: 'search', label: 'Search for Layers' },

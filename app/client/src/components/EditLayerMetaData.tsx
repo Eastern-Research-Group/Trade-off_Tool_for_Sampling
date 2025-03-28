@@ -1,6 +1,12 @@
 /** @jsxImportSource @emotion/react */
 
-import React, { Fragment, useContext, useEffect, useState } from 'react';
+import React, {
+  Fragment,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import { css } from '@emotion/react';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import Portal from '@arcgis/core/portal/Portal';
@@ -1155,7 +1161,7 @@ export function EditAoiCharacterization({
     signedIn, //
   } = useContext(AuthenticationContext);
   const { setEdits, setLayers } = useContext(SketchContext);
-  const { setSelectedAoiCharacterizations } = useContext(PublishContext);
+  const { setManualConfigureOutput } = useContext(PublishContext);
 
   const [aoiCharName, setAoiCharName] = useState(aoiLayer.label);
   const [aoiCharDescription, setAoiCharDescription] = useState(
@@ -1213,11 +1219,12 @@ export function EditAoiCharacterization({
     });
 
     // set selected aoi chars
-    setSelectedAoiCharacterizations((aoiChars) => {
-      const aoiChar = aoiChars.find((char) => char.value === aoiLayer.layerId);
-      if (!aoiChar) return aoiChars;
-      aoiChar.label = aoiCharName;
-      return aoiChars;
+    setManualConfigureOutput((output) => {
+      const aoiChar = output?.selectedAoiCharacterizations?.find(
+        (char) => char.value === aoiLayer.layerId,
+      );
+      if (aoiChar) aoiChar.label = aoiCharName;
+      return output;
     });
 
     const saveStatus: SaveResultsType = {
@@ -1347,12 +1354,18 @@ export function EditAoiCharacterization({
 // --- components (EditCustomSampleTypesTable) ---
 type EditStagingAreaProps = {
   aoiLayer: LayerEditsType;
+  children?: ReactNode;
+  disabled?: boolean;
+  editVisible?: boolean;
   initialStatus?: SaveStatusType;
   onSave?: (saveResults?: SaveResultsType) => void;
 };
 
 export function EditStagingAreaCharacterization({
   aoiLayer,
+  children,
+  disabled = false,
+  editVisible,
   initialStatus = 'none',
   onSave,
 }: EditStagingAreaProps) {
@@ -1361,27 +1374,40 @@ export function EditStagingAreaCharacterization({
     signedIn, //
   } = useContext(AuthenticationContext);
   const { setEdits, setLayers } = useContext(SketchContext);
-  const { setSelectedStagingAreas } = useContext(PublishContext);
+  const { setManualConfigureOutput } = useContext(PublishContext);
 
-  const [aoiCharName, setAoiCharName] = useState(aoiLayer.label);
-  const [aoiCharDescription, setAoiCharDescription] = useState(
-    aoiLayer.description,
-  );
+  const [aoiCharName, setAoiCharName] = useState('');
+  const [aoiCharDescription, setAoiCharDescription] = useState('');
 
   const [
     saveStatus,
     setSaveStatus, //
   ] = useState<SaveResultsType>({
     status: initialStatus,
-    name: aoiLayer.label,
+    name: '',
   });
 
   useEffect(() => {
     setSaveStatus({
       status: initialStatus,
-      name: aoiLayer.label,
+      name: aoiLayer.name,
     });
   }, [aoiLayer, initialStatus]);
+
+  const [lastAoiLayer, setLastAoiLayer] = useState<LayerEditsType | null>(null);
+  useEffect(() => {
+    if (aoiLayer.layerId === lastAoiLayer?.layerId) return;
+    setAoiCharName(aoiLayer.name);
+    setAoiCharDescription(aoiLayer.description ?? '');
+    setLastAoiLayer(aoiLayer);
+  }, [aoiLayer, lastAoiLayer]);
+
+  useEffect(() => {
+    setSaveStatus({
+      status: initialStatus,
+      name: aoiLayer.name,
+    });
+  }, [aoiCharName, aoiCharDescription, aoiLayer, initialStatus]);
 
   const handleSave = () => {
     // set edits
@@ -1420,11 +1446,12 @@ export function EditStagingAreaCharacterization({
     });
 
     // set selected aoi chars
-    setSelectedStagingAreas((sa) => {
-      const saSel = sa.find((char) => char.value === aoiLayer.layerId);
-      if (!saSel) return sa;
-      saSel.label = aoiCharName;
-      return sa;
+    setManualConfigureOutput((output) => {
+      const aoiChar = output?.selectedStagingAreas?.find(
+        (char) => char.value === aoiLayer.layerId,
+      );
+      if (aoiChar) aoiChar.label = aoiCharName;
+      return output;
     });
 
     const saveStatus: SaveResultsType = {
@@ -1437,26 +1464,32 @@ export function EditStagingAreaCharacterization({
 
   return (
     <Fragment>
-      <label htmlFor="staging-area-name-input">Staging Area Name</label>
-      <input
-        id="staging-area-name-input"
-        css={inputStyles}
-        maxLength={250}
-        placeholder="Enter Staging Area Name"
-        value={aoiCharName}
-        onChange={(ev) => setAoiCharName(ev.target.value)}
-      />
-      <label htmlFor="staging-area-description-input">
-        Staging Area Description
-      </label>
-      <input
-        id="staging-area-description-input"
-        css={inputStyles}
-        maxLength={2048}
-        placeholder="Enter Staging Area Description (2048 characters)"
-        value={aoiCharDescription}
-        onChange={(ev) => setAoiCharDescription(ev.target.value)}
-      />
+      {(editVisible === undefined || editVisible) && (
+        <Fragment>
+          <label htmlFor="staging-area-name-input">Staging Area Name</label>
+          <input
+            id="staging-area-name-input"
+            css={inputStyles}
+            maxLength={250}
+            placeholder="Enter Staging Area Name"
+            value={aoiCharName}
+            onChange={(ev) => setAoiCharName(ev.target.value)}
+          />
+          <label htmlFor="staging-area-description-input">
+            Staging Area Description
+          </label>
+          <input
+            id="staging-area-description-input"
+            css={inputStyles}
+            maxLength={2048}
+            placeholder="Enter Staging Area Description (2048 characters)"
+            value={aoiCharDescription}
+            onChange={(ev) => setAoiCharDescription(ev.target.value)}
+          />
+        </Fragment>
+      )}
+
+      {children}
 
       {saveStatus.status === 'fetching' && <LoadingSpinner />}
       {saveStatus.status === 'failure' &&
@@ -1465,7 +1498,9 @@ export function EditStagingAreaCharacterization({
         scenarioNameTakenMessage(saveStatus.name)}
       <div css={saveButtonContainerStyles}>
         <button
-          css={saveButtonStyles(saveStatus.status)}
+          css={saveButtonStyles(
+            saveStatus.status === 'success' ? 'none' : saveStatus.status,
+          )}
           onClick={() => {
             if (!portal || !signedIn) {
               handleSave();
@@ -1524,26 +1559,21 @@ export function EditStagingAreaCharacterization({
               });
           }}
           disabled={
-            !aoiCharName ||
-            (aoiLayer.name === aoiCharName &&
+            disabled ||
+            (Boolean(children) && !aoiCharName) ||
+            (!Boolean(children) &&
+              aoiLayer.name === aoiCharName &&
               aoiLayer.description === aoiCharDescription)
           }
         >
-          {(saveStatus.status === 'none' ||
-            saveStatus.status === 'changes' ||
-            saveStatus.status === 'fetching') &&
-            'Save'}
-          {saveStatus.status === 'success' && (
-            <Fragment>
-              <i className="fas fa-check" /> Saved
-            </Fragment>
-          )}
-          {(saveStatus.status === 'failure' ||
-            saveStatus.status === 'fetch-failure' ||
-            saveStatus.status === 'name-not-available') && (
+          {saveStatus.status === 'failure' ||
+          saveStatus.status === 'fetch-failure' ||
+          saveStatus.status === 'name-not-available' ? (
             <Fragment>
               <i className="fas fa-exclamation-triangle" /> Error
             </Fragment>
+          ) : (
+            'Save'
           )}
         </button>
       </div>

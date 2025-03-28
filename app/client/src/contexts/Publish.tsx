@@ -7,8 +7,6 @@ import React, {
   SetStateAction,
   useState,
 } from 'react';
-// styles
-import { isDecon } from 'styles';
 // types
 import { ServiceMetaDataType } from 'types/Edits';
 import {
@@ -19,10 +17,36 @@ import {
 
 type NameAvailableStatus = 'unknown' | 'yes' | 'no';
 
-type Selections = {
+export type Selections = {
   label: string;
   value: string;
 }[];
+
+export type DefaultConfigureOutput = {
+  includeAoiCharacterization: boolean;
+  includeCustomSampleTypes: boolean;
+  includePlan: boolean;
+  includePlanWebMap: boolean;
+  includePlanWebScene: boolean;
+  includeStagingAreas: boolean;
+  selectedAoiCharacterizations: Selections;
+  selectedStagingAreas: Selections;
+  webMapReferenceLayerSelections: ReferenceLayerSelections[];
+  webSceneReferenceLayerSelections: ReferenceLayerSelections[];
+};
+
+const defaultConfigureOutputValue: DefaultConfigureOutput = {
+  includeAoiCharacterization: false,
+  includeCustomSampleTypes: false,
+  includePlan: false,
+  includePlanWebMap: false,
+  includePlanWebScene: false,
+  includeStagingAreas: false,
+  selectedAoiCharacterizations: [],
+  selectedStagingAreas: [],
+  webMapReferenceLayerSelections: [],
+  webSceneReferenceLayerSelections: [],
+};
 
 type PublishType = {
   publishSamplesMode: 'new' | 'existing' | '';
@@ -41,30 +65,16 @@ type PublishType = {
   setSampleTableNameAvailable: Dispatch<SetStateAction<NameAvailableStatus>>;
   selectedService: ServiceMetaDataType | null;
   setSelectedService: Dispatch<SetStateAction<ServiceMetaDataType | null>>;
-  selectedAoiCharacterizations: Selections;
-  setSelectedAoiCharacterizations: Dispatch<SetStateAction<Selections>>;
-  selectedStagingAreas: Selections;
-  setSelectedStagingAreas: Dispatch<SetStateAction<Selections>>;
-  includeAoiCharacterization: boolean;
-  setIncludeAoiCharacterization: Dispatch<SetStateAction<boolean>>;
-  includePlan: boolean;
-  setIncludePlan: Dispatch<SetStateAction<boolean>>;
-  includePlanWebMap: boolean;
-  setIncludePlanWebMap: Dispatch<SetStateAction<boolean>>;
-  includePlanWebScene: boolean;
-  setIncludePlanWebScene: Dispatch<SetStateAction<boolean>>;
-  includeCustomSampleTypes: boolean;
-  setIncludeCustomSampleTypes: Dispatch<SetStateAction<boolean>>;
-  includeStagingAreas: boolean;
-  setIncludeStagingAreas: Dispatch<SetStateAction<boolean>>;
-  webMapReferenceLayerSelections: ReferenceLayerSelections[];
-  setWebMapReferenceLayerSelections: Dispatch<
-    SetStateAction<ReferenceLayerSelections[]>
+  defaultConfigureOutput: DefaultConfigureOutput;
+  setDefaultConfigureOutput: Dispatch<SetStateAction<DefaultConfigureOutput>>;
+  manualConfigureOutput: DefaultConfigureOutput | null;
+  setManualConfigureOutput: Dispatch<
+    SetStateAction<DefaultConfigureOutput | null>
   >;
-  webSceneReferenceLayerSelections: ReferenceLayerSelections[];
-  setWebSceneReferenceLayerSelections: Dispatch<
-    SetStateAction<ReferenceLayerSelections[]>
-  >;
+  webMapRefOptions: ReferenceLayerSelections[];
+  setWebMapRefOptions: Dispatch<SetStateAction<ReferenceLayerSelections[]>>;
+  webSceneRefOptions: ReferenceLayerSelections[];
+  setWebSceneRefOptions: Dispatch<SetStateAction<ReferenceLayerSelections[]>>;
 };
 
 export const defaultPlanAttributes: AttributesType[] = [
@@ -291,26 +301,14 @@ export const PublishContext = createContext<PublishType>({
   setSampleTableNameAvailable: () => {},
   selectedService: null,
   setSelectedService: () => {},
-  selectedAoiCharacterizations: [],
-  setSelectedAoiCharacterizations: () => {},
-  selectedStagingAreas: [],
-  setSelectedStagingAreas: () => {},
-  includeAoiCharacterization: false,
-  setIncludeAoiCharacterization: () => {},
-  includePlan: true,
-  setIncludePlan: () => {},
-  includePlanWebMap: true,
-  setIncludePlanWebMap: () => {},
-  includePlanWebScene: true,
-  setIncludePlanWebScene: () => {},
-  includeCustomSampleTypes: false,
-  setIncludeCustomSampleTypes: () => {},
-  includeStagingAreas: false,
-  setIncludeStagingAreas: () => {},
-  webMapReferenceLayerSelections: [],
-  setWebMapReferenceLayerSelections: () => {},
-  webSceneReferenceLayerSelections: [],
-  setWebSceneReferenceLayerSelections: () => {},
+  defaultConfigureOutput: defaultConfigureOutputValue,
+  setDefaultConfigureOutput: () => {},
+  manualConfigureOutput: null,
+  setManualConfigureOutput: () => {},
+  webMapRefOptions: [],
+  setWebMapRefOptions: () => {},
+  webSceneRefOptions: [],
+  setWebSceneRefOptions: () => {},
 });
 
 type Props = { children: ReactNode };
@@ -329,63 +327,42 @@ export function PublishProvider({ children }: Props) {
     useState<NameAvailableStatus>('unknown');
   const [selectedService, setSelectedService] =
     useState<ServiceMetaDataType | null>(null);
-  const [selectedAoiCharacterizations, setSelectedAoiCharacterizations] =
-    useState<Selections>([]);
-  const [selectedStagingAreas, setSelectedStagingAreas] = useState<Selections>(
-    [],
-  );
-  const [includeAoiCharacterization, setIncludeAoiCharacterization] =
-    useState(isDecon());
-  const [includePlan, setIncludePlan] = useState(true);
-  const [includePlanWebMap, setIncludePlanWebMap] = useState(true);
-  const [includePlanWebScene, setIncludePlanWebScene] = useState(true);
-  const [includeCustomSampleTypes, setIncludeCustomSampleTypes] =
-    useState(false);
-  const [includeStagingAreas, setIncludeStagingAreas] = useState(false);
-  const [webMapReferenceLayerSelections, setWebMapReferenceLayerSelections] =
-    useState<ReferenceLayerSelections[]>([]);
-  const [
-    webSceneReferenceLayerSelections,
-    setWebSceneReferenceLayerSelections,
-  ] = useState<ReferenceLayerSelections[]>([]);
+  const [defaultConfigureOutput, setDefaultConfigureOutput] =
+    useState<DefaultConfigureOutput>(defaultConfigureOutputValue);
+  const [manualConfigureOutput, setManualConfigureOutput] =
+    useState<DefaultConfigureOutput | null>(null);
+  const [webMapRefOptions, setWebMapRefOptions] = useState<
+    ReferenceLayerSelections[]
+  >([]);
+  const [webSceneRefOptions, setWebSceneRefOptions] = useState<
+    ReferenceLayerSelections[]
+  >([]);
 
   return (
     <PublishContext.Provider
       value={{
-        includeAoiCharacterization,
-        includeCustomSampleTypes,
-        includePlan,
-        includePlanWebMap,
-        includePlanWebScene,
-        includeStagingAreas,
+        defaultConfigureOutput,
+        setDefaultConfigureOutput,
+        manualConfigureOutput,
+        setManualConfigureOutput,
         publishSamplesMode,
         publishSampleTableMetaData,
         sampleTableDescription,
         sampleTableName,
         sampleTableNameAvailable,
         sampleTypeSelections,
-        selectedAoiCharacterizations,
         selectedService,
-        selectedStagingAreas,
-        webMapReferenceLayerSelections,
-        webSceneReferenceLayerSelections,
-        setIncludeAoiCharacterization,
-        setIncludeCustomSampleTypes,
-        setIncludePlan,
-        setIncludePlanWebMap,
-        setIncludePlanWebScene,
-        setIncludeStagingAreas,
+        webMapRefOptions,
+        webSceneRefOptions,
         setPublishSamplesMode,
         setPublishSampleTableMetaData,
         setSampleTableDescription,
         setSampleTableName,
         setSampleTableNameAvailable,
         setSampleTypeSelections,
-        setSelectedAoiCharacterizations,
         setSelectedService,
-        setSelectedStagingAreas,
-        setWebMapReferenceLayerSelections,
-        setWebSceneReferenceLayerSelections,
+        setWebMapRefOptions,
+        setWebSceneRefOptions,
       }}
     >
       {children}

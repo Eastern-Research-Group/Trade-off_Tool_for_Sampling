@@ -37,13 +37,56 @@ import {
   LayerDeconEditsType,
 } from 'types/Edits';
 import { LayerType } from 'types/Layer';
-import { AppType } from 'types/Navigation';
 // styles
 import { infoIconStyles, reactSelectStyles } from 'styles';
 import {
   scenarioNameTakenMessage,
   webServiceErrorMessage,
 } from 'config/errorMessages';
+
+function getAoiLayer(
+  deconSketchLayer: LayerAoiAnalysisEditsType,
+  layers: LayerType[],
+) {
+  let aoiLayer: LayerType | undefined = undefined;
+
+  // locate the layer
+  if (deconSketchLayer?.aoiLayerMode === 'draw') {
+    const aoiEditsLayer = deconSketchLayer.layers.find(
+      (l) => l.layerType === 'Decon Mask',
+    );
+    aoiLayer = layers.find(
+      (l) =>
+        l.layerType === 'Decon Mask' && l.layerId === aoiEditsLayer?.layerId,
+    );
+  }
+
+  if (
+    deconSketchLayer?.aoiLayerMode === 'file' &&
+    deconSketchLayer.importedAoiLayer
+  ) {
+    // locate the layer
+    aoiLayer = layers.find(
+      (l) =>
+        l.layerType === 'Area of Interest' &&
+        l.layerId === deconSketchLayer.importedAoiLayer?.layerId,
+    );
+  }
+
+  return aoiLayer;
+}
+
+function hasAoiGraphics(
+  deconSketchLayer: LayerAoiAnalysisEditsType,
+  layers: LayerType[],
+) {
+  const aoiLayer = getAoiLayer(deconSketchLayer, layers);
+  return (
+    aoiLayer?.sketchLayer &&
+    aoiLayer.sketchLayer.type === 'graphics' &&
+    aoiLayer.sketchLayer.graphics.length > 0
+  );
+}
 
 const helpText = `
   Select "Draw Area of Interest" to draw a boundary on your map to<br/>
@@ -120,6 +163,13 @@ const radioLabelStyles = css`
   padding-left: 0.375rem;
 `;
 
+const saveButtonStyles = css`
+  &: disabled {
+    cursor: default;
+    opacity: 0.65;
+  }
+`;
+
 const sketchAoiButtonStyles = css`
   background-color: white;
   color: black;
@@ -159,14 +209,12 @@ const verticalCenterTextStyles = css`
 
 // --- components (CharacterizeAOI) ---
 type Props = {
-  appType: AppType;
   label?: string;
   showHelpText?: boolean;
   showOnEdit?: boolean;
 };
 
 function CharacterizeAOI({
-  appType,
   label = 'Active AOI Layer',
   showHelpText = true,
   showOnEdit = false,
@@ -182,6 +230,7 @@ function CharacterizeAOI({
     deconOperation,
     deconSketchLayer,
     defaultDeconSelections,
+    defaultSymbols,
     displayDimensions,
     edits,
     gsgFiles,
@@ -214,7 +263,7 @@ function CharacterizeAOI({
   useEffect(() => {
     if (!map || !layersInitialized || aoiSketchLayer) return;
 
-    const newAoiSketchLayer = getDefaultSamplingMaskLayer();
+    const newAoiSketchLayer = getDefaultSamplingMaskLayer('');
 
     // add the layer to the map
     setLayers((layers) => {
@@ -229,6 +278,10 @@ function CharacterizeAOI({
     useState<__esri.GraphicsLayer | null>(null);
   useEffect(() => {
     if (!aoiSketchVM) return;
+
+    aoiSketchVM.polygonSymbol = defaultSymbols.symbols[
+      'Area of Interest'
+    ] as any;
 
     const scenario: ScenarioDeconEditsType | undefined = edits.edits.find(
       (item) => item.type === 'scenario-decon',
@@ -260,7 +313,7 @@ function CharacterizeAOI({
     return function cleanup() {
       if (lastAoiSketchLayer) aoiSketchVM.layer = lastAoiSketchLayer;
     };
-  }, [aoiSketchVM, edits, lastAoiSketchLayer, layers]);
+  }, [aoiSketchVM, defaultSymbols, edits, lastAoiSketchLayer, layers]);
 
   // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
   // dropdown this will create an AOI layer. This also sets the sketchVM to use the
@@ -268,6 +321,10 @@ function CharacterizeAOI({
   function sketchAoiButtonClick() {
     if (!map || !aoiSketchVM || !sceneView || !mapView || !deconSketchLayer)
       return;
+
+    aoiSketchVM.polygonSymbol = defaultSymbols.symbols[
+      'Area of Interest'
+    ] as any;
 
     const aoiEditsLayer = deconSketchLayer.layers.find(
       (l) => l.layerType === 'Decon Mask',
@@ -293,38 +350,6 @@ function CharacterizeAOI({
     } else {
       aoiSketchVM.cancel();
     }
-  }
-
-  function getAoiLayer(
-    deconSketchLayer: LayerAoiAnalysisEditsType,
-    layers: LayerType[],
-  ) {
-    let aoiLayer: LayerType | undefined = undefined;
-
-    // locate the layer
-    if (deconSketchLayer?.aoiLayerMode === 'draw') {
-      const aoiEditsLayer = deconSketchLayer.layers.find(
-        (l) => l.layerType === 'Decon Mask',
-      );
-      aoiLayer = layers.find(
-        (l) =>
-          l.layerType === 'Decon Mask' && l.layerId === aoiEditsLayer?.layerId,
-      );
-    }
-
-    if (
-      deconSketchLayer?.aoiLayerMode === 'file' &&
-      deconSketchLayer.importedAoiLayer
-    ) {
-      // locate the layer
-      aoiLayer = layers.find(
-        (l) =>
-          l.layerType === 'Area of Interest' &&
-          l.layerId === deconSketchLayer.importedAoiLayer?.layerId,
-      );
-    }
-
-    return aoiLayer;
   }
 
   async function assessAoi() {
@@ -802,12 +827,7 @@ function CharacterizeAOI({
       return;
     }
 
-    const aoiLayer = getAoiLayer(deconSketchLayer, layers);
-    const hasAoiGraphics =
-      aoiLayer?.sketchLayer &&
-      aoiLayer.sketchLayer.type === 'graphics' &&
-      aoiLayer.sketchLayer.graphics.length > 0;
-    if (!hasAoiGraphics) setEditScenarioVisible(true);
+    if (!hasAoiGraphics(deconSketchLayer, layers)) setEditScenarioVisible(true);
   }, [deconSketchLayer, layers]);
 
   // get decon layers for showing in select
@@ -1538,8 +1558,14 @@ function CharacterizeAOI({
                 scenarioNameTakenMessage(saveStatus.name)}
               <div css={submitButtonStyles}>
                 <button
-                  disabled={calculateResultsDecon.status === 'fetching'}
+                  css={saveButtonStyles}
                   onClick={assessAoi}
+                  disabled={
+                    calculateResultsDecon.status === 'fetching' ||
+                    !newDeconLayerName ||
+                    !deconSketchLayer ||
+                    !hasAoiGraphics(deconSketchLayer, layers)
+                  }
                 >
                   {aoiCharacterizationData.status !== 'fetching' &&
                     'Save and Submit'}

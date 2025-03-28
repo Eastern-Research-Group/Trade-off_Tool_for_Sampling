@@ -161,25 +161,17 @@ function Publish({ appType }: Props) {
   const { goToOptions, setGoToOptions, trainingMode } =
     useContext(NavigationContext);
   const {
-    includeAoiCharacterization,
-    includeCustomSampleTypes,
-    includePlan,
-    includePlanWebMap,
-    includePlanWebScene,
-    includeStagingAreas,
+    defaultConfigureOutput,
+    manualConfigureOutput,
     publishSamplesMode,
     publishSampleTableMetaData,
     sampleTableDescription,
     sampleTableName,
     sampleTypeSelections,
-    selectedAoiCharacterizations,
     selectedService,
-    selectedStagingAreas,
     setSampleTableDescription,
     setSampleTableName,
     setSelectedService,
-    webMapReferenceLayerSelections,
-    webSceneReferenceLayerSelections,
   } = useContext(PublishContext);
   const {
     defaultSymbols,
@@ -199,6 +191,23 @@ function Publish({ appType }: Props) {
   } = useContext(SketchContext);
 
   const layerProps = useLookupFiles().data.layerProps;
+
+  const [configOutput] = useState(
+    manualConfigureOutput ?? defaultConfigureOutput,
+  );
+
+  const {
+    includeAoiCharacterization,
+    includeCustomSampleTypes,
+    includePlan,
+    includePlanWebMap,
+    includePlanWebScene,
+    includeStagingAreas,
+    selectedAoiCharacterizations,
+    selectedStagingAreas,
+    webMapReferenceLayerSelections,
+    webSceneReferenceLayerSelections,
+  } = configOutput;
 
   // Checks browser storage to determine if the user clicked publish and logged in.
   const [publishButtonClicked, setPublishButtonClicked] = useState(false);
@@ -283,6 +292,15 @@ function Publish({ appType }: Props) {
   const [hasNameBeenChecked, setHasNameBeenChecked] = useState(false);
   useEffect(() => {
     if (!portal || !publishButtonClicked) return;
+
+    const {
+      includeAoiCharacterization,
+      includeCustomSampleTypes,
+      includePlan,
+      includeStagingAreas,
+      selectedAoiCharacterizations,
+      selectedStagingAreas,
+    } = configOutput;
 
     // see if names have already been verified as available
     const planNameChecked =
@@ -500,20 +518,15 @@ function Publish({ appType }: Props) {
       });
   }, [
     appType,
+    configOutput,
     edits,
     hasNameBeenChecked,
-    includeAoiCharacterization,
-    includeCustomSampleTypes,
-    includePlan,
-    includeStagingAreas,
     layers,
     portal,
     publishButtonClicked,
     publishSamplesMode,
     publishSampleTableMetaData,
-    selectedAoiCharacterizations,
     selectedScenario,
-    selectedStagingAreas,
     sketchLayer,
   ]);
 
@@ -522,6 +535,19 @@ function Publish({ appType }: Props) {
 
     async function publishItemsInner() {
       if (!map || !portal) return;
+
+      const {
+        includeAoiCharacterization,
+        includeCustomSampleTypes,
+        includePlan,
+        includePlanWebMap,
+        includePlanWebScene,
+        includeStagingAreas,
+        selectedAoiCharacterizations,
+        selectedStagingAreas,
+        webMapReferenceLayerSelections,
+        webSceneReferenceLayerSelections,
+      } = configOutput;
 
       try {
         const featureServices: any[] = [];
@@ -2316,15 +2342,10 @@ function Publish({ appType }: Props) {
   }, [
     calculateResults,
     calculateResultsDecon,
+    configOutput,
     contaminationMap,
     defaultSymbols,
     edits,
-    includeAoiCharacterization,
-    includeCustomSampleTypes,
-    includePlan,
-    includePlanWebMap,
-    includePlanWebScene,
-    includeStagingAreas,
     layerProps,
     layers,
     map,
@@ -2333,10 +2354,8 @@ function Publish({ appType }: Props) {
     publishSampleTableMetaData,
     sampleAttributes,
     sampleTypeSelections,
-    selectedAoiCharacterizations,
     selectedScenario,
     selectedService,
-    selectedStagingAreas,
     setDeconSketchLayer,
     setEdits,
     setLayers,
@@ -2348,12 +2367,12 @@ function Publish({ appType }: Props) {
     setUserDefinedAttributes,
     trainingMode,
     userDefinedAttributes,
-    webMapReferenceLayerSelections,
-    webSceneReferenceLayerSelections,
   ]);
 
   // Run the publish
   useEffect(() => {
+    const { includeCustomSampleTypes, includePlan } = configOutput;
+
     if (!oAuthInfo || !portal || !signedIn) return;
     if (!publishButtonClicked || !hasNameBeenChecked) return;
     if (includePlan && (!layers || layers.length === 0 || !selectedScenario)) {
@@ -2372,9 +2391,8 @@ function Publish({ appType }: Props) {
 
     publishItems();
   }, [
+    configOutput,
     hasNameBeenChecked,
-    includeCustomSampleTypes,
-    includePlan,
     layers,
     layerProps,
     oAuthInfo,

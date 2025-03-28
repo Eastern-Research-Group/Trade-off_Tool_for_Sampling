@@ -39,6 +39,7 @@ const BUTTON_ID = 'staging-aoi';
 
 type Props = {
   className?: string;
+  onContinue?: () => void;
   replaceGraphics?: boolean;
   sketchLayer?:
     | __esri.FeatureLayer
@@ -49,6 +50,7 @@ type Props = {
 
 function AoiSketchButton({
   className,
+  onContinue,
   replaceGraphics = false,
   sketchLayer,
 }: Props) {
@@ -56,6 +58,7 @@ function AoiSketchButton({
   const {
     aoiSketchLayer,
     aoiSketchVM,
+    defaultSymbols,
     displayDimensions,
     map,
     mapView,
@@ -69,6 +72,28 @@ function AoiSketchButton({
   // selected AOI and triggers a React useEffect to allow the user to sketch on the map.
   const sketchAoiButtonClick = () => {
     if (!map || !aoiSketchVM || !sceneView || !mapView) return;
+
+    function startSketch() {
+      if (!aoiSketchVM) return;
+
+      aoiSketchVM.polygonSymbol = defaultSymbols.symbols[
+        'Staging Area Mask'
+      ] as any;
+
+      // save changes from other sketchVM and disable to prevent
+      // interference
+      if (sketchVM) sketchVM[displayDimensions].cancel();
+
+      // make the style of the button active
+      const wasSet = activateSketchButton(BUTTON_ID);
+
+      if (wasSet) {
+        // let the user draw/place the shape
+        aoiSketchVM.create('polygon');
+      } else {
+        aoiSketchVM.cancel();
+      }
+    }
 
     if (
       replaceGraphics &&
@@ -100,28 +125,13 @@ function AoiSketchButton({
             };
           });
 
-          // save changes from other sketchVM and disable to prevent
-          // interference
-          if (sketchVM) sketchVM[displayDimensions].cancel();
+          startSketch();
 
-          // let the user draw/place the shape
-          aoiSketchVM.create('polygon');
+          if (onContinue) onContinue();
         },
       });
-    }
-
-    // save changes from other sketchVM and disable to prevent
-    // interference
-    if (sketchVM) sketchVM[displayDimensions].cancel();
-
-    // make the style of the button active
-    const wasSet = activateSketchButton(BUTTON_ID);
-
-    if (wasSet) {
-      // let the user draw/place the shape
-      aoiSketchVM.create('polygon');
     } else {
-      aoiSketchVM.cancel();
+      startSketch();
     }
   };
 

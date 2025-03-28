@@ -24,8 +24,14 @@ import GettingStarted from 'components/GettingStarted';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 import { NavigationContext } from 'contexts/Navigation';
+import { PublishContext } from 'contexts/Publish';
+import { SketchContext } from 'contexts/Sketch';
 // utils
-import { useCalculateDeconPlan, useCalculatePlan } from 'utils/hooks';
+import {
+  useAutoConfigureOutput,
+  useCalculateDeconPlan,
+  useCalculatePlan,
+} from 'utils/hooks';
 // config
 import { navPanelWidth } from 'config/appConfig';
 import { deconPanels, PanelType, samplingPanels } from 'config/navigation';
@@ -338,6 +344,24 @@ function NavBar({ appType, height }: Props) {
     resultsExpanded,
     setResultsExpanded,
   } = useContext(NavigationContext);
+  const {
+    defaultConfigureOutput,
+    manualConfigureOutput,
+    setManualConfigureOutput,
+  } = useContext(PublishContext);
+  const {
+    deconSketchLayer,
+    edits,
+    layers,
+    map,
+    setDeconSketchLayer,
+    setEdits,
+    setLayers,
+    setStagingAreaLayer,
+    stagingAreaLayer,
+  } = useContext(SketchContext);
+
+  useAutoConfigureOutput();
 
   const [panels] = useState(appType === 'decon' ? deconPanels : samplingPanels);
 
@@ -424,6 +448,104 @@ function NavBar({ appType, height }: Props) {
       pannelRef.current.scroll({ top: 0, left: 0, behavior: 'smooth' });
     }
   }, [currentPanel]);
+
+  // clean up layers without a name when leaving additionalTools tab
+  useEffect(() => {
+    if (!currentPanel || currentPanel.value === 'additionalTools') return;
+
+    const editsWithoutNames = edits.edits.filter((edit) => !edit.name);
+    if (editsWithoutNames.length > 0) {
+      // get analysis layer ids for removing linked operation layers
+      const analysisLayerIds = editsWithoutNames
+        .filter((e) => e.type === 'layer-aoi-analysis')
+        .map((e) => e.layerId);
+      const deconOpIds = edits.edits
+        .filter(
+          (e) =>
+            e.type === 'layer-decon' &&
+            analysisLayerIds.includes(e.analysisLayerId),
+        )
+        .map((e) => e.layerId);
+      const idsToRemove = [
+        ...analysisLayerIds,
+        ...deconOpIds,
+        ...editsWithoutNames.map((e) => e.layerId),
+      ];
+
+      // filter out layers without names and linked layers
+      const newEdits = edits.edits.filter(
+        (edit) => !idsToRemove.includes(edit.layerId),
+      );
+      setEdits({
+        count: edits.count + 1,
+        edits: newEdits,
+      });
+
+      // set next available decon sketch layer
+      if (deconSketchLayer && !deconSketchLayer.name) {
+        const newDeconLayer = newEdits.find(
+          (l) => l.type === 'layer-aoi-analysis',
+        );
+        setDeconSketchLayer(newDeconLayer ?? null);
+      }
+
+      setLayers((layers) => {
+        // get ids to remove including parent layers
+        const fullIdsToRemove: string[] = [];
+        layers.forEach((l) => {
+          const parentId = l.parentLayer?.id ?? '';
+          if (idsToRemove.includes(l.layerId) || idsToRemove.includes(parentId))
+            fullIdsToRemove.push(l.layerId);
+        });
+        const newLayers = layers.filter(
+          (l) => !fullIdsToRemove.includes(l.layerId),
+        );
+
+        if (stagingAreaLayer && !stagingAreaLayer.name) {
+          const newStagingLayer = newLayers.find(
+            (l) => l.layerType === 'Staging Area Mask',
+          );
+          setStagingAreaLayer(newStagingLayer ?? null);
+        }
+
+        const mapLayersToRemove = map?.layers?.filter((l) =>
+          fullIdsToRemove.includes(l.id),
+        );
+        if (mapLayersToRemove) map?.removeMany(mapLayersToRemove.toArray());
+
+        return newLayers;
+      });
+    }
+  }, [
+    currentPanel,
+    deconSketchLayer,
+    edits,
+    layers,
+    map,
+    setDeconSketchLayer,
+    setEdits,
+    setLayers,
+    stagingAreaLayer,
+    setStagingAreaLayer,
+  ]);
+
+  // clean up layers without a name when leaving additionalTools tab
+  useEffect(() => {
+    if (!currentPanel || currentPanel.value === 'configureOutput') return;
+    if (!manualConfigureOutput) return;
+
+    if (
+      JSON.stringify(manualConfigureOutput) ===
+      JSON.stringify(defaultConfigureOutput)
+    ) {
+      setManualConfigureOutput(null);
+    }
+  }, [
+    currentPanel,
+    defaultConfigureOutput,
+    manualConfigureOutput,
+    setManualConfigureOutput,
+  ]);
 
   return (
     <Fragment>
@@ -602,9 +724,7 @@ function NavBar({ appType, height }: Props) {
                 <AdditionalTools appType={appType} />
               )}
               {currentPanel.value === 'locateSamples' && <LocateSamples />}
-              {currentPanel.value === 'decon' && (
-                <CreateDeconPlan appType={appType} />
-              )}
+              {currentPanel.value === 'decon' && <CreateDeconPlan />}
               {currentPanel.value === 'calculate' && (
                 <Calculate appType={appType} />
               )}

@@ -2,6 +2,7 @@
 
 import React, { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
+import { DialogContent, DialogOverlay } from '@reach/dialog';
 import { CellContext } from '@tanstack/react-table';
 // components
 import CharacterizeAOI from 'components/CharacterizeAOI';
@@ -15,8 +16,11 @@ import {
   ReactTableEditableCell,
 } from 'components/ReactTable';
 import Select from 'components/Select';
+// config
+import { SampleSelectType } from 'config/sampleAttributes';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
+import { useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // types
@@ -29,7 +33,6 @@ import {
   ScenarioDeconEditsType,
 } from 'types/Edits';
 import { LayerType } from 'types/Layer';
-import { AppType } from 'types/Navigation';
 // utils
 import { summarizedBuildingSurfaceTypes, useStartOver } from 'utils/hooks';
 import {
@@ -42,7 +45,6 @@ import {
 import { formatNumber, getNewName, getScenarioName } from 'utils/utils';
 // styles
 import { colors, infoIconStyles, reactSelectStyles } from 'styles';
-import { DialogContent, DialogOverlay } from '@reach/dialog';
 
 type SaveStatusType =
   | 'none'
@@ -226,11 +228,7 @@ const saveButtonStyles = (status: string) => {
 };
 
 // --- components (CreateDeconPlan) ---
-type Props = {
-  appType: AppType;
-};
-
-function CreateDeconPlan({ appType }: Props) {
+function CreateDeconPlan() {
   const { contaminationMap, setCalculateResultsDecon, setContaminationMap } =
     useContext(CalculateContext);
   const { setGoTo, setGoToOptions, trainingMode } =
@@ -1216,7 +1214,6 @@ function CreateDeconPlan({ appType }: Props) {
 
               <div css={opIndentStyles}>
                 <CharacterizeAOI
-                  appType={appType}
                   label="Linked AOI Decon Layer"
                   showHelpText={false}
                   showOnEdit={true}
@@ -1402,8 +1399,33 @@ function DeconSelectionPopup({
   const { calculateResultsDecon, setCalculateResultsDecon } =
     useContext(CalculateContext);
   const { trainingMode } = useContext(NavigationContext);
-  const { allSampleOptions, deconOperation, edits, setEdits } =
-    useContext(SketchContext);
+  const { deconOperation, edits, setEdits } = useContext(SketchContext);
+  const technologyTypes = useLookupFiles().data.technologyTypes;
+
+  const surfaceOptions: SampleSelectType[] = [];
+  const volumetricOptions: SampleSelectType[] = [];
+  Object.values(technologyTypes.deconAttributes)
+    .sort((a, b) => a.TYPEUUID.localeCompare(b.TYPEUUID))
+    .forEach((d) => {
+      const optionsArr =
+        d.APPLICATION_METHOD === 'Surface' ? surfaceOptions : volumetricOptions;
+      optionsArr.push({
+        label: d.TYPE,
+        value: d.TYPEUUID,
+        isPredefined: true,
+      });
+    });
+
+  const allDeconOptionsGrouped = [
+    {
+      label: 'Volumetric',
+      options: volumetricOptions,
+    },
+    {
+      label: 'Surface',
+      options: surfaceOptions,
+    },
+  ];
 
   const selectedDeconOp = edits.edits.find(
     (e) => e.type === 'layer-decon' && e.layerId === deconOperation?.layerId,
@@ -1865,7 +1887,7 @@ function DeconSelectionPopup({
                 size: 150,
                 cell: ReactTableEditableCell,
                 editType: 'select',
-                options: allSampleOptions,
+                options: allDeconOptionsGrouped,
               },
               {
                 header: 'Number of Decon Iterations',
@@ -2015,7 +2037,7 @@ function DeconSelectionPopup({
                       size: 150,
                       cell: ReactTableEditableCell,
                       editType: 'select',
-                      options: allSampleOptions,
+                      options: allDeconOptionsGrouped,
                     },
                     {
                       header: 'Remove Bldg Contents After Decon?',
@@ -2189,7 +2211,7 @@ function DeconSelectionPopup({
                       size: 150,
                       cell: ReactTableEditableCell,
                       editType: 'select',
-                      options: allSampleOptions,
+                      options: allDeconOptionsGrouped,
                     },
                     {
                       header: 'Remove Bldg Contents After Decon?',

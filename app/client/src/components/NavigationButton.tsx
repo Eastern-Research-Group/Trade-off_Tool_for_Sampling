@@ -14,20 +14,22 @@ import {
 
 // --- styles (NavigationButton) ---
 const containerStyles = css`
+  display: flex;
+  gap: 6px;
   justify-content: flex-end;
-`;
-
-const nextButtonStyles = css`
-  float: right;
   margin-top: 10px;
 `;
 
 // --- components (NavigationButton) ---
 type Props = {
   currentPanel: PanelValueType;
+  includeSkipToPublish?: boolean;
 };
 
-function NavigationButton({ currentPanel }: Props) {
+function NavigationButton({
+  currentPanel,
+  includeSkipToPublish = false,
+}: Props) {
   const { setGoTo } = useContext(NavigationContext);
 
   const panelConfig = isDecon() ? deconPanels : samplingPanels;
@@ -39,14 +41,10 @@ function NavigationButton({ currentPanel }: Props) {
   if (!nextPanel) return null;
   return (
     <div css={containerStyles}>
-      <button
-        css={nextButtonStyles}
-        onClick={(_ev) => {
-          setGoTo(nextPanel);
-        }}
-      >
-        Next
-      </button>
+      {includeSkipToPublish && (
+        <button onClick={(_ev) => setGoTo('publish')}>Skip to Publish</button>
+      )}
+      <button onClick={(_ev) => setGoTo(nextPanel)}>Next</button>
     </div>
   );
 }

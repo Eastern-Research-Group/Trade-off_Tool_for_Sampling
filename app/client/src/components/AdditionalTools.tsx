@@ -1,10 +1,12 @@
 /** @jsxImportSource @emotion/react */
 
+import { Fragment } from 'react';
 import { css } from '@emotion/react';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import CharacterizeAOI from 'components/CharacterizeAOI';
 import CustomSampleType from 'components/CustomSampleType';
+import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 import StagingAreas from 'components/StagingAreas';
 // types
@@ -71,12 +73,24 @@ function AdditionalTools({ appType }: Props) {
               to identify staging areas.​
             </p>
           )}
+
+          <MessageBox
+            severity="warning"
+            title=""
+            message={
+              <Fragment>
+                Note: Your work only persists as long as your current browser
+                session. Be sure to publish your selections for future reference
+                and use.
+              </Fragment>
+            }
+          />
         </div>
 
         <AccordionList>
           <AccordionItem title={'Characterize Area of Interest'}>
             <div css={sectionContainer}>
-              <CharacterizeAOI appType={appType} />
+              <CharacterizeAOI />
             </div>
           </AccordionItem>
           <AccordionItem title="Identify Staging Areas">
@@ -98,7 +112,10 @@ function AdditionalTools({ appType }: Props) {
       </div>
 
       <div css={sectionContainer}>
-        <NavigationButton currentPanel="additionalTools" />
+        <NavigationButton
+          currentPanel="additionalTools"
+          includeSkipToPublish={true}
+        />
       </div>
     </div>
   );
