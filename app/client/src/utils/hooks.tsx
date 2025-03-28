@@ -38,7 +38,7 @@ import { CalculateContext } from 'contexts/Calculate';
 import { DialogContext } from 'contexts/Dialog';
 import { SampleTypesS3, useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
-import { PublishContext } from 'contexts/Publish';
+import { PublishContext, Selections } from 'contexts/Publish';
 import {
   AoiCharacterizationData,
   JsonDownloadType,
@@ -60,6 +60,7 @@ import {
 } from 'types/Edits';
 import { FieldInfos, LayerType, LayerTypeName } from 'types/Layer';
 import { AppType } from 'types/Navigation';
+import { ReferenceLayerSelections } from 'types/Publish';
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
 import { writeToStorage } from 'utils/browserStorage';
@@ -72,6 +73,7 @@ import {
   findLayerInEdits,
   generateUUID,
   getCurrentDateTime,
+  getDefaultWebMapSceneSelections,
   handlePopupClick,
   removeZValues,
   updateLayerEdits,
@@ -1145,6 +1147,7 @@ export function useStartOver() {
     setIncludePlanWebMap,
     setIncludePlanWebScene,
     setIncludeStagingAreas,
+    setManualConfigureOutput,
     setPublishSamplesMode,
     setPublishSampleTableMetaData,
     setSampleTableDescription,
@@ -1238,6 +1241,7 @@ export function useStartOver() {
     resetCalculateContext();
 
     // clear publish
+    setManualConfigureOutput(null);
     setPublishSamplesMode('');
     setPublishSampleTableMetaData(null);
     setSampleTableDescription('');
@@ -3514,6 +3518,225 @@ export function use3dSketch(appType: AppType) {
   ]);
 
   return { endSketch, startSketch };
+}
+
+// Automatically makes selections for the Configure Output tab
+// based on what items users have added.
+export function useAutoConfigureOutput() {
+  const {
+    setDefaultConfigureOutput,
+    setWebMapRefOptions,
+    setWebSceneRefOptions,
+    webMapRefOptions,
+    webSceneRefOptions,
+  } = useContext(PublishContext);
+  const {
+    edits,
+    layers,
+    map,
+    portalLayers,
+    referenceLayers,
+    selectedScenario,
+    urlLayers,
+  } = useContext(SketchContext);
+
+  // store default configure output
+  useEffect(() => {
+    let includeAoiCharacterization = false;
+    let includePlan = false;
+    let includePlanWebMap = false;
+    let includePlanWebScene = false;
+    let includeStagingAreas = false;
+    const selectedAoiCharacterizations: Selections = [];
+    const selectedStagingAreas: Selections = [];
+    let webMapReferenceLayerSelections: ReferenceLayerSelections[] = [];
+    let webSceneReferenceLayerSelections: ReferenceLayerSelections[] = [];
+
+    edits.edits.forEach((edit) => {
+      if (['scenario', 'scenario-decon'].includes(edit.type)) {
+        includePlan = true;
+      }
+
+      if (edit.type === 'layer-aoi-analysis') {
+        includeAoiCharacterization = true;
+        selectedAoiCharacterizations.push({
+          label: edit.name,
+          value: edit.layerId,
+        });
+      }
+
+      if (edit.type === 'layer' && edit.layerType === 'Staging Area Mask') {
+        includeStagingAreas = true;
+        selectedStagingAreas.push({
+          label: edit.name,
+          value: edit.layerId,
+        });
+      }
+    });
+
+    if (includePlan && map) {
+      const output = getDefaultWebMapSceneSelections(
+        map,
+        selectedScenario,
+        webMapRefOptions,
+        webSceneRefOptions,
+      );
+      webMapReferenceLayerSelections = output.webMapReferenceLayerSelections;
+      webSceneReferenceLayerSelections =
+        output.webSceneReferenceLayerSelections;
+    }
+
+    if (webMapReferenceLayerSelections.length > 0) includePlanWebMap = true;
+    if (webSceneReferenceLayerSelections.length > 0) includePlanWebScene = true;
+
+    selectedAoiCharacterizations.sort((a, b) => a.label.localeCompare(b.label));
+    selectedStagingAreas.sort((a, b) => a.label.localeCompare(b.label));
+
+    setDefaultConfigureOutput({
+      includeAoiCharacterization,
+      includeCustomSampleTypes: false,
+      includePlan,
+      includePlanWebMap,
+      includePlanWebScene,
+      includeStagingAreas,
+      selectedAoiCharacterizations,
+      selectedStagingAreas,
+      webMapReferenceLayerSelections,
+      webSceneReferenceLayerSelections,
+    });
+  }, [
+    edits,
+    layers,
+    map,
+    selectedScenario,
+    setDefaultConfigureOutput,
+    webMapRefOptions,
+    webSceneRefOptions,
+  ]);
+
+  useEffect(() => {
+    const webMapRefLayers: ReferenceLayerSelections[] = [];
+    const webSceneRefLayers: ReferenceLayerSelections[] = [];
+
+    const applicableLayerTypesAgoWebMap = [
+      'Feature Service',
+      'Image Service',
+      'KML',
+      'Map Service',
+      'Vector Tile Service',
+      'WMS',
+    ];
+    const applicableLayerTypesAgoWebScene = [
+      'Feature Service',
+      'Image Service',
+      'Map Service',
+      'Scene Service',
+      'Vector Tile Service',
+    ];
+    portalLayers.forEach((l) => {
+      if (l.type === 'tots') return;
+
+      const item: ReferenceLayerSelections = {
+        label: l.label,
+        id: l.id,
+        value: l.url,
+        layerType: l.layerType,
+        type: 'arcgis',
+        onWebMap: 0,
+        onWebScene: 0,
+      };
+
+      if (applicableLayerTypesAgoWebMap.includes(l.layerType)) {
+        item.onWebMap = 1;
+        webMapRefLayers.push(item);
+      }
+
+      if (applicableLayerTypesAgoWebScene.includes(l.layerType)) {
+        item.onWebScene = 1;
+        webSceneRefLayers.push(item);
+      }
+    });
+
+    const applicableLayerTypesUrlWebMap = [
+      'feature',
+      'imagery',
+      'imagery-tile',
+      'map-image',
+      'tile',
+    ];
+    const applicableUrlTypesUrlWebMap = ['CSV', 'GeoRSS', 'KML', 'WMS'];
+    const applicableLayerTypesUrlWebScene = [
+      'building-scene',
+      'feature',
+      'imagery',
+      'imagery-tile',
+      'integrated-mesh',
+      'map-image',
+      'point-cloud',
+      'scene',
+      'tile',
+    ];
+    const applicableUrlTypesUrlWebScene = ['CSV'];
+    urlLayers.forEach((l) => {
+      if (l.layerType === 'stream') return;
+
+      const item: ReferenceLayerSelections = {
+        label: l.label,
+        id: l.layerId,
+        value: l.url,
+        layerType: l.layerType,
+        urlType: l.type,
+        type: 'url',
+        onWebMap: 0,
+        onWebScene: 0,
+      };
+
+      if (
+        applicableUrlTypesUrlWebMap.includes(l.type) ||
+        (l.type === 'ArcGIS' &&
+          applicableLayerTypesUrlWebMap.includes(l.layerType))
+      ) {
+        item.onWebMap = 1;
+        webMapRefLayers.push(item);
+      }
+
+      if (
+        applicableUrlTypesUrlWebScene.includes(l.type) ||
+        (l.type === 'ArcGIS' &&
+          applicableLayerTypesUrlWebScene.includes(l.layerType))
+      ) {
+        item.onWebScene = 1;
+        webSceneRefLayers.push(item);
+      }
+    });
+
+    // add in file reference layers
+    referenceLayers.forEach((l) => {
+      const item: ReferenceLayerSelections = {
+        label: l.title,
+        id: l.layerId,
+        value: l.layerId,
+        layer: l,
+        type: 'file',
+        onWebMap: 1,
+        onWebScene: 1,
+      };
+      webMapRefLayers.push(item);
+      webSceneRefLayers.push(item);
+    });
+
+    webMapRefLayers.sort((a, b) => a.label.localeCompare(b.label));
+    webSceneRefLayers.sort((a, b) => a.label.localeCompare(b.label));
+
+    setWebMapRefOptions(webMapRefLayers);
+    setWebSceneRefOptions(webSceneRefLayers);
+  }, [
+    portalLayers,
+    referenceLayers,
+    setWebMapRefOptions,
+    setWebSceneRefOptions,
+    urlLayers,
+  ]);
 }
 
 // A generic state management helper. Used for preserving

@@ -27,7 +27,7 @@ import { CalculateContext } from 'contexts/Calculate';
 import { DialogContext, AlertDialogOptions } from 'contexts/Dialog';
 import { LookupFilesContext } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
-import { PublishContext } from 'contexts/Publish';
+import { DefaultConfigureOutput, PublishContext } from 'contexts/Publish';
 import { PlanGraphics, SketchContext } from 'contexts/Sketch';
 // types
 import {
@@ -128,7 +128,7 @@ async function cleanupOldSessions() {
 
 export async function writeToStorage(
   key: string,
-  data: string | boolean | object,
+  data: string | boolean | object | null,
   setOptions: Dispatch<SetStateAction<AlertDialogOptions | null>>,
 ) {
   const itemSize = data ? Math.round(JSON.stringify(data).length / 1024) : 0;
@@ -1550,58 +1550,21 @@ function usePublishStorage(dbInitialized: boolean) {
 
   const { setOptions } = useContext(DialogContext);
   const {
-    includeAoiCharacterization,
-    includeCustomSampleTypes,
-    includePlan,
-    includePlanWebMap,
-    includePlanWebScene,
-    includeStagingAreas,
+    manualConfigureOutput,
     publishSamplesMode,
     publishSampleTableMetaData,
     sampleTableDescription,
     sampleTableName,
     sampleTypeSelections,
-    selectedAoiCharacterizations,
     selectedService,
-    selectedStagingAreas,
-    setIncludeAoiCharacterization,
-    setIncludeCustomSampleTypes,
-    setIncludePlan,
-    setIncludePlanWebMap,
-    setIncludePlanWebScene,
-    setIncludeStagingAreas,
+    setManualConfigureOutput,
     setPublishSamplesMode,
     setPublishSampleTableMetaData,
     setSampleTableDescription,
     setSampleTableName,
     setSampleTypeSelections,
-    setSelectedAoiCharacterizations,
     setSelectedService,
-    setSelectedStagingAreas,
-    setWebMapReferenceLayerSelections,
-    setWebSceneReferenceLayerSelections,
-    webMapReferenceLayerSelections,
-    webSceneReferenceLayerSelections,
   } = useContext(PublishContext);
-
-  type OutputSettingsType = {
-    includeAoiCharacterization: boolean;
-    includeCustomSampleTypes: boolean;
-    includePlan: boolean;
-    includePlanWebMap: boolean;
-    includePlanWebScene: boolean;
-    includeStagingAreas: boolean;
-    selectedAoiCharacterizations: {
-      label: string;
-      value: string;
-    }[];
-    selectedStagingAreas: {
-      label: string;
-      value: string;
-    }[];
-    webMapReferenceLayerSelections: any[];
-    webSceneReferenceLayerSelections: any[];
-  };
 
   // Retreives the selected sample layer (sketchLayer) from browser storage
   // when the app loads
@@ -1643,46 +1606,20 @@ function usePublishStorage(dbInitialized: boolean) {
 
       // set the publish output settings
       if (records.length > 3 && records[3]) {
-        const outputSettings: OutputSettingsType = records[3];
-        setIncludeAoiCharacterization(
-          outputSettings.includeAoiCharacterization,
-        );
-        setIncludeCustomSampleTypes(outputSettings.includeCustomSampleTypes);
-        setIncludePlan(outputSettings.includePlan);
-        setIncludePlanWebMap(outputSettings.includePlanWebMap);
-        setIncludePlanWebScene(outputSettings.includePlanWebScene);
-        setIncludeStagingAreas(outputSettings.includeStagingAreas);
-        setSelectedAoiCharacterizations(
-          outputSettings.selectedAoiCharacterizations ?? [],
-        );
-        setSelectedStagingAreas(outputSettings.selectedStagingAreas);
-        setWebMapReferenceLayerSelections(
-          outputSettings.webMapReferenceLayerSelections,
-        );
-        setWebSceneReferenceLayerSelections(
-          outputSettings.webSceneReferenceLayerSelections,
-        );
+        const outputSettings: DefaultConfigureOutput = records[3];
+        setManualConfigureOutput(outputSettings);
       }
     });
   }, [
     dbInitialized,
     readInitialized,
-    setIncludeAoiCharacterization,
-    setIncludeCustomSampleTypes,
-    setIncludePlan,
-    setIncludePlanWebMap,
-    setIncludePlanWebScene,
-    setIncludeStagingAreas,
+    setManualConfigureOutput,
     setPublishSamplesMode,
     setPublishSampleTableMetaData,
     setSampleTableDescription,
     setSampleTableName,
     setSampleTypeSelections,
-    setSelectedAoiCharacterizations,
     setSelectedService,
-    setSelectedStagingAreas,
-    setWebMapReferenceLayerSelections,
-    setWebSceneReferenceLayerSelections,
   ]);
 
   // Saves the selected sample layer (sketchLayer) to browser storage whenever it changes
@@ -1722,43 +1659,8 @@ function usePublishStorage(dbInitialized: boolean) {
   // Saves the publish output settings to browser storage whenever it changes
   useEffect(() => {
     if (!readDone) return;
-
-    const settings: OutputSettingsType = {
-      includeAoiCharacterization,
-      includeCustomSampleTypes,
-      includePlan,
-      includePlanWebMap,
-      includePlanWebScene,
-      includeStagingAreas,
-      selectedAoiCharacterizations: selectedAoiCharacterizations.map(
-        (item) => ({
-          label: item.label,
-          value: item.value,
-        }),
-      ),
-      selectedStagingAreas: selectedStagingAreas.map((item) => ({
-        label: item.label,
-        value: item.value,
-      })),
-      webMapReferenceLayerSelections,
-      webSceneReferenceLayerSelections,
-    };
-
-    writeToStorage(key4, settings, setOptions);
-  }, [
-    includeAoiCharacterization,
-    includeCustomSampleTypes,
-    includePlan,
-    includePlanWebMap,
-    includePlanWebScene,
-    includeStagingAreas,
-    readDone,
-    selectedAoiCharacterizations,
-    selectedStagingAreas,
-    setOptions,
-    webMapReferenceLayerSelections,
-    webSceneReferenceLayerSelections,
-  ]);
+    writeToStorage(key4, manualConfigureOutput, setOptions);
+  }, [manualConfigureOutput, readDone, setOptions]);
 }
 
 // Uses browser storage for holding the display mode (points or polygons) selection.

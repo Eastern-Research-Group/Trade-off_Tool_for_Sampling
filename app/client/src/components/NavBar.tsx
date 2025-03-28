@@ -24,9 +24,14 @@ import GettingStarted from 'components/GettingStarted';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 import { NavigationContext } from 'contexts/Navigation';
+import { PublishContext } from 'contexts/Publish';
 import { SketchContext } from 'contexts/Sketch';
 // utils
-import { useCalculateDeconPlan, useCalculatePlan } from 'utils/hooks';
+import {
+  useAutoConfigureOutput,
+  useCalculateDeconPlan,
+  useCalculatePlan,
+} from 'utils/hooks';
 // config
 import { navPanelWidth } from 'config/appConfig';
 import { deconPanels, PanelType, samplingPanels } from 'config/navigation';
@@ -340,6 +345,11 @@ function NavBar({ appType, height }: Props) {
     setResultsExpanded,
   } = useContext(NavigationContext);
   const {
+    defaultConfigureOutput,
+    manualConfigureOutput,
+    setManualConfigureOutput,
+  } = useContext(PublishContext);
+  const {
     deconSketchLayer,
     edits,
     layers,
@@ -350,6 +360,8 @@ function NavBar({ appType, height }: Props) {
     setStagingAreaLayer,
     stagingAreaLayer,
   } = useContext(SketchContext);
+
+  useAutoConfigureOutput();
 
   const [panels] = useState(appType === 'decon' ? deconPanels : samplingPanels);
 
@@ -515,6 +527,24 @@ function NavBar({ appType, height }: Props) {
     setLayers,
     stagingAreaLayer,
     setStagingAreaLayer,
+  ]);
+
+  // clean up layers without a name when leaving additionalTools tab
+  useEffect(() => {
+    if (!currentPanel || currentPanel.value === 'configureOutput') return;
+    if (!manualConfigureOutput) return;
+
+    if (
+      JSON.stringify(manualConfigureOutput) ===
+      JSON.stringify(defaultConfigureOutput)
+    ) {
+      setManualConfigureOutput(null);
+    }
+  }, [
+    currentPanel,
+    defaultConfigureOutput,
+    manualConfigureOutput,
+    setManualConfigureOutput,
   ]);
 
   return (

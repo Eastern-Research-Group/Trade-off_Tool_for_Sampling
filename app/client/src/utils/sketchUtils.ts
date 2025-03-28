@@ -36,6 +36,7 @@ import {
 } from 'types/Edits';
 import { LayerType } from 'types/Layer';
 import { AppType } from 'types/Navigation';
+import { ReferenceLayerSelections } from 'types/Publish';
 import {
   PolygonSymbol,
   SampleIssues,
@@ -1886,6 +1887,72 @@ export function getDeconLayers(layers: LayerType[], linkedLayers: string[]) {
     (layer) =>
       layer.layerType === 'Decon' && linkedLayers.includes(layer.layerId),
   ) as LayerType[];
+}
+
+/**
+ * Gets the default web map and web scene selections based on reference
+ * layers the user has added.
+ *
+ * @param map Map to get layers from
+ * @param selectedScenario selected scenario to get reference layers from
+ * @param webMapRefOptions web map reference layer options
+ * @param webSceneRefOptions web scene reference layer options
+ * @returns
+ */
+export function getDefaultWebMapSceneSelections(
+  map: __esri.Map,
+  selectedScenario: ScenarioEditsType | ScenarioDeconEditsType | null,
+  webMapRefOptions: ReferenceLayerSelections[],
+  webSceneRefOptions: ReferenceLayerSelections[],
+) {
+  const webMapReferenceLayerSelections: ReferenceLayerSelections[] = [];
+  const webSceneReferenceLayerSelections: ReferenceLayerSelections[] = [];
+  if (
+    selectedScenario &&
+    selectedScenario.referenceLayersTable.referenceLayers.length > 0
+  ) {
+    selectedScenario.referenceLayersTable.referenceLayers.forEach((l) => {
+      const wmOption = webMapRefOptions.find(
+        (o) =>
+          (o.type !== 'file' && o.id === l.layerId) ||
+          (o.type === 'file' && o.label === l.label),
+      );
+      const wsOption = webSceneRefOptions.find(
+        (o) =>
+          (o.type !== 'file' && o.id === l.layerId) ||
+          (o.type === 'file' && o.label === l.label),
+      );
+
+      if (wmOption && l.onWebMap) webMapReferenceLayerSelections.push(wmOption);
+      if (wsOption && l.onWebScene)
+        webSceneReferenceLayerSelections.push(wsOption);
+    });
+  } else {
+    const findLayer = (layer: any, refLayers: ReferenceLayerSelections[]) => {
+      return refLayers.find(
+        (o) => o.id === layer.id || o.id === layer?.portalItem?.id,
+      );
+    };
+    map.layers.forEach((l) => {
+      if (!l.visible) return;
+
+      const wmOption = findLayer(l, webMapRefOptions);
+      const wsOption = findLayer(l, webSceneRefOptions);
+
+      if (wmOption) webMapReferenceLayerSelections.push(wmOption);
+      if (wsOption) webSceneReferenceLayerSelections.push(wsOption);
+    });
+  }
+
+  webMapReferenceLayerSelections.sort((a, b) => a.label.localeCompare(b.label));
+  webSceneReferenceLayerSelections.sort((a, b) =>
+    a.label.localeCompare(b.label),
+  );
+
+  return {
+    webMapReferenceLayerSelections,
+    webSceneReferenceLayerSelections,
+  };
 }
 
 /**

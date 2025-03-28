@@ -20,7 +20,9 @@ import Switch from 'components/Switch';
 import { AuthenticationContext } from 'contexts/Authentication';
 import { NavigationContext } from 'contexts/Navigation';
 import {
+  DefaultConfigureOutput,
   PublishContext,
+  Selections,
   defaultPlanAttributes,
   trainingModePlanAttributes,
 } from 'contexts/Publish';
@@ -39,7 +41,9 @@ import {
 // config
 import { notLoggedInMessage } from 'config/errorMessages';
 // styles
-import { colors, infoIconStyles } from 'styles';
+import { colors, infoIconStyles, isDecon } from 'styles';
+// utils
+import { getDefaultWebMapSceneSelections } from 'utils/sketchUtils';
 
 export type SaveStatusType =
   | 'none'
@@ -159,41 +163,38 @@ function ConfigureOutput({ appType }: Props) {
   const { signedIn } = useContext(AuthenticationContext);
   const { trainingMode } = useContext(NavigationContext);
   const {
-    includeAoiCharacterization,
-    includeCustomSampleTypes,
-    includePlan,
-    includePlanWebMap,
-    includePlanWebScene,
-    includeStagingAreas,
+    defaultConfigureOutput,
+    manualConfigureOutput,
     publishSamplesMode,
     sampleTypeSelections,
-    selectedAoiCharacterizations,
-    selectedStagingAreas,
-    webMapReferenceLayerSelections,
-    webSceneReferenceLayerSelections,
-    setIncludeAoiCharacterization,
-    setIncludeCustomSampleTypes,
-    setIncludePlan,
-    setIncludePlanWebMap,
-    setIncludePlanWebScene,
-    setIncludeStagingAreas,
+    setManualConfigureOutput,
     setPublishSamplesMode,
     setSampleTypeSelections,
-    setSelectedAoiCharacterizations,
-    setSelectedStagingAreas,
-    setWebMapReferenceLayerSelections,
-    setWebSceneReferenceLayerSelections,
+    webMapRefOptions,
+    webSceneRefOptions,
   } = useContext(PublishContext);
-  const {
-    edits,
-    map,
-    portalLayers,
-    referenceLayers,
-    selectedScenario,
-    setEdits,
-    urlLayers,
-    userDefinedAttributes,
-  } = useContext(SketchContext);
+  const { edits, map, selectedScenario, setEdits, userDefinedAttributes } =
+    useContext(SketchContext);
+
+  const [includeAoiCharacterization, setIncludeAoiCharacterization] =
+    useState(isDecon());
+  const [includePlan, setIncludePlan] = useState(true);
+  const [includePlanWebMap, setIncludePlanWebMap] = useState(true);
+  const [includePlanWebScene, setIncludePlanWebScene] = useState(true);
+  const [includeCustomSampleTypes, setIncludeCustomSampleTypes] =
+    useState(false);
+  const [includeStagingAreas, setIncludeStagingAreas] = useState(false);
+  const [selectedAoiCharacterizations, setSelectedAoiCharacterizations] =
+    useState<Selections>([]);
+  const [selectedStagingAreas, setSelectedStagingAreas] = useState<Selections>(
+    [],
+  );
+  const [webMapReferenceLayerSelections, setWebMapReferenceLayerSelections] =
+    useState<ReferenceLayerSelections[]>([]);
+  const [
+    webSceneReferenceLayerSelections,
+    setWebSceneReferenceLayerSelections,
+  ] = useState<ReferenceLayerSelections[]>([]);
 
   const appName = appType === 'decon' ? 'TODS' : 'TOTS';
 
@@ -256,130 +257,6 @@ function ConfigureOutput({ appType }: Props) {
     />
   );
 
-  const [webMapRefOptions, setWebMapRefOptions] = useState<
-    ReferenceLayerSelections[]
-  >([]);
-  const [webSceneRefOptions, setWebSceneRefOptions] = useState<
-    ReferenceLayerSelections[]
-  >([]);
-  useEffect(() => {
-    const webMapRefLayers: ReferenceLayerSelections[] = [];
-    const webSceneRefLayers: ReferenceLayerSelections[] = [];
-
-    const applicableLayerTypesAgoWebMap = [
-      'Feature Service',
-      'Image Service',
-      'KML',
-      'Map Service',
-      'Vector Tile Service',
-      'WMS',
-    ];
-    const applicableLayerTypesAgoWebScene = [
-      'Feature Service',
-      'Image Service',
-      'Map Service',
-      'Scene Service',
-      'Vector Tile Service',
-    ];
-    portalLayers.forEach((l) => {
-      if (l.type === 'tots') return;
-
-      const item: ReferenceLayerSelections = {
-        label: l.label,
-        id: l.id,
-        value: l.url,
-        layerType: l.layerType,
-        type: 'arcgis',
-        onWebMap: 0,
-        onWebScene: 0,
-      };
-
-      if (applicableLayerTypesAgoWebMap.includes(l.layerType)) {
-        item.onWebMap = 1;
-        webMapRefLayers.push(item);
-      }
-
-      if (applicableLayerTypesAgoWebScene.includes(l.layerType)) {
-        item.onWebScene = 1;
-        webSceneRefLayers.push(item);
-      }
-    });
-
-    const applicableLayerTypesUrlWebMap = [
-      'feature',
-      'imagery',
-      'imagery-tile',
-      'map-image',
-      'tile',
-    ];
-    const applicableUrlTypesUrlWebMap = ['CSV', 'GeoRSS', 'KML', 'WMS'];
-    const applicableLayerTypesUrlWebScene = [
-      'building-scene',
-      'feature',
-      'imagery',
-      'imagery-tile',
-      'integrated-mesh',
-      'map-image',
-      'point-cloud',
-      'scene',
-      'tile',
-    ];
-    const applicableUrlTypesUrlWebScene = ['CSV'];
-    urlLayers.forEach((l) => {
-      if (l.layerType === 'stream') return;
-
-      const item: ReferenceLayerSelections = {
-        label: l.label,
-        id: l.layerId,
-        value: l.url,
-        layerType: l.layerType,
-        urlType: l.type,
-        type: 'url',
-        onWebMap: 0,
-        onWebScene: 0,
-      };
-
-      if (
-        applicableUrlTypesUrlWebMap.includes(l.type) ||
-        (l.type === 'ArcGIS' &&
-          applicableLayerTypesUrlWebMap.includes(l.layerType))
-      ) {
-        item.onWebMap = 1;
-        webMapRefLayers.push(item);
-      }
-
-      if (
-        applicableUrlTypesUrlWebScene.includes(l.type) ||
-        (l.type === 'ArcGIS' &&
-          applicableLayerTypesUrlWebScene.includes(l.layerType))
-      ) {
-        item.onWebScene = 1;
-        webSceneRefLayers.push(item);
-      }
-    });
-
-    // add in file reference layers
-    referenceLayers.forEach((l) => {
-      const item: ReferenceLayerSelections = {
-        label: l.title,
-        id: l.layerId,
-        value: l.layerId,
-        layer: l,
-        type: 'file',
-        onWebMap: 1,
-        onWebScene: 1,
-      };
-      webMapRefLayers.push(item);
-      webSceneRefLayers.push(item);
-    });
-
-    webMapRefLayers.sort((a, b) => a.label.localeCompare(b.label));
-    webSceneRefLayers.sort((a, b) => a.label.localeCompare(b.label));
-
-    setWebMapRefOptions(webMapRefLayers);
-    setWebSceneRefOptions(webSceneRefLayers);
-  }, [portalLayers, referenceLayers, urlLayers]);
-
   const [initializedRefSelections, setInitializedRefSelections] =
     useState(false);
   useEffect(() => {
@@ -387,45 +264,13 @@ function ConfigureOutput({ appType }: Props) {
     if (webMapRefOptions.length === 0 && webSceneRefOptions.length === 0)
       return;
 
-    const webMapReferenceLayerSelections: ReferenceLayerSelections[] = [];
-    const webSceneReferenceLayerSelections: ReferenceLayerSelections[] = [];
-    if (
-      selectedScenario &&
-      selectedScenario.referenceLayersTable.referenceLayers.length > 0
-    ) {
-      selectedScenario.referenceLayersTable.referenceLayers.forEach((l) => {
-        const wmOption = webMapRefOptions.find(
-          (o) =>
-            (o.type !== 'file' && o.id === l.layerId) ||
-            (o.type === 'file' && o.label === l.label),
-        );
-        const wsOption = webSceneRefOptions.find(
-          (o) =>
-            (o.type !== 'file' && o.id === l.layerId) ||
-            (o.type === 'file' && o.label === l.label),
-        );
-
-        if (wmOption && l.onWebMap)
-          webMapReferenceLayerSelections.push(wmOption);
-        if (wsOption && l.onWebScene)
-          webSceneReferenceLayerSelections.push(wsOption);
-      });
-    } else {
-      const findLayer = (layer: any, refLayers: ReferenceLayerSelections[]) => {
-        return refLayers.find(
-          (o) => o.id === layer.id || o.id === layer?.portalItem?.id,
-        );
-      };
-      map.layers.forEach((l) => {
-        if (!l.visible) return;
-
-        const wmOption = findLayer(l, webMapRefOptions);
-        const wsOption = findLayer(l, webSceneRefOptions);
-
-        if (wmOption) webMapReferenceLayerSelections.push(wmOption);
-        if (wsOption) webSceneReferenceLayerSelections.push(wsOption);
-      });
-    }
+    const { webMapReferenceLayerSelections, webSceneReferenceLayerSelections } =
+      getDefaultWebMapSceneSelections(
+        map,
+        selectedScenario,
+        webMapRefOptions,
+        webSceneRefOptions,
+      );
 
     setWebMapReferenceLayerSelections(webMapReferenceLayerSelections);
     setWebSceneReferenceLayerSelections(webSceneReferenceLayerSelections);
@@ -438,6 +283,64 @@ function ConfigureOutput({ appType }: Props) {
     setWebSceneReferenceLayerSelections,
     webMapRefOptions,
     webSceneRefOptions,
+  ]);
+
+  const [configureOutput] = useState<DefaultConfigureOutput>(
+    manualConfigureOutput ?? defaultConfigureOutput,
+  );
+  useEffect(() => {
+    setIncludeAoiCharacterization(configureOutput.includeAoiCharacterization);
+    setIncludePlan(configureOutput.includePlan);
+    setIncludePlanWebMap(configureOutput.includePlanWebMap);
+    setIncludePlanWebScene(configureOutput.includePlanWebScene);
+    setIncludeStagingAreas(configureOutput.includeStagingAreas);
+    setSelectedAoiCharacterizations(
+      configureOutput.selectedAoiCharacterizations,
+    );
+    setSelectedStagingAreas(configureOutput.selectedStagingAreas);
+    setWebMapReferenceLayerSelections(
+      configureOutput.webMapReferenceLayerSelections,
+    );
+    setWebSceneReferenceLayerSelections(
+      configureOutput.webSceneReferenceLayerSelections,
+    );
+  }, [configureOutput]);
+
+  useEffect(() => {
+    // sort arrays alphabetically
+    selectedAoiCharacterizations.sort((a, b) => a.label.localeCompare(b.label));
+    selectedStagingAreas.sort((a, b) => a.label.localeCompare(b.label));
+    webMapReferenceLayerSelections.sort((a, b) =>
+      a.label.localeCompare(b.label),
+    );
+    webSceneReferenceLayerSelections.sort((a, b) =>
+      a.label.localeCompare(b.label),
+    );
+
+    setManualConfigureOutput({
+      includeAoiCharacterization,
+      includeCustomSampleTypes,
+      includePlan,
+      includePlanWebMap,
+      includePlanWebScene,
+      includeStagingAreas,
+      selectedAoiCharacterizations,
+      selectedStagingAreas,
+      webMapReferenceLayerSelections,
+      webSceneReferenceLayerSelections,
+    });
+  }, [
+    includeAoiCharacterization,
+    includeCustomSampleTypes,
+    includePlan,
+    includePlanWebMap,
+    includePlanWebScene,
+    includeStagingAreas,
+    selectedAoiCharacterizations,
+    selectedStagingAreas,
+    setManualConfigureOutput,
+    webMapReferenceLayerSelections,
+    webSceneReferenceLayerSelections,
   ]);
 
   return (
