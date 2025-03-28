@@ -112,7 +112,10 @@ function AdditionalTools({ appType }: Props) {
       </div>
 
       <div css={sectionContainer}>
-        <NavigationButton currentPanel="additionalTools" />
+        <NavigationButton
+          currentPanel="additionalTools"
+          includeSkipToPublish={true}
+        />
       </div>
     </div>
   );
