@@ -1141,12 +1141,6 @@ export function useStartOver() {
     setTrainingMode,
   } = useContext(NavigationContext);
   const {
-    setIncludeAoiCharacterization,
-    setIncludeCustomSampleTypes,
-    setIncludePlan,
-    setIncludePlanWebMap,
-    setIncludePlanWebScene,
-    setIncludeStagingAreas,
     setManualConfigureOutput,
     setPublishSamplesMode,
     setPublishSampleTableMetaData,
@@ -1154,11 +1148,7 @@ export function useStartOver() {
     setSampleTableName,
     setSampleTableNameAvailable,
     setSampleTypeSelections,
-    setSelectedAoiCharacterizations,
     setSelectedService,
-    setSelectedStagingAreas,
-    setWebMapReferenceLayerSelections,
-    setWebSceneReferenceLayerSelections,
   } = useContext(PublishContext);
   const {
     basemapWidget,
@@ -1248,17 +1238,7 @@ export function useStartOver() {
     setSampleTableName('');
     setSampleTableNameAvailable('unknown');
     setSampleTypeSelections([]);
-    setSelectedAoiCharacterizations([]);
     setSelectedService(null);
-    setSelectedStagingAreas([]);
-    setIncludeAoiCharacterization(false);
-    setIncludeCustomSampleTypes(false);
-    setIncludePlan(true);
-    setIncludePlanWebMap(true);
-    setIncludePlanWebScene(true);
-    setIncludeStagingAreas(false);
-    setWebMapReferenceLayerSelections([]);
-    setWebSceneReferenceLayerSelections([]);
 
     memoryState = {};
 

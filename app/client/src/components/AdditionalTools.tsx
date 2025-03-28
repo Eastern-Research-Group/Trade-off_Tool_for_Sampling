@@ -90,7 +90,7 @@ function AdditionalTools({ appType }: Props) {
         <AccordionList>
           <AccordionItem title={'Characterize Area of Interest'}>
             <div css={sectionContainer}>
-              <CharacterizeAOI appType={appType} />
+              <CharacterizeAOI />
             </div>
           </AccordionItem>
           <AccordionItem title="Identify Staging Areas">

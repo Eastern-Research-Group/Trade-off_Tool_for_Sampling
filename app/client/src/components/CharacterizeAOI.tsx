@@ -37,7 +37,6 @@ import {
   LayerDeconEditsType,
 } from 'types/Edits';
 import { LayerType } from 'types/Layer';
-import { AppType } from 'types/Navigation';
 // styles
 import { infoIconStyles, reactSelectStyles } from 'styles';
 import {
@@ -210,14 +209,12 @@ const verticalCenterTextStyles = css`
 
 // --- components (CharacterizeAOI) ---
 type Props = {
-  appType: AppType;
   label?: string;
   showHelpText?: boolean;
   showOnEdit?: boolean;
 };
 
 function CharacterizeAOI({
-  appType,
   label = 'Active AOI Layer',
   showHelpText = true,
   showOnEdit = false,

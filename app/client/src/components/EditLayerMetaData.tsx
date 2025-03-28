@@ -1161,7 +1161,7 @@ export function EditAoiCharacterization({
     signedIn, //
   } = useContext(AuthenticationContext);
   const { setEdits, setLayers } = useContext(SketchContext);
-  const { setSelectedAoiCharacterizations } = useContext(PublishContext);
+  const { setManualConfigureOutput } = useContext(PublishContext);
 
   const [aoiCharName, setAoiCharName] = useState(aoiLayer.label);
   const [aoiCharDescription, setAoiCharDescription] = useState(
@@ -1219,11 +1219,12 @@ export function EditAoiCharacterization({
     });
 
     // set selected aoi chars
-    setSelectedAoiCharacterizations((aoiChars) => {
-      const aoiChar = aoiChars.find((char) => char.value === aoiLayer.layerId);
-      if (!aoiChar) return aoiChars;
-      aoiChar.label = aoiCharName;
-      return aoiChars;
+    setManualConfigureOutput((output) => {
+      const aoiChar = output?.selectedAoiCharacterizations?.find(
+        (char) => char.value === aoiLayer.layerId,
+      );
+      if (aoiChar) aoiChar.label = aoiCharName;
+      return output;
     });
 
     const saveStatus: SaveResultsType = {
@@ -1373,7 +1374,7 @@ export function EditStagingAreaCharacterization({
     signedIn, //
   } = useContext(AuthenticationContext);
   const { setEdits, setLayers } = useContext(SketchContext);
-  const { setSelectedStagingAreas } = useContext(PublishContext);
+  const { setManualConfigureOutput } = useContext(PublishContext);
 
   const [aoiCharName, setAoiCharName] = useState('');
   const [aoiCharDescription, setAoiCharDescription] = useState('');
@@ -1445,11 +1446,12 @@ export function EditStagingAreaCharacterization({
     });
 
     // set selected aoi chars
-    setSelectedStagingAreas((sa) => {
-      const saSel = sa.find((char) => char.value === aoiLayer.layerId);
-      if (!saSel) return sa;
-      saSel.label = aoiCharName;
-      return sa;
+    setManualConfigureOutput((output) => {
+      const aoiChar = output?.selectedStagingAreas?.find(
+        (char) => char.value === aoiLayer.layerId,
+      );
+      if (aoiChar) aoiChar.label = aoiCharName;
+      return output;
     });
 
     const saveStatus: SaveResultsType = {

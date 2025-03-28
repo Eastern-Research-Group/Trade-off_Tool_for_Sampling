@@ -17,7 +17,7 @@ import {
 } from 'components/ReactTable';
 import Select from 'components/Select';
 // config
-import { DeconAttributeItems, SampleSelectType } from 'config/sampleAttributes';
+import { SampleSelectType } from 'config/sampleAttributes';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 import { useLookupFiles } from 'contexts/LookupFiles';
@@ -33,7 +33,6 @@ import {
   ScenarioDeconEditsType,
 } from 'types/Edits';
 import { LayerType } from 'types/Layer';
-import { AppType } from 'types/Navigation';
 // utils
 import { summarizedBuildingSurfaceTypes, useStartOver } from 'utils/hooks';
 import {
@@ -229,11 +228,7 @@ const saveButtonStyles = (status: string) => {
 };
 
 // --- components (CreateDeconPlan) ---
-type Props = {
-  appType: AppType;
-};
-
-function CreateDeconPlan({ appType }: Props) {
+function CreateDeconPlan() {
   const { contaminationMap, setCalculateResultsDecon, setContaminationMap } =
     useContext(CalculateContext);
   const { setGoTo, setGoToOptions, trainingMode } =
@@ -1219,7 +1214,6 @@ function CreateDeconPlan({ appType }: Props) {
 
               <div css={opIndentStyles}>
                 <CharacterizeAOI
-                  appType={appType}
                   label="Linked AOI Decon Layer"
                   showHelpText={false}
                   showOnEdit={true}

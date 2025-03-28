@@ -724,9 +724,7 @@ function NavBar({ appType, height }: Props) {
                 <AdditionalTools appType={appType} />
               )}
               {currentPanel.value === 'locateSamples' && <LocateSamples />}
-              {currentPanel.value === 'decon' && (
-                <CreateDeconPlan appType={appType} />
-              )}
+              {currentPanel.value === 'decon' && <CreateDeconPlan />}
               {currentPanel.value === 'calculate' && (
                 <Calculate appType={appType} />
               )}

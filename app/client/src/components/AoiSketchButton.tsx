@@ -126,6 +126,8 @@ function AoiSketchButton({
           });
 
           startSketch();
+
+          if (onContinue) onContinue();
         },
       });
     } else {
