@@ -1180,6 +1180,7 @@ function CharacterizeAOI({
           onChange={(ev) => {
             const newLayer = ev as LayerAoiAnalysisEditsType;
             setDeconSketchLayer(newLayer);
+            if (!showOnEdit) return;
 
             setEdits((edits) => {
               return {
