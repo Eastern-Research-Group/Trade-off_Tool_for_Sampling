@@ -2607,14 +2607,14 @@ function ResultCard({ appType, result }: ResultCardProps) {
         totalAoiSqM: aoiInfo?.AOI_AREA ?? 0,
         totalBuildingExtSqM: aoiInfo?.BUILDING_AREA_EXTERIOR ?? 0,
         totalBuildingIntSqM: aoiInfo?.BUILDING_AREA_INTERIOR ?? 0,
-        totalBuildingVolumeCubM: 0,
-        totalBuildingVolumeContentsCubM: 0,
-        totalBuildingExtWallsSqM: 0,
-        totalBuildingFloorsSqM: 0,
+        totalBuildingVolumeCubM: aoiInfo?.BUILDING_VOLUME ?? 0,
+        totalBuildingVolumeContentsCubM: aoiInfo?.BUILDING_VOLUME_CONTENTS ?? 0,
+        totalBuildingExtWallsSqM: aoiInfo?.BUILDING_AREA_EXTERIOR_WALLS ?? 0,
+        totalBuildingFloorsSqM: aoiInfo?.BUILDING_AREA_FLOORS ?? 0,
         totalBuildingFootprintSqM: aoiInfo?.BUILDING_AREA_FOOTPRINT ?? 0,
-        totalBuildingIntWallsSqM: 0,
-        totalBuildingRoofSqM: 0,
-        totalBuildingCeilingsSqM: 0,
+        totalBuildingIntWallsSqM: aoiInfo?.BUILDING_AREA_INTERIOR_WALLS ?? 0,
+        totalBuildingRoofSqM: aoiInfo?.BUILDING_AREA_ROOFS ?? 0,
+        totalBuildingCeilingsSqM: aoiInfo?.BUILDING_AREA_CEILINGS ?? 0,
         totalBuildingSqM: aoiInfo?.BUILDING_AREA_TOTAL ?? 0,
       };
 
@@ -3499,13 +3499,13 @@ function ResultCard({ appType, result }: ResultCardProps) {
             media: tech.PARENT_SURFACE_UUID
               ? tech.SURFACE_SUB_CATEGORY
               : tech.SURFACE,
-            numIterativeApplications: tech.NUM_ITERATIVE_APPLICATIONS,
-            pctAoi: tech.PCT_AOI,
-            pctDeconed: tech.PCT_DECONED,
+            numIterativeApplications: tech.NUM_ITERATIVE_APPLICATIONS ?? 1,
+            pctAoi: tech.PCT_AOI ?? 0,
+            pctDeconed: tech.PCT_DECONED ?? 0,
             removeContents: tech.REMOVE_BLDG_CONTENTS === 1 ? true : false,
-            surfaceArea: tech.SURFACE_AREA,
-            volume: tech.VOLUME,
-            volumeContents: 0, // TODO - may need to add to publish output
+            surfaceArea: tech.SURFACE_AREA ?? 0,
+            volume: tech.VOLUME ?? 0,
+            volumeContents: tech.VOLUME_CONTENTS ?? 0,
           };
 
           if (tech.PARENT_SURFACE_UUID) {

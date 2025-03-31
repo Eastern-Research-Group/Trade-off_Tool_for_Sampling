@@ -1343,6 +1343,18 @@ function Publish({ appType }: Props) {
                 BUILDING_AREA_INTERIOR: aoiLayer.aoiSummary.totalBuildingIntSqM,
                 BUILDING_AREA_FOOTPRINT:
                   aoiLayer.aoiSummary.totalBuildingFootprintSqM,
+                BUILDING_AREA_CEILINGS:
+                  aoiLayer.aoiSummary.totalBuildingCeilingsSqM,
+                BUILDING_AREA_EXTERIOR_WALLS:
+                  aoiLayer.aoiSummary.totalBuildingExtWallsSqM,
+                BUILDING_AREA_INTERIOR_WALLS:
+                  aoiLayer.aoiSummary.totalBuildingIntWallsSqM,
+                BUILDING_AREA_FLOORS:
+                  aoiLayer.aoiSummary.totalBuildingFloorsSqM,
+                BUILDING_AREA_ROOFS: aoiLayer.aoiSummary.totalBuildingRoofSqM,
+                BUILDING_VOLUME: aoiLayer.aoiSummary.totalBuildingVolumeCubM,
+                BUILDING_VOLUME_CONTENTS:
+                  aoiLayer.aoiSummary.totalBuildingVolumeContentsCubM,
                 GROUND_AREA_SOIL: aoiLayer.aoiPercentages.soilSqM,
                 GROUND_PCT_SOIL: aoiLayer.aoiPercentages.soil,
                 GROUND_AREA_ASPHALT: aoiLayer.aoiPercentages.asphaltSqM,
@@ -2060,6 +2072,20 @@ function Publish({ appType }: Props) {
                         aoiLayer.aoiSummary.totalBuildingIntSqM,
                       BUILDING_AREA_FOOTPRINT:
                         aoiLayer.aoiSummary.totalBuildingFootprintSqM,
+                      BUILDING_AREA_CEILINGS:
+                        aoiLayer.aoiSummary.totalBuildingCeilingsSqM,
+                      BUILDING_AREA_EXTERIOR_WALLS:
+                        aoiLayer.aoiSummary.totalBuildingExtWallsSqM,
+                      BUILDING_AREA_INTERIOR_WALLS:
+                        aoiLayer.aoiSummary.totalBuildingIntWallsSqM,
+                      BUILDING_AREA_FLOORS:
+                        aoiLayer.aoiSummary.totalBuildingFloorsSqM,
+                      BUILDING_AREA_ROOFS:
+                        aoiLayer.aoiSummary.totalBuildingRoofSqM,
+                      BUILDING_VOLUME:
+                        aoiLayer.aoiSummary.totalBuildingVolumeCubM,
+                      BUILDING_VOLUME_CONTENTS:
+                        aoiLayer.aoiSummary.totalBuildingVolumeContentsCubM,
                       GROUND_AREA_SOIL: aoiLayer.aoiPercentages.soilSqM,
                       GROUND_PCT_SOIL: aoiLayer.aoiPercentages.soil,
                       GROUND_AREA_ASPHALT: aoiLayer.aoiPercentages.asphaltSqM,
