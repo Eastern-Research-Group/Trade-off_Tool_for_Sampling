@@ -3635,6 +3635,62 @@ function ResultCard({ appType, result }: ResultCardProps) {
           ariaLabel: 'AOI Version Mismatch',
           description: `The following AOI Characterization layers have a version mismatch: ${aoisWithMismatch.join(',')}. The AOI Characterization data may have changed, including AOI location. Calculations will be re-ran.`,
           onCancel: () => {
+            editsCopy.count += 1;
+            editsCopy.edits = editsCopy.edits.map((edit) => {
+              if (
+                edit.type === 'layer-decon' &&
+                linkedLayerIds.includes(edit.layerId)
+              ) {
+                // find the aoi layer
+                const aoiChar = editsCopy.edits.find(
+                  (e) => e.layerId === edit.analysisLayerId,
+                ) as LayerAoiAnalysisEditsType | undefined;
+                if (!aoiChar) return edit;
+
+                return {
+                  ...edit,
+                  deconTechSelections: aoiChar.deconTechSelections.map(
+                    (tech) => {
+                      const editTech = edit.deconTechSelections.find(
+                        (e) => e.media === tech.media,
+                      );
+                      return {
+                        ...tech,
+                        deconTech: editTech?.deconTech ?? tech.deconTech,
+                        numIterativeApplications:
+                          editTech?.numIterativeApplications ??
+                          tech.numIterativeApplications,
+                        removeContents:
+                          editTech?.removeContents ?? tech.removeContents,
+                        subRows:
+                          editTech?.subRows?.map((subTech: any) => {
+                            const subEditTech = editTech
+                              ? editTech.subRows.find(
+                                  (e: any) => e.media === tech.media,
+                                )
+                              : null;
+
+                            return {
+                              ...subTech,
+                              deconTech:
+                                subEditTech?.deconTech ?? subTech.deconTech,
+                              numIterativeApplications:
+                                subEditTech?.numIterativeApplications ??
+                                subTech.numIterativeApplications,
+                              removeContents:
+                                subEditTech?.removeContents ??
+                                subTech.removeContents,
+                            };
+                          }) ?? tech.subRows,
+                      };
+                    },
+                  ),
+                };
+              }
+
+              return edit;
+            });
+
             finalizeLayerAdd({
               mapLayersToAdd,
               zoomToGraphics,
