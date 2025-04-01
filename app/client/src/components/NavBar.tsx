@@ -450,7 +450,11 @@ function NavBar({ appType, height }: Props) {
   }, [currentPanel]);
 
   // clean up layers without a name when leaving additionalTools tab
+  const [lastPanel, setLastPanel] = useState<PanelType | null>(currentPanel);
   useEffect(() => {
+    if (currentPanel === lastPanel) return;
+    setLastPanel(currentPanel);
+
     if (!currentPanel || currentPanel.value === 'additionalTools') return;
 
     const editsWithoutNames = edits.edits.filter((edit) => !edit.name);
@@ -520,6 +524,7 @@ function NavBar({ appType, height }: Props) {
     currentPanel,
     deconSketchLayer,
     edits,
+    lastPanel,
     layers,
     map,
     setDeconSketchLayer,
