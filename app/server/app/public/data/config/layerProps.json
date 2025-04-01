@@ -1438,6 +1438,17 @@
       "defaultValue": null
     },
     {
+      "name": "VOLUME_CONTENTS",
+      "alias": "Volume of Contents in meters cubed",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
       "name": "REMOVE_BLDG_CONTENTS",
       "alias": "Remove Building Contents after Decontamination",
       "type": "esriFieldTypeSmallInteger",
@@ -1627,6 +1638,83 @@
     {
       "name": "BUILDING_AREA_INTERIOR",
       "alias": "Interior Surface Area of Buildings to Decon in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_AREA_CEILINGS",
+      "alias": "Surface Area of Building Ceilings in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_AREA_EXTERIOR_WALLS",
+      "alias": "Surface Area of Building Exterior Walls in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_AREA_INTERIOR_WALLS",
+      "alias": "Surface Area of Building Interior Walls in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_AREA_FLOORS",
+      "alias": "Surface Area of Building Floors in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_AREA_ROOFS",
+      "alias": "Surface Area of Building Roofs in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_VOLUME",
+      "alias": "Volume of Building Materials in meters cubed",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_VOLUME_CONTENTS",
+      "alias": "Volume of Building Contents in meters cubed",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",
@@ -3337,6 +3425,83 @@
     {
       "name": "BUILDING_AREA_INTERIOR",
       "alias": "Interior Surface Area of Buildings to Decon in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_AREA_CEILINGS",
+      "alias": "Surface Area of Building Ceilings in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_AREA_EXTERIOR_WALLS",
+      "alias": "Surface Area of Building Exterior Walls in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_AREA_INTERIOR_WALLS",
+      "alias": "Surface Area of Building Interior Walls in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_AREA_FLOORS",
+      "alias": "Surface Area of Building Floors in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_AREA_ROOFS",
+      "alias": "Surface Area of Building Roofs in meters squared",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_VOLUME",
+      "alias": "Volume of Building Materials in meters cubed",
+      "type": "esriFieldTypeDouble",
+      "actualType": "double",
+      "sqlType": "sqlTypeDouble",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "BUILDING_VOLUME_CONTENTS",
+      "alias": "Volume of Building Contents in meters cubed",
       "type": "esriFieldTypeDouble",
       "actualType": "double",
       "sqlType": "sqlTypeDouble",

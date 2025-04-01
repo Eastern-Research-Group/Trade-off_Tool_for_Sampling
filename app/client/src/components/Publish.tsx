@@ -839,11 +839,24 @@ function Publish({ appType }: Props) {
               });
             });
 
-            if (
-              trainingMode &&
-              contaminationMap?.sketchLayer?.type === 'graphics'
-            ) {
-              const graphics = contaminationMap.sketchLayer.graphics.toArray();
+            let contamMapToPublish: LayerType | null = null;
+            if (trainingMode) contamMapToPublish = contaminationMap;
+            if (!trainingMode && selectedScenario.portalId) {
+              const editLayer = edits.edits.find(
+                (e) =>
+                  e.type === 'layer' &&
+                  e.layerType === 'Contamination Map' &&
+                  e.portalId === selectedScenario.portalId,
+              );
+              const layer = layers.find(
+                (l) => l.layerId === editLayer?.layerId,
+              );
+              if (layer) contamMapToPublish = layer;
+            }
+
+            if (contamMapToPublish?.sketchLayer?.type === 'graphics') {
+              const graphics =
+                contamMapToPublish.sketchLayer.graphics.toArray();
               const unionGeometry =
                 graphics.length > 0
                   ? geometryEngine.union(graphics.map((g) => g.geometry))
@@ -854,8 +867,8 @@ function Publish({ appType }: Props) {
               );
 
               layersToPublish.push({
-                id: contaminationMap.id,
-                layerId: contaminationMap.layerId,
+                id: contamMapToPublish.id,
+                layerId: contamMapToPublish.layerId,
                 layerDefinitionProps: {
                   ...layerProps.defaultLayerProps,
                   fields: layerProps.defaultContaminationMapLayerFields,
@@ -1343,6 +1356,18 @@ function Publish({ appType }: Props) {
                 BUILDING_AREA_INTERIOR: aoiLayer.aoiSummary.totalBuildingIntSqM,
                 BUILDING_AREA_FOOTPRINT:
                   aoiLayer.aoiSummary.totalBuildingFootprintSqM,
+                BUILDING_AREA_CEILINGS:
+                  aoiLayer.aoiSummary.totalBuildingCeilingsSqM,
+                BUILDING_AREA_EXTERIOR_WALLS:
+                  aoiLayer.aoiSummary.totalBuildingExtWallsSqM,
+                BUILDING_AREA_INTERIOR_WALLS:
+                  aoiLayer.aoiSummary.totalBuildingIntWallsSqM,
+                BUILDING_AREA_FLOORS:
+                  aoiLayer.aoiSummary.totalBuildingFloorsSqM,
+                BUILDING_AREA_ROOFS: aoiLayer.aoiSummary.totalBuildingRoofSqM,
+                BUILDING_VOLUME: aoiLayer.aoiSummary.totalBuildingVolumeCubM,
+                BUILDING_VOLUME_CONTENTS:
+                  aoiLayer.aoiSummary.totalBuildingVolumeContentsCubM,
                 GROUND_AREA_SOIL: aoiLayer.aoiPercentages.soilSqM,
                 GROUND_PCT_SOIL: aoiLayer.aoiPercentages.soil,
                 GROUND_AREA_ASPHALT: aoiLayer.aoiPercentages.asphaltSqM,
@@ -1504,9 +1529,8 @@ function Publish({ appType }: Props) {
               (l) => l.id === 'contaminationMapUpdated',
             ) as __esri.GraphicsLayer;
             if (
-              trainingMode &&
-              contaminationMap &&
-              updatedContamMap?.type === 'graphics'
+              updatedContamMap?.type === 'graphics' &&
+              updatedContamMap.graphics.length > 0
             ) {
               const graphics = updatedContamMap.graphics.toArray();
               const unionGeometry =
@@ -2060,6 +2084,20 @@ function Publish({ appType }: Props) {
                         aoiLayer.aoiSummary.totalBuildingIntSqM,
                       BUILDING_AREA_FOOTPRINT:
                         aoiLayer.aoiSummary.totalBuildingFootprintSqM,
+                      BUILDING_AREA_CEILINGS:
+                        aoiLayer.aoiSummary.totalBuildingCeilingsSqM,
+                      BUILDING_AREA_EXTERIOR_WALLS:
+                        aoiLayer.aoiSummary.totalBuildingExtWallsSqM,
+                      BUILDING_AREA_INTERIOR_WALLS:
+                        aoiLayer.aoiSummary.totalBuildingIntWallsSqM,
+                      BUILDING_AREA_FLOORS:
+                        aoiLayer.aoiSummary.totalBuildingFloorsSqM,
+                      BUILDING_AREA_ROOFS:
+                        aoiLayer.aoiSummary.totalBuildingRoofSqM,
+                      BUILDING_VOLUME:
+                        aoiLayer.aoiSummary.totalBuildingVolumeCubM,
+                      BUILDING_VOLUME_CONTENTS:
+                        aoiLayer.aoiSummary.totalBuildingVolumeContentsCubM,
                       GROUND_AREA_SOIL: aoiLayer.aoiPercentages.soilSqM,
                       GROUND_PCT_SOIL: aoiLayer.aoiPercentages.soil,
                       GROUND_AREA_ASPHALT: aoiLayer.aoiPercentages.asphaltSqM,

@@ -24,7 +24,7 @@ import { DialogContext } from 'contexts/Dialog';
 import { LookupFilesContext, useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext } from 'contexts/Publish';
-import { SketchContext } from 'contexts/Sketch';
+import { PlanGraphics, SketchContext } from 'contexts/Sketch';
 // utils
 import {
   buildCustomAttributeFromField,
@@ -35,8 +35,12 @@ import {
 } from 'utils/arcGisRestUtils';
 import {
   backupImagerySymbol,
+  buildingCalculations,
   buildingColors,
   imageAnalysisSymbols,
+  mediaToBeepEnum,
+  outsideMedia,
+  processScenario,
   useDynamicPopup,
 } from 'utils/hooks';
 import {
@@ -2365,6 +2369,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       });
 
       // create the layers to be added to the map
+      const planGraphics: PlanGraphics = {};
       for (let i = 0; i < layerDetailResponses.length; i++) {
         const layerDetails = layerDetailResponses[i];
         const layerFeatures = featureResponses[i];
@@ -2455,10 +2460,43 @@ function ResultCard({ appType, result }: ResultCardProps) {
             graphics.push(graphic);
           });
 
+          if (isBuildingLayer) {
+            planGraphics[groupLayer.id] = {
+              graphics,
+              imageGraphics: [],
+              aoiArea: 0,
+              buildingFootprint: 0,
+              summary: {
+                areaByMedia: [],
+                totalAoiSqM: 0,
+                totalBuildingExtSqM: 0,
+                totalBuildingIntSqM: 0,
+                totalBuildingVolumeCubM: 0,
+                totalBuildingVolumeContentsCubM: 0,
+                totalBuildingFootprintSqM: 0,
+                totalBuildingFloorsSqM: 0,
+                totalBuildingSqM: 0,
+                totalBuildingExtWallsSqM: 0,
+                totalBuildingIntWallsSqM: 0,
+                totalBuildingRoofSqM: 0,
+                totalBuildingCeilingsSqM: 0,
+              },
+              aoiPercentages: {
+                numAois: 0,
+                asphalt: 0,
+                asphaltSqM: 0,
+                concrete: 0,
+                concreteSqM: 0,
+                soil: 0,
+                soilSqM: 0,
+              },
+            };
+          }
+
           const layerUuid = generateUUID();
           const graphicsLayer = new GraphicsLayer({
             id: layerUuid,
-            title: title,
+            title,
             listMode: 'show',
             visible: !isAoiLayer,
             graphics,
@@ -2551,6 +2589,57 @@ function ResultCard({ appType, result }: ResultCardProps) {
         }
       }
 
+      buildingCalculations(planGraphics);
+
+      const aoiPercentages = {
+        asphalt: aoiInfo?.GROUND_PCT_ASPHALT ?? 0,
+        asphaltSqM: aoiInfo?.GROUND_AREA_ASPHALT ?? 0,
+        concrete: aoiInfo?.GROUND_PCT_CONCRETE ?? 0,
+        concreteSqM: aoiInfo?.GROUND_AREA_CONCRETE ?? 0,
+        numAois,
+        soil: aoiInfo?.GROUND_PCT_SOIL ?? 0,
+        soilSqM: aoiInfo?.GROUND_AREA_SOIL ?? 0,
+      };
+      planGraphics[groupLayer.id].aoiPercentages = aoiPercentages;
+      planGraphics[groupLayer.id].aoiArea = aoiInfo?.AOI_AREA ?? 0;
+      planGraphics[groupLayer.id].summary = {
+        areaByMedia: planGraphics[groupLayer.id].summary.areaByMedia,
+        totalAoiSqM: aoiInfo?.AOI_AREA ?? 0,
+        totalBuildingExtSqM: aoiInfo?.BUILDING_AREA_EXTERIOR ?? 0,
+        totalBuildingIntSqM: aoiInfo?.BUILDING_AREA_INTERIOR ?? 0,
+        totalBuildingVolumeCubM: aoiInfo?.BUILDING_VOLUME ?? 0,
+        totalBuildingVolumeContentsCubM: aoiInfo?.BUILDING_VOLUME_CONTENTS ?? 0,
+        totalBuildingExtWallsSqM: aoiInfo?.BUILDING_AREA_EXTERIOR_WALLS ?? 0,
+        totalBuildingFloorsSqM: aoiInfo?.BUILDING_AREA_FLOORS ?? 0,
+        totalBuildingFootprintSqM: aoiInfo?.BUILDING_AREA_FOOTPRINT ?? 0,
+        totalBuildingIntWallsSqM: aoiInfo?.BUILDING_AREA_INTERIOR_WALLS ?? 0,
+        totalBuildingRoofSqM: aoiInfo?.BUILDING_AREA_ROOFS ?? 0,
+        totalBuildingCeilingsSqM: aoiInfo?.BUILDING_AREA_CEILINGS ?? 0,
+        totalBuildingSqM: aoiInfo?.BUILDING_AREA_TOTAL ?? 0,
+      };
+
+      const newDeconTechSelections = processScenario(
+        groupLayer.id,
+        {
+          status: 'success',
+          planGraphics,
+        },
+        {},
+        {},
+        defaultDeconSelections.map((tech) => {
+          if (!outsideMedia.includes(tech.media)) return tech;
+
+          const pcts: any = aoiPercentages;
+          const prop = (mediaToBeepEnum as any)[tech.media];
+          return {
+            ...tech,
+            pctAoi: pcts[prop],
+            surfaceArea: pcts[`${prop}SqM`],
+            volume: pcts[`${prop}SqM`],
+          };
+        }),
+      );
+
       mapLayersToAdd.push(groupLayer);
       const layerAoiAnalysis: LayerAoiAnalysisEditsType = {
         type: 'layer-aoi-analysis',
@@ -2571,31 +2660,9 @@ function ResultCard({ appType, result }: ResultCardProps) {
         layers: aoiCharLayers,
         importedAoiLayer: null,
         aoiLayerMode: 'draw',
-        aoiPercentages: {
-          asphalt: aoiInfo?.GROUND_PCT_ASPHALT ?? 0,
-          asphaltSqM: aoiInfo?.GROUND_AREA_ASPHALT ?? 0,
-          concrete: aoiInfo?.GROUND_PCT_CONCRETE ?? 0,
-          concreteSqM: aoiInfo?.GROUND_AREA_CONCRETE ?? 0,
-          numAois,
-          soil: aoiInfo?.GROUND_PCT_SOIL ?? 0,
-          soilSqM: aoiInfo?.GROUND_AREA_SOIL ?? 0,
-        },
-        aoiSummary: {
-          areaByMedia: [],
-          totalAoiSqM: aoiInfo?.AOI_AREA ?? 0,
-          totalBuildingExtSqM: aoiInfo?.BUILDING_AREA_EXTERIOR ?? 0,
-          totalBuildingIntSqM: aoiInfo?.BUILDING_AREA_INTERIOR ?? 0,
-          totalBuildingVolumeCubM: 0,
-          totalBuildingVolumeContentsCubM: 0,
-          totalBuildingExtWallsSqM: 0,
-          totalBuildingFloorsSqM: 0,
-          totalBuildingFootprintSqM: aoiInfo?.BUILDING_AREA_FOOTPRINT ?? 0,
-          totalBuildingIntWallsSqM: 0,
-          totalBuildingRoofSqM: 0,
-          totalBuildingCeilingsSqM: 0,
-          totalBuildingSqM: aoiInfo?.BUILDING_AREA_TOTAL ?? 0,
-        },
-        deconTechSelections: defaultDeconSelections.map((tech) => ({
+        aoiPercentages,
+        aoiSummary: planGraphics[groupLayer.id].summary,
+        deconTechSelections: newDeconTechSelections.map((tech) => ({
           ...tech,
           id: generateUUID(),
         })),
@@ -3417,9 +3484,9 @@ function ResultCard({ appType, result }: ResultCardProps) {
         const deconTechSelections: any[] = [];
         operationDetailsFiltered.forEach((tech) => {
           const newRecord = {
-            aboveDetectionLimit: 0,
+            aboveDetectionLimit: false,
             avgCfu: 0,
-            avgFinalContamination: null,
+            avgFinalContamination: 0,
             deconTech: tech.DECON_TECH_UUID
               ? {
                   isPredefined: true,
@@ -3432,13 +3499,13 @@ function ResultCard({ appType, result }: ResultCardProps) {
             media: tech.PARENT_SURFACE_UUID
               ? tech.SURFACE_SUB_CATEGORY
               : tech.SURFACE,
-            numIterativeApplications: tech.NUM_ITERATIVE_APPLICATIONS,
-            pctAoi: tech.PCT_AOI,
-            pctDeconed: tech.PCT_DECONED,
+            numIterativeApplications: tech.NUM_ITERATIVE_APPLICATIONS ?? 1,
+            pctAoi: tech.PCT_AOI ?? 0,
+            pctDeconed: tech.PCT_DECONED ?? 0,
             removeContents: tech.REMOVE_BLDG_CONTENTS === 1 ? true : false,
-            surfaceArea: tech.SURFACE_AREA,
-            volume: tech.VOLUME,
-            volumeContents: 0, // TODO - may need to add to publish output
+            surfaceArea: tech.SURFACE_AREA ?? 0,
+            volume: tech.VOLUME ?? 0,
+            volumeContents: tech.VOLUME_CONTENTS ?? 0,
           };
 
           if (tech.PARENT_SURFACE_UUID) {
@@ -3568,6 +3635,62 @@ function ResultCard({ appType, result }: ResultCardProps) {
           ariaLabel: 'AOI Version Mismatch',
           description: `The following AOI Characterization layers have a version mismatch: ${aoisWithMismatch.join(',')}. The AOI Characterization data may have changed, including AOI location. Calculations will be re-ran.`,
           onCancel: () => {
+            editsCopy.count += 1;
+            editsCopy.edits = editsCopy.edits.map((edit) => {
+              if (
+                edit.type === 'layer-decon' &&
+                linkedLayerIds.includes(edit.layerId)
+              ) {
+                // find the aoi layer
+                const aoiChar = editsCopy.edits.find(
+                  (e) => e.layerId === edit.analysisLayerId,
+                ) as LayerAoiAnalysisEditsType | undefined;
+                if (!aoiChar) return edit;
+
+                return {
+                  ...edit,
+                  deconTechSelections: aoiChar.deconTechSelections.map(
+                    (tech) => {
+                      const editTech = edit.deconTechSelections.find(
+                        (e) => e.media === tech.media,
+                      );
+                      return {
+                        ...tech,
+                        deconTech: editTech?.deconTech ?? tech.deconTech,
+                        numIterativeApplications:
+                          editTech?.numIterativeApplications ??
+                          tech.numIterativeApplications,
+                        removeContents:
+                          editTech?.removeContents ?? tech.removeContents,
+                        subRows:
+                          editTech?.subRows?.map((subTech: any) => {
+                            const subEditTech = editTech
+                              ? editTech.subRows.find(
+                                  (e: any) => e.media === tech.media,
+                                )
+                              : null;
+
+                            return {
+                              ...subTech,
+                              deconTech:
+                                subEditTech?.deconTech ?? subTech.deconTech,
+                              numIterativeApplications:
+                                subEditTech?.numIterativeApplications ??
+                                subTech.numIterativeApplications,
+                              removeContents:
+                                subEditTech?.removeContents ??
+                                subTech.removeContents,
+                            };
+                          }) ?? tech.subRows,
+                      };
+                    },
+                  ),
+                };
+              }
+
+              return edit;
+            });
+
             finalizeLayerAdd({
               mapLayersToAdd,
               zoomToGraphics,
