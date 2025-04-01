@@ -428,7 +428,15 @@ export const scenarioNameTakenMessage = (scenarioName?: string) => (
   <MessageBox
     severity="warning"
     title="Name Not Available"
-    message={`The "${scenarioName ?? ''}" name is already in use within your organization. Please rename the plan and try again.`}
+    message={`The "${scenarioName ?? ''}" name is already in use within your organization. Please rename the item and try again.`}
+  />
+);
+
+export const scenarioNameInvalidMessage = (scenarioName?: string) => (
+  <MessageBox
+    severity="warning"
+    title="Invalid Characters"
+    message={`The "${scenarioName ?? ''}" name may only contain alphanumeric characters and underscores. Please rename the item and try again.`}
   />
 );
 

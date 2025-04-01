@@ -154,12 +154,23 @@ export function appendEnvironmentObjectParam(params: any) {
  * @param serviceName The desired feature service name.
  */
 export function isServiceNameAvailable(
-  portal: __esri.Portal,
+  portal: __esri.Portal | null,
+  signedIn: boolean,
   serviceName: string,
 ) {
   return new Promise((resolve, reject) => {
     // Workaround for esri.Portal not having credential
     const tempPortal: any = portal;
+
+    if (/[^0-9a-zA-Z_]/.test(serviceName)) {
+      resolve({ available: false, problem: 'invalid-characters' });
+      return;
+    }
+
+    if (!portal || !signedIn) {
+      resolve({ available: true });
+      return;
+    }
 
     // check if the tots feature service already exists
     const params: any = {

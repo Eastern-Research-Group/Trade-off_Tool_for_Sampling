@@ -420,7 +420,10 @@ function CreateDeconPlan() {
           {scenarios.length === 0 ? (
             <EditScenario
               appType="decon"
-              onSave={() => setEditPlanVisible(false)}
+              onSave={(saveResults) => {
+                if (saveResults?.status !== 'success') return;
+                setEditPlanVisible(false);
+              }}
             />
           ) : (
             <Fragment>
@@ -666,7 +669,8 @@ function CreateDeconPlan() {
                 <EditScenario
                   appType="decon"
                   initialScenario={editPlanVisible ? selectedScenario : null}
-                  onSave={() => {
+                  onSave={(saveResults) => {
+                    if (saveResults?.status !== 'success') return;
                     setAddPlanVisible(false);
                     setEditPlanVisible(false);
                   }}

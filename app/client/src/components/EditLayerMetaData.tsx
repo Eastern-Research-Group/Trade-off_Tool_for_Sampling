@@ -41,6 +41,7 @@ import { ErrorType } from 'types/Misc';
 import { AppType } from 'types/Navigation';
 // config
 import {
+  scenarioNameInvalidMessage,
   scenarioNameTakenMessage,
   webServiceErrorMessage,
 } from 'config/errorMessages';
@@ -54,7 +55,9 @@ export type SaveStatusType =
   | 'success'
   | 'failure'
   | 'fetch-failure'
-  | 'name-not-available';
+  | 'available'
+  | 'name-not-available'
+  | 'invalid-characters';
 
 export type SaveResultsType = {
   name?: string;
@@ -486,13 +489,6 @@ export function EditScenario({
   // Handles saving of the layer's scenario name and description fields.
   // Also checks the uniqueness of the scenario name, if the user is signed in.
   function handleSave() {
-    // if the user hasn't signed in go ahead and save the
-    // scenario name and description
-    if (!portal || !signedIn) {
-      updateScenario(appType);
-      return;
-    }
-
     setSaveStatus({
       status: 'fetching',
       name: scenarioName,
@@ -500,7 +496,7 @@ export function EditScenario({
 
     // if the user is signed in, go ahead and check if the
     // service (scenario) name is availble before continuing
-    isServiceNameAvailable(portal, scenarioName)
+    isServiceNameAvailable(portal, signedIn, scenarioName)
       .then((res: any) => {
         if (res.error) {
           const saveStatus: SaveResultsType = {
@@ -518,7 +514,7 @@ export function EditScenario({
 
         if (!res.available) {
           const saveStatus: SaveResultsType = {
-            name: scenarioName,
+            name: res.problem ?? scenarioName,
             status: 'name-not-available',
           };
           setSaveStatus(saveStatus);
@@ -552,7 +548,7 @@ export function EditScenario({
           initialScenario && initialScenario.status !== 'added' ? true : false
         }
         css={inputStyles}
-        maxLength={250}
+        maxLength={90}
         placeholder="Enter Plan Name"
         value={scenarioName}
         onChange={(ev) => {
@@ -581,6 +577,8 @@ export function EditScenario({
         webServiceErrorMessage(saveStatus.error)}
       {saveStatus.status === 'name-not-available' &&
         scenarioNameTakenMessage(saveStatus.name)}
+      {saveStatus.status === 'invalid-characters' &&
+        scenarioNameInvalidMessage(saveStatus.name)}
       {(!initialScenario || initialScenario.status === 'added') && (
         <div css={saveButtonContainerStyles}>
           <button
@@ -998,7 +996,7 @@ export function EditCustomSampleTypesTable({
           <input
             id="sample-table-name-input"
             css={inputStyles}
-            maxLength={250}
+            maxLength={90}
             placeholder={`Enter Custom ${appType === 'decon' ? 'Decon Technology' : 'Sample Type'} Table Name`}
             value={sampleTableName}
             onChange={(ev) => setSampleTableName(ev.target.value)}
@@ -1043,6 +1041,8 @@ export function EditCustomSampleTypesTable({
         webServiceErrorMessage(saveStatus.error)}
       {saveStatus.status === 'name-not-available' &&
         scenarioNameTakenMessage(saveStatus.name)}
+      {saveStatus.status === 'invalid-characters' &&
+        scenarioNameInvalidMessage(saveStatus.name)}
       <div css={saveButtonContainerStyles}>
         <button
           css={saveButtonStyles(saveStatus.status)}
@@ -1050,11 +1050,6 @@ export function EditCustomSampleTypesTable({
             if (publishSamplesMode === 'existing' && selectedService) {
               setPublishSampleTableMetaData(selectedService);
             } else if (publishSamplesMode === 'new') {
-              if (!portal || !signedIn) {
-                handleSave();
-                return;
-              }
-
               setSaveStatus({
                 status: 'fetching',
                 name: sampleTableName,
@@ -1062,7 +1057,7 @@ export function EditCustomSampleTypesTable({
 
               // if the user is signed in, go ahead and check if the
               // service (scenario) name is availble before continuing
-              isServiceNameAvailable(portal, sampleTableName)
+              isServiceNameAvailable(portal, signedIn, sampleTableName)
                 .then((res: any) => {
                   if (res.error) {
                     const saveStatus: SaveResultsType = {
@@ -1080,7 +1075,7 @@ export function EditCustomSampleTypesTable({
 
                   if (!res.available) {
                     const saveStatus: SaveResultsType = {
-                      status: 'name-not-available',
+                      status: res.problem ?? 'name-not-available',
                       name: sampleTableName,
                     };
                     setSaveStatus(saveStatus);
@@ -1241,7 +1236,7 @@ export function EditAoiCharacterization({
       <input
         id="aoi-char-name-input"
         css={inputStyles}
-        maxLength={250}
+        maxLength={90}
         placeholder="Enter AOI Characterization Name"
         value={aoiCharName}
         onChange={(ev) => setAoiCharName(ev.target.value)}
@@ -1263,15 +1258,12 @@ export function EditAoiCharacterization({
         webServiceErrorMessage(saveStatus.error)}
       {saveStatus.status === 'name-not-available' &&
         scenarioNameTakenMessage(saveStatus.name)}
+      {saveStatus.status === 'invalid-characters' &&
+        scenarioNameInvalidMessage(saveStatus.name)}
       <div css={saveButtonContainerStyles}>
         <button
           css={saveButtonStyles(saveStatus.status)}
           onClick={() => {
-            if (!portal || !signedIn) {
-              handleSave();
-              return;
-            }
-
             setSaveStatus({
               status: 'fetching',
               name: aoiCharName,
@@ -1279,7 +1271,7 @@ export function EditAoiCharacterization({
 
             // if the user is signed in, go ahead and check if the
             // service (scenario) name is availble before continuing
-            isServiceNameAvailable(portal, aoiCharName)
+            isServiceNameAvailable(portal, signedIn, aoiCharName)
               .then((res: any) => {
                 if (res.error) {
                   const saveStatus: SaveResultsType = {
@@ -1297,7 +1289,7 @@ export function EditAoiCharacterization({
 
                 if (!res.available) {
                   const saveStatus: SaveResultsType = {
-                    status: 'name-not-available',
+                    status: res.problem ?? 'name-not-available',
                     name: aoiCharName,
                   };
                   setSaveStatus(saveStatus);
@@ -1470,7 +1462,7 @@ export function EditStagingAreaCharacterization({
           <input
             id="staging-area-name-input"
             css={inputStyles}
-            maxLength={250}
+            maxLength={90}
             placeholder="Enter Staging Area Name"
             value={aoiCharName}
             onChange={(ev) => setAoiCharName(ev.target.value)}
@@ -1496,17 +1488,14 @@ export function EditStagingAreaCharacterization({
         webServiceErrorMessage(saveStatus.error)}
       {saveStatus.status === 'name-not-available' &&
         scenarioNameTakenMessage(saveStatus.name)}
+      {saveStatus.status === 'invalid-characters' &&
+        scenarioNameInvalidMessage(saveStatus.name)}
       <div css={saveButtonContainerStyles}>
         <button
           css={saveButtonStyles(
             saveStatus.status === 'success' ? 'none' : saveStatus.status,
           )}
           onClick={() => {
-            if (!portal || !signedIn) {
-              handleSave();
-              return;
-            }
-
             setSaveStatus({
               status: 'fetching',
               name: aoiCharName,
@@ -1514,7 +1503,7 @@ export function EditStagingAreaCharacterization({
 
             // if the user is signed in, go ahead and check if the
             // service (scenario) name is availble before continuing
-            isServiceNameAvailable(portal, aoiCharName)
+            isServiceNameAvailable(portal, signedIn, aoiCharName)
               .then((res: any) => {
                 if (res.error) {
                   const saveStatus: SaveResultsType = {
@@ -1532,7 +1521,7 @@ export function EditStagingAreaCharacterization({
 
                 if (!res.available) {
                   const saveStatus: SaveResultsType = {
-                    status: 'name-not-available',
+                    status: res.problem ?? 'name-not-available',
                     name: aoiCharName,
                   };
                   setSaveStatus(saveStatus);
