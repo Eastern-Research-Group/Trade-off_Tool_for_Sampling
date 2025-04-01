@@ -1237,7 +1237,13 @@ export function useStartOver() {
     setStagingAreaLayer(null);
 
     // clear the map
-    map?.removeAll();
+    const layersToRemove =
+      map?.layers
+        .filter(
+          (l) => !['contaminationMapUpdated', 'deconResults'].includes(l.id),
+        )
+        .toArray() ?? [];
+    if (layersToRemove.length > 0) map?.removeMany(layersToRemove);
 
     // set the layers to just the defaults
     setLayers([]);
@@ -1802,6 +1808,9 @@ export function useCalculatePlan(appType: AppType) {
 // samples change or the variables on the calculate tab
 // change.
 export function useCalculateDeconPlan() {
+  const { calculateResultsDecon, contaminationMap, setCalculateResultsDecon } =
+    useContext(CalculateContext);
+  const { trainingMode } = useContext(NavigationContext);
   const {
     defaultDeconSelections,
     displayDimensions,
@@ -1817,8 +1826,6 @@ export function useCalculateDeconPlan() {
     setEfficacyResults,
     setJsonDownload,
   } = useContext(SketchContext);
-  const { calculateResultsDecon, contaminationMap, setCalculateResultsDecon } =
-    useContext(CalculateContext);
 
   useEffect(() => {
     view = displayDimensions === '2d' ? mapView : sceneView;
@@ -2342,12 +2349,22 @@ export function useCalculateDeconPlan() {
         return;
 
       const contaminationGraphicsClone: __esri.Graphic[] = [];
-      if (
-        contaminationMap &&
-        contaminationMap.sketchLayer?.type === 'graphics'
-      ) {
+      let contamMap: LayerType | null = null;
+      if (trainingMode) contamMap = contaminationMap;
+      if (!trainingMode && selectedScenario.portalId) {
+        const editLayer = edits.edits.find(
+          (e) =>
+            e.type === 'layer' &&
+            e.layerType === 'Contamination Map' &&
+            e.portalId === selectedScenario.portalId,
+        );
+        const layer = layers.find((l) => l.layerId === editLayer?.layerId);
+        if (layer) contamMap = layer;
+      }
+
+      if (contamMap?.sketchLayer?.type === 'graphics') {
         contaminationGraphicsClone.push(
-          ...contaminationMap.sketchLayer.graphics.clone().toArray(),
+          ...contamMap.sketchLayer.graphics.clone().toArray(),
         );
       }
 
@@ -2722,6 +2739,7 @@ export function useCalculateDeconPlan() {
     sceneViewForArea,
     selectedScenario,
     setEfficacyResults,
+    trainingMode,
   ]);
 
   useEffect(() => {
