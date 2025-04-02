@@ -46,7 +46,7 @@ import '@reach/dialog/styles.css';
 import '@arcgis/core/assets/esri/themes/light/main.css';
 // types
 import { EditsType } from 'types/Edits';
-import { LayerType } from 'types/Layer';
+import { LayerType, PortalLayerType } from 'types/Layer';
 import { DefaultSymbolsType, SampleSelectType } from 'config/sampleAttributes';
 
 declare global {
@@ -66,6 +66,7 @@ declare global {
     totsDeconAttributes: any;
     totsDefaultSymbols: DefaultSymbolsType;
     totsLayers: LayerType[];
+    totsPortalLayers: PortalLayerType[];
     totsSampleAttributes: any;
   }
 }

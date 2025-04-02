@@ -153,11 +153,17 @@ export function appendEnvironmentObjectParam(params: any) {
  * @param portal The portal object to check against.
  * @param serviceName The desired feature service name.
  */
-export function isServiceNameAvailable(
-  portal: __esri.Portal,
+export async function isServiceNameAvailable(
+  portal: __esri.Portal | null,
+  signedIn: boolean,
   serviceName: string,
 ) {
-  return new Promise((resolve, reject) => {
+  if (!serviceName.replaceAll(' ', '') || /[^0-9a-zA-Z_ ]/.test(serviceName))
+    return { available: false, problem: 'invalid-characters' };
+
+  if (!portal || !signedIn) return { available: true };
+
+  try {
     // Workaround for esri.Portal not having credential
     const tempPortal: any = portal;
 
@@ -170,19 +176,15 @@ export function isServiceNameAvailable(
     };
     appendEnvironmentObjectParam(params);
 
-    fetchPost(
+    return await fetchPost(
       `${portal.restUrl}/portals/${portal.id}/isServiceNameAvailable`,
       params,
-    )
-      .then((res) => {
-        resolve(res);
-      })
-      .catch((err) => {
-        console.error(err);
-        window.logErrorToGa(err);
-        reject(err);
-      });
-  });
+    );
+  } catch (err) {
+    console.error(err);
+    window.logErrorToGa(err);
+    return err;
+  }
 }
 
 /**

@@ -389,6 +389,7 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
             });
             scenarioLayers.push(...layers);
 
+            if (layer.layerType === 'Decon Mask') layers[0].visible = false;
             if (layer.layerType === 'AOI Assessed')
               buildingGraphics.push(...layers[0].graphics);
             if (layer.layerType === 'Image Analysis')
@@ -667,17 +668,6 @@ function usePortalLayerStorage(dbInitialized: boolean) {
   useEffect(() => {
     if (!map || portalLayers.length === 0) return;
 
-    async function addTotsLayerForTods(layer: Promise<__esri.Layer>) {
-      if (!map) return;
-
-      try {
-        const layerLocal = await layer;
-        await applyRendererForTotsLayer(layerLocal);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
     // add the portal layers to the map
     portalLayers.forEach((portalLayer) => {
       const id = portalLayer.id;
@@ -695,14 +685,15 @@ function usePortalLayerStorage(dbInitialized: boolean) {
         isDecon();
       if (portalLayer.type === 'tots' && !isTotsLayerForTods) return;
 
-      const layer = Layer.fromPortalItem({
+      Layer.fromPortalItem({
         portalItem: new PortalItem({ id }),
+      }).then((layer) => {
+        layer.load().then(() => {
+          map.add(layer);
+          if (isTotsLayerForTods && portalLayer.type === 'tots')
+            applyRendererForTotsLayer(layer);
+        });
       });
-      map.add(layer);
-
-      if (isTotsLayerForTods && portalLayer.type === 'tots') {
-        addTotsLayerForTods(layer);
-      }
     });
   }, [map, portalLayers]);
 }

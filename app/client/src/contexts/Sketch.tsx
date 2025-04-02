@@ -684,6 +684,10 @@ export function SketchProvider({ children }: Props) {
     });
   }, [edits]);
 
+  useEffect(() => {
+    window.totsPortalLayers = portalLayers;
+  }, [portalLayers]);
+
   return (
     <SketchContext.Provider
       value={{

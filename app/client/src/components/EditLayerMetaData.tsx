@@ -41,11 +41,19 @@ import { ErrorType } from 'types/Misc';
 import { AppType } from 'types/Navigation';
 // config
 import {
+  scenarioNameInvalidMessage,
   scenarioNameTakenMessage,
   webServiceErrorMessage,
 } from 'config/errorMessages';
 // styles
 import { colors, isDecon, linkButtonStyles } from 'styles';
+
+const failedStatuses = [
+  'failure',
+  'fetch-failure',
+  'name-not-available',
+  'invalid-characters',
+];
 
 export type SaveStatusType =
   | 'none'
@@ -54,7 +62,9 @@ export type SaveStatusType =
   | 'success'
   | 'failure'
   | 'fetch-failure'
-  | 'name-not-available';
+  | 'available'
+  | 'name-not-available'
+  | 'invalid-characters';
 
 export type SaveResultsType = {
   name?: string;
@@ -94,7 +104,7 @@ const saveButtonStyles = (status: string) => {
   if (status === 'success') {
     backgroundColor = `background-color: ${colors.green()};`;
   }
-  if (status === 'failure' || status === 'name-not-available') {
+  if (failedStatuses.includes(status)) {
     backgroundColor = `background-color: ${colors.red()};`;
   }
 
@@ -486,13 +496,6 @@ export function EditScenario({
   // Handles saving of the layer's scenario name and description fields.
   // Also checks the uniqueness of the scenario name, if the user is signed in.
   function handleSave() {
-    // if the user hasn't signed in go ahead and save the
-    // scenario name and description
-    if (!portal || !signedIn) {
-      updateScenario(appType);
-      return;
-    }
-
     setSaveStatus({
       status: 'fetching',
       name: scenarioName,
@@ -500,7 +503,7 @@ export function EditScenario({
 
     // if the user is signed in, go ahead and check if the
     // service (scenario) name is availble before continuing
-    isServiceNameAvailable(portal, scenarioName)
+    isServiceNameAvailable(portal, signedIn, scenarioName)
       .then((res: any) => {
         if (res.error) {
           const saveStatus: SaveResultsType = {
@@ -519,7 +522,7 @@ export function EditScenario({
         if (!res.available) {
           const saveStatus: SaveResultsType = {
             name: scenarioName,
-            status: 'name-not-available',
+            status: res.problem ?? 'name-not-available',
           };
           setSaveStatus(saveStatus);
           if (onSave) onSave(saveStatus);
@@ -552,7 +555,7 @@ export function EditScenario({
           initialScenario && initialScenario.status !== 'added' ? true : false
         }
         css={inputStyles}
-        maxLength={250}
+        maxLength={90}
         placeholder="Enter Plan Name"
         value={scenarioName}
         onChange={(ev) => {
@@ -581,6 +584,8 @@ export function EditScenario({
         webServiceErrorMessage(saveStatus.error)}
       {saveStatus.status === 'name-not-available' &&
         scenarioNameTakenMessage(saveStatus.name)}
+      {saveStatus.status === 'invalid-characters' &&
+        scenarioNameInvalidMessage(saveStatus.name)}
       {(!initialScenario || initialScenario.status === 'added') && (
         <div css={saveButtonContainerStyles}>
           <button
@@ -593,21 +598,16 @@ export function EditScenario({
             }
             onClick={handleSave}
           >
-            {(saveStatus.status === 'none' ||
-              saveStatus.status === 'changes' ||
-              saveStatus.status === 'fetching') &&
-              buttonText}
-            {saveStatus.status === 'success' && (
-              <Fragment>
-                <i className="fas fa-check" /> Saved
-              </Fragment>
-            )}
-            {(saveStatus.status === 'failure' ||
-              saveStatus.status === 'fetch-failure' ||
-              saveStatus.status === 'name-not-available') && (
+            {failedStatuses.includes(saveStatus.status) ? (
               <Fragment>
                 <i className="fas fa-exclamation-triangle" /> Error
               </Fragment>
+            ) : saveStatus.status === 'success' ? (
+              <Fragment>
+                <i className="fas fa-check" /> Saved
+              </Fragment>
+            ) : (
+              buttonText
             )}
           </button>
         </div>
@@ -998,7 +998,7 @@ export function EditCustomSampleTypesTable({
           <input
             id="sample-table-name-input"
             css={inputStyles}
-            maxLength={250}
+            maxLength={90}
             placeholder={`Enter Custom ${appType === 'decon' ? 'Decon Technology' : 'Sample Type'} Table Name`}
             value={sampleTableName}
             onChange={(ev) => setSampleTableName(ev.target.value)}
@@ -1043,6 +1043,8 @@ export function EditCustomSampleTypesTable({
         webServiceErrorMessage(saveStatus.error)}
       {saveStatus.status === 'name-not-available' &&
         scenarioNameTakenMessage(saveStatus.name)}
+      {saveStatus.status === 'invalid-characters' &&
+        scenarioNameInvalidMessage(saveStatus.name)}
       <div css={saveButtonContainerStyles}>
         <button
           css={saveButtonStyles(saveStatus.status)}
@@ -1050,11 +1052,6 @@ export function EditCustomSampleTypesTable({
             if (publishSamplesMode === 'existing' && selectedService) {
               setPublishSampleTableMetaData(selectedService);
             } else if (publishSamplesMode === 'new') {
-              if (!portal || !signedIn) {
-                handleSave();
-                return;
-              }
-
               setSaveStatus({
                 status: 'fetching',
                 name: sampleTableName,
@@ -1062,7 +1059,7 @@ export function EditCustomSampleTypesTable({
 
               // if the user is signed in, go ahead and check if the
               // service (scenario) name is availble before continuing
-              isServiceNameAvailable(portal, sampleTableName)
+              isServiceNameAvailable(portal, signedIn, sampleTableName)
                 .then((res: any) => {
                   if (res.error) {
                     const saveStatus: SaveResultsType = {
@@ -1080,7 +1077,7 @@ export function EditCustomSampleTypesTable({
 
                   if (!res.available) {
                     const saveStatus: SaveResultsType = {
-                      status: 'name-not-available',
+                      status: res.problem ?? 'name-not-available',
                       name: sampleTableName,
                     };
                     setSaveStatus(saveStatus);
@@ -1122,21 +1119,16 @@ export function EditCustomSampleTypesTable({
                 JSON.stringify(selectedService))
           }
         >
-          {(saveStatus.status === 'none' ||
-            saveStatus.status === 'changes' ||
-            saveStatus.status === 'fetching') &&
-            'Save'}
-          {saveStatus.status === 'success' && (
-            <Fragment>
-              <i className="fas fa-check" /> Saved
-            </Fragment>
-          )}
-          {(saveStatus.status === 'failure' ||
-            saveStatus.status === 'fetch-failure' ||
-            saveStatus.status === 'name-not-available') && (
+          {failedStatuses.includes(saveStatus.status) ? (
             <Fragment>
               <i className="fas fa-exclamation-triangle" /> Error
             </Fragment>
+          ) : saveStatus.status === 'success' ? (
+            <Fragment>
+              <i className="fas fa-check" /> Saved
+            </Fragment>
+          ) : (
+            'Save'
           )}
         </button>
       </div>
@@ -1241,7 +1233,7 @@ export function EditAoiCharacterization({
       <input
         id="aoi-char-name-input"
         css={inputStyles}
-        maxLength={250}
+        maxLength={90}
         placeholder="Enter AOI Characterization Name"
         value={aoiCharName}
         onChange={(ev) => setAoiCharName(ev.target.value)}
@@ -1263,15 +1255,12 @@ export function EditAoiCharacterization({
         webServiceErrorMessage(saveStatus.error)}
       {saveStatus.status === 'name-not-available' &&
         scenarioNameTakenMessage(saveStatus.name)}
+      {saveStatus.status === 'invalid-characters' &&
+        scenarioNameInvalidMessage(saveStatus.name)}
       <div css={saveButtonContainerStyles}>
         <button
           css={saveButtonStyles(saveStatus.status)}
           onClick={() => {
-            if (!portal || !signedIn) {
-              handleSave();
-              return;
-            }
-
             setSaveStatus({
               status: 'fetching',
               name: aoiCharName,
@@ -1279,7 +1268,7 @@ export function EditAoiCharacterization({
 
             // if the user is signed in, go ahead and check if the
             // service (scenario) name is availble before continuing
-            isServiceNameAvailable(portal, aoiCharName)
+            isServiceNameAvailable(portal, signedIn, aoiCharName)
               .then((res: any) => {
                 if (res.error) {
                   const saveStatus: SaveResultsType = {
@@ -1297,7 +1286,7 @@ export function EditAoiCharacterization({
 
                 if (!res.available) {
                   const saveStatus: SaveResultsType = {
-                    status: 'name-not-available',
+                    status: res.problem ?? 'name-not-available',
                     name: aoiCharName,
                   };
                   setSaveStatus(saveStatus);
@@ -1329,21 +1318,16 @@ export function EditAoiCharacterization({
               aoiLayer.description === aoiCharDescription)
           }
         >
-          {(saveStatus.status === 'none' ||
-            saveStatus.status === 'changes' ||
-            saveStatus.status === 'fetching') &&
-            'Save'}
-          {saveStatus.status === 'success' && (
-            <Fragment>
-              <i className="fas fa-check" /> Saved
-            </Fragment>
-          )}
-          {(saveStatus.status === 'failure' ||
-            saveStatus.status === 'fetch-failure' ||
-            saveStatus.status === 'name-not-available') && (
+          {failedStatuses.includes(saveStatus.status) ? (
             <Fragment>
               <i className="fas fa-exclamation-triangle" /> Error
             </Fragment>
+          ) : saveStatus.status === 'success' ? (
+            <Fragment>
+              <i className="fas fa-check" /> Saved
+            </Fragment>
+          ) : (
+            'Save'
           )}
         </button>
       </div>
@@ -1470,7 +1454,7 @@ export function EditStagingAreaCharacterization({
           <input
             id="staging-area-name-input"
             css={inputStyles}
-            maxLength={250}
+            maxLength={90}
             placeholder="Enter Staging Area Name"
             value={aoiCharName}
             onChange={(ev) => setAoiCharName(ev.target.value)}
@@ -1496,17 +1480,14 @@ export function EditStagingAreaCharacterization({
         webServiceErrorMessage(saveStatus.error)}
       {saveStatus.status === 'name-not-available' &&
         scenarioNameTakenMessage(saveStatus.name)}
+      {saveStatus.status === 'invalid-characters' &&
+        scenarioNameInvalidMessage(saveStatus.name)}
       <div css={saveButtonContainerStyles}>
         <button
           css={saveButtonStyles(
             saveStatus.status === 'success' ? 'none' : saveStatus.status,
           )}
           onClick={() => {
-            if (!portal || !signedIn) {
-              handleSave();
-              return;
-            }
-
             setSaveStatus({
               status: 'fetching',
               name: aoiCharName,
@@ -1514,7 +1495,7 @@ export function EditStagingAreaCharacterization({
 
             // if the user is signed in, go ahead and check if the
             // service (scenario) name is availble before continuing
-            isServiceNameAvailable(portal, aoiCharName)
+            isServiceNameAvailable(portal, signedIn, aoiCharName)
               .then((res: any) => {
                 if (res.error) {
                   const saveStatus: SaveResultsType = {
@@ -1532,7 +1513,7 @@ export function EditStagingAreaCharacterization({
 
                 if (!res.available) {
                   const saveStatus: SaveResultsType = {
-                    status: 'name-not-available',
+                    status: res.problem ?? 'name-not-available',
                     name: aoiCharName,
                   };
                   setSaveStatus(saveStatus);
@@ -1566,9 +1547,7 @@ export function EditStagingAreaCharacterization({
               aoiLayer.description === aoiCharDescription)
           }
         >
-          {saveStatus.status === 'failure' ||
-          saveStatus.status === 'fetch-failure' ||
-          saveStatus.status === 'name-not-available' ? (
+          {failedStatuses.includes(saveStatus.status) ? (
             <Fragment>
               <i className="fas fa-exclamation-triangle" /> Error
             </Fragment>

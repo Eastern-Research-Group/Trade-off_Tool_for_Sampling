@@ -19,6 +19,7 @@ import {
   EditScenario,
   EditStagingAreaCharacterization,
   SaveResultsType,
+  SaveStatusType,
 } from 'components/EditLayerMetaData';
 import LoadingSpinner from 'components/LoadingSpinner';
 import MessageBox from 'components/MessageBox';
@@ -76,6 +77,18 @@ import {
   webServiceErrorMessage,
 } from 'config/errorMessages';
 import { isDecon } from 'styles';
+
+const badStatuses = ['name-not-available', 'invalid-characters'];
+
+type NotAvailableAoiLayer = {
+  status: SaveStatusType;
+  layer: LayerAoiAnalysisEditsType;
+};
+
+type NotAvailableStagingLayer = {
+  status: SaveStatusType;
+  layer: LayerEditsType;
+};
 
 type PublishResults = {
   [key: string]: {
@@ -272,21 +285,23 @@ function Publish({ appType }: Props) {
   });
 
   const [planNameCheckStatus, setPlanNameCheckStatus] = useState<
-    'none' | 'available' | 'not-available'
+    'none' | 'available' | 'name-not-available' | 'invalid-characters'
   >('none');
   const [customSampleNameCheckStatus, setCustomSampleNameCheckStatus] =
-    useState<'none' | 'available' | 'not-available'>('none');
+    useState<
+      'none' | 'available' | 'name-not-available' | 'invalid-characters'
+    >('none');
   const [aoiCharNameCheckStatus, setAoiCharNameCheckStatus] = useState<
-    'none' | 'available' | 'not-available'
+    'none' | 'available' | 'name-not-available' | 'invalid-characters'
   >('none');
   const [aoiLayersNotAvailable, setAoiLayersNotAvailable] = useState<
-    LayerAoiAnalysisEditsType[]
+    NotAvailableAoiLayer[]
   >([]);
   const [stagingAreaNameCheckStatus, setStagingAreaNameCheckStatus] = useState<
-    'none' | 'available' | 'not-available'
+    'none' | 'available' | 'name-not-available' | 'invalid-characters'
   >('none');
   const [stagingAreaLayersNotAvailable, setStagingAreaLayersNotAvailable] =
-    useState<LayerEditsType[]>([]);
+    useState<NotAvailableStagingLayer[]>([]);
 
   // Check if the scenario name is available
   const [hasNameBeenChecked, setHasNameBeenChecked] = useState(false);
@@ -383,6 +398,7 @@ function Publish({ appType }: Props) {
     if (!planNameChecked && selectedScenario) {
       const request = isServiceNameAvailable(
         portal,
+        signedIn,
         selectedScenario.scenarioName,
       );
       requests.push(request);
@@ -391,6 +407,7 @@ function Publish({ appType }: Props) {
     if (!sampleTypesNameChecked && publishSampleTableMetaData) {
       const request = isServiceNameAvailable(
         portal,
+        signedIn,
         publishSampleTableMetaData.label,
       );
       requests.push(request);
@@ -401,7 +418,7 @@ function Publish({ appType }: Props) {
     const aoiLayerIndexes: { [key: number]: LayerAoiAnalysisEditsType } = {};
     aoiLayersToInclude.forEach((aoiLayer) => {
       if (['published', 'edited'].includes(aoiLayer.status)) return;
-      const request = isServiceNameAvailable(portal, aoiLayer.name);
+      const request = isServiceNameAvailable(portal, signedIn, aoiLayer.name);
       requests.push(request);
       aoiIndexes.push(requests.length - 1);
       aoiLayerIndexes[requests.length - 1] = aoiLayer;
@@ -411,7 +428,7 @@ function Publish({ appType }: Props) {
     const stagingAreaLayerIndexes: { [key: number]: LayerEditsType } = {};
     stagingAreaLayersToInclude.forEach((saLayer) => {
       if (['published', 'edited'].includes(saLayer.status)) return;
-      const request = isServiceNameAvailable(portal, saLayer.name);
+      const request = isServiceNameAvailable(portal, signedIn, saLayer.name);
       requests.push(request);
       stagingAreaIndexes.push(requests.length - 1);
       stagingAreaLayerIndexes[requests.length - 1] = saLayer;
@@ -439,8 +456,9 @@ function Publish({ appType }: Props) {
 
           if (!res.available) {
             stopEarly = true;
-            if (setter) setter('not-available');
-            else return 'not-available';
+            const status = res.problem ?? 'name-not-available';
+            if (setter) setter(status);
+            else return status;
           }
         }
 
@@ -455,36 +473,42 @@ function Publish({ appType }: Props) {
           );
         }
 
-        const aoiLayersNotAvailable: LayerAoiAnalysisEditsType[] = [];
+        const aoiLayersNotAvailable: NotAvailableAoiLayer[] = [];
         if (aoiIndexes.length > 0) {
           let anyUnavailable = false;
           aoiIndexes.forEach((index) => {
-            if (checkResponse(responses[index]) === 'not-available') {
+            const status = checkResponse(responses[index]);
+            if (badStatuses.includes(status)) {
               anyUnavailable = true;
-              aoiLayersNotAvailable.push(aoiLayerIndexes[index]);
+              aoiLayersNotAvailable.push({
+                layer: aoiLayerIndexes[index],
+                status,
+              });
             }
           });
 
           if (anyUnavailable) {
-            setAoiCharNameCheckStatus('not-available');
+            setAoiCharNameCheckStatus('name-not-available');
             setAoiLayersNotAvailable(aoiLayersNotAvailable);
           }
         }
 
-        const stagingAreaLayersNotAvailable: LayerEditsType[] = [];
+        const stagingAreaLayersNotAvailable: NotAvailableStagingLayer[] = [];
         if (stagingAreaIndexes.length > 0) {
           let anyUnavailable = false;
           stagingAreaIndexes.forEach((index) => {
-            if (checkResponse(responses[index]) === 'not-available') {
+            const status = checkResponse(responses[index]);
+            if (badStatuses.includes(status)) {
               anyUnavailable = true;
-              stagingAreaLayersNotAvailable.push(
-                stagingAreaLayerIndexes[index],
-              );
+              stagingAreaLayersNotAvailable.push({
+                layer: stagingAreaLayerIndexes[index],
+                status,
+              });
             }
           });
 
           if (anyUnavailable) {
-            setStagingAreaNameCheckStatus('not-available');
+            setStagingAreaNameCheckStatus('name-not-available');
             setStagingAreaLayersNotAvailable(stagingAreaLayersNotAvailable);
           }
         }
@@ -527,6 +551,7 @@ function Publish({ appType }: Props) {
     publishSamplesMode,
     publishSampleTableMetaData,
     selectedScenario,
+    signedIn,
     sketchLayer,
   ]);
 
@@ -2477,8 +2502,8 @@ function Publish({ appType }: Props) {
   const isPublishPlanReady =
     !includePlan ||
     // verify the service name is available
-    ((planNameCheckStatus !== 'not-available' ||
-      (planNameCheckStatus === 'not-available' &&
+    ((!badStatuses.includes(planNameCheckStatus) ||
+      (badStatuses.includes(planNameCheckStatus) &&
         publishNameCheck.status === 'success')) &&
       ((appType === 'sampling' && sampleCount !== 0) ||
         (appType === 'decon' &&
@@ -2491,8 +2516,8 @@ function Publish({ appType }: Props) {
   const isPublishSamplesReady =
     !includeCustomSampleTypes ||
     // verify the service name is available
-    ((customSampleNameCheckStatus !== 'not-available' ||
-      (customSampleNameCheckStatus === 'not-available' &&
+    ((!badStatuses.includes(customSampleNameCheckStatus) ||
+      (badStatuses.includes(customSampleNameCheckStatus) &&
         sampleTypesNameCheck.status === 'success')) &&
       // verify at least on custom sample type is selected and a service is selected
       sampleTypeSelections.length > 0 &&
@@ -2504,8 +2529,8 @@ function Publish({ appType }: Props) {
 
   const isPublishAoiCharReady =
     !includeAoiCharacterization ||
-    ((aoiCharNameCheckStatus !== 'not-available' ||
-      (aoiCharNameCheckStatus === 'not-available' &&
+    ((!badStatuses.includes(aoiCharNameCheckStatus) ||
+      (badStatuses.includes(aoiCharNameCheckStatus) &&
         aoiCharNameCheck.status === 'success' &&
         aoiLayersNotAvailable.length === 0)) &&
       (selectedAoiCharacterizations.length > 0 ||
@@ -2514,8 +2539,8 @@ function Publish({ appType }: Props) {
 
   const isPublishStagingAreaReady =
     !includeStagingAreas ||
-    ((stagingAreaNameCheckStatus !== 'not-available' ||
-      (stagingAreaNameCheckStatus === 'not-available' &&
+    ((!badStatuses.includes(stagingAreaNameCheckStatus) ||
+      (badStatuses.includes(stagingAreaNameCheckStatus) &&
         stagingAreaNameCheck.status === 'success' &&
         stagingAreaLayersNotAvailable.length === 0)) &&
       selectedStagingAreas.length > 0);
@@ -2576,19 +2601,18 @@ function Publish({ appType }: Props) {
             EXIT
           </a>
         </p>
-        {planNameCheckStatus === 'not-available' && (
+        {badStatuses.includes(planNameCheckStatus) ? (
           <EditScenario
             appType={appType}
             initialScenario={selectedScenario}
-            initialStatus="name-not-available"
+            initialStatus={planNameCheckStatus}
             onSave={(saveResults) => {
               if (!saveResults) return;
 
               setPublishNameCheck(saveResults);
             }}
           />
-        )}
-        {planNameCheckStatus !== 'not-available' && (
+        ) : (
           <Fragment>
             <p css={layerInfo}>
               <strong>Plan Name: </strong>
@@ -2772,11 +2796,11 @@ function Publish({ appType }: Props) {
         </Fragment>
       )}
 
-      {customSampleNameCheckStatus === 'not-available' &&
+      {badStatuses.includes(customSampleNameCheckStatus) &&
         publishSamplesMode === 'new' && (
           <EditCustomSampleTypesTable
             appType={appType}
-            initialStatus="name-not-available"
+            initialStatus={customSampleNameCheckStatus}
             onSave={(saveResults) => {
               if (!saveResults) return;
 
@@ -2785,13 +2809,14 @@ function Publish({ appType }: Props) {
             }}
           />
         )}
-      {aoiCharNameCheckStatus === 'not-available' &&
-        aoiLayersNotAvailable.map((layer) => {
+      {badStatuses.includes(aoiCharNameCheckStatus) &&
+        aoiLayersNotAvailable.map((item) => {
+          const layer = item.layer;
           return (
             <div key={layer.value}>
               <EditAoiCharacterization
                 aoiLayer={layer}
-                initialStatus="name-not-available"
+                initialStatus={item.status}
                 onSave={(saveResults) => {
                   if (!saveResults) return;
 
@@ -2799,7 +2824,7 @@ function Publish({ appType }: Props) {
                     setAoiLayersNotAvailable((aoiLayersNotAvailable) => {
                       const newAoiLayersNotAvailable =
                         aoiLayersNotAvailable.filter(
-                          (l) => l.value !== layer.value,
+                          (l) => l.layer.value !== layer.value,
                         );
                       if (newAoiLayersNotAvailable.length === 0)
                         setAoiCharNameCheckStatus('available');
@@ -2812,13 +2837,14 @@ function Publish({ appType }: Props) {
             </div>
           );
         })}
-      {stagingAreaNameCheckStatus === 'not-available' &&
-        stagingAreaLayersNotAvailable.map((layer) => {
+      {badStatuses.includes(stagingAreaNameCheckStatus) &&
+        stagingAreaLayersNotAvailable.map((item) => {
+          const layer = item.layer;
           return (
             <div key={layer.layerId}>
               <EditStagingAreaCharacterization
                 aoiLayer={layer}
-                initialStatus="name-not-available"
+                initialStatus={item.status}
                 onSave={(saveResults) => {
                   if (!saveResults) return;
 
@@ -2827,7 +2853,7 @@ function Publish({ appType }: Props) {
                       (stagingAreaLayersNotAvailable) => {
                         const newStagingAreaLayersNotAvailable =
                           stagingAreaLayersNotAvailable.filter(
-                            (l) => l.layerId !== layer.layerId,
+                            (l) => l.layer.layerId !== layer.layerId,
                           );
                         if (newStagingAreaLayersNotAvailable.length === 0)
                           setStagingAreaNameCheckStatus('available');

@@ -40,6 +40,7 @@ import { LayerType } from 'types/Layer';
 // styles
 import { infoIconStyles, reactSelectStyles } from 'styles';
 import {
+  scenarioNameInvalidMessage,
   scenarioNameTakenMessage,
   webServiceErrorMessage,
 } from 'config/errorMessages';
@@ -422,13 +423,10 @@ function CharacterizeAOI({
 
     let exitEarly = false;
     try {
-      if (
-        portal &&
-        signedIn &&
-        !['published', 'edited'].includes(deconSketchLayer.status)
-      ) {
+      if (!['published', 'edited'].includes(deconSketchLayer.status)) {
         const nameRes: any = await isServiceNameAvailable(
           portal,
+          signedIn,
           newDeconLayerName,
         );
         if (nameRes.error) {
@@ -446,7 +444,7 @@ function CharacterizeAOI({
 
         if (!nameRes.available) {
           const saveStatus: SaveResultsType = {
-            status: 'name-not-available',
+            status: nameRes.problem ?? 'name-not-available',
             name: newDeconLayerName,
           };
           setSaveStatus(saveStatus);
@@ -1257,7 +1255,7 @@ function CharacterizeAOI({
             <input
               type="text"
               css={inputStyles}
-              maxLength={250}
+              maxLength={90}
               placeholder="Enter Decon Layer Name"
               value={newDeconLayerName}
               onChange={(ev) => {
@@ -1557,6 +1555,8 @@ function CharacterizeAOI({
                 webServiceErrorMessage(saveStatus.error)}
               {saveStatus.status === 'name-not-available' &&
                 scenarioNameTakenMessage(saveStatus.name)}
+              {saveStatus.status === 'invalid-characters' &&
+                scenarioNameInvalidMessage(saveStatus.name)}
               <div css={submitButtonStyles}>
                 <button
                   css={saveButtonStyles}

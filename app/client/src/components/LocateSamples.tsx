@@ -830,14 +830,20 @@ function LocateSamples() {
               {addScenarioVisible && (
                 <EditScenario
                   appType="sampling"
-                  onSave={() => setAddScenarioVisible(false)}
+                  onSave={(saveResults) => {
+                    if (saveResults?.status !== 'success') return;
+                    setAddScenarioVisible(false);
+                  }}
                 />
               )}
               {editScenarioVisible && (
                 <EditScenario
                   appType="sampling"
                   initialScenario={selectedScenario}
-                  onSave={() => setEditScenarioVisible(false)}
+                  onSave={(saveResults) => {
+                    if (saveResults?.status !== 'success') return;
+                    setEditScenarioVisible(false);
+                  }}
                 />
               )}
             </Fragment>
