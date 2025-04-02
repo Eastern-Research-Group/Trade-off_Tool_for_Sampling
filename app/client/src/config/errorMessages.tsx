@@ -436,7 +436,7 @@ export const scenarioNameInvalidMessage = (scenarioName?: string) => (
   <MessageBox
     severity="warning"
     title="Invalid Characters"
-    message={`The "${scenarioName ?? ''}" name may only contain alphanumeric characters and underscores. Please rename the item and try again.`}
+    message={`The "${scenarioName ?? ''}" name may only contain alphanumeric characters, spaces and underscores. Please rename the item and try again.`}
   />
 );
 

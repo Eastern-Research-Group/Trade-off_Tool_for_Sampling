@@ -158,7 +158,7 @@ export async function isServiceNameAvailable(
   signedIn: boolean,
   serviceName: string,
 ) {
-  if (/[^0-9a-zA-Z_]/.test(serviceName))
+  if (!serviceName.replaceAll(' ', '') || /[^0-9a-zA-Z_ ]/.test(serviceName))
     return { available: false, problem: 'invalid-characters' };
 
   if (!portal || !signedIn) return { available: true };
