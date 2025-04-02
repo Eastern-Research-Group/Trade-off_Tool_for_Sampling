@@ -84,6 +84,7 @@ import { isDecon } from 'config/navigation';
 
 export type GsgParam = { itemID: string };
 
+const ignoreTechSelections = ['none', 'multiple'];
 let view: __esri.MapView | __esri.SceneView | null = null;
 
 export const detectionLimit = 100;
@@ -2114,7 +2115,11 @@ export function useCalculateDeconPlan() {
       let atLeastOneDeconTechSelection = false;
       linkedDeconOperations.forEach((deconOp) => {
         deconOp.deconTechSelections?.forEach((tech) => {
-          if (tech.deconTech) atLeastOneDeconTechSelection = true;
+          if (
+            tech.deconTech &&
+            !ignoreTechSelections.includes(tech.deconTech.value)
+          )
+            atLeastOneDeconTechSelection = true;
         });
       });
       if (!atLeastOneDeconTechSelection) {
@@ -2155,7 +2160,7 @@ export function useCalculateDeconPlan() {
           const deconTech = sel.deconTech?.value;
 
           const media = sel.media;
-          if (!deconTech) {
+          if (!deconTech || ignoreTechSelections.includes(deconTech)) {
             sel.avgFinalContamination = sel.avgCfu;
             sel.aboveDetectionLimit = sel.avgCfu >= detectionLimit;
             return;
@@ -2202,7 +2207,8 @@ export function useCalculateDeconPlan() {
           ) {
             sel.subRows.forEach((mediaSel: any) => {
               const deconTech = mediaSel.deconTech?.value;
-              if (!deconTech) return;
+              if (!deconTech || ignoreTechSelections.includes(deconTech))
+                return;
 
               const calcOutput = performBasicDeconCalculations(
                 deconTech,
@@ -2498,7 +2504,11 @@ export function useCalculateDeconPlan() {
             let totalSurfaceRemovalFactor = 0;
             let surfaceRemovalCount = 0;
             for (const sel of buildingTech) {
-              if (sel.deconTech) hasDeconTech = true;
+              if (
+                sel.deconTech &&
+                !ignoreTechSelections.includes(sel.deconTech.value)
+              )
+                hasDeconTech = true;
 
               if (
                 sel.media.includes('Building') &&
@@ -2579,7 +2589,12 @@ export function useCalculateDeconPlan() {
                 }
               } else {
                 surfaceRemovalCount += 1;
-                if (!sel.pctAoi || !sel.deconTech) continue;
+                if (
+                  !sel.pctAoi ||
+                  !sel.deconTech ||
+                  ignoreTechSelections.includes(sel.deconTech.value)
+                )
+                  continue;
 
                 const { CONTAM_REMOVAL_FACTOR } =
                   sampleAttributesDecon[sel.deconTech.value][

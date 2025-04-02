@@ -1421,6 +1421,7 @@ function DeconSelectionPopup({
     });
 
   const allDeconOptionsGrouped = [
+    { label: 'None', value: 'none' },
     {
       label: 'Volumetric',
       options: volumetricOptions,
