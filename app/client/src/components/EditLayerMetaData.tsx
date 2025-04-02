@@ -48,6 +48,13 @@ import {
 // styles
 import { colors, isDecon, linkButtonStyles } from 'styles';
 
+const failedStatuses = [
+  'failure',
+  'fetch-failure',
+  'name-not-available',
+  'invalid-characters',
+];
+
 export type SaveStatusType =
   | 'none'
   | 'changes'
@@ -97,7 +104,7 @@ const saveButtonStyles = (status: string) => {
   if (status === 'success') {
     backgroundColor = `background-color: ${colors.green()};`;
   }
-  if (status === 'failure' || status === 'name-not-available') {
+  if (failedStatuses.includes(status)) {
     backgroundColor = `background-color: ${colors.red()};`;
   }
 
@@ -514,8 +521,8 @@ export function EditScenario({
 
         if (!res.available) {
           const saveStatus: SaveResultsType = {
-            name: res.problem ?? scenarioName,
-            status: 'name-not-available',
+            name: scenarioName,
+            status: res.problem ?? 'name-not-available',
           };
           setSaveStatus(saveStatus);
           if (onSave) onSave(saveStatus);
@@ -591,21 +598,16 @@ export function EditScenario({
             }
             onClick={handleSave}
           >
-            {(saveStatus.status === 'none' ||
-              saveStatus.status === 'changes' ||
-              saveStatus.status === 'fetching') &&
-              buttonText}
-            {saveStatus.status === 'success' && (
-              <Fragment>
-                <i className="fas fa-check" /> Saved
-              </Fragment>
-            )}
-            {(saveStatus.status === 'failure' ||
-              saveStatus.status === 'fetch-failure' ||
-              saveStatus.status === 'name-not-available') && (
+            {failedStatuses.includes(saveStatus.status) ? (
               <Fragment>
                 <i className="fas fa-exclamation-triangle" /> Error
               </Fragment>
+            ) : saveStatus.status === 'success' ? (
+              <Fragment>
+                <i className="fas fa-check" /> Saved
+              </Fragment>
+            ) : (
+              buttonText
             )}
           </button>
         </div>
@@ -1117,21 +1119,16 @@ export function EditCustomSampleTypesTable({
                 JSON.stringify(selectedService))
           }
         >
-          {(saveStatus.status === 'none' ||
-            saveStatus.status === 'changes' ||
-            saveStatus.status === 'fetching') &&
-            'Save'}
-          {saveStatus.status === 'success' && (
-            <Fragment>
-              <i className="fas fa-check" /> Saved
-            </Fragment>
-          )}
-          {(saveStatus.status === 'failure' ||
-            saveStatus.status === 'fetch-failure' ||
-            saveStatus.status === 'name-not-available') && (
+          {failedStatuses.includes(saveStatus.status) ? (
             <Fragment>
               <i className="fas fa-exclamation-triangle" /> Error
             </Fragment>
+          ) : saveStatus.status === 'success' ? (
+            <Fragment>
+              <i className="fas fa-check" /> Saved
+            </Fragment>
+          ) : (
+            'Save'
           )}
         </button>
       </div>
@@ -1321,21 +1318,16 @@ export function EditAoiCharacterization({
               aoiLayer.description === aoiCharDescription)
           }
         >
-          {(saveStatus.status === 'none' ||
-            saveStatus.status === 'changes' ||
-            saveStatus.status === 'fetching') &&
-            'Save'}
-          {saveStatus.status === 'success' && (
-            <Fragment>
-              <i className="fas fa-check" /> Saved
-            </Fragment>
-          )}
-          {(saveStatus.status === 'failure' ||
-            saveStatus.status === 'fetch-failure' ||
-            saveStatus.status === 'name-not-available') && (
+          {failedStatuses.includes(saveStatus.status) ? (
             <Fragment>
               <i className="fas fa-exclamation-triangle" /> Error
             </Fragment>
+          ) : saveStatus.status === 'success' ? (
+            <Fragment>
+              <i className="fas fa-check" /> Saved
+            </Fragment>
+          ) : (
+            'Save'
           )}
         </button>
       </div>
@@ -1555,9 +1547,7 @@ export function EditStagingAreaCharacterization({
               aoiLayer.description === aoiCharDescription)
           }
         >
-          {saveStatus.status === 'failure' ||
-          saveStatus.status === 'fetch-failure' ||
-          saveStatus.status === 'name-not-available' ? (
+          {failedStatuses.includes(saveStatus.status) ? (
             <Fragment>
               <i className="fas fa-exclamation-triangle" /> Error
             </Fragment>
