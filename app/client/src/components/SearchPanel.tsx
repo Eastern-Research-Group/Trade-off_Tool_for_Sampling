@@ -2044,10 +2044,12 @@ function ResultCard({ appType, result }: ResultCardProps) {
       mapLayersToAdd,
       editsCopy,
       layersToAdd,
+      linkedLayerIds,
     }: {
       mapLayersToAdd: __esri.Layer[];
       editsCopy: EditsType;
       layersToAdd: LayerType[];
+      linkedLayerIds: string[];
     }) {
       if (!map) return;
 
@@ -2085,6 +2087,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
           layerType: 'Feature Service',
           type: 'tots',
           url: result.url,
+          linkedIds: linkedLayerIds,
         },
       ]);
 
@@ -2148,6 +2151,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       };
 
       // create the layers to be added to the map
+      const linkedLayerIds: string[] = [];
       for (let i = 0; i < layerDetailResponses.length; i++) {
         const layerDetails = layerDetailResponses[i];
         const layerFeatures = featureResponses[i];
@@ -2186,10 +2190,12 @@ function ResultCard({ appType, result }: ResultCardProps) {
               });
             }
             if (f.attributes.TYPE === 'tots' && f.attributes.TOTSLAYERID) {
+              const id = f.attributes.LAYERID;
+              if (id && !linkedLayerIds.includes(id)) linkedLayerIds.push(id);
               const output = await addAoiCharacterizationLayer(
                 {
                   categories: ['contains-epa-tots-aoi-characterization'],
-                  id: f.attributes.LAYERID,
+                  id,
                   title: f.attributes.LABEL,
                   url: f.attributes.URL,
                   created: '',
@@ -2294,6 +2300,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
         mapLayersToAdd,
         editsCopy,
         layersToAdd,
+        linkedLayerIds,
       });
     } catch (err) {
       console.error(err);
@@ -4091,9 +4098,23 @@ function ResultCard({ appType, result }: ResultCardProps) {
   function removeTotsLayer() {
     if (!map) return;
 
+    // get portal ids of analysis layers to remove
+    const planLayer = edits.edits.find(
+      (l) => l.portalId === result.id && l.type === 'scenario',
+    ) as ScenarioEditsType | undefined;
+    const portalIdsToRemove: string[] = [];
+    planLayer?.referenceLayersTable.referenceLayers.forEach((l) => {
+      if (l.type !== 'tots' || !l.layerId) return;
+      portalIdsToRemove.push(l.layerId);
+    });
+
     const newEdits = {
       count: edits.count + 1,
-      edits: edits.edits.filter((layer) => layer.portalId !== result.id),
+      edits: edits.edits.filter(
+        (layer) =>
+          layer.portalId !== result.id &&
+          !portalIdsToRemove.includes(layer.portalId),
+      ),
     };
 
     setLayers((layers) => {
@@ -4102,7 +4123,10 @@ function ResultCard({ appType, result }: ResultCardProps) {
       let newSketchLayer: LayerType | null = null;
       const parentLayerIds: string[] = [];
       layers.forEach((layer) => {
-        if (layer.portalId === result.id) {
+        if (
+          layer.portalId === result.id ||
+          portalIdsToRemove.includes(layer.portalId)
+        ) {
           if (!layer.parentLayer && layer.sketchLayer) {
             mapLayersToRemove.push(layer.sketchLayer);
             return;
@@ -4126,7 +4150,11 @@ function ResultCard({ appType, result }: ResultCardProps) {
         }
       });
 
-      const newLayers = layers.filter((layer) => layer.portalId !== result.id);
+      const newLayers = layers.filter(
+        (layer) =>
+          layer.portalId !== result.id &&
+          !portalIdsToRemove.includes(layer.portalId),
+      );
 
       // select the next scenario and active sampling layer
       const { nextScenario, nextLayer } = getNextScenarioLayer(
@@ -4172,28 +4200,112 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
     // remove the layer from portal layers
     setPortalLayers((portalLayers) =>
-      portalLayers.filter((portalLayer) => portalLayer.id !== result.id),
+      portalLayers.filter(
+        (portalLayer) =>
+          portalLayer.id !== result.id &&
+          !portalIdsToRemove.includes(portalLayer.id),
+      ),
     );
   }
 
   function removeTotsLayerForTods() {
     if (!map) return;
 
+    // get analysis layers linked to sample plan
+    const portalLayer = portalLayers.find((l) => l.id === result.id);
+    const portalIds = portalLayer?.linkedIds ?? [];
+    const analysisLayers = edits.edits.filter(
+      (e) => e.type === 'layer-aoi-analysis' && portalIds.includes(e.portalId),
+    );
+    const analysisLayerIds = analysisLayers.map((l) => {
+      return {
+        layerId: l.layerId,
+        portalId: l.portalId,
+      };
+    });
+
+    // get analysis layer ids of layers that aren't in use elswhere
+    const analysisLayerIdsToRemove: string[] = [];
+    const analysisPortalIdsToRemove: string[] = [];
+    analysisLayerIds.forEach((ids) => {
+      const inUse =
+        edits.edits.findIndex(
+          (e) => e.type === 'layer-decon' && e.analysisLayerId === ids.layerId,
+        ) !== -1;
+      if (inUse) return;
+
+      analysisLayerIdsToRemove.push(ids.layerId);
+      if (ids.portalId) analysisPortalIdsToRemove.push(ids.portalId);
+    });
+
     // get the layers to be removed
     const layersToRemove = map.allLayers.filter((layer: any) => {
       // had to use any, since some layer types don't have portalItem
-      if (layer?.portalItem?.id === result.id) {
+      if (
+        layer?.portalItem?.id === result.id ||
+        analysisLayerIdsToRemove.includes(layer?.id)
+      ) {
         return true;
       } else {
         return false;
       }
     });
 
+    setEdits((edits) => {
+      return {
+        count: edits.count + 1,
+        edits: edits.edits.filter(
+          (l) => !analysisLayerIdsToRemove.includes(l.layerId),
+        ),
+      };
+    });
+
+    setLayers((layers) => {
+      // remove the layers from the map and set the next sketchLayer
+      const mapLayersToRemove: __esri.Layer[] = [];
+      const parentLayerIds: string[] = [];
+      layers.forEach((layer) => {
+        if (
+          layer.portalId === result.id ||
+          analysisPortalIdsToRemove.includes(layer.portalId)
+        ) {
+          if (!layer.parentLayer && layer.sketchLayer) {
+            mapLayersToRemove.push(layer.sketchLayer);
+            return;
+          }
+
+          if (
+            !layer.parentLayer ||
+            parentLayerIds.includes(layer.parentLayer.id)
+          )
+            return;
+
+          mapLayersToRemove.push(layer.parentLayer);
+          parentLayerIds.push(layer.parentLayer.id);
+        }
+      });
+
+      const newLayers = layers.filter(
+        (layer) =>
+          layer.portalId !== result.id &&
+          !analysisPortalIdsToRemove.includes(layer.portalId),
+      );
+
+      map.removeMany(mapLayersToRemove);
+
+      // set the state
+      return newLayers;
+    });
+
     // remove the layers from the map and session storage.
     if (layersToRemove.length > 0) {
       map.removeMany(layersToRemove.toArray());
       setPortalLayers((portalLayers) =>
-        portalLayers.filter((portalLayer) => portalLayer.id !== result.id),
+        portalLayers.filter(
+          (portalLayer) =>
+            portalLayer.id !== result.id &&
+            !analysisPortalIdsToRemove.includes(portalLayer.id),
+        ),
       );
     }
   }
@@ -4338,10 +4450,46 @@ function ResultCard({ appType, result }: ResultCardProps) {
   function removeTodsLayer() {
     if (!map) return;
 
+    // figure out what aoi characterizations are linked to the plan
+    const linkedDeconLayers = edits.edits.filter(
+      (l) => l.portalId === result.id && l.type === 'layer-decon',
+    ) as LayerDeconEditsType[];
+    const linkedAnalysisLayerIds = linkedDeconLayers.map(
+      (l: LayerDeconEditsType) => {
+        const analysisLayer = edits.edits.find(
+          (e) =>
+            e.type === 'layer-aoi-analysis' && e.layerId === l.analysisLayerId,
+        ) as LayerAoiAnalysisEditsType | undefined;
+        return {
+          layerId: l.analysisLayerId,
+          portalId: analysisLayer?.portalId,
+        };
+      },
+    );
+
+    // remove the plan and linked decon operations from edits
     const newEdits = {
       count: edits.count + 1,
       edits: edits.edits.filter((layer) => layer.portalId !== result.id),
     };
+
+    const analysisLayerIdsToRemove: string[] = [];
+    const analysisPortalIdsToRemove: string[] = [];
+    linkedAnalysisLayerIds.forEach((ids) => {
+      const inUse =
+        newEdits.edits.findIndex(
+          (e) => e.type === 'layer-decon' && e.analysisLayerId === ids.layerId,
+        ) !== -1;
+      if (inUse) return;
+
+      analysisLayerIdsToRemove.push(ids.layerId);
+      if (ids.portalId) analysisPortalIdsToRemove.push(ids.portalId);
+    });
+
+    // remove analysis layers that are linked to this plan but not other plans
+    newEdits.edits = newEdits.edits.filter(
+      (l) => !analysisLayerIdsToRemove.includes(l.layerId),
+    );
 
     setLayers((layers) => {
       // remove the layers from the map and set the next sketchLayer
@@ -4349,7 +4497,10 @@ function ResultCard({ appType, result }: ResultCardProps) {
       let newSketchLayer: LayerType | null = null;
       const parentLayerIds: string[] = [];
       layers.forEach((layer) => {
-        if (layer.portalId === result.id) {
+        if (
+          layer.portalId === result.id ||
+          analysisPortalIdsToRemove.includes(layer.portalId)
+        ) {
           if (!layer.parentLayer && layer.sketchLayer) {
             mapLayersToRemove.push(layer.sketchLayer);
             return;
@@ -4373,7 +4524,11 @@ function ResultCard({ appType, result }: ResultCardProps) {
         }
       });
 
-      const newLayers = layers.filter((layer) => layer.portalId !== result.id);
+      const newLayers = layers.filter(
+        (layer) =>
+          layer.portalId !== result.id &&
+          !analysisPortalIdsToRemove.includes(layer.portalId),
+      );
 
       // select the next scenario and active sampling layer
       const { nextScenario, nextLayer } = getNextScenarioLayer(
@@ -4419,7 +4574,11 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
     // remove the layer from portal layers
     setPortalLayers((portalLayers) =>
-      portalLayers.filter((portalLayer) => portalLayer.id !== result.id),
+      portalLayers.filter(
+        (portalLayer) =>
+          portalLayer.id !== result.id &&
+          !analysisPortalIdsToRemove.includes(portalLayer.id),
+      ),
     );
   }
 

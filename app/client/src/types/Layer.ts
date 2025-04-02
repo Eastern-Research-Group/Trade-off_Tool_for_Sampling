@@ -83,6 +83,7 @@ export type PortalLayerType = {
   label: string;
   layerType: PortalLayerTypes;
   url: string;
+  linkedIds?: string[];
 };
 
 export type UrlLayerType = {
