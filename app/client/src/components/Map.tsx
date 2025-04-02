@@ -24,7 +24,106 @@ import { SketchContext } from 'contexts/Sketch';
 // utils
 import { getGraphicsArray } from 'utils/sketchUtils';
 // types
+import { PortalLayerType } from 'types/Layer';
 import { AppType } from 'types/Navigation';
+
+// the layers are ordered as follows:
+// graphicsLayers (top)
+// featureLayers
+// otherLayers
+// imageryLayers (bottom)
+const sortBy = [
+  'other',
+  'imagery',
+  'map-image',
+  'file',
+  'feature',
+  'contaminationMapUpdated',
+  'deconResults',
+  'sketchedMask',
+  'layer-aoi-analysis',
+  'scenario-decon',
+  'scenario',
+  'graphics',
+];
+
+// gets a layer type value used for sorting
+function getLayerType(
+  layer: __esri.Layer,
+  edits: any,
+  portalLayers: PortalLayerType[],
+) {
+  const imageryTypes = ['imagery', 'imagery-tile', 'tile', 'vector-tile'];
+  let type = 'other';
+
+  let groupType = '';
+  if (layer.type === 'group') {
+    const groupLayer = layer as __esri.GroupLayer;
+    groupLayer.layers.forEach((layer, index) => {
+      if (groupType === 'combo') return;
+
+      if (index === 0) {
+        groupType = layer.type;
+        return;
+      }
+
+      if (groupType !== layer.type) {
+        groupType = 'combo';
+      }
+    });
+  }
+
+  if (layer.id === 'contaminationMapUpdated') {
+    type = 'contaminationMapUpdated';
+  } else if (layer.id === 'deconResults') {
+    type = 'deconResults';
+  } else if (layer.title === 'Sketched Decon Mask') {
+    type = 'sketchedMask';
+  } else if (layer.type === 'graphics' || groupType === 'graphics') {
+    type = 'graphics';
+
+    const out = edits.find((e) => e.layerId === layer.id);
+    if (
+      out &&
+      ['scenario', 'scenario-decon', 'layer-aoi-analysis'].includes(
+        out?.type ?? '',
+      )
+    )
+      type = out.type as string;
+  } else if (layer.type === 'feature' || groupType === 'feature') {
+    const portalLayer = portalLayers.find(
+      (l) => l.id === (layer as any)?.portalItem?.id,
+    );
+    if (
+      portalLayer &&
+      portalLayer.type === 'tots' &&
+      portalLayer.categories.includes('contains-epa-tots-sample-layer')
+    )
+      type = 'scenario';
+    else type = 'feature';
+  } else if (layer.type === 'map-image') {
+    type = 'map-image';
+  } else if (['csv', 'geo-rss', 'kml', 'wms'].includes(layer.type)) {
+    type = 'file';
+  } else if (imageryTypes.includes(type) || imageryTypes.includes(groupType)) {
+    type = 'imagery';
+  }
+
+  return type;
+}
+
+function sortMapLayers(
+  map: __esri.Map,
+  editsLayers: any,
+  portalLayers: PortalLayerType[],
+) {
+  map.layers.sort((a: __esri.Layer, b: __esri.Layer) => {
+    return (
+      sortBy.indexOf(getLayerType(a, editsLayers, portalLayers)) -
+      sortBy.indexOf(getLayerType(b, editsLayers, portalLayers))
+    );
+  });
+}
 
 // --- styles (Map) ---
 const mapStyles = (height: number) => {
@@ -53,18 +152,20 @@ function Map({ appType, height }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
 
   const {
+    aoiSketchLayer,
     autoZoom,
     displayDimensions,
+    edits,
     homeWidget,
     map,
-    setMap,
     mapView,
-    setMapView,
+    portalLayers,
     sceneView,
+    sketchLayer,
+    setMap,
+    setMapView,
     setSceneView,
     setSceneViewForArea,
-    sketchLayer,
-    aoiSketchLayer,
   } = useContext(SketchContext);
 
   // Creates the map and view
@@ -164,86 +265,16 @@ function Map({ appType, height }: Props) {
     // whenever layers are added, reorder them
     map.layers.on('change', ({ added }) => {
       if (added.length === 0) return;
-
-      // gets a layer type value used for sorting
-      function getLayerType(layer: __esri.Layer) {
-        const imageryTypes = ['imagery', 'imagery-tile', 'tile', 'vector-tile'];
-        let type = 'other';
-
-        let groupType = '';
-        if (layer.type === 'group') {
-          const groupLayer = layer as __esri.GroupLayer;
-          groupLayer.layers.forEach((layer, index) => {
-            if (groupType === 'combo') return;
-
-            if (index === 0) {
-              groupType = layer.type;
-              return;
-            }
-
-            if (groupType !== layer.type) {
-              groupType = 'combo';
-            }
-          });
-        }
-
-        if (layer.id === 'contaminationMapUpdated') {
-          type = 'contaminationMapUpdated';
-        } else if (layer.id === 'deconResults') {
-          type = 'deconResults';
-        } else if (layer.title === 'Sketched Decon Mask') {
-          type = 'sketchedMask';
-        } else if (layer.type === 'graphics' || groupType === 'graphics') {
-          type = 'graphics';
-
-          const out = window.totsEditsLayers.find(
-            (e) => e.layerId === layer.id,
-          );
-          if (out && ['scenario', 'scenario-decon'].includes(out?.type ?? ''))
-            type = out.type as string;
-        } else if (layer.type === 'feature' || groupType === 'feature') {
-          type = 'feature';
-        } else if (layer.type === 'map-image') {
-          type = 'map-image';
-        } else if (['csv', 'geo-rss', 'kml', 'wms'].includes(layer.type)) {
-          type = 'file';
-        } else if (
-          imageryTypes.includes(type) ||
-          imageryTypes.includes(groupType)
-        ) {
-          type = 'imagery';
-        }
-
-        return type;
-      }
-
-      // the layers are ordered as follows:
-      // graphicsLayers (top)
-      // featureLayers
-      // otherLayers
-      // imageryLayers (bottom)
-      const sortBy = [
-        'other',
-        'imagery',
-        'map-image',
-        'file',
-        'feature',
-        'contaminationMapUpdated',
-        'deconResults',
-        'sketchedMask',
-        'scenario-decon',
-        'scenario',
-        'graphics',
-      ];
-      map.layers.sort((a: __esri.Layer, b: __esri.Layer) => {
-        return (
-          sortBy.indexOf(getLayerType(a)) - sortBy.indexOf(getLayerType(b))
-        );
-      });
+      sortMapLayers(map, window.totsEditsLayers, window.totsPortalLayers);
     });
 
     setWatchInitialized(true);
   }, [map, watchInitialized]);
+
+  useEffect(() => {
+    if (!map) return;
+    sortMapLayers(map, edits.edits, portalLayers);
+  }, [edits, map, portalLayers]);
 
   // Zooms to the graphics whenever the sketchLayer changes
   useEffect(() => {
