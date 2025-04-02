@@ -1247,45 +1247,66 @@ function ResultCard({ appType, result }: ResultCardProps) {
         ) {
           const newUrlLayers: UrlLayerType[] = [];
           const newPortalLayers: PortalLayerType[] = [];
-          referenceLayersTable = {
-            id: layerDetails.id,
-            referenceLayers: layerFeatures.features.map((f: any) => {
-              if (f.attributes.TYPE === 'arcgis') {
-                newPortalLayers.push({
-                  categories: [],
-                  id: f.attributes.LAYERID,
-                  label: f.attributes.LABEL,
-                  layerType: f.attributes.LAYERTYPE,
-                  type: f.attributes.TYPE,
-                  url: f.attributes.URL,
-                });
-              }
-              if (f.attributes.TYPE === 'url') {
-                newUrlLayers.push({
-                  layerId: f.attributes.LAYERID,
-                  label: f.attributes.LABEL,
-                  layerType: f.attributes.LAYERTYPE,
-                  type: f.attributes.URLTYPE,
-                  url: f.attributes.URL,
-                });
-              }
-
-              return {
-                globalId: f.attributes.GLOBALID,
+          const referenceLayers: ReferenceLayerTableType[] = [];
+          for (const f of layerFeatures.features) {
+            if (f.attributes.TYPE === 'arcgis') {
+              newPortalLayers.push({
+                categories: [],
+                id: f.attributes.LAYERID,
+                label: f.attributes.LABEL,
+                layerType: f.attributes.LAYERTYPE,
+                type: f.attributes.TYPE,
+                url: f.attributes.URL,
+              });
+            }
+            if (f.attributes.TYPE === 'url') {
+              newUrlLayers.push({
                 layerId: f.attributes.LAYERID,
                 label: f.attributes.LABEL,
                 layerType: f.attributes.LAYERTYPE,
-                objectId: f.attributes.OBJECTID,
-                onWebMap: f.attributes.ONWEBMAP,
-                onWebScene: f.attributes.ONWEBSCENE,
-                type: f.attributes.TYPE,
+                type: f.attributes.URLTYPE,
                 url: f.attributes.URL,
-                urlType: f.attributes.URLTYPE,
-              };
-            }),
+              });
+            }
+            if (f.attributes.TYPE === 'tots' && f.attributes.TOTSLAYERID) {
+              const output = await addAoiCharacterizationLayer(
+                {
+                  categories: ['contains-epa-tots-aoi-characterization'],
+                  id: f.attributes.LAYERID,
+                  title: f.attributes.LABEL,
+                  url: f.attributes.URL,
+                  created: '',
+                  description: '',
+                },
+                editsCopy,
+                false,
+              );
+              if (output?.zoomToGraphics)
+                zoomToGraphics.push(...output.zoomToGraphics);
+              if (output?.editsCopy) editsCopy = output.editsCopy;
+            }
+
+            referenceLayers.push({
+              globalId: f.attributes.GLOBALID,
+              layerId: f.attributes.LAYERID,
+              label: f.attributes.LABEL,
+              layerType: f.attributes.LAYERTYPE,
+              objectId: f.attributes.OBJECTID,
+              onWebMap: f.attributes.ONWEBMAP,
+              onWebScene: f.attributes.ONWEBSCENE,
+              type: f.attributes.TYPE,
+              url: f.attributes.URL,
+              urlType: f.attributes.URLTYPE,
+            });
+          }
+          referenceLayersTable = {
+            id: layerDetails.id,
+            referenceLayers,
           };
 
-          if (newPortalLayers.length > 0) setPortalLayers(newPortalLayers);
+          if (newPortalLayers.length > 0) {
+            setPortalLayers(newPortalLayers);
+          }
           if (newUrlLayers.length > 0) setUrlLayers(newUrlLayers);
         } else if (
           layerDetails.type === 'Table' &&
@@ -2014,6 +2035,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
         id: result.id,
       }),
     });
+    await layer.load();
     mapLayersToAdd.push(layer);
 
     // function used for finalizing the adding of layers. This function is needed
@@ -2077,7 +2099,21 @@ function ResultCard({ appType, result }: ResultCardProps) {
       // fire off requests to get the details and features for each layer
       const layerPromises: Promise<any>[] = [];
 
+      const resLayers: any[] = [];
       featureLayersRes.layers.forEach((layer: any) => {
+        resLayers.push(layer);
+      });
+
+      const resRefLayersTypes: any[] = [];
+      featureLayersRes.tables.forEach((table: any) => {
+        if (table.name.endsWith('-reference-layers')) {
+          resRefLayersTypes.push(table);
+        }
+      });
+
+      // fire off the calls with the points layers last
+      const resCombined = [...resRefLayersTypes, ...resLayers];
+      resCombined.forEach((layer: any) => {
         // get the layer details promise
         const layerCall = getFeatureLayer(result.url, token, layer.id);
         layerPromises.push(layerCall);
@@ -2123,7 +2159,52 @@ function ResultCard({ appType, result }: ResultCardProps) {
         }
 
         // add staging area layers as graphics layers
-        if (isContamMapLayer) {
+        if (
+          layerDetails.type === 'Table' &&
+          layerDetails.name.endsWith('-reference-layers')
+        ) {
+          const newUrlLayers: UrlLayerType[] = [];
+          const newPortalLayers: PortalLayerType[] = [];
+          for (const f of layerFeatures.features) {
+            if (f.attributes.TYPE === 'arcgis') {
+              newPortalLayers.push({
+                categories: [],
+                id: f.attributes.LAYERID,
+                label: f.attributes.LABEL,
+                layerType: f.attributes.LAYERTYPE,
+                type: f.attributes.TYPE,
+                url: f.attributes.URL,
+              });
+            }
+            if (f.attributes.TYPE === 'url') {
+              newUrlLayers.push({
+                layerId: f.attributes.LAYERID,
+                label: f.attributes.LABEL,
+                layerType: f.attributes.LAYERTYPE,
+                type: f.attributes.URLTYPE,
+                url: f.attributes.URL,
+              });
+            }
+            if (f.attributes.TYPE === 'tots' && f.attributes.TOTSLAYERID) {
+              const output = await addAoiCharacterizationLayer(
+                {
+                  categories: ['contains-epa-tots-aoi-characterization'],
+                  id: f.attributes.LAYERID,
+                  title: f.attributes.LABEL,
+                  url: f.attributes.URL,
+                  created: '',
+                  description: '',
+                },
+                editsCopy,
+                false,
+              );
+              if (output?.editsCopy) editsCopy = output.editsCopy;
+            }
+          }
+
+          if (newPortalLayers.length > 0) setPortalLayers(newPortalLayers);
+          if (newUrlLayers.length > 0) setUrlLayers(newUrlLayers);
+        } else if (isContamMapLayer) {
           const layerType: LayerTypeName = 'Contamination Map';
           const symbol = SimpleFillSymbol.fromJSON(
             layerDetails.drawingInfo.renderer.symbol,
@@ -3294,7 +3375,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
           }
           referenceLayersTable = {
             id: layerDetails.id,
-            referenceLayers: referenceLayers,
+            referenceLayers,
           };
 
           if (newPortalLayers.length > 0) setPortalLayers(newPortalLayers);
