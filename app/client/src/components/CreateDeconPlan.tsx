@@ -1202,6 +1202,7 @@ function CreateDeconPlan() {
 
                         setAddOperationVisible(false);
                         setEditOperationVisible(false);
+                        setDeconSketchLayer(null);
                       }}
                     >
                       {(saveStatus === 'none' || saveStatus === 'changes') &&
@@ -1694,12 +1695,14 @@ function DeconSelectionPopup({
           (t) => t.id === originalTech.id,
         );
         if (!basicDeconSel && !bldgDeconSel) {
+          if (selectedApproach === 'Basic') originalTech.numTeams = 1;
           newDeconTechSelections.push(originalTech);
           return;
         }
 
+        if (selectedApproach === 'Basic' && basicDeconSel)
+          basicDeconSel.numTeams = 1;
         if (basicDeconSel) newDeconTechSelections.push(basicDeconSel);
-
         if (bldgDeconSel) newDeconTechSelections.push(bldgDeconSel);
       });
 
