@@ -688,6 +688,7 @@ function CharacterizeAOI({
                   numIterativeApplications:
                     media?.numIterativeApplications ??
                     tech.numIterativeApplications,
+                  numTeams: media?.numTeams ?? tech.numTeams,
                   removeContents: media?.removeContents ?? tech.removeContents,
                   subRows: tech.subRows?.map((sub: any) => {
                     const mediaSubRow = media?.subRows?.find(
@@ -701,6 +702,7 @@ function CharacterizeAOI({
                       numIterativeApplications:
                         mediaSubRow?.numIterativeApplications ??
                         sub.numIterativeApplications,
+                      numTeams: mediaSubRow?.numTeams ?? sub.numTeams,
                       removeContents:
                         mediaSubRow?.removeContents ?? sub.removeContents,
                     };
@@ -1207,6 +1209,7 @@ function CharacterizeAOI({
                             numIterativeApplications:
                               editTech?.numIterativeApplications ??
                               tech.numIterativeApplications,
+                            numTeams: editTech?.numTeams ?? tech.numTeams,
                             removeContents:
                               editTech?.removeContents ?? tech.removeContents,
                             subRows:
@@ -1224,6 +1227,8 @@ function CharacterizeAOI({
                                   numIterativeApplications:
                                     subEditTech?.numIterativeApplications ??
                                     subTech.numIterativeApplications,
+                                  numTeams:
+                                    subEditTech?.numTeams ?? subTech.numTeams,
                                   removeContents:
                                     subEditTech?.removeContents ??
                                     subTech.removeContents,

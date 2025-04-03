@@ -3588,6 +3588,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
               ? tech.SURFACE_SUB_CATEGORY
               : tech.SURFACE,
             numIterativeApplications: tech.NUM_ITERATIVE_APPLICATIONS ?? 1,
+            numTeams: tech.NUM_TEAMS ?? 1,
             pctAoi: tech.PCT_AOI ?? 0,
             pctDeconed: tech.PCT_DECONED ?? 0,
             removeContents: tech.REMOVE_BLDG_CONTENTS === 1 ? true : false,
@@ -3748,6 +3749,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
                         numIterativeApplications:
                           editTech?.numIterativeApplications ??
                           tech.numIterativeApplications,
+                        numTeams: editTech?.numTeams ?? tech.numTeams,
                         removeContents:
                           editTech?.removeContents ?? tech.removeContents,
                         subRows:
@@ -3765,6 +3767,8 @@ function ResultCard({ appType, result }: ResultCardProps) {
                               numIterativeApplications:
                                 subEditTech?.numIterativeApplications ??
                                 subTech.numIterativeApplications,
+                              numTeams:
+                                subEditTech?.numTeams ?? subTech.numTeams,
                               removeContents:
                                 subEditTech?.removeContents ??
                                 subTech.removeContents,

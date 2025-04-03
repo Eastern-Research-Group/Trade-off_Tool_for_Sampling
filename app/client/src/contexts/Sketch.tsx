@@ -75,6 +75,7 @@ export type JsonDownloadType = {
   volume?: number;
   volumeContents?: number;
   numIterativeApplications: number;
+  numTeams: number;
   removeContents?: boolean;
 };
 
@@ -543,6 +544,7 @@ export function SketchProvider({ children }: Props) {
         avgCfu: 0,
         totalCfu: 0,
         numIterativeApplications: 1,
+        numTeams: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
         avgFinalContamination: null,
@@ -560,6 +562,7 @@ export function SketchProvider({ children }: Props) {
         avgCfu: 0,
         totalCfu: 0,
         numIterativeApplications: 1,
+        numTeams: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
         avgFinalContamination: null,
@@ -577,6 +580,7 @@ export function SketchProvider({ children }: Props) {
         avgCfu: 0,
         totalCfu: 0,
         numIterativeApplications: 1,
+        numTeams: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
         avgFinalContamination: null,
@@ -594,6 +598,7 @@ export function SketchProvider({ children }: Props) {
         avgCfu: 0,
         totalCfu: 0,
         numIterativeApplications: 1,
+        numTeams: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
         avgFinalContamination: null,
@@ -612,6 +617,7 @@ export function SketchProvider({ children }: Props) {
         avgCfu: 0,
         totalCfu: 0,
         numIterativeApplications: 1,
+        numTeams: 1,
         pctDeconed: 100,
         isHazardous: hazardousOptions[1],
         avgFinalContamination: null,
