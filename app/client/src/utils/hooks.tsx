@@ -1138,7 +1138,7 @@ export function buildingCalculations(planGraphics: PlanGraphics) {
         media: key,
         pctAoi: 0,
         surfaceArea: value.surfaceArea,
-        volume: value.volume,
+        volume: value.intVolume,
         volumeContents: value.intVolumeContents,
         subMedia: summarizedBuildingSurfaceTypes.includes(key)
           ? []
@@ -1157,7 +1157,7 @@ export function buildingCalculations(planGraphics: PlanGraphics) {
                 media: 'Building Interiors',
                 pctAoi: 0,
                 surfaceArea: value.intSurfaceArea,
-                volume: value.volume,
+                volume: value.intVolume,
                 volumeContents: value.intVolumeContents,
                 subMedia: [],
               },
@@ -2114,7 +2114,8 @@ export function useCalculateDeconPlan() {
       let atLeastOneDeconTechSelection = false;
       linkedDeconOperations.forEach((deconOp) => {
         deconOp.deconTechSelections?.forEach((tech) => {
-          if (tech.deconTech) atLeastOneDeconTechSelection = true;
+          if (tech.deconTech && tech.deconTech.value !== 'none')
+            atLeastOneDeconTechSelection = true;
         });
       });
       if (!atLeastOneDeconTechSelection) {
@@ -2155,7 +2156,7 @@ export function useCalculateDeconPlan() {
           const deconTech = sel.deconTech?.value;
 
           const media = sel.media;
-          if (!deconTech) {
+          if (!deconTech || deconTech === 'none') {
             sel.avgFinalContamination = sel.avgCfu;
             sel.aboveDetectionLimit = sel.avgCfu >= detectionLimit;
             return;
@@ -2202,7 +2203,8 @@ export function useCalculateDeconPlan() {
           ) {
             sel.subRows.forEach((mediaSel: any) => {
               const deconTech = mediaSel.deconTech?.value;
-              if (!deconTech) return;
+              if (!deconTech || ['none', 'multiple'].includes(deconTech))
+                return;
 
               const calcOutput = performBasicDeconCalculations(
                 deconTech,
@@ -2498,7 +2500,8 @@ export function useCalculateDeconPlan() {
             let totalSurfaceRemovalFactor = 0;
             let surfaceRemovalCount = 0;
             for (const sel of buildingTech) {
-              if (sel.deconTech) hasDeconTech = true;
+              if (sel.deconTech && sel.deconTech.value !== 'none')
+                hasDeconTech = true;
 
               if (
                 sel.media.includes('Building') &&
@@ -2579,7 +2582,12 @@ export function useCalculateDeconPlan() {
                 }
               } else {
                 surfaceRemovalCount += 1;
-                if (!sel.pctAoi || !sel.deconTech) continue;
+                if (
+                  !sel.pctAoi ||
+                  !sel.deconTech ||
+                  sel.deconTech.value === 'none'
+                )
+                  continue;
 
                 const { CONTAM_REMOVAL_FACTOR } =
                   sampleAttributesDecon[sel.deconTech.value][

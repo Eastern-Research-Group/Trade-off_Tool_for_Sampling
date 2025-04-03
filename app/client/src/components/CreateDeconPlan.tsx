@@ -1421,6 +1421,7 @@ function DeconSelectionPopup({
     });
 
   const allDeconOptionsGrouped = [
+    { label: 'None', value: 'none' },
     {
       label: 'Volumetric',
       options: volumetricOptions,
@@ -1514,6 +1515,7 @@ function DeconSelectionPopup({
     }
   }
 
+  const [anyBlank, setAnyBlank] = useState(false);
   const [basicBaseDeconSelections, setBasicBaseDeconSelections] = useState<
     any[]
   >([]);
@@ -1629,8 +1631,43 @@ function DeconSelectionPopup({
     setSelectedBuildingApproach(selection);
   }
 
+  function validateSelection(sel: any) {
+    if (!sel.deconTech) return false;
+    if (selectedApproach === 'Basic') return true;
+    if (!sel.numIterativeApplications || sel.numIterativeApplications < 1)
+      return false;
+    return true;
+  }
+
   function handleSave() {
     if (!deconOperation) return;
+
+    // get selections
+    const basicDeconSelections =
+      selectedApproach === 'Advanced'
+        ? advancedBaseDeconSelections
+        : basicBaseDeconSelections;
+    const buildingDeconSelections =
+      selectedBuildingApproach === 'Building Primary Material Composition'
+        ? buildingMaterialDeconSelections
+        : buildingStructuralDeconSelections;
+
+    // get selections to check
+    const selectionsToCheck: any[] = [...basicDeconSelections];
+    if (selectedApproach === 'Advanced')
+      selectionsToCheck.push(...buildingDeconSelections);
+
+    // verify all necessary items have been selected
+    let anyBlank = false;
+    for (const sel of selectionsToCheck) {
+      if (!validateSelection(sel)) anyBlank = true;
+      sel.subRows?.forEach((sel: any) => {
+        if (!validateSelection(sel)) anyBlank = true;
+      });
+      if (anyBlank) break;
+    }
+    setAnyBlank(anyBlank);
+    if (anyBlank) return;
 
     const index = edits.edits.findIndex(
       (item) =>
@@ -1642,15 +1679,6 @@ function DeconSelectionPopup({
       const editsCopy = deepCopyObject(edits);
       const editedOp = editsCopy.edits[index] as LayerDeconEditsType;
       const newDeconTechSelections: any[] = [];
-
-      const basicDeconSelections =
-        selectedApproach === 'Advanced'
-          ? advancedBaseDeconSelections
-          : basicBaseDeconSelections;
-      const buildingDeconSelections =
-        selectedBuildingApproach === 'Building Primary Material Composition'
-          ? buildingMaterialDeconSelections
-          : buildingStructuralDeconSelections;
 
       // build new deconTech selections
       editedOp.deconTechSelections.forEach((originalTech) => {
@@ -2249,6 +2277,14 @@ function DeconSelectionPopup({
               />
             )}
           </Fragment>
+        )}
+
+        {anyBlank && (
+          <MessageBox
+            title="Missing Selections"
+            severity="warning"
+            message={`All rows need to have a Decon Technology selected${selectedApproach !== 'Basic' ? ' and Number of Decon Iterations needs to be at-least 1' : ''}. Please make the necessary selections and try again.`}
+          />
         )}
 
         <div css={buttonContainerStyles}>

@@ -819,14 +819,21 @@ function CharacterizeAOI({
   const [addScenarioVisible, setAddScenarioVisible] = useState(false);
   const [editScenarioVisible, setEditScenarioVisible] = useState(false);
 
+  const [editsInitialized, setEditsInitialized] = useState(false);
   useEffect(() => {
+    if (editsInitialized) return;
     if (!deconSketchLayer) {
       setEditScenarioVisible(false);
       return;
     }
+    setEditsInitialized(true);
 
-    if (!hasAoiGraphics(deconSketchLayer, layers)) setEditScenarioVisible(true);
-  }, [deconSketchLayer, layers]);
+    const aoiEditsLayer = deconSketchLayer.layers.find(
+      (l) => l.layerType === 'Decon Mask',
+    );
+    if (aoiEditsLayer && aoiEditsLayer.adds.length < 1)
+      setEditScenarioVisible(true);
+  }, [deconSketchLayer, editsInitialized]);
 
   // get decon layers for showing in select
   const [deconLayers, setDeconLayers] = useState<LayerAoiAnalysisEditsType[]>(
@@ -1118,25 +1125,23 @@ function CharacterizeAOI({
                     <span className="sr-only">Delete Layer</span>
                   </button>
 
-                  {deconSketchLayer.status !== 'published' && (
-                    <button
-                      css={iconButtonStyles}
-                      title={editScenarioVisible ? 'Cancel' : 'Edit Layer'}
-                      onClick={() => {
-                        setAddScenarioVisible(false);
-                        setEditScenarioVisible(!editScenarioVisible);
-                      }}
-                    >
-                      <i
-                        className={
-                          editScenarioVisible ? 'fas fa-times' : 'fas fa-edit'
-                        }
-                      />
-                      <span className="sr-only">
-                        {editScenarioVisible ? 'Cancel' : 'Edit Layer'}
-                      </span>
-                    </button>
-                  )}
+                  <button
+                    css={iconButtonStyles}
+                    title={editScenarioVisible ? 'Cancel' : 'Edit Layer'}
+                    onClick={() => {
+                      setAddScenarioVisible(false);
+                      setEditScenarioVisible(!editScenarioVisible);
+                    }}
+                  >
+                    <i
+                      className={
+                        editScenarioVisible ? 'fas fa-times' : 'fas fa-edit'
+                      }
+                    />
+                    <span className="sr-only">
+                      {editScenarioVisible ? 'Cancel' : 'Edit Layer'}
+                    </span>
+                  </button>
                 </Fragment>
               )}
               <button
@@ -1258,6 +1263,9 @@ function CharacterizeAOI({
               maxLength={90}
               placeholder="Enter Decon Layer Name"
               value={newDeconLayerName}
+              disabled={['published', 'edited'].includes(
+                deconSketchLayer?.status ?? '',
+              )}
               onChange={(ev) => {
                 setNewDeconLayerName(ev.target.value);
               }}
@@ -1271,6 +1279,9 @@ function CharacterizeAOI({
               maxLength={2048}
               placeholder="Enter Decon Layer Description (2048 characters)"
               value={newDeconDescription}
+              disabled={['published', 'edited'].includes(
+                deconSketchLayer?.status ?? '',
+              )}
               onChange={(ev) => {
                 setNewDeconDescription(ev.target.value);
               }}
