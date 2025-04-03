@@ -1415,6 +1415,7 @@ function Publish({ appType }: Props) {
                   DECON_TECH_UUID: tech.deconTech?.value ?? null,
                   DECON_TECH: tech.deconTech?.label ?? null,
                   NUM_ITERATIVE_APPLICATIONS: tech.numIterativeApplications,
+                  NUM_TEAMS: tech.numTeams,
                   PCT_AOI: tech.pctAoi,
                   PCT_DECONED: tech.pctDeconed,
                   SURFACE_AREA: tech.surfaceArea,
@@ -1431,7 +1432,6 @@ function Publish({ appType }: Props) {
                     PARENT_SURFACE_UUID: tech.id,
                     SURFACE: tech.media,
                     SURFACE_SUB_CATEGORY: sub.media,
-                    // TODO update this to trust what sub provides
                     DECON_TECH_UUID:
                       (sub.deconTech
                         ? sub.deconTech.value
@@ -1441,6 +1441,7 @@ function Publish({ appType }: Props) {
                         ? sub.deconTech.label
                         : tech.deconTech?.label) ?? null,
                     NUM_ITERATIVE_APPLICATIONS: sub.numIterativeApplications,
+                    NUM_TEAMS: sub.numTeams,
                     PCT_AOI: sub.pctAoi,
                     PCT_DECONED: sub.pctDeconed,
                     SURFACE_AREA: sub.surfaceArea,
