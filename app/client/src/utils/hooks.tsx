@@ -84,7 +84,6 @@ import { isDecon } from 'config/navigation';
 
 export type GsgParam = { itemID: string };
 
-const ignoreTechSelections = ['none', 'multiple'];
 let view: __esri.MapView | __esri.SceneView | null = null;
 
 export const detectionLimit = 100;
@@ -2115,10 +2114,7 @@ export function useCalculateDeconPlan() {
       let atLeastOneDeconTechSelection = false;
       linkedDeconOperations.forEach((deconOp) => {
         deconOp.deconTechSelections?.forEach((tech) => {
-          if (
-            tech.deconTech &&
-            !ignoreTechSelections.includes(tech.deconTech.value)
-          )
+          if (tech.deconTech && tech.deconTech.value !== 'none')
             atLeastOneDeconTechSelection = true;
         });
       });
@@ -2160,7 +2156,7 @@ export function useCalculateDeconPlan() {
           const deconTech = sel.deconTech?.value;
 
           const media = sel.media;
-          if (!deconTech || ignoreTechSelections.includes(deconTech)) {
+          if (!deconTech || deconTech === 'none') {
             sel.avgFinalContamination = sel.avgCfu;
             sel.aboveDetectionLimit = sel.avgCfu >= detectionLimit;
             return;
@@ -2207,7 +2203,7 @@ export function useCalculateDeconPlan() {
           ) {
             sel.subRows.forEach((mediaSel: any) => {
               const deconTech = mediaSel.deconTech?.value;
-              if (!deconTech || ignoreTechSelections.includes(deconTech))
+              if (!deconTech || ['none', 'multiple'].includes(deconTech))
                 return;
 
               const calcOutput = performBasicDeconCalculations(
@@ -2504,10 +2500,7 @@ export function useCalculateDeconPlan() {
             let totalSurfaceRemovalFactor = 0;
             let surfaceRemovalCount = 0;
             for (const sel of buildingTech) {
-              if (
-                sel.deconTech &&
-                !ignoreTechSelections.includes(sel.deconTech.value)
-              )
+              if (sel.deconTech && sel.deconTech.value !== 'none')
                 hasDeconTech = true;
 
               if (
@@ -2592,7 +2585,7 @@ export function useCalculateDeconPlan() {
                 if (
                   !sel.pctAoi ||
                   !sel.deconTech ||
-                  ignoreTechSelections.includes(sel.deconTech.value)
+                  sel.deconTech.value === 'none'
                 )
                   continue;
 
