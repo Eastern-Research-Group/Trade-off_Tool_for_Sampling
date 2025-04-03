@@ -1138,7 +1138,7 @@ export function buildingCalculations(planGraphics: PlanGraphics) {
         media: key,
         pctAoi: 0,
         surfaceArea: value.surfaceArea,
-        volume: value.volume,
+        volume: value.intVolume,
         volumeContents: value.intVolumeContents,
         subMedia: summarizedBuildingSurfaceTypes.includes(key)
           ? []
@@ -1157,7 +1157,7 @@ export function buildingCalculations(planGraphics: PlanGraphics) {
                 media: 'Building Interiors',
                 pctAoi: 0,
                 surfaceArea: value.intSurfaceArea,
-                volume: value.volume,
+                volume: value.intVolume,
                 volumeContents: value.intVolumeContents,
                 subMedia: [],
               },
