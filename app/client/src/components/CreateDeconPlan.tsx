@@ -1202,6 +1202,7 @@ function CreateDeconPlan() {
 
                         setAddOperationVisible(false);
                         setEditOperationVisible(false);
+                        setDeconSketchLayer(null);
                       }}
                     >
                       {(saveStatus === 'none' || saveStatus === 'changes') &&
@@ -1286,11 +1287,10 @@ function CreateDeconPlan() {
   );
 }
 
-const overlayStyles = css`
-  &[data-reach-dialog-overlay] {
-    z-index: 100;
-    background-color: ${colors.black(0.75)};
-  }
+const buttonContainerStyles = css`
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
 `;
 
 const dialogStyles = css`
@@ -1317,33 +1317,30 @@ const dialogStyles = css`
   }
 `;
 
+const dividerStyles = css`
+  border-top: solid #4472c4;
+  border-width: 3px 0 0;
+`;
+
 const headingStyles = css`
   font-size: 117.6471%;
   text-align: center;
 `;
 
-const saveAttributesButtonStyles = css`
-  background-color: #0071bc;
-  border: 0;
-  color: #fff;
-  font-weight: bold;
-  line-height: 1;
-  margin: 0 0.5em 1.5em 0;
-  padding: 0.5882em 1.1765em;
-  font-size: 16px;
+const infoIconStylesModified = css`
+  ${infoIconStyles}
+  margin-right: 1rem;
 `;
 
-const buttonContainerStyles = css`
-  display: flex;
-  justify-content: center;
+const messageBoxStyles = css`
   margin-top: 1rem;
 `;
 
-const radioGroupStyles = css`
-  align-items: center;
-  display: flex;
-  gap: 10px;
-  margin-bottom: 1rem;
+const overlayStyles = css`
+  &[data-reach-dialog-overlay] {
+    z-index: 100;
+    background-color: ${colors.black(0.75)};
+  }
 `;
 
 const radioContainerStyles = (
@@ -1365,20 +1362,28 @@ const radioContainerStyles = (
   }
 `;
 
+const radioGroupStyles = css`
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1rem;
+`;
+
 const radioSubTitleStyles = css`
   display: block;
   font-size: 0.825rem;
   margin: 0 1.125rem 0.75rem;
 `;
 
-const infoIconStylesModified = css`
-  ${infoIconStyles}
-  margin-right: 1rem;
-`;
-
-const dividerStyles = css`
-  border-top: solid #4472c4;
-  border-width: 3px 0 0;
+const saveAttributesButtonStyles = css`
+  background-color: #0071bc;
+  border: 0;
+  color: #fff;
+  font-weight: bold;
+  line-height: 1;
+  margin: 0 0.5em 1.5em 0;
+  padding: 0.5882em 1.1765em;
+  font-size: 16px;
 `;
 
 function isOutside(media: string) {
@@ -1636,6 +1641,7 @@ function DeconSelectionPopup({
     if (selectedApproach === 'Basic') return true;
     if (!sel.numIterativeApplications || sel.numIterativeApplications < 1)
       return false;
+    if (!sel.numTeams || sel.numTeams < 1) return false;
     return true;
   }
 
@@ -1689,12 +1695,14 @@ function DeconSelectionPopup({
           (t) => t.id === originalTech.id,
         );
         if (!basicDeconSel && !bldgDeconSel) {
+          if (selectedApproach === 'Basic') originalTech.numTeams = 1;
           newDeconTechSelections.push(originalTech);
           return;
         }
 
+        if (selectedApproach === 'Basic' && basicDeconSel)
+          basicDeconSel.numTeams = 1;
         if (basicDeconSel) newDeconTechSelections.push(basicDeconSel);
-
         if (bldgDeconSel) newDeconTechSelections.push(bldgDeconSel);
       });
 
@@ -1930,6 +1938,14 @@ function DeconSelectionPopup({
                 show: selectedApproach === 'Advanced',
               },
               {
+                header: 'Number of Teams',
+                accessorKey: 'numTeams',
+                size: 75,
+                cell: ReactTableEditableCell,
+                editType: 'input',
+                show: selectedApproach === 'Advanced',
+              },
+              {
                 header: 'Average Final Contamination (CFUs/m²)',
                 accessorKey: 'avgFinalContamination',
                 size: 97,
@@ -2087,6 +2103,14 @@ function DeconSelectionPopup({
                       show: selectedApproach === 'Advanced',
                     },
                     {
+                      header: 'Number of Teams',
+                      accessorKey: 'numTeams',
+                      size: 75,
+                      cell: ReactTableEditableCell,
+                      editType: 'input',
+                      show: selectedApproach === 'Advanced',
+                    },
+                    {
                       header: 'Average Final Contamination (CFUs/m²)',
                       accessorKey: 'avgFinalContamination',
                       size: 97,
@@ -2131,6 +2155,7 @@ function DeconSelectionPopup({
                           let anyDifferentDeconTech = false;
                           let removeContents = row.removeContents;
                           let numIterativeApplications = 1;
+                          let numTeams = 1;
                           value.forEach((subRow: any) => {
                             if (deconTech === undefined)
                               deconTech = subRow.deconTech;
@@ -2147,6 +2172,9 @@ function DeconSelectionPopup({
                               numIterativeApplications =
                                 subRow.numIterativeApplications;
                             }
+                            if (subRow.numTeams > numTeams) {
+                              numTeams = subRow.numTeams;
+                            }
                           });
 
                           return {
@@ -2159,7 +2187,8 @@ function DeconSelectionPopup({
                                 }
                               : deconTech,
                             removeContents: removeContents,
-                            numIterativeApplications: numIterativeApplications,
+                            numIterativeApplications,
+                            numTeams,
                           };
                         } else {
                           return {
@@ -2261,6 +2290,14 @@ function DeconSelectionPopup({
                       show: selectedApproach === 'Advanced',
                     },
                     {
+                      header: 'Number of Teams',
+                      accessorKey: 'numTeams',
+                      size: 75,
+                      cell: ReactTableEditableCell,
+                      editType: 'input',
+                      show: selectedApproach === 'Advanced',
+                    },
+                    {
                       header: 'Average Final Contamination (CFUs/m²)',
                       accessorKey: 'avgFinalContamination',
                       size: 97,
@@ -2280,11 +2317,13 @@ function DeconSelectionPopup({
         )}
 
         {anyBlank && (
-          <MessageBox
-            title="Missing Selections"
-            severity="warning"
-            message={`All rows need to have a Decon Technology selected${selectedApproach !== 'Basic' ? ' and Number of Decon Iterations needs to be at-least 1' : ''}. Please make the necessary selections and try again.`}
-          />
+          <div css={messageBoxStyles}>
+            <MessageBox
+              title="Missing Selections"
+              severity="warning"
+              message={`All rows need to have a Decon Technology selected${selectedApproach !== 'Basic' ? ', Number of Decon Iterations needs to be at-least 1 and Number of Teams needs to be at-least 1' : ''}. Please make the necessary selections and try again.`}
+            />
+          </div>
         )}
 
         <div css={buttonContainerStyles}>

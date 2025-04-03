@@ -1394,6 +1394,17 @@
       "defaultValue": null
     },
     {
+      "name": "NUM_TEAMS",
+      "alias": "Number of Teams",
+      "type": "esriFieldTypeInteger",
+      "actualType": "int",
+      "sqlType": "sqlTypeInteger",
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
       "name": "PCT_AOI",
       "alias": "Percent of AOI",
       "type": "esriFieldTypeDouble",

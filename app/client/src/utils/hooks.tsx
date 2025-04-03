@@ -210,7 +210,10 @@ function performBasicDeconCalculations(
   const deconTime =
     SETUP_TIME / 24 +
     BREAKDOWN_TIME / 24 +
-    (areaDeconApplied * APPLICATION_TIME * sel.numIterativeApplications) / 24 +
+    (areaDeconApplied *
+      (APPLICATION_TIME / sel.numTeams) *
+      sel.numIterativeApplications) /
+      24 +
     (RESIDENCE_TIME * sel.numIterativeApplications) / 24;
 
   jsonDownload.push({
@@ -233,6 +236,7 @@ function performBasicDeconCalculations(
     volumeContents:
       sel.media === 'Building Interiors' ? sel.volumeContents : null,
     numIterativeApplications: sel.numIterativeApplications,
+    numTeams: sel.numTeams,
     removeContents:
       sel.media === 'Building Interiors' ? sel.removeContents : null,
   });
@@ -348,6 +352,7 @@ export function processScenario(
       deconTech: null,
       isHazardous: { label: 'Non-Hazardous', value: 'non-hazardous' },
       numIterativeApplications: 1,
+      numTeams: 1,
       pctDeconed: 100,
       removeContents: false,
       id: category.id,
@@ -363,6 +368,7 @@ export function processScenario(
         deconTech: null,
         isHazardous: { label: 'Non-Hazardous', value: 'non-hazardous' },
         numIterativeApplications: 1,
+        numTeams: 1,
         pctDeconed: 100,
         removeContents: false,
         id: sub.id ?? generateUUID(),

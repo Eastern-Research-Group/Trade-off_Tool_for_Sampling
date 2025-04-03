@@ -1586,6 +1586,11 @@ function CalculateResultsPopup({
           format: 'number',
         },
         {
+          label: 'Number of Teams',
+          fieldName: 'numTeams',
+          format: 'number',
+        },
+        {
           label: 'Percent of AOI',
           fieldName: 'pctAoi',
           format: 'number',
@@ -2574,6 +2579,7 @@ function CalculateResultsPopup({
             ),
             aboveDetectionLimit: '',
             numIterativeApplications: 0,
+            numTeams: 0,
           });
 
           return (
