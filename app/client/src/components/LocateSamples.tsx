@@ -20,7 +20,7 @@ import { SketchContext } from 'contexts/Sketch';
 import { LayerType } from 'types/Layer';
 import { EditsType, ScenarioEditsType } from 'types/Edits';
 // config
-import { PolygonSymbol } from 'config/sampleAttributes';
+import { PolygonSymbol, SampleSelectType } from 'config/sampleAttributes';
 // utils
 import { use3dSketch, useDynamicPopup, useStartOver } from 'utils/hooks';
 import {
@@ -233,6 +233,12 @@ const deleteButtonStyles = css`
 
 const lineSeparatorStyles = css`
   border-bottom: 1px solid #d8dfe2;
+`;
+
+const sketchGroupingStyles = css`
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 `;
 
 const verticalCenterTextStyles = css`
@@ -448,6 +454,13 @@ function LocateSamples() {
   sampleLayers.push({
     label: 'Unlinked Layers',
     options: getSketchableLayers(layers, edits.edits),
+  });
+
+  const establishedSampleTypes: SampleSelectType[] = [];
+  const innovativeSampleTypes: SampleSelectType[] = [];
+  sampleTypes?.sampleSelectOptions?.forEach((s) => {
+    if (s.isInnovative) innovativeSampleTypes.push(s);
+    else establishedSampleTypes.push(s);
   });
 
   return (
@@ -1410,84 +1423,147 @@ function LocateSamples() {
                     Samples" feature below to add more than one sample point at
                     a time.
                   </p>
-                  <div>
-                    <h3>Established Sample Types</h3>
-                    <div css={sketchButtonContainerStyles}>
-                      {sampleTypes?.sampleSelectOptions.map(
-                        (option: any, index: number) => {
-                          const sampleTypeUuid = option.value;
-                          const sampleType = option.label;
+                  <div css={sketchGroupingStyles}>
+                    {establishedSampleTypes.length > 0 && (
+                      <div>
+                        <h3>Established Sample Types</h3>
+                        <div css={sketchButtonContainerStyles}>
+                          {establishedSampleTypes.map(
+                            (option: any, index: number) => {
+                              const sampleTypeUuid = option.value;
+                              const sampleType = option.label;
 
-                          if (
-                            !Object.prototype.hasOwnProperty.call(
-                              sampleAttributes,
-                              sampleTypeUuid,
-                            )
-                          ) {
-                            return null;
-                          }
+                              if (
+                                !Object.prototype.hasOwnProperty.call(
+                                  sampleAttributes,
+                                  sampleTypeUuid,
+                                )
+                              ) {
+                                return null;
+                              }
 
-                          const shapeType =
-                            sampleAttributes[sampleTypeUuid].ShapeType;
-                          const edited = Object.prototype.hasOwnProperty.call(
-                            userDefinedAttributes.sampleTypes,
-                            sampleTypeUuid,
-                          );
-                          return (
-                            <SketchButton
-                              key={index}
-                              layers={layers}
-                              value={sampleTypeUuid}
-                              selectedScenario={
-                                selectedScenario as ScenarioEditsType
-                              }
-                              label={
-                                edited ? `${sampleType} (edited)` : sampleType
-                              }
-                              iconClass={
-                                shapeType === 'point'
-                                  ? 'fas fa-pen-fancy'
-                                  : 'fas fa-draw-polygon'
-                              }
-                              onClick={() => sketchButtonClick(sampleTypeUuid)}
-                            />
-                          );
-                        },
-                      )}
-                    </div>
-                  </div>
-                  {userDefinedOptions.length > 0 && (
-                    <div>
-                      <br />
-                      <h3>Custom Sample Types</h3>
-                      <div css={sketchButtonContainerStyles}>
-                        {userDefinedOptions.map((option, index) => {
-                          if (option.isPredefined) return null;
-
-                          const sampleTypeUuid = option.value;
-                          const shapeType =
-                            sampleAttributes[sampleTypeUuid as any].ShapeType;
-                          return (
-                            <SketchButton
-                              key={index}
-                              value={sampleTypeUuid}
-                              label={option.label}
-                              layers={layers}
-                              selectedScenario={
-                                selectedScenario as ScenarioEditsType
-                              }
-                              iconClass={
-                                shapeType === 'point'
-                                  ? 'fas fa-pen-fancy'
-                                  : 'fas fa-draw-polygon'
-                              }
-                              onClick={() => sketchButtonClick(sampleTypeUuid)}
-                            />
-                          );
-                        })}
+                              const shapeType =
+                                sampleAttributes[sampleTypeUuid].ShapeType;
+                              const edited =
+                                Object.prototype.hasOwnProperty.call(
+                                  userDefinedAttributes.sampleTypes,
+                                  sampleTypeUuid,
+                                );
+                              return (
+                                <SketchButton
+                                  key={index}
+                                  layers={layers}
+                                  value={sampleTypeUuid}
+                                  selectedScenario={
+                                    selectedScenario as ScenarioEditsType
+                                  }
+                                  label={
+                                    edited
+                                      ? `${sampleType} (edited)`
+                                      : sampleType
+                                  }
+                                  iconClass={
+                                    shapeType === 'point'
+                                      ? 'fas fa-pen-fancy'
+                                      : 'fas fa-draw-polygon'
+                                  }
+                                  onClick={() =>
+                                    sketchButtonClick(sampleTypeUuid)
+                                  }
+                                />
+                              );
+                            },
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                    {innovativeSampleTypes.length > 0 && (
+                      <div>
+                        <h3>Innovative Sample Types</h3>
+                        <div css={sketchButtonContainerStyles}>
+                          {innovativeSampleTypes.map(
+                            (option: any, index: number) => {
+                              const sampleTypeUuid = option.value;
+                              const sampleType = option.label;
+
+                              if (
+                                !Object.prototype.hasOwnProperty.call(
+                                  sampleAttributes,
+                                  sampleTypeUuid,
+                                )
+                              ) {
+                                return null;
+                              }
+
+                              const shapeType =
+                                sampleAttributes[sampleTypeUuid].ShapeType;
+                              const edited =
+                                Object.prototype.hasOwnProperty.call(
+                                  userDefinedAttributes.sampleTypes,
+                                  sampleTypeUuid,
+                                );
+                              return (
+                                <SketchButton
+                                  key={index}
+                                  layers={layers}
+                                  value={sampleTypeUuid}
+                                  selectedScenario={
+                                    selectedScenario as ScenarioEditsType
+                                  }
+                                  label={
+                                    edited
+                                      ? `${sampleType} (edited)`
+                                      : sampleType
+                                  }
+                                  iconClass={
+                                    shapeType === 'point'
+                                      ? 'fas fa-pen-fancy'
+                                      : 'fas fa-draw-polygon'
+                                  }
+                                  onClick={() =>
+                                    sketchButtonClick(sampleTypeUuid)
+                                  }
+                                />
+                              );
+                            },
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {userDefinedOptions.length > 0 && (
+                      <div>
+                        <h3>Custom Sample Types</h3>
+                        <div css={sketchButtonContainerStyles}>
+                          {userDefinedOptions.map((option, index) => {
+                            if (option.isPredefined) return null;
+
+                            const sampleTypeUuid = option.value;
+                            const shapeType =
+                              sampleAttributes[sampleTypeUuid as any].ShapeType;
+                            return (
+                              <SketchButton
+                                key={index}
+                                value={sampleTypeUuid}
+                                label={option.label}
+                                layers={layers}
+                                selectedScenario={
+                                  selectedScenario as ScenarioEditsType
+                                }
+                                iconClass={
+                                  shapeType === 'point'
+                                    ? 'fas fa-pen-fancy'
+                                    : 'fas fa-draw-polygon'
+                                }
+                                onClick={() =>
+                                  sketchButtonClick(sampleTypeUuid)
+                                }
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </AccordionItem>
               <AccordionItem title="Add Multiple Random Samples">

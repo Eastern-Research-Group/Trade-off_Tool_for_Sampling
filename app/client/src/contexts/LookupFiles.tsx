@@ -72,6 +72,10 @@ function useLookupFiles() {
   if (!lookupFilesInitialized) {
     lookupFilesInitialized = true;
 
+    const parseBoolean = (value: string) => {
+      if (value === undefined || value === null) return value;
+      return ['1', 'true', 't'].includes(value.toLowerCase()) ? true : false;
+    };
     const parseNumeric = (value: string) => {
       if (value === undefined || value === null) return value;
       return parseFloat(value);
@@ -105,7 +109,9 @@ function useLookupFiles() {
               DECISIONUNIT: null,
               DECISIONUNITSORT: 0,
               DECISIONUNITUUID: null,
+              ENABLED: parseBoolean(record.ENABLED),
               GLOBALID: null,
+              INNOVATIVE: parseBoolean(record.INNOVATIVE),
               LOD_NON: parseNumeric(record.LOD_NON),
               LOD_P: parseNumeric(record.LOD_P),
               MCPS: parseNumeric(record.MCPS),
@@ -135,9 +141,16 @@ function useLookupFiles() {
 
         const sampleSelectOptions: SampleSelectType[] = [];
         Object.keys(sampleAttributes).forEach((key) => {
+          if (!sampleAttributes[key].ENABLED) return;
           const value = sampleAttributes[key].TYPEUUID;
           const label = sampleAttributes[key].TYPE;
-          sampleSelectOptions.push({ value, label, isPredefined: true });
+          const isInnovative = sampleAttributes[key].INNOVATIVE;
+          sampleSelectOptions.push({
+            value,
+            label,
+            isInnovative,
+            isPredefined: true,
+          });
         });
         const newValue = { ...(data.technologyTypes as SampleTypes) };
         newValue['sampleSelectOptions'] = sampleSelectOptions;
@@ -211,12 +224,14 @@ type RadarContent = {
 type RadarSampleMetadata = {
   ALC: string;
   AMC: string;
+  ENABLED: string;
+  INNOVATIVE: string;
   LOD_NON: string;
   LOD_P: string;
   MCPS: string;
+  Point_Style: string;
   SA: string;
   ShapeType: string;
-  Point_Style: string;
   TCPS: string;
   TTA: string;
   TTC: string;

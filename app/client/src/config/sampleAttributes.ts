@@ -129,5 +129,6 @@ export type SampleIssuesOutput = {
 export type SampleSelectType = {
   value: string;
   label: string;
+  isInnovative?: boolean;
   isPredefined: boolean;
 };

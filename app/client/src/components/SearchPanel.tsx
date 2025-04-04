@@ -2980,6 +2980,13 @@ function ResultCard({ appType, result }: ResultCardProps) {
             };
             graphic.popupTemplate = getPopupTemplate(layerType, false);
 
+            if (!graphic.attributes.LATITUDE || !graphic.attributes.LONGITUDE) {
+              graphic.attributes.LATITUDE =
+                (graphic.geometry as __esri.Polygon)?.centroid?.latitude ?? 0;
+              graphic.attributes.LONGITUDE =
+                (graphic.geometry as __esri.Polygon)?.centroid?.longitude ?? 0;
+            }
+
             graphic.symbol = symbol;
             zoomToGraphics.push(graphic);
             graphics.push(graphic);

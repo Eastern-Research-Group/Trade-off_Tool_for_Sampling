@@ -1881,7 +1881,7 @@ function Publish({ appType }: Props) {
         }
 
         if (
-          (includeAoiCharacterization || isDecon()) &&
+          (includeAoiCharacterization || includePlan) &&
           aoiLayersToInclude.length > 0
         ) {
           aoiLayersToInclude.forEach((aoiLayer) => {
@@ -2202,6 +2202,14 @@ function Publish({ appType }: Props) {
               defaultSymbols.symbols['Staging Area Mask'],
             );
 
+            function addNameDescription(array: any[]) {
+              return array.map((item) => {
+                item.attributes.NAME = stagingAreaLayer.label;
+                item.attributes.DESCRIPTION = stagingAreaLayer.description;
+                return item;
+              });
+            }
+
             featureServices.push({
               category: 'contains-epa-tots-staging-area',
               label: stagingAreaLayer.label,
@@ -2232,10 +2240,10 @@ function Publish({ appType }: Props) {
                       },
                     ],
                   },
-                  adds: stagingAreaLayer.adds,
-                  updates: stagingAreaLayer.updates,
+                  adds: addNameDescription(stagingAreaLayer.adds),
+                  updates: addNameDescription(stagingAreaLayer.updates),
                   deletes: stagingAreaLayer.deletes,
-                  published: stagingAreaLayer.published,
+                  published: addNameDescription(stagingAreaLayer.published),
                 },
               ],
               tables: [],

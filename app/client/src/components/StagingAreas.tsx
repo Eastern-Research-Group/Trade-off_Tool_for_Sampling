@@ -1,9 +1,9 @@
 /** @jsxImportSource @emotion/react */
 
 import { Fragment, useContext, useEffect, useState } from 'react';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer.js';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import ImageryLayer from '@arcgis/core/layers/ImageryLayer.js';
-import MapImageLayer from '@arcgis/core/layers/MapImageLayer.js';
 import TileLayer from '@arcgis/core/layers/TileLayer.js';
 import { css } from '@emotion/react';
 // components
@@ -393,7 +393,7 @@ function StagingAreas() {
         <InfoIcon
           id={'suitability-analysis-layer-info-icon'}
           cssStyles={infoIconStyles}
-          tooltip="A national-level suitability map layer to inform waste<br/>staging/storage location selection based on suitability factors<br/>such as soil type, land cover, topography, ease of transportation,<br/>and proximity to surface waters. Suitability values range from<br/>0 to 500 where higher values (green) or more suitable. You<br/>can use his layer in conjunction with other parcel data to identify<br/>a candidate staging area."
+          tooltip="A national-level suitability map layer to inform waste<br/>staging/storage location selection based on suitability factors<br/>such as soil type, land cover, topography, ease of transportation,<br/>and proximity to surface waters. Suitability values range from<br/>0 to 500 where higher values (green) are more suitable. You<br/>can use this layer in conjunction with other parcel data to identify<br/>a candidate staging area."
         />
       </label>
       <label css={layerItemStyles}>
@@ -631,6 +631,10 @@ function useAoiCalculations(aoiLayer?: LayerType | null) {
           AREA: areaSqM,
           SOLID_WASTE_CAPACITY: calculateSolidWasteCapacity(areaSqM),
           LIQUID_WASTE_CAPACITY: calculateLiquidWasteCapacity(areaSqM),
+          LATITUDE:
+            (graphic.geometry as __esri.Polygon)?.centroid?.latitude ?? 0,
+          LONGITUDE:
+            (graphic.geometry as __esri.Polygon)?.centroid?.longitude ?? 0,
         };
       }
     });
@@ -655,9 +659,10 @@ function useGovernmentLandsLayer() {
     if (!map) return;
     return (
       map.findLayerById(GOVERNMENT_LANDS_LAYER_ID) ??
-      new MapImageLayer({
+      new FeatureLayer({
         id: GOVERNMENT_LANDS_LAYER_ID,
         listMode: 'show',
+        title: 'Government-Owned Lands',
         url: services.governmentLands,
       })
     );
@@ -693,6 +698,7 @@ function useParcelLayer() {
       new TileLayer({
         id: PARCEL_LAYER_ID,
         listMode: 'show',
+        title: 'Local Parcel Information',
         url: services.parcel,
       })
     );
@@ -728,6 +734,7 @@ function useSuitabilityLayer() {
       new ImageryLayer({
         id: SUITABILITY_LAYER_ID,
         listMode: 'show',
+        title: 'Staging Suitability Analysis',
         url: services.suitability,
       })
     );
