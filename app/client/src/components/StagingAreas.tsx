@@ -393,7 +393,7 @@ function StagingAreas() {
         <InfoIcon
           id={'suitability-analysis-layer-info-icon'}
           cssStyles={infoIconStyles}
-          tooltip="A national-level suitability map layer to inform waste<br/>staging/storage location selection based on suitability factors<br/>such as soil type, land cover, topography, ease of transportation,<br/>and proximity to surface waters. Suitability values range from<br/>0 to 500 where higher values (green) or more suitable. You<br/>can use his layer in conjunction with other parcel data to identify<br/>a candidate staging area."
+          tooltip="A national-level suitability map layer to inform waste<br/>staging/storage location selection based on suitability factors<br/>such as soil type, land cover, topography, ease of transportation,<br/>and proximity to surface waters. Suitability values range from<br/>0 to 500 where higher values (green) are more suitable. You<br/>can use this layer in conjunction with other parcel data to identify<br/>a candidate staging area."
         />
       </label>
       <label css={layerItemStyles}>

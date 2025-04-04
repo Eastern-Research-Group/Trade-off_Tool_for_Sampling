@@ -1767,7 +1767,8 @@ function DeconSelectionPopup({
                   {Math.round(cost).toLocaleString()}
                 </div>
                 <div>
-                  <strong>Max Time day(s):</strong> {time.toLocaleString()}
+                  <strong>Max Time day(s):</strong>{' '}
+                  {Math.round(time).toLocaleString()}
                 </div>
                 <div>
                   <strong>

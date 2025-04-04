@@ -140,18 +140,12 @@ function getOperationSummary(
     let totalOpInitialContamination = 0;
     let totalOpFinalContamination = 0;
     layer.deconLayerResults?.resultsTable.forEach((d) => {
-      totalOpSolidWasteVolume += parseSmallFloat(d.solidWasteVolumeM3, 0);
-      totalOpLiquidWasteVolume += parseSmallFloat(d.liquidWasteVolumeM3, 0);
-      totalOpDeconCost += parseSmallFloat(d.decontaminationCost, 2);
-      totalOpDeconTime += parseSmallFloat(d.decontaminationTimeDays, 1);
-      totalOpInitialContamination += parseSmallFloat(
-        d.averageInitialContamination,
-        0,
-      );
-      totalOpFinalContamination += parseSmallFloat(
-        d.averageFinalContamination,
-        2,
-      );
+      totalOpSolidWasteVolume += d.solidWasteVolumeM3;
+      totalOpLiquidWasteVolume += d.liquidWasteVolumeM3;
+      totalOpDeconCost += d.decontaminationCost;
+      totalOpDeconTime += d.decontaminationTimeDays;
+      totalOpInitialContamination += d.averageInitialContamination;
+      totalOpFinalContamination += d.averageFinalContamination;
     });
 
     totalSolidWasteVolume += totalOpSolidWasteVolume;
@@ -163,26 +157,23 @@ function getOperationSummary(
 
     tableData.push({
       operationName: layer.name,
-      solidWasteVolumeM3: formatNumber(totalOpSolidWasteVolume, -1),
-      liquidWasteVolumeM3: formatNumber(totalOpLiquidWasteVolume, -1),
-      decontaminationCost: formatNumber(totalOpDeconCost, -1),
-      decontaminationTimeDays: formatNumber(totalOpDeconTime, -1),
-      averageInitialContamination: formatNumber(
-        totalOpInitialContamination,
-        -1,
-      ),
-      averageFinalContamination: formatNumber(totalOpFinalContamination, -1),
+      solidWasteVolumeM3: formatNumber(totalOpSolidWasteVolume, 0),
+      liquidWasteVolumeM3: formatNumber(totalOpLiquidWasteVolume, 0),
+      decontaminationCost: formatNumber(totalOpDeconCost, 0),
+      decontaminationTimeDays: formatNumber(totalOpDeconTime, 0),
+      averageInitialContamination: formatNumber(totalOpInitialContamination, 0),
+      averageFinalContamination: formatNumber(totalOpFinalContamination, 0),
       aboveDetectionLimit: '',
     });
   });
   tableData.push({
     operationName: 'TOTALS',
-    solidWasteVolumeM3: formatNumber(totalSolidWasteVolume, -1),
-    liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume, -1),
-    decontaminationCost: formatNumber(totalDeconCost, -1),
-    decontaminationTimeDays: formatNumber(totalDeconTime, -1),
-    averageInitialContamination: formatNumber(totalInitialContamination, -1),
-    averageFinalContamination: formatNumber(totalFinalContamination, -1),
+    solidWasteVolumeM3: formatNumber(totalSolidWasteVolume, 0),
+    liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume, 0),
+    decontaminationCost: formatNumber(totalDeconCost, 0),
+    decontaminationTimeDays: formatNumber(totalDeconTime, 0),
+    averageInitialContamination: formatNumber(totalInitialContamination, 0),
+    averageFinalContamination: formatNumber(totalFinalContamination, 0),
     aboveDetectionLimit: '',
   });
 
@@ -2433,7 +2424,9 @@ function CalculateResultsPopup({
                 </div>
                 <div>
                   <strong>Max Time day(s):</strong>{' '}
-                  {calculateResultsDecon.data['TOTAL_TIME'].toLocaleString()}
+                  {Math.round(
+                    calculateResultsDecon.data['TOTAL_TIME'],
+                  ).toLocaleString()}
                 </div>
                 <div>
                   <strong>
@@ -2522,40 +2515,32 @@ function CalculateResultsPopup({
 
           const tableData =
             layer.deconLayerResults?.resultsTable.map((d) => {
-              totalSolidWasteVolume += parseSmallFloat(d.solidWasteVolumeM3, 0);
-              totalSolidWasteMass += parseSmallFloat(d.solidWasteMassKg, 0);
-              totalLiquidWasteVolume += parseSmallFloat(
-                d.liquidWasteVolumeM3,
-                0,
-              );
-              totalLiquidWasteMass += parseSmallFloat(d.liquidWasteMassKg, 0);
-              totalDeconCost += parseSmallFloat(d.decontaminationCost, 2);
-              totalDeconTime += parseSmallFloat(d.decontaminationTimeDays, 1);
-              totalInitialContamination += parseSmallFloat(
-                d.averageInitialContamination,
-                0,
-              );
-              totalFinalContamination += parseSmallFloat(
-                d.averageFinalContamination,
-                2,
-              );
+              totalSolidWasteVolume += d.solidWasteVolumeM3;
+              totalSolidWasteMass += d.solidWasteMassKg;
+              totalLiquidWasteVolume += d.liquidWasteVolumeM3;
+              totalLiquidWasteMass += d.liquidWasteMassKg;
+              totalDeconCost += d.decontaminationCost;
+              totalDeconTime += d.decontaminationTimeDays;
+              totalInitialContamination += d.averageInitialContamination;
+              totalFinalContamination += d.averageFinalContamination;
               return {
                 ...d,
-                solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3),
-                solidWasteMassKg: formatNumber(d.solidWasteMassKg),
-                liquidWasteVolumeM3: formatNumber(d.liquidWasteVolumeM3),
-                liquidWasteMassKg: formatNumber(d.liquidWasteMassKg),
-                decontaminationCost: formatNumber(d.decontaminationCost, 2),
+                solidWasteVolumeM3: formatNumber(d.solidWasteVolumeM3, 0),
+                solidWasteMassKg: formatNumber(d.solidWasteMassKg, 0),
+                liquidWasteVolumeM3: formatNumber(d.liquidWasteVolumeM3, 0),
+                liquidWasteMassKg: formatNumber(d.liquidWasteMassKg, 0),
+                decontaminationCost: formatNumber(d.decontaminationCost, 0),
                 decontaminationTimeDays: formatNumber(
                   d.decontaminationTimeDays,
-                  1,
+                  0,
                 ),
                 averageInitialContamination: formatNumber(
                   d.averageInitialContamination,
+                  0,
                 ),
                 averageFinalContamination: formatNumber(
                   d.averageFinalContamination,
-                  2,
+                  0,
                 ),
                 aboveDetectionLimit: d.aboveDetectionLimit ? 'Above' : 'Below',
               };
@@ -2563,20 +2548,17 @@ function CalculateResultsPopup({
           tableData.push({
             contaminationScenario: 'TOTALS',
             decontaminationTechnology: '',
-            solidWasteVolumeM3: formatNumber(totalSolidWasteVolume, -1),
-            solidWasteMassKg: formatNumber(totalSolidWasteMass, -1),
-            liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume, -1),
-            liquidWasteMassKg: formatNumber(totalLiquidWasteMass, -1),
-            decontaminationCost: formatNumber(totalDeconCost, -1),
-            decontaminationTimeDays: formatNumber(totalDeconTime, -1),
+            solidWasteVolumeM3: formatNumber(totalSolidWasteVolume, 0),
+            solidWasteMassKg: formatNumber(totalSolidWasteMass, 0),
+            liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume, 0),
+            liquidWasteMassKg: formatNumber(totalLiquidWasteMass, 0),
+            decontaminationCost: formatNumber(totalDeconCost, 0),
+            decontaminationTimeDays: formatNumber(totalDeconTime, 0),
             averageInitialContamination: formatNumber(
               totalInitialContamination,
-              -1,
+              0,
             ),
-            averageFinalContamination: formatNumber(
-              totalFinalContamination,
-              -1,
-            ),
+            averageFinalContamination: formatNumber(totalFinalContamination, 0),
             aboveDetectionLimit: '',
             numIterativeApplications: 0,
             numTeams: 0,
