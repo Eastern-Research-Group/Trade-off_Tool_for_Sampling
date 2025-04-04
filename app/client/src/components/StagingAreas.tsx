@@ -1,9 +1,9 @@
 /** @jsxImportSource @emotion/react */
 
 import { Fragment, useContext, useEffect, useState } from 'react';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer.js';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import ImageryLayer from '@arcgis/core/layers/ImageryLayer.js';
-import MapImageLayer from '@arcgis/core/layers/MapImageLayer.js';
 import TileLayer from '@arcgis/core/layers/TileLayer.js';
 import { css } from '@emotion/react';
 // components
@@ -659,9 +659,10 @@ function useGovernmentLandsLayer() {
     if (!map) return;
     return (
       map.findLayerById(GOVERNMENT_LANDS_LAYER_ID) ??
-      new MapImageLayer({
+      new FeatureLayer({
         id: GOVERNMENT_LANDS_LAYER_ID,
         listMode: 'show',
+        title: 'Government-Owned Lands',
         url: services.governmentLands,
       })
     );
@@ -697,6 +698,7 @@ function useParcelLayer() {
       new TileLayer({
         id: PARCEL_LAYER_ID,
         listMode: 'show',
+        title: 'Local Parcel Information',
         url: services.parcel,
       })
     );
@@ -732,6 +734,7 @@ function useSuitabilityLayer() {
       new ImageryLayer({
         id: SUITABILITY_LAYER_ID,
         listMode: 'show',
+        title: 'Staging Suitability Analysis',
         url: services.suitability,
       })
     );

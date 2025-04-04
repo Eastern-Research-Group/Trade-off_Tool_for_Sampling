@@ -1,7 +1,7 @@
 {
   "totsGPServer": "https://geopub.epa.gov/arcgis/rest/services/ORD/TOTS/GPServer",
   "totsTestGPServer": "https://ags.erg.com/arcgis/rest/services/ORD/TOTS/GPServer",
-  "governmentLands": "https://gis.blm.gov/arcgis/rest/services/admin_boundaries/BLM_Natl_AdminUnit/MapServer",
+  "governmentLands": "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Federal_Lands/FeatureServer ",
   "gpServerInputMaxRecordCount": 2000,
   "parcel": "https://tiles.arcgis.com/tiles/KzeiCaQsMoeCfoCq/arcgis/rest/services/Regrid_Nationwide_Parcel_Boundaries_v1/MapServer",
   "proxyUrl": "https://app7.erg.com/PHP/proxy.php?",
