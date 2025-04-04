@@ -1519,6 +1519,11 @@ function CharacterizeAOI({
 
           <AccordionList>
             <AccordionItem title="Advanced Options">
+              <p>
+                A default Ground Sampled Group (GSG) file is included. Click Add
+                to upload an alternative GSG file to support ground surface
+                classification imagery analysis.
+              </p>
               <label htmlFor="gsg-file-select-input">
                 GSG File (optional)
                 <InfoIcon
