@@ -141,7 +141,7 @@ function useLookupFiles() {
 
         const sampleSelectOptions: SampleSelectType[] = [];
         Object.keys(sampleAttributes).forEach((key) => {
-          if (!sampleAttributes[key].ENABLED) return;
+          if (!isDecon() && !sampleAttributes[key].ENABLED) return;
           const value = sampleAttributes[key].TYPEUUID;
           const label = sampleAttributes[key].TYPE;
           const isInnovative = sampleAttributes[key].INNOVATIVE;
