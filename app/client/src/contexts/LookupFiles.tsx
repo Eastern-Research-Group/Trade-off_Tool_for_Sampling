@@ -127,6 +127,7 @@ function useLookupFiles() {
               WVPS: parseNumeric(record.WVPS),
               WWPS: parseNumeric(record.WWPS),
             };
+            delete sampleAttributes[record.TYPE].Point_Style;
           });
 
           data.technologyTypes.sampleAttributes = sampleAttributes;
