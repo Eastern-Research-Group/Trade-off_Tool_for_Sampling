@@ -631,6 +631,10 @@ function useAoiCalculations(aoiLayer?: LayerType | null) {
           AREA: areaSqM,
           SOLID_WASTE_CAPACITY: calculateSolidWasteCapacity(areaSqM),
           LIQUID_WASTE_CAPACITY: calculateLiquidWasteCapacity(areaSqM),
+          LATITUDE:
+            (graphic.geometry as __esri.Polygon)?.centroid?.latitude ?? 0,
+          LONGITUDE:
+            (graphic.geometry as __esri.Polygon)?.centroid?.longitude ?? 0,
         };
       }
     });
