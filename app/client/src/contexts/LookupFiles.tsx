@@ -93,10 +93,6 @@ function useLookupFiles() {
             data.services.radarDatasets.sampleMetadata,
           )) as RadarContent;
           res.data.forEach((record) => {
-            // find in TOTS config file for now
-            const POINT_STYLE =
-              data.technologyTypes.sampleAttributes[record.TYPE].POINT_STYLE;
-
             sampleAttributes[record.TYPE] = {
               ...record,
               AA: null,
@@ -117,7 +113,7 @@ function useLookupFiles() {
               OBJECTID: -1,
               ORGANIZATION: null,
               PERMANENT_IDENTIFIER: null,
-              POINT_STYLE,
+              POINT_STYLE: record.Point_Style,
               SA: parseNumeric(record.SA),
               ShapeType: record.ShapeType.toLowerCase(),
               TCPS: parseNumeric(record.TCPS),
@@ -219,6 +215,7 @@ type RadarSampleMetadata = {
   MCPS: string;
   SA: string;
   ShapeType: string;
+  Point_Style: string;
   TCPS: string;
   TTA: string;
   TTC: string;

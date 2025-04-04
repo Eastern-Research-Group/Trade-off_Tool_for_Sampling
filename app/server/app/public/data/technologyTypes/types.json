@@ -1595,25 +1595,5 @@
       "Wood": 9.2,
       "Other": 0
     }
-  },
-  "sampleAttributes": {
-    "Sponge": {
-      "POINT_STYLE": "circle"
-    },
-    "Micro Vac": {
-      "POINT_STYLE": "cross"
-    },
-    "Wet Vac": {
-      "POINT_STYLE": "diamond"
-    },
-    "Robot": {
-      "POINT_STYLE": "square"
-    },
-    "Aggressive Air": {
-      "POINT_STYLE": "triangle"
-    },
-    "Swab": {
-      "POINT_STYLE": "x"
-    }
   }
 }

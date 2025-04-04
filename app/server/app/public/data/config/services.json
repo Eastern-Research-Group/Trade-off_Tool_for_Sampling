@@ -9,7 +9,7 @@
   "suitability": "https://geopub.epa.gov/arcgis/rest/services/ORD/HSRP_30m/ImageServer",
   "useProxyForGPServer": false,
   "radarDatasets": {
-    "sampleMetadata": "https://radar-staging.app.cloud.gov/api/v1/datasets/b334f501-10be-4bc3-8fbf-7eacd163eff7/data/1"
+    "sampleMetadata": "https://radar-staging.app.cloud.gov/api/v1/datasets/b334f501-10be-4bc3-8fbf-7eacd163eff7/data/3"
   },
   "googleAnalyticsMapping": [
     {
