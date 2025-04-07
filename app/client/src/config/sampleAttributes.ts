@@ -68,7 +68,6 @@ export type DeconAttributeItems = {
   RESIDENCE_TIME: number | null;
   FIXED_COSTS: number | null;
   SIZE_BASED_COSTS: number | null;
-  IC_COST: number | null;
   Notes: string | null;
   CREATEDDATE: string | null;
   UPDATEDDATE: null;

@@ -3408,9 +3408,22 @@ function ResultCard({ appType, result }: ResultCardProps) {
           layerDetails.name.endsWith('-operation-details')
         ) {
           if (layerFeatures.features.length > 0) {
-            operationDetails = layerFeatures.features.map(
-              (f: any) => f.attributes,
-            );
+            operationDetails = layerFeatures.features.map((f: any) => {
+              const hasDeconTech =
+                !f.attributes.DECON_TECH_UUID ||
+                ['multiple', 'none'].includes(f.attributes.DECON_TECH_UUID) ||
+                Object.prototype.hasOwnProperty.call(
+                  technologyTypes.deconAttributes,
+                  f.attributes.DECON_TECH_UUID,
+                );
+              return {
+                ...f.attributes,
+                DECON_TECH_UUID: hasDeconTech
+                  ? f.attributes.DECON_TECH_UUID
+                  : 'none',
+                DECON_TECH: hasDeconTech ? f.attributes.DECON_TECH : 'None',
+              };
+            });
           }
         } else if (
           layerDetails.type === 'Table' &&
