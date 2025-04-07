@@ -48,6 +48,7 @@ import {
   convertFileToBase64,
   createErrorObject,
   getNewName,
+  sentenceJoin,
 } from 'utils/utils';
 // types
 import { ScenarioEditsType } from 'types/Edits';
@@ -1148,12 +1149,7 @@ function FilePanel({ appType }: Props) {
       if (missingAttributes.length > 0) {
         setUploadStatus('missing-attributes');
         const sortedMissingAttributes = [...missingAttributes].sort();
-        const missingAttributesStr =
-          sortedMissingAttributes.slice(0, -1).join(', ') +
-          ' and ' +
-          sortedMissingAttributes.slice(-1);
-
-        setMissingAttributes(missingAttributesStr);
+        setMissingAttributes(sentenceJoin(sortedMissingAttributes));
         return;
       }
 

@@ -229,6 +229,20 @@ export function parseSmallFloat(number: number, precision: number = 15) {
 }
 
 /**
+ * Joins the input string into a sentance (i.e., "A, B, and C", "A and B" or "A").
+ *
+ * @param values values to be joined
+ * @returns Values joined into a sentence
+ */
+export function sentenceJoin(values: string[]) {
+  // remove duplicates
+  values = [...new Set(values)];
+
+  if (values.length <= 1) return values.join('');
+  return `${values.slice(0, -1).join(', ')} and ${values.slice(-1)}`;
+}
+
+/**
  * Rounds a float to a specified number of points after the decimal.
  *
  * @param num The number to be rounded

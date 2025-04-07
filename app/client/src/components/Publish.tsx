@@ -52,7 +52,7 @@ import {
   findLayerInEdits,
   generateUUID,
 } from 'utils/sketchUtils';
-import { createErrorObject } from 'utils/utils';
+import { createErrorObject, sentenceJoin } from 'utils/utils';
 // types
 import {
   DeleteFeatureType,
@@ -2377,12 +2377,7 @@ function Publish({ appType }: Props) {
         if (successParts.length === 1) {
           success = successParts[0];
         }
-        if (successParts.length > 1) {
-          success =
-            successParts.slice(0, -1).join(', ') +
-            ' and ' +
-            successParts.slice(-1);
-        }
+        if (successParts.length > 1) success = sentenceJoin(successParts);
 
         // create the failed status message
         const failed = totals.failed

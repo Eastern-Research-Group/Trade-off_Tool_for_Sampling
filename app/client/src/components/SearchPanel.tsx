@@ -55,7 +55,7 @@ import {
   sampleValidation,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import { createErrorObject, escapeForLucene } from 'utils/utils';
+import { createErrorObject, escapeForLucene, sentenceJoin } from 'utils/utils';
 // types
 import { CalculateResultsDataType } from 'types/CalculateResults';
 import {
@@ -3300,6 +3300,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       const refLayersToAdd: any[] = [];
       const zoomToGraphics: __esri.Graphic[] = [];
       const linkedLayerIds: string[] = [];
+      const deconTechRemoved: string[] = [];
       let referenceLayersTable: ReferenceLayersTableType = {
         id: -1,
         referenceLayers: [],
@@ -3416,6 +3417,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
                   technologyTypes.deconAttributes,
                   f.attributes.DECON_TECH_UUID,
                 );
+              if (!hasDeconTech) deconTechRemoved.push(f.attributes.DECON_TECH);
               return {
                 ...f.attributes,
                 DECON_TECH_UUID: hasDeconTech
@@ -3738,11 +3740,28 @@ function ResultCard({ appType, result }: ResultCardProps) {
           description: `The "${result.title}" layer was recently added and currently does not have any data. This could be due to a delay in processing the new data. Please try again later.`,
           onCancel: () => setStatus('no-data'),
         });
-      } else if (aoisWithMismatch.length > 0) {
+      } else if (aoisWithMismatch.length > 0 || deconTechRemoved.length > 0) {
+        const titles: string[] = [];
+        const descriptions: string[] = [];
+        if (aoisWithMismatch.length > 0) {
+          titles.push('AOI Version Mismatch');
+          descriptions.push(
+            `The following AOI Characterization layers have a version mismatch: ${sentenceJoin(aoisWithMismatch)}. The AOI Characterization data may have changed, including AOI location.`,
+          );
+        }
+        if (deconTechRemoved.length > 0) {
+          titles.push('Decon Technology Does Not Exist');
+          descriptions.push(
+            `The following Decon Technologies do not exist: ${sentenceJoin(deconTechRemoved)}. These decon technologies have been replaced with None.`,
+          );
+        }
+
+        const title = sentenceJoin(titles);
+        descriptions.push('Calculations will be re-ran.');
         setOptions({
-          title: 'AOI Version Mismatch',
-          ariaLabel: 'AOI Version Mismatch',
-          description: `The following AOI Characterization layers have a version mismatch: ${aoisWithMismatch.join(',')}. The AOI Characterization data may have changed, including AOI location. Calculations will be re-ran.`,
+          title,
+          ariaLabel: title,
+          description: descriptions.join(' '),
           onCancel: () => {
             editsCopy.count += 1;
             editsCopy.edits = editsCopy.edits.map((edit) => {
