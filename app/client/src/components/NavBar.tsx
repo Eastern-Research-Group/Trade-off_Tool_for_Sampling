@@ -610,7 +610,9 @@ function NavBar({ appType, height }: Props) {
                       </div>
                       <div css={mainTallyStyles}>
                         Max Time day(s):{' '}
-                        {calculateResults.data['TOTAL_TIME'].toLocaleString()}
+                        {Math.round(
+                          calculateResults.data['TOTAL_TIME'],
+                        ).toLocaleString()}
                       </div>
                       <div css={subTallyStyles}>
                         <i className="fas fa-users fa-fw" />{' '}
@@ -681,9 +683,9 @@ function NavBar({ appType, height }: Props) {
                       </div>
                       <div css={mainTallyStyles}>
                         Max Time day(s):{' '}
-                        {calculateResultsDecon.data[
-                          'TOTAL_TIME'
-                        ].toLocaleString()}
+                        {Math.round(
+                          calculateResultsDecon.data['TOTAL_TIME'],
+                        ).toLocaleString()}
                       </div>
                       <div css={mainTallyStyles}>
                         Total Waste Volume (m<sup>3</sup>):{' '}
