@@ -3214,10 +3214,12 @@ function ResultCard({ appType, result }: ResultCardProps) {
       setLayers((layers) => [...layers, ...layersToAdd]);
       setReferenceLayers((layers: any) => [...layers, ...refLayersToAdd]);
 
-      setSelectedScenario((scenario) => {
-        if (scenario) return scenario;
-        else return newScenario;
-      });
+      if (appType === 'decon') {
+        setSelectedScenario((scenario) => {
+          if (scenario) return scenario;
+          else return newScenario;
+        });
+      }
 
       // set the contamination map if one hasn't already been selected
       const contamMap = layersToAdd.find(
