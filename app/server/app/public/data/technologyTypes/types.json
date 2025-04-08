@@ -544,12 +544,12 @@
         }
       }
     },
-    "PAA Spray": {
+    "Peracetic Acid Spray": {
       "OBJECTID": "-1",
       "PERMANENT_IDENTIFIER": null,
       "GLOBALID": null,
-      "TYPEUUID": "PAA Spray",
-      "TYPE": "PAA Spray",
+      "TYPEUUID": "Peracetic Acid Spray",
+      "TYPE": "Peracetic Acid Spray",
       "APPLICATION_MAX_AREA": 4500,
       "APPLICATION_METHOD": "Surface",
       "SETUP_TIME": 6,
