@@ -850,6 +850,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       editsCopy,
       layersToAdd,
       refLayersToAdd,
+      newScenario,
     }: {
       mapLayersToAdd: __esri.Layer[];
       newUserSampleTypes: SampleSelectType[];
@@ -858,6 +859,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       editsCopy: EditsType;
       layersToAdd: LayerType[];
       refLayersToAdd: any[];
+      newScenario: ScenarioEditsType | null;
     }) {
       if (!map) return;
 
@@ -928,6 +930,13 @@ function ResultCard({ appType, result }: ResultCardProps) {
       window.totsLayers = [...layers, ...layersToAdd];
       setLayers((layers) => [...layers, ...layersToAdd]);
       setReferenceLayers((layers: any) => [...layers, ...refLayersToAdd]);
+
+      if (newScenario) {
+        setSelectedScenario((scenario) => {
+          if (scenario) return scenario;
+          else return newScenario;
+        });
+      }
 
       // set the sketchLayer to the first tots sample layer
       if (layersToAdd.length > -1) setSketchLayer(layersToAdd[0]);
@@ -1214,6 +1223,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       const popupTemplate = getPopupTemplate('Samples', trainingMode);
 
       // create the layers to be added to the map
+      let scenarioId: string | null = null;
       for (let i = 0; i < layerDetailResponses.length; i++) {
         const layerDetails = layerDetailResponses[i];
         const layerFeatures = featureResponses[i];
@@ -1467,6 +1477,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
             );
           });
 
+          scenarioId = groupLayer.id;
           const newScenario: ScenarioEditsType = {
             type: 'scenario',
             id: layerDetails.id,
@@ -1727,6 +1738,11 @@ function ResultCard({ appType, result }: ResultCardProps) {
         }
       }
 
+      const newScenario =
+        (editsCopy.edits.find(
+          (e) => e.type === 'scenario' && e.layerId === scenarioId,
+        ) as ScenarioEditsType | undefined) ?? null;
+
       // get the age of the layer in seconds
       const created: number = new Date(result.created).getTime();
       const curTime: number = Date.now();
@@ -1760,6 +1776,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
                 editsCopy,
                 layersToAdd,
                 refLayersToAdd,
+                newScenario,
               }),
             onCancel: () => setStatus('canceled'),
           });
@@ -1772,6 +1789,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
             editsCopy,
             layersToAdd,
             refLayersToAdd,
+            newScenario,
           });
         }
       } else if (zoomToGraphics.length === 0 && duration < 300) {
@@ -1792,6 +1810,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
           editsCopy,
           layersToAdd,
           refLayersToAdd,
+          newScenario,
         });
       }
     } catch (err) {
