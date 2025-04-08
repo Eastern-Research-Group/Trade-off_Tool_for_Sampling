@@ -280,11 +280,11 @@
         }
       }
     },
-    "Low-Conc. Hydrogen Peroxide": {
+    "Low-Conc. Hydrogen Peroxide Vapor": {
       "OBJECTID": "-1",
       "PERMANENT_IDENTIFIER": null,
       "GLOBALID": null,
-      "TYPEUUID": "Low-Conc. Hydrogen Peroxide",
+      "TYPEUUID": "Low-Conc. Hydrogen Peroxide Vapor",
       "TYPE": "Low-Conc. Hydrogen Peroxide Vapor",
       "APPLICATION_MAX_AREA": 4500,
       "APPLICATION_METHOD": "Volumetric",
@@ -368,11 +368,11 @@
         }
       }
     },
-    "Aqueous Chlorine Dioxide": {
+    "Aqueous Chlorine Dioxide Spray": {
       "OBJECTID": "-1",
       "PERMANENT_IDENTIFIER": null,
       "GLOBALID": null,
-      "TYPEUUID": "Aqueous Chlorine Dioxide",
+      "TYPEUUID": "Aqueous Chlorine Dioxide Spray",
       "TYPE": "Aqueous Chlorine Dioxide Spray",
       "APPLICATION_MAX_AREA": 4500,
       "APPLICATION_METHOD": "Surface",
@@ -456,11 +456,11 @@
         }
       }
     },
-    "Bleach Spray": {
+    "Dilute Bleach Spray": {
       "OBJECTID": "-1",
       "PERMANENT_IDENTIFIER": null,
       "GLOBALID": null,
-      "TYPEUUID": "Bleach Spray",
+      "TYPEUUID": "Dilute Bleach Spray",
       "TYPE": "Dilute Bleach (2% hypochlorite) Spray",
       "APPLICATION_MAX_AREA": 4500,
       "APPLICATION_METHOD": "Surface",
@@ -544,12 +544,12 @@
         }
       }
     },
-    "Hydrogen Peroxide PAA Spray": {
+    "PAA Spray": {
       "OBJECTID": "-1",
       "PERMANENT_IDENTIFIER": null,
       "GLOBALID": null,
-      "TYPEUUID": "Hydrogen Peroxide PAA Spray",
-      "TYPE": "Hydrogen Peroxide PAA Spray",
+      "TYPEUUID": "PAA Spray",
+      "TYPE": "PAA Spray",
       "APPLICATION_MAX_AREA": 4500,
       "APPLICATION_METHOD": "Surface",
       "SETUP_TIME": 6,

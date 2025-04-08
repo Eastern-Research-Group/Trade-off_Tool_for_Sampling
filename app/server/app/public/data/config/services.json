@@ -1,7 +1,7 @@
 {
   "totsGPServer": "https://geopub.epa.gov/arcgis/rest/services/ORD/TOTS/GPServer",
   "totsTestGPServer": "https://ags.erg.com/arcgis/rest/services/ORD/TOTS/GPServer",
-  "governmentLands": "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Federal_Lands/FeatureServer ",
+  "governmentLands": "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Federal_Lands/FeatureServer",
   "gpServerInputMaxRecordCount": 2000,
   "parcel": "https://tiles.arcgis.com/tiles/KzeiCaQsMoeCfoCq/arcgis/rest/services/Regrid_Nationwide_Parcel_Boundaries_v1/MapServer",
   "proxyUrl": "https://app7.erg.com/PHP/proxy.php?",
@@ -14,8 +14,18 @@
   "googleAnalyticsMapping": [
     {
       "urlLookup": "totsGPServer",
-      "wildcardUrl": "{urlLookup}/Contamination Results*",
+      "wildcardUrl": "{urlLookup}/Classify%20AOI*",
+      "name": "GP Server - Classify AOI"
+    },
+    {
+      "urlLookup": "totsGPServer",
+      "wildcardUrl": "{urlLookup}/Contamination%20Results*",
       "name": "GP Server - Contamination Results"
+    },
+    {
+      "urlLookup": "totsGPServer",
+      "wildcardUrl": "{urlLookup}/Export%20ShapeFile*",
+      "name": "GP Server - Export ShapeFile"
     },
     {
       "urlLookup": "totsGPServer",
@@ -116,6 +126,26 @@
       "urlLookup": "ArcGIS",
       "wildcardUrl": "https://www.arcgis.com/sharing/rest/content/users/*",
       "name": "ArcGIS - User logged in check"
+    },
+    {
+      "urlLookup": "suitability",
+      "wildcardUrl": "{urlLookup}*",
+      "name": "Staging Suitability Analysis"
+    },
+    {
+      "urlLookup": "governmentLands",
+      "wildcardUrl": "{urlLookup}*",
+      "name": "Government Lands"
+    },
+    {
+      "urlLookup": "parcel",
+      "wildcardUrl": "{urlLookup}*",
+      "name": "Parcel Information"
+    },
+    {
+      "urlLookup": "structures",
+      "wildcardUrl": "{urlLookup}*",
+      "name": "USA Structures"
     }
   ]
 }

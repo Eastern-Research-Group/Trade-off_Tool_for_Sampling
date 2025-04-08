@@ -849,6 +849,11 @@ function FilePanel({ appType }: Props) {
       return;
     }
 
+    if (!['Samples', 'VSP'].includes(layerType.value)) {
+      setFileValidated(true);
+      return;
+    }
+
     setFileValidationStarted(true);
 
     // build the list of graphics to be validated

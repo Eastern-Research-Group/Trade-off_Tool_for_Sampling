@@ -114,6 +114,11 @@ const addButtonStyles = css`
 
 const submitButtonStyles = css`
   margin-top: 10px;
+
+  &: disabled {
+    cursor: default;
+    opacity: 0.65;
+  }
 `;
 
 const headerContainer = css`
@@ -382,6 +387,23 @@ function CreateDeconPlan() {
     selectedScenario.linkedLayerIds.findIndex(
       (id) => id === deconOperation?.layerId,
     ) > -1;
+
+  // determine if the AOI characterization has been run
+  const deconLayer = edits.edits.find(
+    (l) =>
+      l.type === 'layer-aoi-analysis' &&
+      l.layerId === deconSketchLayer?.layerId,
+  ) as LayerAoiAnalysisEditsType;
+  const imageryLayer = deconLayer?.layers?.find(
+    (l) => l.layerType === 'Image Analysis',
+  );
+  const buildingLayer = deconLayer?.layers?.find(
+    (l) => l.layerType === 'AOI Assessed',
+  );
+  const hasAoiCharacterizationRan =
+    buildingLayer &&
+    imageryLayer &&
+    (buildingLayer.adds.length > 0 || imageryLayer.adds.length > 0);
 
   return (
     <div css={panelContainer}>
@@ -1258,23 +1280,23 @@ function CreateDeconPlan() {
                   </div>
                 )}
 
-                {deconSketchLayer &&
-                  (!trainingMode || (trainingMode && contaminationMap)) && (
-                    <Fragment>
-                      <button
-                        css={submitButtonStyles}
-                        onClick={() => setDeconTechPopupOpen(true)}
-                      >
-                        Select/Edit Decontamination Technology Selections
-                      </button>
+                <button
+                  css={submitButtonStyles}
+                  onClick={() => setDeconTechPopupOpen(true)}
+                  disabled={
+                    !deconSketchLayer ||
+                    !hasAoiCharacterizationRan ||
+                    (trainingMode && (!trainingMode || !contaminationMap))
+                  }
+                >
+                  Select/Edit Decontamination Technology Selections
+                </button>
 
-                      <DeconSelectionPopup
-                        defaultDeconSelections={defaultDeconSelections}
-                        isOpen={deconTechPopupOpen}
-                        onClose={() => setDeconTechPopupOpen(false)}
-                      />
-                    </Fragment>
-                  )}
+                <DeconSelectionPopup
+                  defaultDeconSelections={defaultDeconSelections}
+                  isOpen={deconTechPopupOpen}
+                  onClose={() => setDeconTechPopupOpen(false)}
+                />
               </div>
             </Fragment>
           )}
