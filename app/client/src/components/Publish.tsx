@@ -616,19 +616,56 @@ function Publish({ appType }: Props) {
           ) {
             errorMessages.push('No sample data to publish');
           } else {
-            const originalLayers = layers.filter(
-              (layer) =>
-                editsScenario.layers.findIndex(
-                  (childLayer) => childLayer.layerId === layer.layerId,
-                ) !== -1,
-            );
-            console.log('originalLayers; ', originalLayers);
+            // get the attributes to be published
+            const attributesToInclude = [
+              ...defaultPlanAttributes,
+              ...(trainingMode ? trainingModePlanAttributes : []),
+              ...editsScenario.customAttributes,
+            ];
+            attributesToInclude.forEach((item, index) => {
+              item.id = index + 1;
+            });
+
+            let fields = layerProps.defaultFields;
+            if (attributesToInclude) {
+              fields = layerProps.defaultFields.filter(
+                (x: any) =>
+                  attributesToInclude.findIndex((y) => y.name === x.name) >
+                    -1 ||
+                  x.name === 'GLOBALID' ||
+                  x.name === 'OBJECTID',
+              );
+            }
+
+            attributesToInclude?.forEach((attribute) => {
+              const fieldIndex = fields.findIndex(
+                (x: any) => x.name === attribute.name,
+              );
+
+              if (fieldIndex > -1) return;
+
+              fields.push(buildFieldFromCustomAttribute(attribute));
+            });
 
             const layersToPublish: any[] = [];
             let sampleTypesToPublish: any = {};
-            originalLayers.forEach((layer) => {
-              const templatesPolygons: any[] = [];
-              const templatesPoints: any[] = [];
+            const adds: FeatureEditsType[] = [];
+            const updates: FeatureEditsType[] = [];
+            const deletes: any[] = [];
+            const published: FeatureEditsType[] = [];
+            const pointsAdds: FeatureEditsType[] = [];
+            const pointsUpdates: FeatureEditsType[] = [];
+            const pointsDeletes: any[] = [];
+            const pointsPublished: FeatureEditsType[] = [];
+            const uniqueValueInfosPolygonsCombined: any[] = [];
+            const uniqueValueInfosPointsCombined: any[] = [];
+            let fullExtent: __esri.Extent | null = null;
+            editsScenario.layers.forEach((layerEdits) => {
+              const layer = layers.find(
+                (l) => l.layerId === layerEdits.layerId,
+              );
+              if (!layer) return;
+
               const {
                 graphicsExtent,
                 sampleTypes,
@@ -636,234 +673,184 @@ function Publish({ appType }: Props) {
                 uniqueValueInfosPoints,
               } = buildRendererParams(layer, null);
 
+              if (graphicsExtent) {
+                if (!fullExtent) fullExtent = graphicsExtent;
+                else fullExtent.union(graphicsExtent);
+              }
+
+              uniqueValueInfosPolygons.forEach((item) => {
+                const alreadyAdded =
+                  uniqueValueInfosPolygonsCombined.findIndex(
+                    (i) => i.value === item.value,
+                  ) > -1;
+                if (alreadyAdded) return;
+                uniqueValueInfosPolygonsCombined.push(item);
+              });
+              uniqueValueInfosPoints.forEach((item) => {
+                const alreadyAdded =
+                  uniqueValueInfosPointsCombined.findIndex(
+                    (i) => i.value === item.value,
+                  ) > -1;
+                if (alreadyAdded) return;
+                uniqueValueInfosPointsCombined.push(item);
+              });
+
               sampleTypesToPublish = {
                 ...sampleTypesToPublish,
                 ...sampleTypes,
               };
 
-              // add a custom type for determining which layers in a feature service
-              // are the sample layers. All feature services made through TOTS should only
-              // have one layer, but it is possible for user
-              if (layer.layerType === 'Samples') {
-                templatesPolygons.push({
-                  id: 'epa-tots-sample-layer',
-                  name: 'epa-tots-sample-layer',
-                });
-              }
-              if (layer.layerType === 'VSP') {
-                templatesPolygons.push({
-                  id: 'epa-tots-vsp-layer',
-                  name: 'epa-tots-vsp-layer',
-                });
-              }
-
-              // add a custom type for determining which layers in a feature service
-              // are the sample layers. All feature services made through TOTS should only
-              // have one layer, but it is possible for user
-              if (layer.layerType === 'Samples') {
-                templatesPoints.push({
-                  id: 'epa-tots-sample-points-layer',
-                  name: 'epa-tots-sample-points-layer',
-                });
-              }
-              if (layer.layerType === 'VSP') {
-                templatesPoints.push({
-                  id: 'epa-tots-vsp-points-layer',
-                  name: 'epa-tots-vsp-points-layer',
-                });
-              }
-
-              // get the attributes to be published
-              const attributesToInclude = [
-                ...defaultPlanAttributes,
-                ...(trainingMode ? trainingModePlanAttributes : []),
-                ...editsScenario.customAttributes,
-              ];
-              attributesToInclude.forEach((item, index) => {
-                item.id = index + 1;
+              published.push(...layerEdits.published);
+              published.forEach((item) => {
+                addPointFeatures(
+                  layer,
+                  pointsPublished,
+                  item,
+                  attributesToInclude,
+                );
               });
 
-              let fields = layerProps.defaultFields;
-              if (attributesToInclude) {
-                fields = layerProps.defaultFields.filter(
-                  (x: any) =>
-                    attributesToInclude.findIndex((y) => y.name === x.name) >
-                      -1 ||
-                    x.name === 'GLOBALID' ||
-                    x.name === 'OBJECTID',
-                );
-              }
-
-              attributesToInclude?.forEach((attribute) => {
-                const fieldIndex = fields.findIndex(
-                  (x: any) => x.name === attribute.name,
-                );
-
-                if (fieldIndex > -1) return;
-
-                fields.push(buildFieldFromCustomAttribute(attribute));
-              });
-
-              const adds: FeatureEditsType[] = [];
-              const updates: FeatureEditsType[] = [];
-              const deletes: any[] = [];
-              const published: FeatureEditsType[] = [];
-              const pointsAdds: FeatureEditsType[] = [];
-              const pointsUpdates: FeatureEditsType[] = [];
-              const pointsDeletes: any[] = [];
-              const pointsPublished: FeatureEditsType[] = [];
-              editsScenario.layers.forEach((layerEdits) => {
-                published.push(...layerEdits.published);
-                published.forEach((item) => {
-                  addPointFeatures(
-                    layer,
-                    pointsPublished,
-                    item,
-                    attributesToInclude,
+              layerEdits.adds.forEach((item) => {
+                let attributes: any = {};
+                if (layer?.sketchLayer?.type === 'graphics') {
+                  const graphic = layer.sketchLayer.graphics.find(
+                    (graphic) =>
+                      graphic.attributes.PERMANENT_IDENTIFIER ===
+                      item.attributes.PERMANENT_IDENTIFIER,
                   );
+
+                  if (graphic) {
+                    attributes['GLOBALID'] = generateUUID();
+                    attributes['OBJECTID'] = graphic.attributes['OBJECTID'];
+
+                    attributesToInclude.forEach((attribute) => {
+                      attributes[attribute.name] =
+                        graphic.attributes[attribute.name] || null;
+                    });
+                  }
+                }
+
+                if (attributes.length === 0) {
+                  attributes = { ...item.attributes };
+                }
+
+                adds.push({
+                  ...item,
+                  attributes,
                 });
+                addPointFeatures(layer, pointsAdds, item, attributesToInclude);
+              });
 
-                layerEdits.adds.forEach((item) => {
-                  let attributes: any = {};
-                  if (layer?.sketchLayer?.type === 'graphics') {
-                    const graphic = layer.sketchLayer.graphics.find(
-                      (graphic) =>
-                        graphic.attributes.PERMANENT_IDENTIFIER ===
-                        item.attributes.PERMANENT_IDENTIFIER,
-                    );
+              const combinedUpdates = [
+                ...layerEdits.updates,
+                ...layerEdits.published,
+              ];
+              combinedUpdates.forEach((item) => {
+                let attributes: any = {};
+                if (layer?.sketchLayer?.type === 'graphics') {
+                  const graphic = layer.sketchLayer.graphics.find(
+                    (graphic) =>
+                      graphic.attributes.PERMANENT_IDENTIFIER ===
+                      item.attributes.PERMANENT_IDENTIFIER,
+                  );
 
-                    if (graphic) {
-                      attributes['GLOBALID'] = generateUUID();
-                      attributes['OBJECTID'] = graphic.attributes['OBJECTID'];
+                  if (graphic) {
+                    attributes['GLOBALID'] = generateUUID();
+                    attributes['OBJECTID'] = graphic.attributes['OBJECTID'];
 
-                      attributesToInclude.forEach((attribute) => {
-                        attributes[attribute.name] =
-                          graphic.attributes[attribute.name] || null;
-                      });
-                    }
+                    attributesToInclude.forEach((attribute) => {
+                      attributes[attribute.name] =
+                        graphic.attributes[attribute.name] || null;
+                    });
                   }
+                }
 
-                  if (attributes.length === 0) {
-                    attributes = { ...item.attributes };
-                  }
+                if (attributes.length === 0) {
+                  attributes = { ...item.attributes };
+                }
 
+                const inDeletes =
+                  layerEdits.deletes.findIndex(
+                    (feat) =>
+                      feat.PERMANENT_IDENTIFIER ===
+                      item.attributes.PERMANENT_IDENTIFIER,
+                  ) !== -1;
+                if (!inDeletes) {
                   adds.push({
                     ...item,
                     attributes,
                   });
                   addPointFeatures(
                     layer,
-                    pointsAdds,
+                    pointsAdds, // layerEdits.pointsId === -1 ? pointsAdds : pointsUpdates,
                     item,
                     attributesToInclude,
                   );
-                });
-
-                const combinedUpdates = [
-                  ...layerEdits.updates,
-                  ...layerEdits.published,
-                ];
-                combinedUpdates.forEach((item) => {
-                  let attributes: any = {};
-                  if (layer?.sketchLayer?.type === 'graphics') {
-                    const graphic = layer.sketchLayer.graphics.find(
-                      (graphic) =>
-                        graphic.attributes.PERMANENT_IDENTIFIER ===
-                        item.attributes.PERMANENT_IDENTIFIER,
-                    );
-
-                    if (graphic) {
-                      attributes['GLOBALID'] = generateUUID();
-                      attributes['OBJECTID'] = graphic.attributes['OBJECTID'];
-
-                      attributesToInclude.forEach((attribute) => {
-                        attributes[attribute.name] =
-                          graphic.attributes[attribute.name] || null;
-                      });
-                    }
-                  }
-
-                  if (attributes.length === 0) {
-                    attributes = { ...item.attributes };
-                  }
-
-                  const inDeletes =
-                    layerEdits.deletes.findIndex(
-                      (feat) =>
-                        feat.PERMANENT_IDENTIFIER ===
-                        item.attributes.PERMANENT_IDENTIFIER,
-                    ) !== -1;
-                  if (!inDeletes) {
-                    adds.push({
-                      ...item,
-                      attributes,
-                    });
-                    addPointFeatures(
-                      layer,
-                      pointsAdds, // layerEdits.pointsId === -1 ? pointsAdds : pointsUpdates,
-                      item,
-                      attributesToInclude,
-                    );
-                  }
-                });
-                layerEdits.deletes.forEach((item) => {
-                  deletes.push({
-                    ...item,
-                    DECISIONUNITUUID: layer.uuid,
-                  });
-                  if (layerEdits.pointsId !== -1)
-                    pointsDeletes.push(item.GLOBALID);
-                });
+                }
               });
+              layerEdits.deletes.forEach((item) => {
+                deletes.push({
+                  ...item,
+                  DECISIONUNITUUID: layer.uuid,
+                });
+                if (layerEdits.pointsId !== -1)
+                  pointsDeletes.push(item.GLOBALID);
+              });
+            });
 
-              layersToPublish.push({
-                id: layer.id,
-                layerId: layer.layerId,
-                layerDefinitionProps: {
-                  ...layerProps.defaultLayerProps,
-                  fields,
-                  name: selectedScenario.scenarioName,
-                  description: selectedScenario.scenarioDescription,
-                  extent: graphicsExtent,
-                  drawingInfo: {
-                    renderer: {
-                      type: 'uniqueValue',
-                      field1: 'TYPEUUID',
-                      uniqueValueInfos: uniqueValueInfosPolygons,
-                    },
+            layersToPublish.push({
+              id: 0,
+              layerId: editsScenario.layerId,
+              layerDefinitionProps: {
+                ...layerProps.defaultLayerProps,
+                fields,
+                name: selectedScenario.scenarioName,
+                description: selectedScenario.scenarioDescription,
+                extent: fullExtent,
+                drawingInfo: {
+                  renderer: {
+                    type: 'uniqueValue',
+                    field1: 'TYPEUUID',
+                    uniqueValueInfos: uniqueValueInfosPolygonsCombined,
                   },
-                  types: templatesPolygons,
                 },
-                adds,
-                updates,
-                deletes,
-                published,
-              });
+                types: {
+                  id: 'epa-tots-sample-layer',
+                  name: 'epa-tots-sample-layer',
+                },
+              },
+              adds,
+              updates,
+              deletes,
+              published,
+            });
 
-              layersToPublish.push({
-                id: layer.pointsId,
-                layerId: `${layer.layerId}-points`,
-                layerDefinitionProps: {
-                  ...layerProps.defaultLayerProps,
-                  fields,
-                  geometryType: 'esriGeometryPoint',
-                  name: selectedScenario.scenarioName + '-points',
-                  description: selectedScenario.scenarioDescription,
-                  extent: graphicsExtent,
-                  drawingInfo: {
-                    renderer: {
-                      type: 'uniqueValue',
-                      field1: 'TYPEUUID',
-                      uniqueValueInfos: uniqueValueInfosPoints,
-                    },
+            layersToPublish.push({
+              id: 1,
+              layerId: `${editsScenario.layerId}-points`,
+              layerDefinitionProps: {
+                ...layerProps.defaultLayerProps,
+                fields,
+                geometryType: 'esriGeometryPoint',
+                name: selectedScenario.scenarioName + '-points',
+                description: selectedScenario.scenarioDescription,
+                extent: fullExtent,
+                drawingInfo: {
+                  renderer: {
+                    type: 'uniqueValue',
+                    field1: 'TYPEUUID',
+                    uniqueValueInfos: uniqueValueInfosPointsCombined,
                   },
-                  types: templatesPoints,
                 },
-                adds: pointsAdds,
-                updates: pointsUpdates,
-                deletes: pointsDeletes,
-                published: pointsPublished,
-              });
+                types: {
+                  id: 'epa-tots-sample-points-layer',
+                  name: 'epa-tots-sample-points-layer',
+                },
+              },
+              adds: pointsAdds,
+              updates: pointsUpdates,
+              deletes: pointsDeletes,
+              published: pointsPublished,
             });
 
             let contamMapToPublish: LayerType | null = null;
