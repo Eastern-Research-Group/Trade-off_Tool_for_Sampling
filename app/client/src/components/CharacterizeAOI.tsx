@@ -11,13 +11,13 @@ import Select from 'components/Select';
 // contexts
 import { AuthenticationContext } from 'contexts/Authentication';
 import { CalculateContext } from 'contexts/Calculate';
+import { DialogContext } from 'contexts/Dialog';
 import { useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { PlanGraphics, SketchContext } from 'contexts/Sketch';
 // utils
 import { isServiceNameAvailable } from 'utils/arcGisRestUtils';
-import { fetchPost, fetchPostFile } from 'utils/fetchUtils';
-import { fetchBuildingData, GsgParam, processScenario } from 'utils/hooks';
+import { fetchBuildingData, processScenario } from 'utils/hooks';
 import {
   activateSketchButton,
   calculateArea,
@@ -44,7 +44,6 @@ import {
   scenarioNameTakenMessage,
   webServiceErrorMessage,
 } from 'config/errorMessages';
-
 function getAoiLayer(
   deconSketchLayer: LayerAoiAnalysisEditsType,
   layers: LayerType[],
@@ -223,6 +222,7 @@ function CharacterizeAOI({
   const { portal, signedIn } = useContext(AuthenticationContext);
   const { calculateResultsDecon, setCalculateResultsDecon } =
     useContext(CalculateContext);
+  const { setOptions } = useContext(DialogContext);
   const { setGoTo, setGoToOptions } = useContext(NavigationContext);
   const {
     aoiCharacterizationData,
@@ -503,36 +503,27 @@ function CharacterizeAOI({
           file.path,
         );
 
-        const gsgFileUploaded: any = await fetchPostFile(
-          `${services.totsGPServer}/uploads/upload`,
-          {
-            f: 'json',
-          },
-          gsgFile,
-        );
-        const gsgParam: GsgParam = {
-          itemID: gsgFileUploaded.item.itemID,
-        };
-
         // TODO - look into adding more queries here
-        await fetchBuildingData(
-          aoiGraphics,
-          services,
-          planGraphics,
-          responseIndexes,
-          gsgParam,
-          sceneViewForArea,
-          'math',
-          technologyTypes,
-        );
-
-        if (gsgParam) {
-          await fetchPost(
-            `${services.totsGPServer}/uploads/${gsgParam.itemID}/delete`,
-            {
-              f: 'json',
-            },
+        const { buildingCount, buildingLimit, thresholdExceeded } =
+          await fetchBuildingData(
+            aoiGraphics,
+            services,
+            planGraphics,
+            responseIndexes,
+            gsgFile,
+            sceneViewForArea,
+            'math',
+            technologyTypes,
           );
+        if (thresholdExceeded) {
+          setOptions({
+            title: 'Too Many Buildings',
+            ariaLabel: 'Too Many Buildings',
+            description: `The AOI contains too many buildings (${buildingCount}). The limit is ${buildingLimit} buildings. Please draw a smaller AOI(s) and try again.`,
+            onCancel: () =>
+              setAoiCharacterizationData({ status: 'none', planGraphics: {} }),
+          });
+          return;
         }
 
         const newDeconTechSelections = processScenario(

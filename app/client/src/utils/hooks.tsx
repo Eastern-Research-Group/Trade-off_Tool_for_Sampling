@@ -64,7 +64,7 @@ import { ReferenceLayerSelections } from 'types/Publish';
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
 import { writeToStorage } from 'utils/browserStorage';
-import { geoprocessorFetch } from 'utils/fetchUtils';
+import { fetchPost, fetchPostFile, geoprocessorFetch } from 'utils/fetchUtils';
 import {
   calculateArea,
   convertToPoint,
@@ -465,12 +465,35 @@ export async function fetchBuildingData(
   services: any,
   planGraphics: PlanGraphics,
   responseIndexes: string[],
-  gsgFile: GsgParam | undefined,
+  gsgFile: File | undefined,
   sceneViewForArea: __esri.SceneView | null,
   cutFootprintsMethod: 'cut' | 'math' | 'raw' = 'math',
   technologyTypes: SampleTypesS3,
   _buildingFilter: string[] = [],
 ) {
+  const countRequests: any[] = [];
+  aoiGraphics.forEach((graphic) => {
+    countRequests.push(
+      query.executeForCount(services.structures, {
+        geometry: graphic.geometry,
+        returnGeometry: false,
+      }),
+    );
+  });
+
+  const countResponses = await Promise.all(countRequests);
+  let buildingCount = 0;
+  countResponses.forEach((count) => (buildingCount += count));
+
+  const buildingLimit = cutFootprintsMethod === 'cut' ? 500 : 2000;
+  if (buildingCount > buildingLimit) {
+    return {
+      thresholdExceeded: true,
+      buildingCount,
+      buildingLimit,
+    };
+  }
+
   const requests: any[] = [];
   aoiGraphics.forEach((graphic) => {
     requests.push(
@@ -742,6 +765,20 @@ export async function fetchBuildingData(
 
   buildingCalculations(planGraphics);
 
+  let gsgParam: GsgParam | undefined = undefined;
+  if (gsgFile) {
+    const gsgFileUploaded: any = await fetchPostFile(
+      `${services.totsGPServer}/uploads/upload`,
+      {
+        f: 'json',
+      },
+      gsgFile,
+    );
+    gsgParam = {
+      itemID: gsgFileUploaded.item.itemID,
+    };
+  }
+
   const iaResponses: any[] = [];
   for (const graphic of aoiGraphics) {
     removeZValues(graphic);
@@ -771,7 +808,7 @@ export async function fetchBuildingData(
     const props = {
       f: 'json',
       Area_of_Interest_Mask: featureSet.toJSON(),
-      GSGFile: gsgFile,
+      GSGFile: gsgParam,
       ImageryLayer:
         'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
     };
@@ -783,6 +820,15 @@ export async function fetchBuildingData(
         url: `${services.totsGPServer}/Classify%20AOI`,
         inputParameters: props,
       }),
+    );
+  }
+
+  if (gsgParam) {
+    await fetchPost(
+      `${services.totsGPServer}/uploads/${gsgParam.itemID}/delete`,
+      {
+        f: 'json',
+      },
     );
   }
 
@@ -955,6 +1001,12 @@ export async function fetchBuildingData(
 
     console.log('planGraphics: ', planGraphics);
   }
+
+  return {
+    thresholdExceeded: false,
+    buildingCount,
+    buildingLimit,
+  };
 }
 
 export function buildingCalculations(planGraphics: PlanGraphics) {
