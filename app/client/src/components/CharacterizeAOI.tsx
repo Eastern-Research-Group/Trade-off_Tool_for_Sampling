@@ -522,7 +522,7 @@ function CharacterizeAOI({
           responseIndexes,
           gsgParam,
           sceneViewForArea,
-          true,
+          'math',
           technologyTypes,
         );
 

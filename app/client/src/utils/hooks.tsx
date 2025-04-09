@@ -467,7 +467,7 @@ export async function fetchBuildingData(
   responseIndexes: string[],
   gsgFile: GsgParam | undefined,
   sceneViewForArea: __esri.SceneView | null,
-  cutFootprintsOut: boolean = true,
+  cutFootprintsMethod: 'cut' | 'math' | 'raw' = 'math',
   technologyTypes: SampleTypesS3,
   _buildingFilter: string[] = [],
 ) {
@@ -528,8 +528,12 @@ export async function fetchBuildingData(
       // get building material type factors
       const factorKey =
         PRIM_OCC === 'Unclassified' ? `${PRIM_OCC}-${OCC_CLS}` : PRIM_OCC;
-      const { SOC, Brick, Concrete, Steel, Wood, Other } =
-        technologyTypes.deconBuildingFactors[factorKey];
+      const buildingFactors = technologyTypes.deconBuildingFactors[factorKey];
+      if (!buildingFactors) {
+        console.log('No definition for ', factorKey);
+        return;
+      }
+      const { SOC, Brick, Concrete, Steel, Wood, Other } = buildingFactors;
 
       // get surface area per material type sq meters
       const intBrickSqM = intSqM * (Brick / 100);
@@ -822,7 +826,7 @@ export async function fetchBuildingData(
           },
         });
         let polygons: __esri.Geometry[] = [startPolygon];
-        if (cutFootprintsOut) {
+        if (cutFootprintsMethod === 'cut') {
           for (const buildingGraphic of planGraphics[planId].graphics) {
             if (geometryEngine.contains(buildingGraphic.geometry, startPolygon))
               return;
@@ -868,7 +872,7 @@ export async function fetchBuildingData(
   });
 
   for (const planId of Object.keys(planGraphics)) {
-    if (cutFootprintsOut) {
+    if (cutFootprintsMethod === 'cut') {
       const imageAreas: { [key: string]: number } = {};
       for (const graphic of planGraphics[planId].imageGraphics) {
         const key = graphic.attributes.category.toLowerCase();
@@ -893,7 +897,48 @@ export async function fetchBuildingData(
           ((imageAreas['soil'] + imageAreas['vegetation']) / totalArea) * 100,
         soilSqM: imageAreas['soil'] + imageAreas['vegetation'],
       };
-    } else {
+    } else if (cutFootprintsMethod === 'math') {
+      // trim building footprints to AOI
+      let buildingFootprintArea = 0;
+      for (const buildingGraphic of planGraphics[planId].graphics) {
+        const intersection = geometryEngine.intersect(
+          aoiGraphics.map((g) => g.geometry),
+          buildingGraphic.geometry,
+        );
+
+        const intersectionArray = Array.isArray(intersection)
+          ? intersection
+          : [intersection];
+        for (const geometry of intersectionArray) {
+          const areaSM = await calculateArea(
+            new Graphic({ geometry }),
+            sceneViewForArea,
+          );
+          if (typeof areaSM === 'number') {
+            buildingFootprintArea += areaSM;
+          }
+        }
+      }
+
+      // generate new areas and percentages based on non building area
+      const totalArea = planGraphics[planId].aoiArea;
+      const nonBuildingArea = totalArea - buildingFootprintArea;
+      const { numAois, asphalt, concrete, soil } =
+        planGraphics[planId].aoiPercentages;
+      const asphaltSqM = (asphalt / 100) * nonBuildingArea;
+      const concreteSqM = (concrete / 100) * nonBuildingArea;
+      const soilSqM = (soil / 100) * nonBuildingArea;
+
+      planGraphics[planId].aoiPercentages = {
+        numAois,
+        asphalt: (asphaltSqM / totalArea) * 100,
+        asphaltSqM,
+        concrete: (concreteSqM / totalArea) * 100,
+        concreteSqM,
+        soil: (soilSqM / totalArea) * 100,
+        soilSqM,
+      };
+    } else if (cutFootprintsMethod === 'raw') {
       const totalArea = planGraphics[planId].aoiArea;
       const { numAois, asphalt, concrete, soil } =
         planGraphics[planId].aoiPercentages;
