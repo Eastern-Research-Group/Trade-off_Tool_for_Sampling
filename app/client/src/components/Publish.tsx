@@ -732,13 +732,15 @@ function Publish({ appType }: Props) {
                         item.attributes.PERMANENT_IDENTIFIER,
                     );
 
-                    attributes['GLOBALID'] = generateUUID();
-                    attributes['OBJECTID'] = graphic.attributes['OBJECTID'];
+                    if (graphic) {
+                      attributes['GLOBALID'] = generateUUID();
+                      attributes['OBJECTID'] = graphic.attributes['OBJECTID'];
 
-                    attributesToInclude.forEach((attribute) => {
-                      attributes[attribute.name] =
-                        graphic.attributes[attribute.name] || null;
-                    });
+                      attributesToInclude.forEach((attribute) => {
+                        attributes[attribute.name] =
+                          graphic.attributes[attribute.name] || null;
+                      });
+                    }
                   }
 
                   if (attributes.length === 0) {
