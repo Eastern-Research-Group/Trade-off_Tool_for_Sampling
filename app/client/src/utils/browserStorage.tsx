@@ -389,7 +389,12 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
             });
             scenarioLayers.push(...layers);
 
-            if (layer.layerType === 'Decon Mask') layers[0].visible = false;
+            if (layer.layerType === 'Decon Mask') {
+              layers[0].visible = false;
+              layers[0].elevationInfo = { mode: 'on-the-ground' };
+            }
+            if (layer.layerType === 'Staging Area Mask')
+              layers[0].elevationInfo = { mode: 'on-the-ground' };
             if (layer.layerType === 'AOI Assessed')
               buildingGraphics.push(...layers[0].graphics);
             if (layer.layerType === 'Image Analysis')

@@ -956,6 +956,7 @@ export async function fetchBuildingData(
           ? intersection
           : [intersection];
         for (const geometry of intersectionArray) {
+          if (!geometry) continue;
           const areaSM = await calculateArea(
             new Graphic({ geometry }),
             sceneViewForArea,

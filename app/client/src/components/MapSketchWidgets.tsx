@@ -486,21 +486,25 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
     if (!aoiSketchVM) return;
 
     if (
-      currentPanel?.value === 'locateSamples' &&
+      ['additionalTools', 'decon', 'locateSamples'].includes(
+        currentPanel?.value ?? '',
+      ) &&
       aoiSketchLayer?.sketchLayer?.type === 'graphics'
     ) {
       aoiSketchVM.layer = aoiSketchLayer.sketchLayer;
 
-      aoiSketchVM.polygonSymbol = defaultSymbols.symbols[
-        'Area of Interest'
-      ] as any;
-      aoiSketchVM.pointSymbol = defaultSymbols.symbols[
-        'Area of Interest'
-      ] as any;
+      if (currentPanel?.value === 'locateSamples') {
+        aoiSketchVM.polygonSymbol = defaultSymbols.symbols[
+          'Area of Interest'
+        ] as any;
+        aoiSketchVM.pointSymbol = defaultSymbols.symbols[
+          'Area of Interest'
+        ] as any;
+      }
 
       if (displayDimensions === '2d') {
         aoiSketchVM.view = mapView;
-        aoiSketchVM.layer.elevationInfo = null as any;
+        if (aoiSketchVM.layer) aoiSketchVM.layer.elevationInfo = null as any;
         aoiSketchVM.snappingOptions = {
           featureSources: [],
         } as any;
@@ -512,10 +516,20 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
         };
       } else {
         aoiSketchVM.view = sceneView;
-        aoiSketchVM.layer.elevationInfo = { mode: 'absolute-height' };
-        aoiSketchVM.snappingOptions = {
-          featureSources: [{ layer: aoiSketchVM.layer }],
-        } as any;
+        if (aoiSketchVM.layer) {
+          aoiSketchVM.layer.elevationInfo = {
+            mode:
+              currentPanel?.value === 'additionalTools'
+                ? 'on-the-ground'
+                : 'absolute-height',
+          };
+        }
+
+        if (currentPanel?.value === 'locateSamples') {
+          aoiSketchVM.snappingOptions = {
+            featureSources: [{ layer: aoiSketchVM.layer }],
+          } as any;
+        }
         aoiSketchVM.defaultCreateOptions = {
           hasZ: true,
         };
@@ -523,7 +537,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
           enableZ: true,
         };
       }
-    } else if (currentPanel?.value !== 'additionalTools') {
+    } else {
       // disable the sketch vm for any panel other than locateSamples
       aoiSketchVM.layer = null as unknown as __esri.GraphicsLayer;
     }
