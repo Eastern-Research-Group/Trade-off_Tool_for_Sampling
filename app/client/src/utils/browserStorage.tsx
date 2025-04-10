@@ -952,7 +952,9 @@ function useLayerSelectionsStorage(dbInitialized: boolean) {
                   e.type === 'layer-decon' &&
                   scenario.linkedLayerIds.includes(e.layerId),
               ) as LayerDeconEditsType | undefined;
-              if (deconOp) {
+              if (
+                deconOp?.deconSummaryResults?.calculateResults?.resultsTable
+              ) {
                 setJsonDownload(
                   deconOp.deconSummaryResults.calculateResults.resultsTable,
                 );
