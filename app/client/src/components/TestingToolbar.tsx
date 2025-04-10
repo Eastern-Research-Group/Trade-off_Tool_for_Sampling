@@ -32,6 +32,8 @@ function TestingToolbar() {
     sketchVM,
   } = useContext(SketchContext);
 
+  const [ebTest, setEbTest] = React.useState(false);
+
   return (
     <div css={toolbarStyles}>
       <button css={buttonStyles} onClick={() => console.log('map: ', map)}>
@@ -72,6 +74,16 @@ function TestingToolbar() {
       <button css={buttonStyles} onClick={clearDB}>
         Clear IndexedDB Data
       </button>
+      <button
+        css={buttonStyles}
+        onClick={() => console.log('test: ', sketchVM.test.test.test)}
+      >
+        Test ErrorBoundary
+      </button>
+      <button css={buttonStyles} onClick={() => setEbTest(true)}>
+        Test ErrorBoundary 2
+      </button>
+      {ebTest && <div>{sketchVM.test.test.test}</div>}
     </div>
   );
 }
