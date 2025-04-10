@@ -24,6 +24,7 @@ import {
   ScenarioEditsType,
 } from 'types/Edits';
 import { LayerType, PortalLayerType, UrlLayerType } from 'types/Layer';
+import { ErrorType } from 'types/Misc';
 import {
   DefaultSymbolsType,
   UserDefinedAttributes,
@@ -82,6 +83,7 @@ export type JsonDownloadType = {
 export type AoiCharacterizationData = {
   status: 'none' | 'fetching' | 'success' | 'failure';
   planGraphics: PlanGraphics;
+  error?: ErrorType;
 };
 
 export type PlanGraphics = {

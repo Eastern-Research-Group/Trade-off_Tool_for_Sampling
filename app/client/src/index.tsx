@@ -2,7 +2,6 @@
 
 import 'react-app-polyfill/stable';
 import React, { Fragment, useEffect, useState } from 'react';
-import { ErrorBoundary } from 'react-error-boundary';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Global, css } from '@emotion/react';
@@ -24,6 +23,7 @@ import Sampling from 'routes/Sampling';
 // components
 import AlertDialog from 'components/AlertDialog';
 import AlertMessage from 'components/AlertMessage';
+import ErrorBoundary from 'components/ErrorBoundary';
 import LoadingSpinner from 'components/LoadingSpinner';
 // contexts
 import { AuthenticationProvider } from 'contexts/Authentication';
@@ -40,10 +40,7 @@ import {
 } from 'utils/fetchUtils';
 import { getEnvironment } from 'utils/utils';
 // config
-import {
-  errorBoundaryMessage,
-  totsNotAvailableMessage,
-} from 'config/errorMessages';
+import { totsNotAvailableMessage } from 'config/errorMessages';
 // styles
 import '@reach/dialog/styles.css';
 import '@arcgis/core/assets/esri/themes/light/main.css';
@@ -128,10 +125,6 @@ const globalStyles = css`
       outline: none;
     }
   }
-`;
-
-const containerStyles = css`
-  margin: 10px;
 `;
 
 /** Custom hook to display the Expert Query disclaimer banner for development/staging */
@@ -269,12 +262,8 @@ function Root() {
             <NavigationProvider>
               <PublishProvider>
                 <SketchProvider>
-                  <ErrorBoundary
-                    fallback={
-                      <div css={containerStyles}>{errorBoundaryMessage}</div>
-                    }
-                  >
-                    <Global styles={globalStyles} />
+                  <Global styles={globalStyles} />
+                  <ErrorBoundary>
                     <App />
                   </ErrorBoundary>
                 </SketchProvider>

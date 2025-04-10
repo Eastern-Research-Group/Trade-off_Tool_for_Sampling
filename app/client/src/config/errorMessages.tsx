@@ -5,8 +5,6 @@ import { css } from '@emotion/react';
 // components
 import MessageBox from 'components/MessageBox';
 import ShowLessMore from 'components/ShowLessMore';
-// utils
-import { generateUUID } from 'utils/sketchUtils';
 // config
 import { SampleIssuesOutput } from 'config/sampleAttributes';
 // types
@@ -23,52 +21,40 @@ export const webServiceErrorMessage = (
     message: 'An error occurred in the web service',
   },
   title: string = 'Web Service Error',
-) => {
-  const id = `error-copy-input-${generateUUID()}`;
+) => (
+  <MessageBox
+    severity="error"
+    title={title}
+    message={
+      <Fragment>
+        {error.message && <span>{error.message}</span>}
+        <br />
+        <ShowLessMore
+          text={
+            <textarea
+              css={textAreaStyles}
+              value={JSON.stringify(error, null, '\t')}
+            />
+          }
+          charLimit={0}
+        />
+        <br />
+        <button
+          onClick={(ev) => {
+            ev.preventDefault();
 
-  return (
-    <MessageBox
-      severity="error"
-      title={title}
-      message={
-        <Fragment>
-          {error.message && <span>{error.message}</span>}
-          <br />
-          <ShowLessMore
-            text={
-              <textarea
-                id={id}
-                css={textAreaStyles}
-                value={JSON.stringify(error, null, '\t')}
-              />
-            }
-            charLimit={0}
-          />
-          <br />
-          <button
-            onClick={(ev) => {
-              ev.preventDefault();
+            // copy the text to the clipboard
+            navigator.clipboard.writeText(JSON.stringify(error, null, '\t'));
+          }}
+        >
+          Copy Detailed Error
+        </button>
+      </Fragment>
+    }
+  />
+);
 
-              // get the text area input
-              const textArea = document.getElementById(id) as HTMLInputElement;
-              if (!textArea) return;
-
-              // select all of the text
-              textArea.select();
-
-              // copy the text to the clipboard
-              document.execCommand('copy');
-            }}
-          >
-            Copy Detailed Error
-          </button>
-        </Fragment>
-      }
-    />
-  );
-};
-
-export const errorBoundaryMessage = (
+export const errorBoundaryMessage = (error: Error) => (
   <MessageBox
     severity="error"
     title="Error"
@@ -78,6 +64,27 @@ export const errorBoundaryMessage = (
         at <a href="mailto:boe.timothy@epa.gov.">boe.timothy@epa.gov.</a>.
         Please include as much detail related to the sequence of interactions
         that triggered the error with your message.
+        <br />
+        <ShowLessMore
+          text={
+            <textarea
+              css={textAreaStyles}
+              value={error.stack ?? error.message}
+            />
+          }
+          charLimit={0}
+        />
+        <br />
+        <button
+          onClick={(ev) => {
+            ev.preventDefault();
+
+            // copy the text to the clipboard
+            navigator.clipboard.writeText(error.stack ?? error.message);
+          }}
+        >
+          Copy Detailed Error
+        </button>
       </Fragment>
     }
   />

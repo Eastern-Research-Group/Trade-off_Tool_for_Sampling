@@ -74,14 +74,8 @@ function TestingToolbar() {
       <button css={buttonStyles} onClick={clearDB}>
         Clear IndexedDB Data
       </button>
-      <button
-        css={buttonStyles}
-        onClick={() => console.log('test: ', sketchVM.test.test.test)}
-      >
-        Test ErrorBoundary
-      </button>
       <button css={buttonStyles} onClick={() => setEbTest(true)}>
-        Test ErrorBoundary 2
+        Test ErrorBoundary
       </button>
       {ebTest && <div>{sketchVM.test.test.test}</div>}
     </div>

@@ -724,7 +724,12 @@ function CharacterizeAOI({
       setAoiCharacterizationData({
         status: 'failure',
         planGraphics: {},
+        error: {
+          error: createErrorObject(ex),
+          message: ex.message,
+        },
       });
+      return;
     }
 
     setEdits(editsCopy);
@@ -1565,6 +1570,8 @@ function CharacterizeAOI({
                 webServiceErrorMessage(calculateResultsDecon.error)}
               {saveStatus.status === 'failure' &&
                 webServiceErrorMessage(saveStatus.error)}
+              {aoiCharacterizationData.status === 'failure' &&
+                webServiceErrorMessage(aoiCharacterizationData.error)}
               {saveStatus.status === 'name-not-available' &&
                 scenarioNameTakenMessage(saveStatus.name)}
               {saveStatus.status === 'invalid-characters' &&
