@@ -309,12 +309,38 @@ function CharacterizeAOI({
     ) {
       setLastAoiSketchLayer(aoiSketchVM.layer);
       aoiSketchVM.layer = sketchLayer.sketchLayer as __esri.GraphicsLayer;
+      aoiSketchVM.layer.elevationInfo = { mode: 'on-the-ground' };
     }
 
     return function cleanup() {
       if (lastAoiSketchLayer) aoiSketchVM.layer = lastAoiSketchLayer;
     };
   }, [aoiSketchVM, defaultSymbols, edits, lastAoiSketchLayer, layers]);
+
+  useEffect(() => {
+    const scenario: ScenarioDeconEditsType | undefined = edits.edits.find(
+      (item) => item.type === 'scenario-decon',
+    );
+    if (!scenario) return;
+
+    const deconLayer = edits.edits.find(
+      (l) =>
+        scenario.linkedLayerIds.includes(l.layerId) &&
+        l.type === 'layer-aoi-analysis',
+    ) as LayerAoiAnalysisEditsType;
+    if (!deconLayer) return;
+
+    const aoiEditsLayer = deconLayer.layers.find(
+      (l) => l.layerType === 'Decon Mask',
+    );
+    const sketchLayer = layers.find(
+      (l) =>
+        l.layerType === 'Decon Mask' && l.layerId === aoiEditsLayer?.layerId,
+    );
+
+    if (sketchLayer && sketchLayer.layerId !== aoiSketchLayer?.layerId)
+      setAoiSketchLayer(sketchLayer);
+  }, [aoiSketchLayer, edits, layers, setAoiSketchLayer]);
 
   // Handle a user clicking the sketch AOI button. If an AOI is not selected from the
   // dropdown this will create an AOI layer. This also sets the sketchVM to use the
@@ -335,8 +361,10 @@ function CharacterizeAOI({
         l.layerType === 'Decon Mask' && l.layerId === aoiEditsLayer?.layerId,
     );
 
-    if (sketchLayer)
+    if (sketchLayer) {
       aoiSketchVM.layer = sketchLayer.sketchLayer as __esri.GraphicsLayer;
+      aoiSketchVM.layer.elevationInfo = { mode: 'on-the-ground' };
+    }
 
     // save changes from other sketchVM and disable to prevent
     // interference

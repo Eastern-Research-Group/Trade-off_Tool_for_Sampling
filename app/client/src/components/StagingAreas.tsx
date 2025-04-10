@@ -199,6 +199,7 @@ function StagingAreas() {
     ) {
       setLastAoiSketchLayer(aoiSketchVM.layer);
       aoiSketchVM.layer = sketchLayer.sketchLayer as __esri.GraphicsLayer;
+      aoiSketchVM.layer.elevationInfo = { mode: 'on-the-ground' };
     }
 
     return function cleanup() {
