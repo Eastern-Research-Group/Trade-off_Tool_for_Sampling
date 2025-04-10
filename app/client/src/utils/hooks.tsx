@@ -64,7 +64,7 @@ import { ReferenceLayerSelections } from 'types/Publish';
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
 import { writeToStorage } from 'utils/browserStorage';
-import { geoprocessorFetch } from 'utils/fetchUtils';
+import { fetchPost, fetchPostFile, geoprocessorFetch } from 'utils/fetchUtils';
 import {
   calculateArea,
   convertToPoint,
@@ -465,12 +465,35 @@ export async function fetchBuildingData(
   services: any,
   planGraphics: PlanGraphics,
   responseIndexes: string[],
-  gsgFile: GsgParam | undefined,
+  gsgFile: File | undefined,
   sceneViewForArea: __esri.SceneView | null,
-  cutFootprintsOut: boolean = true,
+  cutFootprintsMethod: 'cut' | 'math' | 'raw' = 'math',
   technologyTypes: SampleTypesS3,
   _buildingFilter: string[] = [],
 ) {
+  const countRequests: any[] = [];
+  aoiGraphics.forEach((graphic) => {
+    countRequests.push(
+      query.executeForCount(services.structures, {
+        geometry: graphic.geometry,
+        returnGeometry: false,
+      }),
+    );
+  });
+
+  const countResponses = await Promise.all(countRequests);
+  let buildingCount = 0;
+  countResponses.forEach((count) => (buildingCount += count));
+
+  const buildingLimit = cutFootprintsMethod === 'cut' ? 500 : 2000;
+  if (buildingCount > buildingLimit) {
+    return {
+      thresholdExceeded: true,
+      buildingCount,
+      buildingLimit,
+    };
+  }
+
   const requests: any[] = [];
   aoiGraphics.forEach((graphic) => {
     requests.push(
@@ -528,8 +551,12 @@ export async function fetchBuildingData(
       // get building material type factors
       const factorKey =
         PRIM_OCC === 'Unclassified' ? `${PRIM_OCC}-${OCC_CLS}` : PRIM_OCC;
-      const { SOC, Brick, Concrete, Steel, Wood, Other } =
-        technologyTypes.deconBuildingFactors[factorKey];
+      const buildingFactors = technologyTypes.deconBuildingFactors[factorKey];
+      if (!buildingFactors) {
+        console.log('No definition for ', factorKey);
+        return;
+      }
+      const { SOC, Brick, Concrete, Steel, Wood, Other } = buildingFactors;
 
       // get surface area per material type sq meters
       const intBrickSqM = intSqM * (Brick / 100);
@@ -738,6 +765,20 @@ export async function fetchBuildingData(
 
   buildingCalculations(planGraphics);
 
+  let gsgParam: GsgParam | undefined = undefined;
+  if (gsgFile) {
+    const gsgFileUploaded: any = await fetchPostFile(
+      `${services.totsGPServer}/uploads/upload`,
+      {
+        f: 'json',
+      },
+      gsgFile,
+    );
+    gsgParam = {
+      itemID: gsgFileUploaded.item.itemID,
+    };
+  }
+
   const iaResponses: any[] = [];
   for (const graphic of aoiGraphics) {
     removeZValues(graphic);
@@ -767,7 +808,7 @@ export async function fetchBuildingData(
     const props = {
       f: 'json',
       Area_of_Interest_Mask: featureSet.toJSON(),
-      GSGFile: gsgFile,
+      GSGFile: gsgParam,
       ImageryLayer:
         'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
     };
@@ -779,6 +820,15 @@ export async function fetchBuildingData(
         url: `${services.totsGPServer}/Classify%20AOI`,
         inputParameters: props,
       }),
+    );
+  }
+
+  if (gsgParam) {
+    await fetchPost(
+      `${services.totsGPServer}/uploads/${gsgParam.itemID}/delete`,
+      {
+        f: 'json',
+      },
     );
   }
 
@@ -822,7 +872,7 @@ export async function fetchBuildingData(
           },
         });
         let polygons: __esri.Geometry[] = [startPolygon];
-        if (cutFootprintsOut) {
+        if (cutFootprintsMethod === 'cut') {
           for (const buildingGraphic of planGraphics[planId].graphics) {
             if (geometryEngine.contains(buildingGraphic.geometry, startPolygon))
               return;
@@ -868,7 +918,7 @@ export async function fetchBuildingData(
   });
 
   for (const planId of Object.keys(planGraphics)) {
-    if (cutFootprintsOut) {
+    if (cutFootprintsMethod === 'cut') {
       const imageAreas: { [key: string]: number } = {};
       for (const graphic of planGraphics[planId].imageGraphics) {
         const key = graphic.attributes.category.toLowerCase();
@@ -893,7 +943,48 @@ export async function fetchBuildingData(
           ((imageAreas['soil'] + imageAreas['vegetation']) / totalArea) * 100,
         soilSqM: imageAreas['soil'] + imageAreas['vegetation'],
       };
-    } else {
+    } else if (cutFootprintsMethod === 'math') {
+      // trim building footprints to AOI
+      let buildingFootprintArea = 0;
+      for (const buildingGraphic of planGraphics[planId].graphics) {
+        const intersection = geometryEngine.intersect(
+          aoiGraphics.map((g) => g.geometry),
+          buildingGraphic.geometry,
+        );
+
+        const intersectionArray = Array.isArray(intersection)
+          ? intersection
+          : [intersection];
+        for (const geometry of intersectionArray) {
+          const areaSM = await calculateArea(
+            new Graphic({ geometry }),
+            sceneViewForArea,
+          );
+          if (typeof areaSM === 'number') {
+            buildingFootprintArea += areaSM;
+          }
+        }
+      }
+
+      // generate new areas and percentages based on non building area
+      const totalArea = planGraphics[planId].aoiArea;
+      const nonBuildingArea = totalArea - buildingFootprintArea;
+      const { numAois, asphalt, concrete, soil } =
+        planGraphics[planId].aoiPercentages;
+      const asphaltSqM = (asphalt / 100) * nonBuildingArea;
+      const concreteSqM = (concrete / 100) * nonBuildingArea;
+      const soilSqM = (soil / 100) * nonBuildingArea;
+
+      planGraphics[planId].aoiPercentages = {
+        numAois,
+        asphalt: (asphaltSqM / totalArea) * 100,
+        asphaltSqM,
+        concrete: (concreteSqM / totalArea) * 100,
+        concreteSqM,
+        soil: (soilSqM / totalArea) * 100,
+        soilSqM,
+      };
+    } else if (cutFootprintsMethod === 'raw') {
       const totalArea = planGraphics[planId].aoiArea;
       const { numAois, asphalt, concrete, soil } =
         planGraphics[planId].aoiPercentages;
@@ -910,6 +1001,12 @@ export async function fetchBuildingData(
 
     console.log('planGraphics: ', planGraphics);
   }
+
+  return {
+    thresholdExceeded: false,
+    buildingCount,
+    buildingLimit,
+  };
 }
 
 export function buildingCalculations(planGraphics: PlanGraphics) {
