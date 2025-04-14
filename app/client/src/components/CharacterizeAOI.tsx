@@ -310,10 +310,6 @@ function CharacterizeAOI({
       setLastAoiSketchLayer(aoiSketchVM.layer);
       aoiSketchVM.layer = sketchLayer.sketchLayer as __esri.GraphicsLayer;
       aoiSketchVM.layer.elevationInfo = { mode: 'on-the-ground' };
-      aoiSketchVM.snappingOptions = {
-        enabled: true,
-        featureSources: [{ layer: aoiSketchVM.layer, enabled: true }],
-      } as any;
     }
 
     return function cleanup() {
@@ -369,10 +365,6 @@ function CharacterizeAOI({
       aoiSketchVM.layer = sketchLayer.sketchLayer as __esri.GraphicsLayer;
       aoiSketchVM.layer.visible = true;
       aoiSketchVM.layer.elevationInfo = { mode: 'on-the-ground' };
-      aoiSketchVM.snappingOptions = {
-        enabled: true,
-        featureSources: [{ layer: aoiSketchVM.layer, enabled: true }],
-      } as any;
     }
 
     // save changes from other sketchVM and disable to prevent

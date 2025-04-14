@@ -567,10 +567,9 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
           };
         }
 
-        if (aoiSketchVM.layer) {
+        if (currentPanel?.value === 'locateSamples') {
           aoiSketchVM.snappingOptions = {
-            enabled: true,
-            featureSources: [{ layer: aoiSketchVM.layer, enabled: true }],
+            featureSources: [{ layer: aoiSketchVM.layer }],
           } as any;
         }
         aoiSketchVM.defaultCreateOptions = {
