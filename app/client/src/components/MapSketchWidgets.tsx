@@ -89,6 +89,48 @@ function getUpdateEventInfo(
   };
 }
 
+function setupPopupWatchers(
+  view: __esri.MapView | __esri.SceneView,
+  sketchVM: SketchViewModel,
+  setSamplesToDelete: (value: SetStateAction<__esri.Graphic[] | null>) => void,
+  setTablePanelExpanded: (value: SetStateAction<boolean>) => void,
+) {
+  const tempMapView = view as any;
+  tempMapView.popup._displayActionTextLimit = 1;
+
+  reactiveUtils.watch(
+    () => view.popup,
+    () => {
+      view.popup.on('trigger-action', (event) => {
+        // Workaround for target not being on the PopupTriggerActionEvent
+        if (event.action.id === 'delete' && view?.popup?.selectedFeature) {
+          setSamplesToDelete([view.popup.selectedFeature]);
+        }
+        if (event.action.id === 'delete-multi') {
+          setSamplesToDelete(sketchVM.updateGraphics.toArray());
+        }
+        if (['table', 'table-multi'].includes(event.action.id)) {
+          setTablePanelExpanded(true);
+        }
+      });
+
+      view.popup.watch('selectedFeature', (_graphic) => {
+        if (view.popup.title !== 'Edit Multiple') {
+          const deleteMultiAction = view.popup.actions.find(
+            (action) => action.id === 'delete-multi',
+          );
+          if (deleteMultiAction) view.popup.actions.remove(deleteMultiAction);
+
+          const tableMultiAction = view.popup.actions.find(
+            (action) => action.id === 'table-multi',
+          );
+          if (tableMultiAction) view.popup.actions.remove(tableMultiAction);
+        }
+      });
+    },
+  );
+}
+
 // --- components (MapSketchWidgets) ---
 type Props = {
   appType: AppType;
@@ -1182,55 +1224,53 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
 
     setPopupActionsInitialized(true);
 
-    function setupPopupWatchers(
-      view: __esri.MapView | __esri.SceneView,
-      sketchVM: SketchViewModel,
-    ) {
-      const tempMapView = view as any;
-      tempMapView.popup._displayActionTextLimit = 1;
-
-      reactiveUtils.watch(
-        () => view.popup,
-        () => {
-          view.popup.on('trigger-action', (event) => {
-            // Workaround for target not being on the PopupTriggerActionEvent
-            if (event.action.id === 'delete' && view?.popup?.selectedFeature) {
-              setSamplesToDelete([view.popup.selectedFeature]);
-            }
-            if (event.action.id === 'delete-multi') {
-              setSamplesToDelete(sketchVM.updateGraphics.toArray());
-            }
-            if (['table', 'table-multi'].includes(event.action.id)) {
-              setTablePanelExpanded(true);
-            }
-          });
-
-          view.popup.watch('selectedFeature', (_graphic) => {
-            if (view.popup.title !== 'Edit Multiple') {
-              const deleteMultiAction = view.popup.actions.find(
-                (action) => action.id === 'delete-multi',
-              );
-              if (deleteMultiAction)
-                view.popup.actions.remove(deleteMultiAction);
-
-              const tableMultiAction = view.popup.actions.find(
-                (action) => action.id === 'table-multi',
-              );
-              if (tableMultiAction) view.popup.actions.remove(tableMultiAction);
-            }
-          });
-        },
-      );
-    }
-
-    setupPopupWatchers(mapView, sketchVM['2d']);
-    setupPopupWatchers(sceneView, sketchVM['3d']);
+    setupPopupWatchers(
+      mapView,
+      sketchVM['2d'],
+      setSamplesToDelete,
+      setTablePanelExpanded,
+    );
+    setupPopupWatchers(
+      sceneView,
+      sketchVM['3d'],
+      setSamplesToDelete,
+      setTablePanelExpanded,
+    );
   }, [
+    aoiSketchVM,
     mapView,
     popupActionsInitialized,
     sceneView,
     setTablePanelExpanded,
     sketchVM,
+  ]);
+
+  const [aoiPopupActionsInitialized, setAoiPopupActionsInitialized] =
+    useState(false);
+  useEffect(() => {
+    if (!mapView || !sceneView || !aoiSketchVM || aoiPopupActionsInitialized)
+      return;
+
+    setAoiPopupActionsInitialized(true);
+
+    setupPopupWatchers(
+      mapView,
+      aoiSketchVM,
+      setSamplesToDelete,
+      setTablePanelExpanded,
+    );
+    setupPopupWatchers(
+      sceneView,
+      aoiSketchVM,
+      setSamplesToDelete,
+      setTablePanelExpanded,
+    );
+  }, [
+    aoiPopupActionsInitialized,
+    aoiSketchVM,
+    mapView,
+    sceneView,
+    setTablePanelExpanded,
   ]);
 
   return null;
