@@ -38,7 +38,7 @@ import {
 } from 'types/Edits';
 import { LayerType } from 'types/Layer';
 // styles
-import { infoIconStyles, reactSelectStyles } from 'styles';
+import { infoIconStyles, isDecon, reactSelectStyles } from 'styles';
 import {
   scenarioNameInvalidMessage,
   scenarioNameTakenMessage,
@@ -1096,9 +1096,10 @@ function CharacterizeAOI({
 
     // select the next available scenario
     const scenarios = getScenariosDecon(newEdits);
-    setSelectedScenario(scenarios.length > 0 ? scenarios[0] : null);
+    if (selectedScenario?.type === 'scenario-decon')
+      setSelectedScenario(scenarios.length > 0 ? scenarios[0] : null);
 
-    if (scenarios.length > 0) {
+    if (scenarios.length > 0 && isDecon()) {
       setCalculateResultsDecon((calculateResultsDecon) => {
         return {
           status: 'fetching',
@@ -1396,7 +1397,7 @@ function CharacterizeAOI({
               id="decon-mask"
               title="Draw Decon Mask"
               className="sketch-button"
-              disabled={calculateResultsDecon.status === 'fetching'}
+              disabled={aoiCharacterizationData.status === 'fetching'}
               onClick={() => {
                 if (!aoiSketchLayer) return;
 
@@ -1610,7 +1611,7 @@ function CharacterizeAOI({
                   css={saveButtonStyles}
                   onClick={assessAoi}
                   disabled={
-                    calculateResultsDecon.status === 'fetching' ||
+                    aoiCharacterizationData.status === 'fetching' ||
                     !newDeconLayerName ||
                     !deconSketchLayer ||
                     !hasAoiGraphics(deconSketchLayer, layers)

@@ -2148,6 +2148,6 @@ export async function publish({
     return await Promise.all(requests);
   } catch (err) {
     window.logErrorToGa(err);
-    return err;
+    throw err;
   }
 }

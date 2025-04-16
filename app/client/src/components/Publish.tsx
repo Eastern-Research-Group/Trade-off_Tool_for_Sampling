@@ -2871,6 +2871,7 @@ function Publish({ appType }: Props) {
         isPublishStagingAreaReady && (
           <div css={publishButtonContainerStyles}>
             <button
+              disabled={publishResponse.status === 'fetching'}
               css={publishButtonStyles}
               onClick={() => setPublishButtonClicked(true)}
             >
