@@ -1235,7 +1235,7 @@ function CreateDeconPlan() {
 
                         setAddOperationVisible(false);
                         setEditOperationVisible(false);
-                        setDeconSketchLayer(null);
+                        // setDeconSketchLayer(null);
                       }}
                     >
                       {(saveStatus === 'none' || saveStatus === 'changes') &&
