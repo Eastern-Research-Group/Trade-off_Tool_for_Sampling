@@ -2018,12 +2018,6 @@ function DeconSelectionPopup({
                   </div>
                 </div>
               ))}
-
-              <InfoIcon
-                id="advanced-info-icon"
-                cssStyles={infoIconStylesModified}
-                tooltip="placeholder..."
-              />
             </div>
 
             {selectedBuildingApproach === 'Building Structural Component' && (
