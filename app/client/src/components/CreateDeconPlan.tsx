@@ -707,23 +707,34 @@ function CreateDeconPlan() {
               <p>
                 Each decon operation must be linked to an AOI Decon Layer to
                 quantify ground and building surfaces. For each decon operation
-                you include in your plan, select or create a new AOI Decon
-                Layer. An empty, default Decon layer is loaded by default. Use
-                the “Active Decon Layer” controls to link, add, modify, and/or
-                delete the decon layer that defines the decon operation. Select
-                "Draw Area of Interest" to designate the boundary of your decon
-                operation. Click Save and Submit. Once the tool retrieves the
-                data, the Select/Edit Decontamination Technology Selections
-                button will appear and the map will refresh with new imagery.
-                Click Select/Edit Decontamination Technology Selections to
-                select a decon strategy for each contamination scenario.
+                you include in your plan, select an AOI Decon Layer from the
+                dropdown or create a new AOI Decon Layer. An empty AOI Decon
+                layer is loaded by default. Select "Draw Area of Interest" to
+                designate the boundary of your decon operation. Click Save and
+                Submit. Once the tool retrieves the data, you can then click the
+                Select/Edit Decontamination Technology Selections to select a
+                decon strategy for each contamination scenario.
+              </p>
+              <p>
+                Use the available controls to link, add, edit, and/or delete
+                selections to include in your decon plan.
               </p>
               <div>
                 <div css={iconButtonContainerStyles}>
-                  <div css={verticalCenterTextStyles}>
+                  <div
+                    css={css`
+                      align-items: end;
+                    `}
+                  >
                     <label htmlFor="scenario-select-input">
                       Decon Operation(s)
                     </label>
+
+                    <InfoIcon
+                      id="decon-ops-info-icon"
+                      cssStyles={infoIconStylesOperations}
+                      tooltip="Each Decon Operation is associated with one AOI Decon layer. Create<br/>multiple decon operations throughout the incident area to include<br/>with your overall Decon Plan. You may copy a Decon operation to<br/>clone your strategy to apply to other AOI Decon layers."
+                    />
                   </div>
                   <div css={layerButtonContainerStyles}>
                     <div>
@@ -1352,6 +1363,11 @@ const headingStyles = css`
 const infoIconStylesModified = css`
   ${infoIconStyles}
   margin-right: 1rem;
+`;
+
+const infoIconStylesOperations = css`
+  ${infoIconStyles}
+  margin-left: 3px;
 `;
 
 const messageBoxStyles = css`
