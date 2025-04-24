@@ -137,6 +137,16 @@ const iconButtonContainerStyles = css`
   justify-content: space-between;
 `;
 
+const infoIconOperationsStyles = css`
+  display: flex;
+  align-items: end;
+
+  span {
+    display: inline-block;
+    white-space: nowrap;
+  }
+`;
+
 const iconButtonStyles = css`
   width: 25px;
   margin: 0 2px;
@@ -721,14 +731,14 @@ function CreateDeconPlan() {
               </p>
               <div>
                 <div css={iconButtonContainerStyles}>
-                  <div
-                    css={css`
-                      align-items: end;
-                    `}
-                  >
-                    <label htmlFor="scenario-select-input">
-                      Decon Operation(s)
-                    </label>
+                  <div css={infoIconOperationsStyles}>
+                    <span>
+                      <label htmlFor="scenario-select-input">
+                        Decon
+                        <br />
+                        Operation(s)
+                      </label>
+                    </span>
 
                     <InfoIcon
                       id="decon-ops-info-icon"
@@ -1366,7 +1376,7 @@ const infoIconStylesModified = css`
 
 const infoIconStylesOperations = css`
   ${infoIconStyles}
-  margin-left: 3px;
+  margin-bottom: 3px;
 `;
 
 const messageBoxStyles = css`
