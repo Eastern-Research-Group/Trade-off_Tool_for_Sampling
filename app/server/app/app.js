@@ -75,7 +75,8 @@ if (!isLocal && !isTest && !isDevelopment && !isStaging)
 /****************************************************************
  Setup basic auth for non-production environments
 ****************************************************************/
-if (isDevelopment || isStaging) {
+if (isStaging) {
+  // if (isDevelopment || isStaging) {
   if (process.env.TOTS_BASIC_USER_NAME) {
     log.info('TOTS_BASIC_USER_NAME environmental variable found, continuing.');
   } else {
