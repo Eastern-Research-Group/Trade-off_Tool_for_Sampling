@@ -2150,6 +2150,7 @@ export function useCalculateDeconPlan() {
               contaminationMap.sketchLayer as __esri.GraphicsLayer
             ).graphics) {
               const contamValue = contamGraphic.attributes.CONTAMVAL as number;
+              removeZValues(contamGraphic);
               const outGeometry = geometryEngine.intersect(
                 graphic.geometry,
                 contamGraphic.geometry,
