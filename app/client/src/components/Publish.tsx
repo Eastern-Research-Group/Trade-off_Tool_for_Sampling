@@ -916,7 +916,7 @@ function Publish({ appType }: Props) {
             featureServices.push({
               category: 'contains-epa-tots-sample-layer',
               label: editsScenario.scenarioName,
-              value: '',
+              value: editsScenario.portalId ?? '',
               description: editsScenario.scenarioDescription,
               url: '',
               layerId: editsScenario.layerId,
@@ -1593,7 +1593,7 @@ function Publish({ appType }: Props) {
             featureServices.push({
               category: 'contains-epa-tods-decon-layer',
               label: editsScenario.scenarioName,
-              value: '',
+              value: editsScenario.portalId ?? '',
               description: editsScenario.scenarioDescription,
               url: '',
               layerId: editsScenario.layerId,
@@ -2075,7 +2075,7 @@ function Publish({ appType }: Props) {
               label: aoiLayer.label,
               description: aoiLayer.description,
               url: '',
-              value: '',
+              value: aoiLayer.portalId ?? '',
               layerId: aoiLayer.layerId,
               layers: layersToPublish,
               tables: [
@@ -2204,7 +2204,7 @@ function Publish({ appType }: Props) {
               label: stagingAreaLayer.label,
               description: stagingAreaLayer.description,
               url: '',
-              value: '',
+              value: stagingAreaLayer.portalId ?? '',
               layerId: stagingAreaLayer.layerId,
               layers: [
                 {

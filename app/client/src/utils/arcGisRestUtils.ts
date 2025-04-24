@@ -294,6 +294,7 @@ async function getFeatureServiceWrapped(
       : ` AND name:${featureService.label}`;
     const queryRes = await portal.queryItems({
       query,
+      num: 100,
     });
 
     const exactMatch = queryRes.results.find(
@@ -415,7 +416,8 @@ function createFeatureService(portal: __esri.Portal, featureService: any) {
         fetchPost(
           `${portal.user.userContentUrl}/items/${res.itemId}/update`,
           indata,
-        ).then((_res) => {
+        ).then((res: any) => {
+          featureService.value = res.id;
           // get the feature service from the portal and return it
           getFeatureServiceRetry(portal, featureService)
             .then((service) => resolve(service))

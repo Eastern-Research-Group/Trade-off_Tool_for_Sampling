@@ -24,9 +24,9 @@ export type CalculateResultsDataType = {
   ALC: number;
   AMC: number;
   TOTAL_LAB_COST: number;
-  WASTE_VOLUME_TOTAL: number;
+  WASTE_VOLUME_SOLID: number;
   WASTE_VOLUME_SOLID_LITERS: number;
-  WASTE_WEIGHT_TOTAL: number;
+  WASTE_WEIGHT_SOLID: number;
   WASTE_WEIGHT_SOLID_POUNDS: number;
   'User Specified Total AOI': number | null;
   'User Specified Number of Available Teams for Sampling': number;

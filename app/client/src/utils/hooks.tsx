@@ -1798,9 +1798,9 @@ export function useCalculatePlan(appType: AppType) {
       TTA: totals.tta,
       ALC: totals.alc,
       AMC: totals.amc,
-      WASTE_VOLUME_TOTAL: totals.wvps / 1000, // convert liters to m3
+      WASTE_VOLUME_SOLID: totals.wvps / 1000, // convert liters to m3
       WASTE_VOLUME_SOLID_LITERS: totals.wvps,
-      WASTE_WEIGHT_TOTAL: totals.wwps / 2.2046226218, // convert lbs to kg
+      WASTE_WEIGHT_SOLID: totals.wwps / 2.2046226218, // convert lbs to kg
       WASTE_WEIGHT_SOLID_POUNDS: totals.wwps,
 
       // spatial items
