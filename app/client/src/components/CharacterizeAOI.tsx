@@ -1287,12 +1287,12 @@ function CharacterizeAOI({
       {(addScenarioVisible || editScenarioVisible) && (
         <div>
           <label>
-            <span>Decon Layer Name</span>
+            <span>AOI Decon Layer Name</span>
             <input
               type="text"
               css={inputStyles}
               maxLength={90}
-              placeholder="Enter Decon Layer Name"
+              placeholder="Enter AOI Decon Layer Name"
               value={newDeconLayerName}
               disabled={['published', 'edited'].includes(
                 deconSketchLayer?.status ?? '',
@@ -1303,12 +1303,12 @@ function CharacterizeAOI({
             />
           </label>
           <label>
-            <span>Decon Layer Description</span>
+            <span>AOI Decon Layer Description</span>
             <input
               type="text"
               css={inputStyles}
               maxLength={2048}
-              placeholder="Enter Decon Layer Description (2048 characters)"
+              placeholder="Enter AOI Decon Layer Description (2048 characters)"
               value={newDeconDescription}
               disabled={['published', 'edited'].includes(
                 deconSketchLayer?.status ?? '',

@@ -2807,7 +2807,7 @@ export function updatePolygonSymbol(
 
 export function createScenarioDeconLayer(
   defaultDeconSelections: any[],
-  layerName: string = 'Default AOI Layer',
+  layerName: string = 'Default AOI Decon Layer',
 ) {
   // create a new group layer for the scenario
   const groupLayerUuid = generateUUID();

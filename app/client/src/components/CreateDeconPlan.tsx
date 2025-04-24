@@ -1084,7 +1084,7 @@ function CreateDeconPlan() {
                       type="text"
                       css={inputStyles}
                       maxLength={250}
-                      placeholder="Enter decon Layer Name"
+                      placeholder="Enter Decon Operation Name"
                       value={newDeconOperationName}
                       onChange={(ev) => {
                         setNewDeconOperationName(ev.target.value);
