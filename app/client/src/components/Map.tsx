@@ -8,8 +8,10 @@ import React, {
   useState,
 } from 'react';
 import { css } from '@emotion/react';
+import Basemap from '@arcgis/core/Basemap';
 import EsriMap from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
+import PortalItem from '@arcgis/core/portal/PortalItem';
 import SceneView from '@arcgis/core/views/SceneView';
 import Viewpoint from '@arcgis/core/Viewpoint';
 // components
@@ -66,7 +68,11 @@ function Map({ height }: Props) {
     if (mapView || sceneView) return;
 
     const newMap = new EsriMap({
-      basemap: 'streets-vector',
+      basemap: new Basemap({
+        portalItem: new PortalItem({
+          id: '22fb75c0fa5a4c88b8ca4c4b8ae5c90b',
+        }),
+      }),
       ground: 'world-elevation',
       layers: [],
     });
