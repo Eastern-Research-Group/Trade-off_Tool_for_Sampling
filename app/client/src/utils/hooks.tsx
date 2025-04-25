@@ -2151,7 +2151,6 @@ export function useCalculateDeconPlan() {
               contaminationMap.sketchLayer as __esri.GraphicsLayer
             ).graphics) {
               const contamValue = contamGraphic.attributes.CONTAMVAL as number;
-              removeZValues(contamGraphic);
               const outGeometry = geometryEngine.intersect(
                 graphic.geometry,
                 contamGraphic.geometry,
@@ -2159,12 +2158,13 @@ export function useCalculateDeconPlan() {
               if (!outGeometry) continue;
 
               const outGraphic = new Graphic({ geometry: outGeometry });
+              const originalZ = removeZValues(outGraphic);
               setZValues({
                 map: mapView?.map,
                 graphic: outGraphic,
                 zRefParam: null,
                 elevationSampler: null,
-                zOverride: 0,
+                zOverride: originalZ,
               });
 
               const clippedAreaM2 = await calculateArea(
