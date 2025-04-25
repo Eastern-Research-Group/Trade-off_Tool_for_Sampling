@@ -155,10 +155,16 @@ module.exports = function (app) {
     const isLocalTest = isLocal || isTest;
     const s3BucketUrl = app.get('s3_bucket_url');
 
-    getFile(s3BucketUrl, 'data/documents/TOTS-Users-Guide.pdf', isLocalTest)
+    getFile(
+      s3BucketUrl,
+      'data/documents/TOTS-Users-Guide.pdf',
+      isLocalTest,
+      'arraybuffer',
+      'binary',
+    )
       .then((data) => {
         res.contentType('application/pdf');
-        res.send(data);
+        res.send(isLocalTest ? data : data.data);
       })
       .catch((error) => {
         logError(error, metadataObj, isLocalTest);
