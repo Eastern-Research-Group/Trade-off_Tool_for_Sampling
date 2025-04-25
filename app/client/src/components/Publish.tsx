@@ -814,10 +814,12 @@ function Publish({ appType }: Props) {
                     uniqueValueInfos: uniqueValueInfosPolygonsCombined,
                   },
                 },
-                types: {
-                  id: 'epa-tots-sample-layer',
-                  name: 'epa-tots-sample-layer',
-                },
+                types: [
+                  {
+                    id: 'epa-tots-sample-layer',
+                    name: 'epa-tots-sample-layer',
+                  },
+                ],
               },
               adds,
               updates,
@@ -842,10 +844,12 @@ function Publish({ appType }: Props) {
                     uniqueValueInfos: uniqueValueInfosPointsCombined,
                   },
                 },
-                types: {
-                  id: 'epa-tots-sample-points-layer',
-                  name: 'epa-tots-sample-points-layer',
-                },
+                types: [
+                  {
+                    id: 'epa-tots-sample-points-layer',
+                    name: 'epa-tots-sample-points-layer',
+                  },
+                ],
               },
               adds: pointsAdds,
               updates: pointsUpdates,
