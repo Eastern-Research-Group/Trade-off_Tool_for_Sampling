@@ -3467,6 +3467,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
           const graphics: __esri.Graphic[] = [];
           layerFeatures.features.forEach((feature: any) => {
             const graphic: any = Graphic.fromJSON(feature);
+            if (!graphic.geometry) return;
             graphic.geometry.spatialReference = {
               wkid: 3857,
             };
