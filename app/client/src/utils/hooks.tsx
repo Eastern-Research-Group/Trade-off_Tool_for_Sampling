@@ -76,6 +76,7 @@ import {
   getDefaultWebMapSceneSelections,
   handlePopupClick,
   removeZValues,
+  setZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
 import { parseSmallFloat } from 'utils/utils';
@@ -1969,7 +1970,7 @@ export function useCalculateDeconPlan() {
     if (contamMapUpdated) contamMapUpdated.removeAll();
 
     async function performCalculations() {
-      if (selectedScenario?.type !== 'scenario-decon') return;
+      if (selectedScenario?.type !== 'scenario-decon' || !mapView) return;
 
       const linkedDeconOperations: LayerDeconEditsType[] = [];
       const linkedAoiCharacterizationIds: string[] = [];
@@ -2157,8 +2158,17 @@ export function useCalculateDeconPlan() {
               ) as __esri.Geometry;
               if (!outGeometry) continue;
 
+              const outGraphic = new Graphic({ geometry: outGeometry });
+              setZValues({
+                map: mapView?.map,
+                graphic: outGraphic,
+                zRefParam: null,
+                elevationSampler: null,
+                zOverride: 0,
+              });
+
               const clippedAreaM2 = await calculateArea(
-                new Graphic({ geometry: outGeometry }),
+                outGraphic,
                 sceneViewForArea,
               );
 
