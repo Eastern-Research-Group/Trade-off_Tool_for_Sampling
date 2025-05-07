@@ -2305,7 +2305,7 @@ export function useCalculateDeconPlan() {
                 false,
               );
               deconCost += calcOutput.deconCost;
-              deconTime += calcOutput.deconTime;
+              deconTime = Math.max(calcOutput.deconTime, deconTime);
               solidWasteM3 += calcOutput.solidWasteM3;
               liquidWasteM3 += calcOutput.liquidWasteM3;
               solidWasteMass += calcOutput.solidWasteMass;
@@ -2329,7 +2329,7 @@ export function useCalculateDeconPlan() {
                 media,
               );
               deconCost += calcOutput.deconCost;
-              deconTime += calcOutput.deconTime;
+              deconTime = Math.max(calcOutput.deconTime, deconTime);
               solidWasteM3 += calcOutput.solidWasteM3;
               liquidWasteM3 += calcOutput.liquidWasteM3;
               solidWasteMass += calcOutput.solidWasteMass;
@@ -2353,7 +2353,10 @@ export function useCalculateDeconPlan() {
 
           if (deconOp.deconLayerResults) {
             deconOp.deconLayerResults.cost += deconCost;
-            deconOp.deconLayerResults.time += deconTime;
+            deconOp.deconLayerResults.time = Math.max(
+              deconTime,
+              deconOp.deconLayerResults.time,
+            );
             deconOp.deconLayerResults.wasteVolume +=
               solidWasteM3 + liquidWasteM3;
             deconOp.deconLayerResults.wasteMass +=
@@ -2365,7 +2368,7 @@ export function useCalculateDeconPlan() {
           totalSolidWasteMass += solidWasteMass;
           totalLiquidWasteMass += liquidWasteMass;
           totalDeconCost += deconCost;
-          totalDeconTime += deconTime;
+          totalDeconTime = Math.max(deconTime, totalDeconTime);
         });
 
         deconOp.deconLayerResults.resultsTable = jsonDownloadOpLevel;
