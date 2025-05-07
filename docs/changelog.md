@@ -1,5 +1,11 @@
 # Change Log
 
+## 3.0.1 (April 2025)
+
+### Changed
+
+- Updated basemaps to US vector basemaps.
+
 ## 3.0.0 (March 2024)
 
 ### Added
