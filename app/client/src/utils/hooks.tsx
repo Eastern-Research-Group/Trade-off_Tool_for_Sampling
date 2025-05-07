@@ -3514,7 +3514,7 @@ export function use3dSketch(appType: AppType) {
 
       // get the button and it's id
       const button = document.querySelector('.sketch-button-selected');
-      const id = button && button.id;
+      const id = (button && button.id)?.replace('draw-sample-', '');
       if (id?.includes('-sampling-mask') || id?.includes('decon-mask')) {
         deactivateButtons();
       }

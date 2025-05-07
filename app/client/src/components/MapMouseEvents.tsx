@@ -5,6 +5,7 @@ import Popup from '@arcgis/core/widgets/Popup';
 import { SketchContext, SketchViewModelType } from 'contexts/Sketch';
 // utils
 import { use3dSketch } from 'utils/hooks';
+import { deactivateButtons } from 'utils/sketchUtils';
 // types
 import { AppType } from 'types/Navigation';
 // config
@@ -181,25 +182,20 @@ function MapMouseEvents({ appType, mapView, sceneView }: Props) {
         if (sceneView) sceneView.closePopup();
 
         // re-activate sketch tools if necessary
+        // TODO figure out how to get this to work for decon and generate random
         if (appType === 'sampling') {
           const button = document.querySelector('.sketch-button-selected');
-          if (button?.id && sketchVMG) {
-            const id = button.id;
-
+          const id = (button?.id ?? '').replace('draw-sample-', '');
+          if (button && button.id.includes('draw-sample-') && sketchVMG) {
             // determine whether the sketch button draws points or polygons
-            const shapeType =
-              id.includes('-sampling-mask') || id.includes('decon-mask')
-                ? 'polygon'
-                : sampleAttributesG[id as any].ShapeType;
+            const shapeType = sampleAttributesG[id as any].ShapeType;
             startSketch(shapeType);
+          } else {
+            deactivateButtons();
           }
         }
         if (appType === 'decon') {
-          const button = document.querySelector('.sketch-button-selected');
-          if (button?.id && sketchVMG) {
-            // determine whether the sketch button draws points or polygons
-            startSketch('polygon');
-          }
+          deactivateButtons();
         }
       }
     };

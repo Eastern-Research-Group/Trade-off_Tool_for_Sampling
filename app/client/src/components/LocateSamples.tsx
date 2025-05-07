@@ -159,7 +159,7 @@ function SketchButton({
 
   return (
     <button
-      id={value}
+      id={`draw-sample-${value}`}
       title={`Draw a ${label}: ${count}`}
       className="sketch-button"
       onClick={() => onClick()}
@@ -368,7 +368,7 @@ function LocateSamples() {
     const shapeType = attributes.ShapeType;
 
     // make the style of the button active
-    const wasSet = activateSketchButton(label);
+    const wasSet = activateSketchButton(`draw-sample-${label}`);
 
     // update the sketchVM symbol
     let symbolType = 'Samples';
