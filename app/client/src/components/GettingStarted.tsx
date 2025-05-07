@@ -56,8 +56,8 @@ type Props = {
 };
 
 function GettingStarted({ isOpen, children }: Props) {
-  const { REACT_APP_SERVER_URL } = process.env;
-  const baseUrl = REACT_APP_SERVER_URL || window.location.origin;
+  const { VITE_SERVER_URL } = import.meta.env;
+  const baseUrl = VITE_SERVER_URL || window.location.origin;
 
   return (
     <DialogOverlay
@@ -75,10 +75,6 @@ function GettingStarted({ isOpen, children }: Props) {
         </p>
 
         <ul>
-          <li>
-            <strong>Locate</strong> – Start here to zoom to a location on the
-            map to create a sampling design for an outdoor area.
-          </li>
           <li>
             <strong>Add Data</strong> – Begin with an existing sampling design
             or add an indoor environment representation to begin. Layers to
@@ -114,12 +110,13 @@ function GettingStarted({ isOpen, children }: Props) {
           <li>
             <strong>Create Plan</strong> – Give a plan a name and description,
             select the layer on which to base the plan, and add targeted samples
-            or use the “Add Multiple Random Samples” to draw multiple samples of
-            the same type in a specified area of interest. A Resource Tally will
-            update as the plan is built. A companion summary table is also
-            available detailing the attributes of any samples that are added to
-            the plan. Create custom sample types or clone existing sample types
-            to support conducting “what-if” scenarios.
+            or use the “Add Multiple Random Samples” or "Add Statistical
+            Sampling Approach" to draw multiple samples of the same type in a
+            specified area of interest. A Resource Tally will update as the plan
+            is built. A companion summary table is also available detailing the
+            attributes of any samples that are added to the plan. Create custom
+            sample types or clone existing sample types to support conducting
+            “what-if” scenarios.
           </li>
           <li>
             <strong>Calculate Resources</strong> – Review the default resource
@@ -145,7 +142,7 @@ function GettingStarted({ isOpen, children }: Props) {
         <p>
           View the{' '}
           <a
-            href={`${baseUrl}/proxy?url=${baseUrl}/data/documents/TOTS-Users-Guide.pdf`}
+            href={`${baseUrl}/api/userGuide`}
             target="_blank"
             rel="noopener noreferrer"
             css={linkStyles}

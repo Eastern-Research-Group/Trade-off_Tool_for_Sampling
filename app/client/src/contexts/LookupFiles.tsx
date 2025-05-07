@@ -1,48 +1,32 @@
-// @flow
-
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import {
+  AttributeItems,
+  DeconAttributeItems,
+  SampleSelectType,
+} from 'config/sampleAttributes';
+import React, { createContext, ReactNode, useContext } from 'react';
+// utils
+import { fetchCheck } from 'utils/fetchUtils';
 // types
-import { LookupFile } from 'types/Misc';
-// utilities
-import { lookupFetch } from 'utils/fetchUtils';
+import { LayerProps } from 'types/Misc';
 // config
-import { SampleSelectType } from 'config/sampleAttributes';
+import { isDecon } from 'config/navigation';
 
-// Common function for setting the context/state of lookup files.
-function getLookupFile(filename: string, setVariable: Function) {
-  // fetch the lookup file
-  lookupFetch(filename)
-    .then((data) => {
-      setVariable({ status: 'success', data });
-    })
-    .catch((err) => {
-      console.error(err);
-      setVariable({ status: 'failure', data: err });
-
-      window.logErrorToGa(err);
-    });
-}
-
-type LookupFiles = {
-  layerProps: LookupFile;
-  setLayerProps: Function;
-  notifications: LookupFile;
-  setNotifications: Function;
-  sampleTypes: any;
+type State = {
+  lookupFiles: LookupFiles;
+  setLookupFiles: Function;
+  sampleAttributes: SampleAttributes;
+  setSampleAttributes: Function;
+  sampleTypes: SampleTypes | null;
   setSampleTypes: Function;
-  services: LookupFile;
-  setServices: Function;
 };
 
-const LookupFilesContext = createContext<LookupFiles>({
-  layerProps: { status: 'fetching', data: null },
-  setLayerProps: () => {},
-  notifications: { status: 'fetching', data: null },
-  setNotifications: () => {},
-  sampleTypes: { status: 'fetching', data: null },
+const LookupFilesContext = createContext<State>({
+  lookupFiles: { status: 'idle', data: {} },
+  setLookupFiles: () => {},
+  sampleAttributes: { status: 'idle', data: {} },
+  setSampleAttributes: () => {},
+  sampleTypes: null,
   setSampleTypes: () => {},
-  services: { status: 'fetching', data: null },
-  setServices: () => {},
 });
 
 type Props = {
@@ -50,34 +34,28 @@ type Props = {
 };
 
 function LookupFilesProvider({ children }: Props) {
-  const [layerProps, setLayerProps] = React.useState<LookupFile>({
-    status: 'fetching',
-    data: [],
-  });
-  const [notifications, setNotifications] = React.useState<LookupFile>({
-    status: 'fetching',
-    data: [],
-  });
-  const [sampleTypes, setSampleTypes] = useState<LookupFile>({
-    status: 'fetching',
+  const [lookupFiles, setLookupFiles] = React.useState<LookupFiles>({
+    status: 'idle',
     data: {},
   });
-  const [services, setServices] = useState<LookupFile>({
-    status: 'fetching',
-    data: {},
-  });
+  const [sampleAttributes, setSampleAttributes] =
+    React.useState<SampleAttributes>({
+      status: 'idle',
+      data: {},
+    });
+  const [sampleTypes, setSampleTypes] = React.useState<SampleTypes | null>(
+    null,
+  );
 
   return (
     <LookupFilesContext.Provider
       value={{
-        layerProps,
-        setLayerProps,
-        notifications,
-        setNotifications,
+        lookupFiles,
+        setLookupFiles,
+        sampleAttributes,
+        setSampleAttributes,
         sampleTypes,
         setSampleTypes,
-        services,
-        setServices,
       }}
     >
       {children}
@@ -85,125 +63,213 @@ function LookupFilesProvider({ children }: Props) {
   );
 }
 
-// Custom hook for the layerProps.json file.
-let layerPropsInitialized = false; // global var for ensuring fetch only happens once
-function useLayerProps() {
-  const { layerProps, setLayerProps } = React.useContext(LookupFilesContext);
+// Custom hook for loading lookup files
+let lookupFilesInitialized = false; // global var for ensuring fetch only happens once
+function useLookupFiles() {
+  const { lookupFiles, setLookupFiles, setSampleTypes } =
+    useContext(LookupFilesContext);
 
-  // fetch the lookup file if necessary
-  if (!layerPropsInitialized) {
-    layerPropsInitialized = true;
-    getLookupFile('config/layerProps.json', setLayerProps);
-  }
+  if (!lookupFilesInitialized) {
+    lookupFilesInitialized = true;
 
-  return layerProps;
-}
+    const parseBoolean = (value: string) => {
+      if (value === undefined || value === null) return value;
+      return ['1', 'true', 't'].includes(value.toLowerCase()) ? true : false;
+    };
+    const parseNumeric = (value: string) => {
+      if (value === undefined || value === null) return value;
+      return parseFloat(value);
+    };
 
-// Custom hook for the messages.json file.
-let notificationsInitialized = false; // global var for ensuring fetch only happens once
-function useNotificationsContext() {
-  const { notifications, setNotifications } =
-    React.useContext(LookupFilesContext);
+    const getData = async () => {
+      const { VITE_SERVER_URL } = import.meta.env;
+      const baseUrl = VITE_SERVER_URL || window.location.origin;
+      try {
+        const data = (await fetchCheck(
+          `${baseUrl}/api/lookupFiles`,
+        )) as Content;
 
-  // fetch the lookup file if necessary
-  if (!notificationsInitialized) {
-    notificationsInitialized = true;
-    getLookupFile('notifications/messages.json', setNotifications);
-  }
+        let sampleAttributes: any = {};
+        if (isDecon()) {
+          sampleAttributes = data.technologyTypes.deconAttributes;
+        } else {
+          const res = (await fetchCheck(
+            data.services.radarDatasets.sampleMetadata,
+          )) as RadarContent;
+          res.data.forEach((record) => {
+            sampleAttributes[record.TYPE] = {
+              ...record,
+              AA: null,
+              ALC: parseNumeric(record.ALC),
+              AMC: parseNumeric(record.AMC),
+              CONTAMTYPE: null,
+              CONTAMUNIT: null,
+              CONTAMVAL: null,
+              CREATEDDATE: null,
+              DECISIONUNIT: null,
+              DECISIONUNITSORT: 0,
+              DECISIONUNITUUID: null,
+              ENABLED: parseBoolean(record.ENABLED),
+              GLOBALID: null,
+              INNOVATIVE: parseBoolean(record.INNOVATIVE),
+              LOD_NON: parseNumeric(record.LOD_NON),
+              LOD_P: parseNumeric(record.LOD_P),
+              MCPS: parseNumeric(record.MCPS),
+              Notes: '',
+              OBJECTID: -1,
+              ORGANIZATION: null,
+              PERMANENT_IDENTIFIER: null,
+              POINT_STYLE: record.Point_Style,
+              SA: parseNumeric(record.SA),
+              ShapeType: record.ShapeType.toLowerCase(),
+              TCPS: parseNumeric(record.TCPS),
+              TTA: parseNumeric(record.TTA),
+              TTC: parseNumeric(record.TTC),
+              TTPK: parseNumeric(record.TTPK),
+              TTPS: parseNumeric(record.TTPS),
+              TYPEUUID: record.TYPE,
+              UPDATEDDATE: null,
+              USERNAME: null,
+              WVPS: parseNumeric(record.WVPS),
+              WWPS: parseNumeric(record.WWPS),
+            };
+            delete sampleAttributes[record.TYPE].Point_Style;
+          });
 
-  return notifications;
-}
+          data.technologyTypes.sampleAttributes = sampleAttributes;
+        }
 
-// Custom hook for the services.json file.
-let servicesInitialized = false; // global var for ensuring fetch only happens once
-function useServicesContext() {
-  const { services, setServices } = useContext(LookupFilesContext);
-
-  // fetch the lookup file if necessary
-  if (!servicesInitialized) {
-    servicesInitialized = true;
-
-    // get origin for mapping proxy calls
-    const loc = window.location;
-    const origin =
-      loc.hostname === 'localhost'
-        ? `${loc.protocol}//${loc.hostname}:9091`
-        : loc.origin;
-
-    // fetch the lookup file
-    lookupFetch('config/services.json')
-      .then((data: any) => {
-        const googleAnalyticsMapping: any[] = [];
-        data.googleAnalyticsMapping.forEach((item: any) => {
-          // get base url
-          let urlLookup = origin;
-          if (item.urlLookup !== 'origin') {
-            urlLookup = data;
-            const pathParts = item.urlLookup.split('.');
-            pathParts.forEach((part: any) => {
-              urlLookup = urlLookup[part];
-            });
-          }
-
-          let wildcardUrl = item.wildcardUrl;
-          wildcardUrl = wildcardUrl.replace(/\{proxyUrl\}/g, data.proxyUrl);
-          wildcardUrl = wildcardUrl.replace(/\{urlLookup\}/g, urlLookup);
-
-          googleAnalyticsMapping.push({
-            wildcardUrl,
-            name: item.name,
+        const sampleSelectOptions: SampleSelectType[] = [];
+        Object.keys(sampleAttributes).forEach((key) => {
+          if (!isDecon() && !sampleAttributes[key].ENABLED) return;
+          const value = sampleAttributes[key].TYPEUUID;
+          const label = sampleAttributes[key].TYPE;
+          const isInnovative = sampleAttributes[key].INNOVATIVE;
+          sampleSelectOptions.push({
+            value,
+            label,
+            isInnovative,
+            isPredefined: true,
           });
         });
-
-        window.googleAnalyticsMapping = googleAnalyticsMapping;
-
-        setServices({ status: 'success', data });
-      })
-      .catch((err) => {
-        console.error(err);
-        setServices({ status: 'failure', data: err });
-
-        window.logErrorToGa(err);
-      });
-  }
-
-  return services;
-}
-
-// Custom hook for the documentOrder.json lookup file.
-let sampleTyepsInitialized = false; // global var for ensuring fetch only happens once
-function useSampleTypesContext() {
-  const { sampleTypes, setSampleTypes } = useContext(LookupFilesContext);
-
-  // fetch the lookup file if necessary
-  if (!sampleTyepsInitialized) {
-    sampleTyepsInitialized = true;
-    getLookupFile('sampleTypes/sampleTypes.json', (newValue: LookupFile) => {
-      if (newValue.status !== 'success') {
+        const newValue = { ...(data.technologyTypes as SampleTypes) };
+        newValue['sampleSelectOptions'] = sampleSelectOptions;
         setSampleTypes(newValue);
-        return;
-      }
 
-      const sampleSelectOptions: SampleSelectType[] = [];
-      const sampleAttributes = newValue.data.sampleAttributes;
-      Object.keys(sampleAttributes).forEach((key: any) => {
-        const value = sampleAttributes[key].TYPEUUID;
-        const label = sampleAttributes[key].TYPE;
-        sampleSelectOptions.push({ value, label, isPredefined: true });
-      });
-      newValue.data['sampleSelectOptions'] = sampleSelectOptions;
-      setSampleTypes(newValue);
-    });
+        setLookupFiles({ status: 'success', data });
+      } catch (err) {
+        console.error(err);
+        window.logErrorToGa(err);
+        setLookupFiles({ status: 'failure', data: {} });
+      }
+    };
+
+    getData();
   }
 
-  return sampleTypes;
+  return lookupFiles;
 }
 
-export {
-  LookupFilesContext,
-  LookupFilesProvider,
-  useLayerProps,
-  useNotificationsContext,
-  useSampleTypesContext,
-  useServicesContext,
+export { LookupFilesContext, LookupFilesProvider, useLookupFiles };
+
+/*
+ * TYPES
+ */
+
+type AttributesType = { [key: string]: AttributeItems | DeconAttributeItems };
+
+type Content = {
+  defaultGsg: string;
+  layerProps: LayerProps;
+  notifications: {
+    backgroundColor: string;
+    color: string;
+    message: string;
+  };
+  services: {
+    governmentLands: string;
+    gpServerInputMaxRecordCount: number;
+    parcel: string;
+    proxyUrl: string;
+    structures: string;
+    suitability: string;
+    totsGPServer: string;
+    totsTestGPServer: string;
+    useProxyForGPServer: boolean;
+    radarDatasets: {
+      sampleMetadata: string;
+    };
+    googleAnalyticsMapping: {
+      name: string;
+      urlLookup: string;
+      wildcardUrl: string;
+    };
+  };
+  technologyTypes: SampleTypesS3;
+};
+
+type LookupFiles =
+  | { status: 'idle'; data: Record<string, never> }
+  | { status: 'pending'; data: Record<string, never> }
+  | { status: 'success'; data: Content }
+  | { status: 'failure'; data: Record<string, never> };
+
+type RadarContent = {
+  currentPage: number;
+  data: RadarSampleMetadata[];
+  perPage: number;
+  total: number;
+};
+
+type RadarSampleMetadata = {
+  ALC: string;
+  AMC: string;
+  ENABLED: string;
+  INNOVATIVE: string;
+  LOD_NON: string;
+  LOD_P: string;
+  MCPS: string;
+  Point_Style: string;
+  SA: string;
+  ShapeType: string;
+  TCPS: string;
+  TTA: string;
+  TTC: string;
+  TTPK: string;
+  TTPS: string;
+  TYPE: string;
+  WVPS: string;
+  WWPS: string;
+  id: number;
+};
+
+type SampleAttributes =
+  | { status: 'idle'; data: Record<string, never> }
+  | { status: 'pending'; data: Record<string, never> }
+  | { status: 'success'; data: AttributesType }
+  | { status: 'failure'; data: Record<string, never> };
+
+export type SampleTypes = SampleTypesS3 & {
+  sampleSelectOptions: SampleSelectType[];
+};
+
+export type DeconBuildingFactorsType = {
+  [key: string]: {
+    PRIM_OCC: string;
+    OCC_Class: string;
+    SOC: string;
+    Brick: number;
+    Concrete: number;
+    Steel: number;
+    Wood: number;
+    Other: number;
+  };
+};
+
+export type SampleTypesS3 = {
+  areaTolerance: number;
+  attributesToCheck: string[];
+  deconAttributes: { [key: string]: DeconAttributeItems };
+  deconBuildingFactors: DeconBuildingFactorsType;
+  sampleAttributes: AttributesType;
 };

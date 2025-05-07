@@ -59,10 +59,10 @@ jobs:
       CF_S3_PUB_BUCKET_ID: ${{ secrets.CF_STAGING_S3_PUB_BUCKET_ID }}
       CF_S3_PUB_REGION: ${{ secrets.CF_STAGING_S3_PUB_REGION }}
       CF_S3_PUB_SECRET_KEY: ${{ secrets.CF_STAGING_S3_PUB_SECRET_KEY }}
-      REACT_APP_ARCGIS_APP_ID: ${{ secrets.REACT_APP_ARCGIS_APP_ID_STAGING }}
       TOTS_BASIC_USER_NAME: ${{ secrets.TOTS_BASIC_USER_NAME }}
       TOTS_BASIC_USER_PWD: ${{ secrets.TOTS_BASIC_USER_PWD }}
       SERVER_URL: https://tots-stage.app.cloud.gov
+      VITE_ARCGIS_CLIENT_ID: ${{ secrets.VITE_ARCGIS_CLIENT_ID_STAGING }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -72,7 +72,7 @@ jobs:
       # Set up node and npm
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       # Run front-end processes (install, lint, test, bundle)
       - name: Cache node modules
@@ -90,7 +90,7 @@ jobs:
         run: |
           export NODE_OPTIONS="--max_old_space_size=4096"
           PUBLIC_URL="$SERVER_URL" \
-            REACT_APP_ARCGIS_APP_ID="$REACT_APP_ARCGIS_APP_ID" \
+            VITE_ARCGIS_CLIENT_ID="$VITE_ARCGIS_CLIENT_ID" \
             npm run build
           cd build
           cp -r * ../../server/app/public
@@ -100,7 +100,7 @@ jobs:
       # Run CloudFoundry/Cloud.gov deployment
       - name: Set up Cloud Foundry CLI
         run: |
-          curl -v -L -o cf-cli_amd64.deb 'https://cli.run.pivotal.io/stable?release=debian64&version=v7&source=github'
+          curl -v -L -o cf-cli_amd64.deb 'https://packages.cloudfoundry.org/stable?release=debian64&version=8.8.3&source=github-rel'
           sudo dpkg -i cf-cli_amd64.deb
           cf -v
           cf api https://api.fr.cloud.gov

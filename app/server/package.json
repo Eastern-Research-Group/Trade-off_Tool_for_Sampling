@@ -1,7 +1,6 @@
 {
   "name": "epa-hsrp-tots-server",
   "version": "3.0.0",
-  "private": true,
   "description": "Trade-off Tool for Sampling (TOTS) is JavaScript Web Mapping application to create sampling strategy for chemical and radiological contamination characterization easily accessible to field collection applications via the EPA GeoPlatform.",
   "keywords": [
     "TOTS",
@@ -18,27 +17,34 @@
     "Molly Rodgers <molly.rodgers@erg.com>"
   ],
   "engines": {
-    "node": "20.x"
+    "node": "22.x"
   },
   "main": "app/server.js",
   "scripts": {
-    "start": "nodemon -r dotenv/config --inspect app/server.js dotenv_config_path=./.env.local"
+    "start": "nodemon -r dotenv/config --inspect app/server.js dotenv_config_path=./.env.local",
+    "start_coverage": "nyc --silent node --env-file=./.env.local app/server.js",
+    "test": "npx rimraf .nyc_output/out.json && npx rimraf coverage && jest --coverage --coverageDirectory='coverage'"
   },
   "dependencies": {
-    "axios": "1.6.7",
-    "dotenv": "16.4.5",
-    "express": "4.18.2",
+    "axios": "1.7.9",
+    "body-parser": "1.20.3",
+    "dotenv": "16.4.7",
+    "express": "4.21.2",
     "express-basic-auth": "1.2.1",
-    "helmet": "7.1.0",
+    "helmet": "8.0.0",
     "log4js": "6.9.1",
     "serve-favicon": "2.5.0"
   },
   "devDependencies": {
-    "browser-sync": "3.0.2",
-    "husky": "9.0.11",
-    "lint-staged": "15.2.2",
-    "nodemon": "3.1.0",
-    "prettier": "3.2.5"
+    "@cypress/code-coverage": "3.13.9",
+    "browser-sync": "3.0.3",
+    "husky": "9.1.7",
+    "jest": "29.7.0",
+    "lint-staged": "15.2.11",
+    "nodemon": "3.1.9",
+    "nyc": "17.1.0",
+    "prettier": "3.4.2",
+    "supertest": "7.0.0"
   },
   "husky": {
     "hooks": {

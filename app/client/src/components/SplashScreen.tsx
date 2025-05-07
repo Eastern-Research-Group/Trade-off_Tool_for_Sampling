@@ -216,7 +216,7 @@ function SplashScreen() {
               id="splash-screen-toggle"
               type="checkbox"
               checked={preventSplashScreen}
-              onChange={(ev) => setPreventSplashScreen(!preventSplashScreen)}
+              onChange={(_ev) => setPreventSplashScreen(!preventSplashScreen)}
             />
             <label htmlFor="splash-screen-toggle">
               Do not show this welcome screen again.
@@ -226,7 +226,7 @@ function SplashScreen() {
           <button
             className="btn"
             css={buttonStyles}
-            onClick={(ev) => setIsOpen(false)}
+            onClick={(_ev) => setIsOpen(false)}
           >
             OK
           </button>
