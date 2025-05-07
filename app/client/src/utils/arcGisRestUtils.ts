@@ -17,9 +17,10 @@ const webMapProps = {
       {
         id: 'VectorTile_9568',
         title: 'World Topographic Map',
+        itemId: '27e89eb03c1e4341a1d75e597f0291e6',
         layerType: 'VectorTileLayer',
         styleUrl:
-          'https://cdn.arcgis.com/sharing/rest/content/items/42df0d22517e49ad84edcee4c093857d/resources/styles/root.json',
+          'https://www.arcgis.com/sharing/rest/content/items/27e89eb03c1e4341a1d75e597f0291e6/resources/styles/root.json',
       },
     ],
     title: 'Topographic',
@@ -38,10 +39,20 @@ const webSceneProps = {
   baseMap: {
     baseMapLayers: [
       {
-        id: '1866114cd76-layer-1',
-        title: 'World Topo Map',
-        url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer',
+        id: 'World_Hillshade_3805',
+        opacity: 1,
+        title: 'World Hillshade',
+        url: 'https://services.arcgisonline.com/arcgis/rest/services/Elevation/World_Hillshade/MapServer',
+        visibility: true,
         layerType: 'ArcGISTiledMapServiceLayer',
+      },
+      {
+        id: '195012aeb31-layer-2',
+        title: 'World Topographic Map',
+        itemId: '27e89eb03c1e4341a1d75e597f0291e6',
+        layerType: 'VectorTileLayer',
+        styleUrl:
+          'https://www.arcgis.com/sharing/rest/content/items/27e89eb03c1e4341a1d75e597f0291e6/resources/styles/root.json',
       },
     ],
     id: '1866114cb4d-basemap-0',
