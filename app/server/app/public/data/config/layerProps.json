@@ -4113,6 +4113,101 @@
     "capabilities": "Create,Delete,Query,Update,Editing,Extract,Sync",
     "exceedsLimitFactor": 1
   },
+  "defaultWebMapProps": {
+    "version": "2.33",
+    "authoringApp": "ArcGISMapViewer",
+    "authoringAppVersion": "2025.1",
+    "baseMap": {
+      "baseMapLayers": [
+        {
+          "id": "VectorTile_9568",
+          "title": "World Topographic Map",
+          "itemId": "27e89eb03c1e4341a1d75e597f0291e6",
+          "layerType": "VectorTileLayer",
+          "styleUrl": "https://www.arcgis.com/sharing/rest/content/items/27e89eb03c1e4341a1d75e597f0291e6/resources/styles/root.json"
+        }
+      ],
+      "title": "Topographic"
+    },
+    "initialState": {},
+    "spatialReference": {
+      "latestWkid": 3857,
+      "wkid": 102100
+    }
+  },
+  "defaultWebSceneProps": {
+    "version": "1.36",
+    "authoringApp": "WebSceneViewer",
+    "authoringAppVersion": "2025.1.0",
+    "baseMap": {
+      "baseMapLayers": [
+        {
+          "id": "World_Hillshade_3805",
+          "opacity": 1,
+          "title": "World Hillshade",
+          "url": "https://services.arcgisonline.com/arcgis/rest/services/Elevation/World_Hillshade/MapServer",
+          "visibility": true,
+          "layerType": "ArcGISTiledMapServiceLayer"
+        },
+        {
+          "id": "195012aeb31-layer-2",
+          "title": "World Topographic Map",
+          "itemId": "27e89eb03c1e4341a1d75e597f0291e6",
+          "layerType": "VectorTileLayer",
+          "styleUrl": "https://www.arcgis.com/sharing/rest/content/items/27e89eb03c1e4341a1d75e597f0291e6/resources/styles/root.json"
+        }
+      ],
+      "id": "1866114cb4d-basemap-0",
+      "title": "Topographic",
+      "elevationLayers": [
+        {
+          "id": "globalElevation",
+          "listMode": "show",
+          "title": "Terrain3D",
+          "url": "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer",
+          "layerType": "ArcGISTiledElevationServiceLayer"
+        }
+      ]
+    },
+    "ground": {
+      "layers": [
+        {
+          "id": "globalElevation",
+          "listMode": "show",
+          "title": "Terrain3D",
+          "url": "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer",
+          "layerType": "ArcGISTiledElevationServiceLayer"
+        }
+      ],
+      "transparency": 0,
+      "navigationConstraint": {
+        "type": "none"
+      }
+    },
+    "heightModelInfo": {
+      "heightModel": "gravity_related_height",
+      "heightUnit": "meter"
+    },
+    "initialState": {
+      "environment": {
+        "lighting": {
+          "type": "sun",
+          "datetime": 1678899363000,
+          "displayUTCOffset": -5
+        },
+        "atmosphereEnabled": true,
+        "starsEnabled": true,
+        "weather": {
+          "type": "sunny",
+          "cloudCover": 0.5
+        }
+      }
+    },
+    "spatialReference": {
+      "latestWkid": 3857,
+      "wkid": 102100
+    }
+  },
   "webMapFieldProps": {
     "OBJECTID": {
       "fieldName": "OBJECTID",

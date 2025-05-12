@@ -8,105 +8,6 @@ import { fetchPost, fetchCheck } from 'utils/fetchUtils';
 import { generateUUID, getCurrentDateTime } from 'utils/sketchUtils';
 import { chunkArray, escapeForLucene } from 'utils/utils';
 
-const webMapProps = {
-  version: '2.27',
-  authoringApp: 'ArcGISMapViewer',
-  authoringAppVersion: '2023.1',
-  baseMap: {
-    baseMapLayers: [
-      {
-        id: 'VectorTile_9568',
-        title: 'World Topographic Map',
-        itemId: '27e89eb03c1e4341a1d75e597f0291e6',
-        layerType: 'VectorTileLayer',
-        styleUrl:
-          'https://www.arcgis.com/sharing/rest/content/items/27e89eb03c1e4341a1d75e597f0291e6/resources/styles/root.json',
-      },
-    ],
-    title: 'Topographic',
-  },
-  initialState: {},
-  spatialReference: {
-    latestWkid: 3857,
-    wkid: 102100,
-  },
-};
-
-const webSceneProps = {
-  version: '1.30',
-  authoringApp: 'WebSceneViewer',
-  authoringAppVersion: '2023.1.0',
-  baseMap: {
-    baseMapLayers: [
-      {
-        id: 'World_Hillshade_3805',
-        opacity: 1,
-        title: 'World Hillshade',
-        url: 'https://services.arcgisonline.com/arcgis/rest/services/Elevation/World_Hillshade/MapServer',
-        visibility: true,
-        layerType: 'ArcGISTiledMapServiceLayer',
-      },
-      {
-        id: '195012aeb31-layer-2',
-        title: 'World Topographic Map',
-        itemId: '27e89eb03c1e4341a1d75e597f0291e6',
-        layerType: 'VectorTileLayer',
-        styleUrl:
-          'https://www.arcgis.com/sharing/rest/content/items/27e89eb03c1e4341a1d75e597f0291e6/resources/styles/root.json',
-      },
-    ],
-    id: '1866114cb4d-basemap-0',
-    title: 'Topographic',
-    elevationLayers: [
-      {
-        id: 'globalElevation',
-        listMode: 'show',
-        title: 'Terrain3D',
-        url: 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer',
-        layerType: 'ArcGISTiledElevationServiceLayer',
-      },
-    ],
-  },
-  ground: {
-    layers: [
-      {
-        id: 'globalElevation',
-        listMode: 'show',
-        title: 'Terrain3D',
-        url: 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer',
-        layerType: 'ArcGISTiledElevationServiceLayer',
-      },
-    ],
-    transparency: 0,
-    navigationConstraint: {
-      type: 'none',
-    },
-  },
-  heightModelInfo: {
-    heightModel: 'gravity_related_height',
-    heightUnit: 'meter',
-  },
-  initialState: {
-    environment: {
-      lighting: {
-        type: 'sun',
-        datetime: 1678899363000,
-        displayUTCOffset: -5,
-      },
-      atmosphereEnabled: true,
-      starsEnabled: true,
-      weather: {
-        type: 'sunny',
-        cloudCover: 0.5,
-      },
-    },
-  },
-  spatialReference: {
-    latestWkid: 3857,
-    wkid: 102100,
-  },
-};
-
 /**
  * Changes the layer name such that it will work with ArcGIS Online
  *
@@ -536,7 +437,7 @@ export function buildRendererParams(
   const sampleTypes: any = {};
 
   // get the extent from the array of graphics
-  if (layer.sketchLayer.type === 'graphics') {
+  if (layer.sketchLayer?.type === 'graphics') {
     layer.sketchLayer.graphics.forEach((graphic) => {
       if (graphicsExtent === null) graphicsExtent = graphic.geometry.extent;
       else graphicsExtent.union(graphic.geometry.extent);
@@ -621,7 +522,7 @@ export function buildRendererParams(
       }
     });
   }
-  if (layer.sketchLayer.type === 'feature') {
+  if (layer.sketchLayer?.type === 'feature') {
     graphicsExtent = layer.sketchLayer.fullExtent;
   }
 
@@ -1324,7 +1225,7 @@ export function addPointFeatures(
   }
 
   let attributes: any = {};
-  if (layer?.sketchLayer.type === 'graphics') {
+  if (layer?.sketchLayer?.type === 'graphics') {
     const graphic = layer.sketchLayer.graphics.find(
       (graphic) =>
         graphic.attributes.PERMANENT_IDENTIFIER ===
@@ -1754,6 +1655,7 @@ function buildReferenceLayers(
  * @param layersResponse The response from creating layers
  * @param referenceMaterials Reference layers to apply to web map
  * @param map Esri Map - Used for sorting the reference layers
+ * @param layerProps The layer properties to be used for publishing
  * @param type Web Map or Web Scene
  * @param existingWebMapScene Object for existing web map or web scene, if available
  * @returns A promise that resolves to the successfully saved web map
@@ -1765,6 +1667,7 @@ function addWebMapScene({
   layersResponse,
   referenceMaterials,
   map,
+  layerProps,
   type,
   existingWebMapScene,
 }: {
@@ -1774,6 +1677,7 @@ function addWebMapScene({
   layersResponse: any;
   referenceMaterials: ReferenceLayerSelections[];
   map: __esri.Map;
+  layerProps: LayerProps;
   type: 'Web Map' | 'Web Scene';
   existingWebMapScene: any | null;
 }) {
@@ -1864,7 +1768,10 @@ function addWebMapScene({
     });
     console.log('operationalLayers: ', operationalLayers);
 
-    const webProps = type === 'Web Map' ? webMapProps : webSceneProps;
+    const webProps =
+      type === 'Web Map'
+        ? layerProps.defaultWebMapProps
+        : layerProps.defaultWebSceneProps;
 
     // run the webserivce call to update ArcGIS Online
     const data = {
@@ -1922,16 +1829,19 @@ function addWebMapScene({
  * @param portal The portal object to apply edits to
  * @param map Esri Map - Used for sorting the reference layers
  * @param featureService Object detailing information about the feature service to be published.
+ * @param layerProps The layer properties to be used for publishing
  * @returns A promise that resolves to the successfully published data
  */
 async function publishFeatureService({
   portal,
   map,
   featureService,
+  layerProps,
 }: {
   portal: __esri.Portal;
   map: __esri.Map;
   featureService: any;
+  layerProps: LayerProps;
 }) {
   const service = await getFeatureService(portal, featureService);
 
@@ -2008,6 +1918,7 @@ async function publishFeatureService({
       referenceMaterials:
         featureService.referenceMaterials.webMapReferenceLayerSelections,
       map,
+      layerProps,
       existingWebMapScene: webMapRes,
     });
   }
@@ -2028,6 +1939,7 @@ async function publishFeatureService({
       referenceMaterials:
         featureService.referenceMaterials.webSceneReferenceLayerSelections,
       map,
+      layerProps,
       existingWebMapScene: webSceneRes,
     });
   }
@@ -2053,16 +1965,19 @@ async function publishFeatureService({
  * @param portal The portal object to apply edits to
  * @param map Esri Map - Used for sorting the reference layers
  * @param featureService Object detailing information about the feature service to be published.
+ * @param layerProps The layer properties to be used for publishing
  * @returns A promise that resolves to the successfully published data
  */
 export async function publish({
   portal,
   map,
   featureServices,
+  layerProps,
 }: {
   portal: __esri.Portal;
   map: __esri.Map;
   featureServices: any[];
+  layerProps: LayerProps;
 }) {
   if (featureServices.length === 0) return 'Nothing to publish.';
 
@@ -2141,6 +2056,7 @@ export async function publish({
         portal,
         map,
         featureService,
+        layerProps,
       });
       requests.push(request);
 

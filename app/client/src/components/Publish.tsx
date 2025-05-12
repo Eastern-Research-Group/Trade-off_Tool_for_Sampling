@@ -2316,6 +2316,7 @@ function Publish({ appType }: Props) {
           portal,
           map,
           featureServices,
+          layerProps,
         });
         console.log('responses: ', responses);
 

@@ -20,6 +20,8 @@ export type LayerProps = {
   defaultContaminationMapLayerFields: __esri.FieldProperties[];
   defaultLayerProps: __esri.FeatureLayerProperties;
   defaultTableProps: any;
+  defaultWebMapProps: any;
+  defaultWebSceneProps: any;
   webMapFieldProps: any;
 };
 
