@@ -1458,7 +1458,7 @@ function Publish({ appType }: Props) {
                 totalLiquidWaste += tech.liquidWasteVolumeM3;
                 totalLiquidWasteMass += tech.liquidWasteMassKg;
                 totalCost += tech.decontaminationCost;
-                totalTime += tech.decontaminationTimeDays;
+                totalTime = Math.max(tech.decontaminationTimeDays, totalTime);
                 calculationResults.push({
                   OPERATION_UUID: linkedLayer.layerId,
                   AGGREGATION_LEVEL: 'RAW',
@@ -1503,7 +1503,7 @@ function Publish({ appType }: Props) {
               totalLiquidWaste += summary.AQUEOUS_WASTE_M3;
               totalLiquidWasteMass += summary.AQUEOUS_WASTE_MASS;
               totalCost += summary.COST;
-              totalTime += summary.TIME;
+              totalTime = Math.max(summary.TIME, totalTime);
             });
 
             calculationResultsSummary.push({
@@ -2316,6 +2316,7 @@ function Publish({ appType }: Props) {
           portal,
           map,
           featureServices,
+          layerProps,
         });
         console.log('responses: ', responses);
 

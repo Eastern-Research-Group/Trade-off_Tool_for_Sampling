@@ -143,7 +143,7 @@ function getOperationSummary(
       totalOpSolidWasteVolume += d.solidWasteVolumeM3;
       totalOpLiquidWasteVolume += d.liquidWasteVolumeM3;
       totalOpDeconCost += d.decontaminationCost;
-      totalOpDeconTime += d.decontaminationTimeDays;
+      totalOpDeconTime = Math.max(d.decontaminationTimeDays, totalOpDeconTime);
       totalOpInitialContamination += d.averageInitialContamination;
       totalOpFinalContamination += d.averageFinalContamination;
     });
@@ -151,7 +151,7 @@ function getOperationSummary(
     totalSolidWasteVolume += totalOpSolidWasteVolume;
     totalLiquidWasteVolume += totalOpLiquidWasteVolume;
     totalDeconCost += totalOpDeconCost;
-    totalDeconTime += totalOpDeconTime;
+    totalDeconTime = Math.max(totalOpDeconTime, totalDeconTime);
     totalInitialContamination += totalOpInitialContamination;
     totalFinalContamination += totalOpFinalContamination;
 
@@ -2520,7 +2520,10 @@ function CalculateResultsPopup({
               totalLiquidWasteVolume += d.liquidWasteVolumeM3;
               totalLiquidWasteMass += d.liquidWasteMassKg;
               totalDeconCost += d.decontaminationCost;
-              totalDeconTime += d.decontaminationTimeDays;
+              totalDeconTime = Math.max(
+                d.decontaminationTimeDays,
+                totalDeconTime,
+              );
               totalInitialContamination += d.averageInitialContamination;
               totalFinalContamination += d.averageFinalContamination;
               return {
