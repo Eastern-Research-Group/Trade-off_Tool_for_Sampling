@@ -3708,8 +3708,8 @@ export function useAutoConfigureOutput() {
   useEffect(() => {
     let includeAoiCharacterization = false;
     let includePlan = false;
-    let includePlanWebMap = false;
-    let includePlanWebScene = false;
+    let includePlanWebMap = isDecon() ? false : true;
+    let includePlanWebScene = isDecon() ? false : true;
     let includeStagingAreas = false;
     const selectedAoiCharacterizations: Selections = [];
     const selectedStagingAreas: Selections = [];
