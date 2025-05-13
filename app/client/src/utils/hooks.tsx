@@ -1936,7 +1936,11 @@ export function useCalculateDeconPlan() {
     view = displayDimensions === '2d' ? mapView : sceneView;
   }, [displayDimensions, mapView, sceneView]);
 
+  const [lastScenarioId, setLastScenarioId] = useState('');
   useEffect(() => {
+    if (!selectedScenario || selectedScenario?.layerId === lastScenarioId)
+      return;
+    setLastScenarioId(selectedScenario.layerId);
     setCalculateResultsDecon((calculateResultsDecon) => {
       return {
         status: selectedScenario ? 'fetching' : 'none',
@@ -1944,7 +1948,7 @@ export function useCalculateDeconPlan() {
         data: null,
       };
     });
-  }, [selectedScenario, setCalculateResultsDecon]);
+  }, [lastScenarioId, selectedScenario, setCalculateResultsDecon]);
 
   type ContaminatedAoiAreas = { [planId: string]: { [key: number]: number } };
   const [aoiContamIntersect, setAoiContamIntersect] = useState<{

@@ -1002,8 +1002,7 @@ function CharacterizeAOI({
           edit.layerId === deconOperation?.layerId,
       ) as LayerDeconEditsType | undefined;
       if (selectedOp) {
-        if (!selectedOp.analysisLayerId)
-          selectedOp.analysisLayerId = layerAoiAnalysis.layerId;
+        selectedOp.analysisLayerId = layerAoiAnalysis.layerId;
         selectedOp.deconTechSelections = selectedOp.deconTechSelections.map(
           (tech) => {
             return {
@@ -1033,16 +1032,6 @@ function CharacterizeAOI({
     window.totsLayers = tLayers;
     setLayers(tLayers);
 
-    if (selectedScenario?.type === 'scenario-decon') {
-      setCalculateResultsDecon((calculateResultsDecon) => {
-        return {
-          status: 'fetching',
-          panelOpen: calculateResultsDecon.panelOpen,
-          data: null,
-        };
-      });
-    }
-
     // add the scenario group layer to the map
     map.add(groupLayer);
   }
@@ -1061,9 +1050,12 @@ function CharacterizeAOI({
       (layer) => !idsToDelete.includes(layer.layerId),
     );
     setDeconLayers(newDeconLayers);
-    if (lastDeconSketchLayer) setDeconSketchLayer(lastDeconSketchLayer);
-    else
-      setDeconSketchLayer(newDeconLayers.length > 0 ? newDeconLayers[0] : null);
+    const nextDeconSketchLayer = lastDeconSketchLayer
+      ? lastDeconSketchLayer
+      : newDeconLayers.length > 0
+        ? newDeconLayers[0]
+        : null;
+    setDeconSketchLayer(nextDeconSketchLayer);
 
     // remove all of the child layers
     setLayers((layers) => {
@@ -1082,14 +1074,51 @@ function CharacterizeAOI({
       if (edit.type !== 'layer-decon') return;
       if (!idsToDelete.includes(edit.analysisLayerId)) return;
 
-      edit.analysisLayerId = '';
-      edit.deconTechSelections = edit.deconTechSelections.map((tech) => {
-        return {
-          ...tech,
-          pctAoi: 0,
-          surfaceArea: 0,
-        };
-      });
+      if (nextDeconSketchLayer) {
+        edit.analysisLayerId = nextDeconSketchLayer.layerId;
+        edit.deconTechSelections = nextDeconSketchLayer.deconTechSelections.map(
+          (tech) => {
+            const editTech = edit.deconTechSelections.find(
+              (e) => e.media === tech.media,
+            );
+            return {
+              ...tech,
+              deconTech: editTech?.deconTech ?? tech.deconTech,
+              numIterativeApplications:
+                editTech?.numIterativeApplications ??
+                tech.numIterativeApplications,
+              numTeams: editTech?.numTeams ?? tech.numTeams,
+              removeContents: editTech?.removeContents ?? tech.removeContents,
+              subRows:
+                editTech?.subRows?.map((subTech: any) => {
+                  const subEditTech = editTech
+                    ? editTech.subRows.find((e: any) => e.media === tech.media)
+                    : null;
+
+                  return {
+                    ...subTech,
+                    deconTech: subEditTech?.deconTech ?? subTech.deconTech,
+                    numIterativeApplications:
+                      subEditTech?.numIterativeApplications ??
+                      subTech.numIterativeApplications,
+                    numTeams: subEditTech?.numTeams ?? subTech.numTeams,
+                    removeContents:
+                      subEditTech?.removeContents ?? subTech.removeContents,
+                  };
+                }) ?? tech.subRows,
+            };
+          },
+        );
+      } else {
+        edit.analysisLayerId = '';
+        edit.deconTechSelections = edit.deconTechSelections.map((tech) => {
+          return {
+            ...tech,
+            pctAoi: 0,
+            surfaceArea: 0,
+          };
+        });
+      }
     });
 
     setEdits(newEdits);
