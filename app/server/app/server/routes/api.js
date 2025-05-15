@@ -119,6 +119,7 @@ module.exports = function (app) {
             'data/config/layerProps.json',
             'data/config/services.json',
             'data/notifications/messages.json',
+            'data/cache/sampleMetadata.json',
             'data/technologyTypes/types.json',
           ],
           (data) => {
@@ -126,7 +127,8 @@ module.exports = function (app) {
               layerProps: data[0],
               services: data[1],
               notifications: data[2],
-              technologyTypes: data[3],
+              sampleMetadata: data[3],
+              technologyTypes: data[4],
               defaultGsg: `data:application/octet-stream;base64,${gsg.toString('base64')}`,
             };
           },

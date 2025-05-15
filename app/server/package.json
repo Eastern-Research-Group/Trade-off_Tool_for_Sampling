@@ -23,9 +23,11 @@
   "scripts": {
     "start": "nodemon -r dotenv/config --inspect app/server.js dotenv_config_path=./.env.local",
     "start_coverage": "nyc --silent node --env-file=./.env.local app/server.js",
-    "test": "npx rimraf .nyc_output/out.json && npx rimraf coverage && jest --coverage --coverageDirectory='coverage'"
+    "test": "npx rimraf .nyc_output/out.json && npx rimraf coverage && jest --coverage --coverageDirectory='coverage'",
+    "refreshCacheData": "node -r dotenv/config --inspect app/tasks/refreshCacheData.js dotenv_config_path=./.env.local"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.810.0",
     "axios": "1.7.9",
     "body-parser": "1.20.3",
     "dotenv": "16.4.7",
@@ -33,6 +35,7 @@
     "express-basic-auth": "1.2.1",
     "helmet": "8.0.0",
     "log4js": "6.9.1",
+    "node-cron": "4.0.5",
     "serve-favicon": "2.5.0"
   },
   "devDependencies": {
