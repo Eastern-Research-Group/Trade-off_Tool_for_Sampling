@@ -93,10 +93,7 @@ function useLookupFiles() {
         if (isDecon()) {
           sampleAttributes = data.technologyTypes.deconAttributes;
         } else {
-          const res = (await fetchCheck(
-            data.services.radarDatasets.sampleMetadata,
-          )) as RadarContent;
-          res.data.forEach((record) => {
+          data.sampleMetadata.forEach((record) => {
             sampleAttributes[record.TYPE] = {
               ...record,
               AA: null,
@@ -205,6 +202,7 @@ type Content = {
       wildcardUrl: string;
     };
   };
+  sampleMetadata: RadarSampleMetadata[];
   technologyTypes: SampleTypesS3;
 };
 
@@ -213,13 +211,6 @@ type LookupFiles =
   | { status: 'pending'; data: Record<string, never> }
   | { status: 'success'; data: Content }
   | { status: 'failure'; data: Record<string, never> };
-
-type RadarContent = {
-  currentPage: number;
-  data: RadarSampleMetadata[];
-  perPage: number;
-  total: number;
-};
 
 type RadarSampleMetadata = {
   ALC: string;
