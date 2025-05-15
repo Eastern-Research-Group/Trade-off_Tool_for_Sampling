@@ -194,7 +194,7 @@ if (isLocal || process.env.CF_INSTANCE_INDEX === '0') {
 
   log.info('Scheduling cache refresh cron task to run every day at 1AM');
   cron.schedule(
-    '* * * * *', // TODO set this back to 0 1 * * *
+    '0 1 * * *',
     () => {
       refreshCacheData();
     },
