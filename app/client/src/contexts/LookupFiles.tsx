@@ -262,5 +262,7 @@ export type SampleTypesS3 = {
   attributesToCheck: string[];
   deconAttributes: { [key: string]: DeconAttributeItems };
   deconBuildingFactors: DeconBuildingFactorsType;
+  limitOfDetection: number;
   sampleAttributes: AttributesType;
+  todsSampleRenderer: any;
 };

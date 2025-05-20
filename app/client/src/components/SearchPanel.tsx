@@ -2074,7 +2074,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
       // add all of the layers to the map
       map.addMany(mapLayersToAdd);
-      applyRendererForTotsLayer(layer);
+      applyRendererForTotsLayer(layer, technologyTypes);
 
       // zoom to the layer if it has an extent
       if (layer.fullExtent) {

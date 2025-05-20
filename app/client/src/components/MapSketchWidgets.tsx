@@ -106,7 +106,10 @@ function setupPopupWatchers(
         if (event.action.id === 'delete' && view?.popup?.selectedFeature) {
           setSamplesToDelete([view.popup.selectedFeature]);
         }
-        if (event.action.id === 'delete-multi') {
+        if (
+          event.action.id === 'delete-multi' &&
+          sketchVM.updateGraphics.length > 0
+        ) {
           setSamplesToDelete(sketchVM.updateGraphics.toArray());
         }
         if (['table', 'table-multi'].includes(event.action.id)) {
