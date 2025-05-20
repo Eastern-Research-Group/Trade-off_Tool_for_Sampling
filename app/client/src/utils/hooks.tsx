@@ -87,8 +87,6 @@ export type GsgParam = { itemID: string };
 
 let view: __esri.MapView | __esri.SceneView | null = null;
 
-export const detectionLimit = 100;
-
 export const buildingColors: { [key: string]: number[] } = {
   Residential: [255, 222, 62, 191],
   Commercial: [255, 127, 127, 191],
@@ -137,6 +135,7 @@ function performBasicDeconCalculations(
   deconTech: string,
   sel: any,
   deconAttributes: any,
+  limitOfDetection: number,
   jsonDownload: any[],
   parentMedia?: string,
   removeBuildingContentsOverride?: boolean,
@@ -170,7 +169,7 @@ function performBasicDeconCalculations(
   const avgFinalContam =
     sel.avgCfu * Math.pow(contamLeftFactor, sel.numIterativeApplications);
   sel.avgFinalContamination = avgFinalContam;
-  sel.aboveDetectionLimit = avgFinalContam >= detectionLimit;
+  sel.aboveDetectionLimit = avgFinalContam >= limitOfDetection;
 
   const removeBldgContents =
     removeBuildingContentsOverride !== undefined
@@ -1931,6 +1930,8 @@ export function useCalculateDeconPlan() {
     setEfficacyResults,
     setJsonDownload,
   } = useContext(SketchContext);
+  const lookupFiles = useLookupFiles().data;
+  const technologyTypes = lookupFiles.technologyTypes;
 
   useEffect(() => {
     view = displayDimensions === '2d' ? mapView : sceneView;
@@ -2277,7 +2278,8 @@ export function useCalculateDeconPlan() {
           const media = sel.media;
           if (!deconTech || deconTech === 'none') {
             sel.avgFinalContamination = sel.avgCfu;
-            sel.aboveDetectionLimit = sel.avgCfu >= detectionLimit;
+            sel.aboveDetectionLimit =
+              sel.avgCfu >= technologyTypes.limitOfDetection;
             return;
           }
 
@@ -2304,6 +2306,7 @@ export function useCalculateDeconPlan() {
                 deconTech,
                 mediaSel,
                 sampleAttributesDecon[deconTech as any],
+                technologyTypes.limitOfDetection,
                 jsonDownloadOpLevel,
                 undefined,
                 false,
@@ -2329,6 +2332,7 @@ export function useCalculateDeconPlan() {
                 deconTech,
                 mediaSel,
                 sampleAttributesDecon[deconTech as any],
+                technologyTypes.limitOfDetection,
                 jsonDownloadOpLevel,
                 media,
               );
@@ -2351,6 +2355,7 @@ export function useCalculateDeconPlan() {
               deconTech,
               sel,
               sampleAttributesDecon[deconTech as any],
+              technologyTypes.limitOfDetection,
               jsonDownloadOpLevel,
             ));
           }
@@ -2456,12 +2461,14 @@ export function useCalculateDeconPlan() {
     defaultDeconSelections,
     edits,
     layers,
+    mapView,
     sampleAttributesDecon,
     sceneViewForArea,
     selectedScenario,
     setCalculateResultsDecon,
     setEdits,
     setJsonDownload,
+    technologyTypes,
   ]);
 
   useEffect(() => {
@@ -2781,7 +2788,7 @@ export function useCalculateDeconPlan() {
                   geometry: geom,
                   symbol: !window.location.search.includes('devMode=true')
                     ? contamGraphic.symbol
-                    : newCfu < detectionLimit
+                    : newCfu < technologyTypes.limitOfDetection
                       ? ({
                           type: 'simple-fill',
                           color: [0, 255, 0],
@@ -2829,7 +2836,9 @@ export function useCalculateDeconPlan() {
                 const newG = g.clone();
                 if (window.location.search.includes('devMode=true')) {
                   (newG.symbol as any).outline.color =
-                    g.attributes.CONTAMVAL < detectionLimit ? 'green' : 'red';
+                    g.attributes.CONTAMVAL < technologyTypes.limitOfDetection
+                      ? 'green'
+                      : 'red';
                   (newG.symbol as any).outline.width = 2;
                 }
 
@@ -2869,6 +2878,7 @@ export function useCalculateDeconPlan() {
     sceneViewForArea,
     selectedScenario,
     setEfficacyResults,
+    technologyTypes,
     trainingMode,
   ]);
 

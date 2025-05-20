@@ -15,7 +15,7 @@ import SpatialReference from '@arcgis/core/geometry/SpatialReference';
 import * as webMercatorUtils from '@arcgis/core/geometry/support/webMercatorUtils';
 import { Dispatch, SetStateAction } from 'react';
 // contexts
-import { SampleTypes } from 'contexts/LookupFiles';
+import { SampleTypes, SampleTypesS3 } from 'contexts/LookupFiles';
 // utils
 import {
   backupImagerySymbol,
@@ -3072,75 +3072,94 @@ export function createScenarioDecon(
  * @param layer - layer to set renderer on
  * @param isPoints - Are graphics points or polygons
  */
-function setRenderer(layer: __esri.FeatureLayer, isPoints: boolean = false) {
+function setRenderer(
+  layer: __esri.FeatureLayer,
+  technologyTypes: SampleTypesS3,
+  isPoints: boolean = false,
+) {
   const type = isPoints ? 'simple-marker' : 'simple-fill';
-
-  // 1,000,000 | 10,000,000 | 100,000,000
   layer.renderer = {
-    type: 'class-breaks',
-    field: 'CONTAMVAL',
-    defaultLabel: 'Non-detect',
+    ...technologyTypes.todsSampleRenderer,
     defaultSymbol: {
+      ...technologyTypes.todsSampleRenderer.defaultSymbol,
       type,
-      color: [150, 150, 150, 0.2],
-      outline: {
-        color: [150, 150, 150],
-        width: 2,
-      },
     },
-    classBreakInfos: [
-      {
-        label: '< 100 (Limit of Detection)',
-        minValue: 0,
-        maxValue: 100,
+    classBreakInfos: technologyTypes.todsSampleRenderer.classBreakInfos.map(
+      (classBreakInfo: any) => ({
+        ...classBreakInfo,
         symbol: {
+          ...classBreakInfo.symbol,
           type,
-          color: [0, 255, 0, 0.7],
-          outline: {
-            color: [0, 255, 0],
-            width: 2,
-          },
         },
-      },
-      {
-        minValue: 101,
-        maxValue: 1_000_000,
-        symbol: {
-          type,
-          color: [255, 255, 0, 0.7],
-          outline: {
-            color: [255, 255, 0],
-            width: 2,
-          },
-        },
-      },
-      {
-        minValue: 1_000_001,
-        maxValue: 10_000_000,
-        symbol: {
-          type,
-          color: [255, 165, 0, 0.7],
-          outline: {
-            color: [255, 165, 0],
-            width: 2,
-          },
-        },
-      },
-      {
-        label: '> 10,000,000',
-        minValue: 10_000_001,
-        maxValue: Number.MAX_SAFE_INTEGER,
-        symbol: {
-          type,
-          color: [255, 0, 0, 0.7],
-          outline: {
-            color: [255, 0, 0],
-            width: 2,
-          },
-        },
-      },
-    ],
-  } as any;
+      }),
+    ),
+  };
+
+  // layer.renderer = {
+  //   type: 'class-breaks',
+  //   field: 'CONTAMVAL',
+  //   defaultLabel: 'Non-detect',
+  //   defaultSymbol: {
+  //     type,
+  //     color: [150, 150, 150, 0.2],
+  //     outline: {
+  //       color: [150, 150, 150],
+  //       width: 2,
+  //     },
+  //   },
+  //   classBreakInfos: [
+  //     {
+  //       label: '< 100 (Limit of Detection)',
+  //       minValue: 0,
+  //       maxValue: 100,
+  //       symbol: {
+  //         type,
+  //         color: [0, 255, 0, 0.7],
+  //         outline: {
+  //           color: [0, 255, 0],
+  //           width: 2,
+  //         },
+  //       },
+  //     },
+  //     {
+  //       minValue: 101,
+  //       maxValue: 1_000_000,
+  //       symbol: {
+  //         type,
+  //         color: [255, 255, 0, 0.7],
+  //         outline: {
+  //           color: [255, 255, 0],
+  //           width: 2,
+  //         },
+  //       },
+  //     },
+  //     {
+  //       minValue: 1_000_001,
+  //       maxValue: 10_000_000,
+  //       symbol: {
+  //         type,
+  //         color: [255, 165, 0, 0.7],
+  //         outline: {
+  //           color: [255, 165, 0],
+  //           width: 2,
+  //         },
+  //       },
+  //     },
+  //     {
+  //       label: '> 10,000,000',
+  //       minValue: 10_000_001,
+  //       maxValue: Number.MAX_SAFE_INTEGER,
+  //       symbol: {
+  //         type,
+  //         color: [255, 0, 0, 0.7],
+  //         outline: {
+  //           color: [255, 0, 0],
+  //           width: 2,
+  //         },
+  //       },
+  //     },
+  //   ],
+  // } as any;
 }
 
 /**
@@ -3177,16 +3196,23 @@ function loadLayer(layer: __esri.Layer) {
  *
  * @param layer - layer to set renderer on
  */
-export async function applyRendererForTotsLayer(layer: __esri.Layer) {
+export async function applyRendererForTotsLayer(
+  layer: __esri.Layer,
+  technologyTypes: SampleTypesS3,
+) {
   await loadLayer(layer);
 
   if (layer.type === 'feature') {
-    setRenderer(layer as __esri.FeatureLayer);
+    setRenderer(layer as __esri.FeatureLayer, technologyTypes);
   }
   if (layer.type === 'group') {
     for (const l of (layer as __esri.GroupLayer).layers) {
       await loadLayer(l);
-      setRenderer(l as __esri.FeatureLayer, l.title.includes('-points'));
+      setRenderer(
+        l as __esri.FeatureLayer,
+        technologyTypes,
+        l.title.includes('-points'),
+      );
       if (l.title.endsWith('-contamination-map')) {
         l.visible = false;
         l.listMode = 'hide';

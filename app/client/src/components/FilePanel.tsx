@@ -264,6 +264,7 @@ function FilePanel({ appType }: Props) {
   const lookupFiles = useLookupFiles().data;
   const layerProps = lookupFiles.layerProps;
   const services = lookupFiles.services;
+  const technologyTypes = lookupFiles.technologyTypes;
 
   const [generalizeFeatures, setGeneralizeFeatures] = useState(false);
   const [analyzeResponse, setAnalyzeResponse] = useState<any>(null);
@@ -1037,7 +1038,8 @@ function FilePanel({ appType }: Props) {
           if (layerType.value === 'Contamination Map' && appType === 'decon') {
             graphic.attributes['CONTAMREDUCED'] = false;
             graphic.attributes['CONTAMINATED'] =
-              graphic.attributes['CONTAMVAL'] >= 100;
+              graphic.attributes['CONTAMVAL'] >=
+              technologyTypes.limitOfDetection;
             graphic.attributes['CONTAMHIT'] = false;
           }
           if (layerType.value === 'Samples') {
@@ -1252,6 +1254,7 @@ function FilePanel({ appType }: Props) {
     setSelectedScenario,
     sceneView,
     setSketchLayer,
+    technologyTypes,
     trainingMode,
   ]);
 
