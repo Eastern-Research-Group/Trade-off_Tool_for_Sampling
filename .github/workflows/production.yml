@@ -1,6 +1,10 @@
 # This is a basic workflow to help you get started with Actions
 
 name: Production Build
+permissions:
+  attestations: write
+  contents: read
+  pull-requests: write
 
 # Controls when the action will run.
 on:
