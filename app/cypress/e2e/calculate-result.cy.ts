@@ -156,6 +156,7 @@ describe('Calculate results tests', () => {
   });
 
   it('Verify traning-mode Analyze Sample Results with file', () => {
+    initializeDb();
     setIndexedDbValue('training_mode', true);
     cy.fixture('wet-vac.json').then((file) => {
       setIndexedDbValue('edits', file);

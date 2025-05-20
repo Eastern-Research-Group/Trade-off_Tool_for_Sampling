@@ -68,6 +68,12 @@ describe('Add Data', function () {
     cy.findAllByTestId(loadingSpinnerId, { timeout }).should('not.exist');
     cy.findByText(failureText).should('exist');
 
+    cy.findByRole('combobox', { name: 'Layer Type' }).click();
+    cy.findByTestId(dropzoneId).upload(samplesFile, sampleName);
+    cy.findByText('Cancel').click();
+    cy.findAllByTestId(loadingSpinnerId, { timeout }).should('not.exist');
+    cy.findByText('Upload Canceled').should('exist');
+
     // select contamination map layer type, upload the samples file,
     // wait for it to finish and check for failure
     enableTrainingMode();
@@ -75,9 +81,9 @@ describe('Add Data', function () {
     cy.findByRole('combobox', { name: 'Layer Type' }).click();
     cy.findByText(contaminationType).click();
     cy.findByTestId(dropzoneId).upload(samplesFile, sampleName);
-    cy.findByText('Cancel').click();
+    cy.findAllByTestId(loadingSpinnerId, { timeout }).should('exist');
     cy.findAllByTestId(loadingSpinnerId, { timeout }).should('not.exist');
-    cy.findByText('Upload Canceled').should('exist');
+    cy.findByText('Missing Required Attributes').should('exist');
   });
 
   it('test uploading multiple files of different layer types', function () {
