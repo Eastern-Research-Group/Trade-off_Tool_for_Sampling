@@ -72,6 +72,10 @@ const headingStyles = css`
 const footerStyles = css`
   display: flex;
   justify-content: space-between;
+
+  input {
+    margin-right: 0.5rem;
+  }
 `;
 
 const modLinkButtonStyles = css`

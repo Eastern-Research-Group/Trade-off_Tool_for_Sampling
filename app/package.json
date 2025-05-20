@@ -31,22 +31,22 @@
     "coverage": "cd server && npm run test && cd .. && npm run client_coverage && node combine_coverage_reports.js"
   },
   "devDependencies": {
-    "@cypress/code-coverage": "3.13.9",
-    "@testing-library/cypress": "10.0.2",
+    "@cypress/code-coverage": "3.14.3",
+    "@testing-library/cypress": "10.0.3",
     "@types/cypress-image-snapshot": "3.1.9",
     "@types/jest": "29.5.14",
     "@types/mocha": "10.0.10",
-    "@types/node": "22.10.2",
+    "@types/node": "22.15.19",
     "@types/testing-library__cypress": "5.0.13",
-    "concurrently": "9.1.0",
-    "cypress": "13.16.1",
+    "concurrently": "9.1.2",
+    "cypress": "14.3.3",
     "cypress-image-snapshot": "4.0.1",
-    "dexie": "4.0.10",
-    "eslint-plugin-cypress": "4.1.0",
+    "dexie": "4.0.11",
+    "eslint-plugin-cypress": "4.3.0",
     "istanbul-lib-coverage": "3.2.2",
     "nyc": "17.1.0",
-    "prettier": "3.4.2",
-    "typescript": "5.7.2"
+    "prettier": "3.5.3",
+    "typescript": "5.8.3"
   },
   "eslintConfig": {
     "extends": [

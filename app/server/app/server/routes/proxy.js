@@ -34,6 +34,9 @@ module.exports = function (app) {
     response.headers['cache-control'] = 'no-cache';
   }
 
+  // only expose proxy in local environment or if env flag set
+  if (!isLocal && !isTest && process.env.ALLOW_PROXY !== 'true') return;
+
   router.get('/', function (req, res, next) {
     let authoriztedURL = false;
     var parsedUrl;
@@ -232,10 +235,7 @@ module.exports = function (app) {
       });
   });
 
-  router.get('/*', (req, res) => {
-    res.status(404).json({ message: 'The api route does not exist.' });
-  });
-  router.post('/*', (req, res) => {
+  router.use((req, res) => {
     res.status(404).json({ message: 'The api route does not exist.' });
   });
 

@@ -166,7 +166,7 @@ describe('Add data from file uploads', function () {
       'background-color',
       'rgb(220, 53, 69)',
     );
-    cy.findByText('Plan Name Not Available').should('exist');
+    cy.findByText('Name Not Available').should('exist');
 
     cy.get('#scenario-name-input').clear().type(`${planName}-1`);
     cy.findByRole('button', { name: 'Save' })
@@ -186,7 +186,7 @@ describe('Add data from file uploads', function () {
       .should('exist')
       .click({ force: true });
 
-    cy.findByRole('button', { name: 'Additional Setup' })
+    cy.findByRole('button', { name: 'Additional Tools' })
       .should('exist')
       .click({ force: true });
     cy.findByText('Create Custom Sample Types')
@@ -280,6 +280,9 @@ describe('Add data from file uploads', function () {
     cy.findByRole('button', { name: 'Configure Output' }).click({
       force: true,
     });
+    cy.findByText('Include Custom Sample Types')
+      .should('exist')
+      .click({ force: true });
     cy.findByRole('radio', {
       name: 'Publish to existing Feature Service',
     }).click({ force: true });
