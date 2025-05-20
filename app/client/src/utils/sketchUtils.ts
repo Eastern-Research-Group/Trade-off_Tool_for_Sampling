@@ -3079,6 +3079,7 @@ function setRenderer(layer: __esri.FeatureLayer, isPoints: boolean = false) {
   layer.renderer = {
     type: 'class-breaks',
     field: 'CONTAMVAL',
+    defaultLabel: '< 100 (Limit of Detection)',
     defaultSymbol: {
       type,
       color: [150, 150, 150, 0.2],
@@ -3089,7 +3090,7 @@ function setRenderer(layer: __esri.FeatureLayer, isPoints: boolean = false) {
     },
     classBreakInfos: [
       {
-        minValue: 1,
+        minValue: 101,
         maxValue: 1_000_000,
         symbol: {
           type,
@@ -3113,6 +3114,7 @@ function setRenderer(layer: __esri.FeatureLayer, isPoints: boolean = false) {
         },
       },
       {
+        label: '> 10,000,000',
         minValue: 10_000_001,
         maxValue: Number.MAX_SAFE_INTEGER,
         symbol: {
