@@ -121,6 +121,11 @@ module.exports = function (app) {
             'data/notifications/messages.json',
             'data/cache/sampleMetadata.json',
             'data/technologyTypes/types.json',
+            'data/cache/deconTechFactors.json',
+            'data/cache/deconMaterialFactors.json',
+            'data/cache/deconBuildingFactors.json',
+            'data/cache/deconWasteFactors.json',
+            'data/cache/deconBuildingClassFactors.json',
           ],
           (data) => {
             return {
@@ -129,6 +134,11 @@ module.exports = function (app) {
               notifications: data[2],
               sampleMetadata: data[3],
               technologyTypes: data[4],
+              deconTechFactors: data[5],
+              deconMaterialFactors: data[6],
+              deconBuildingFactors: data[7],
+              deconWasteFactors: data[8],
+              deconBuildingClassFactors: data[9],
               defaultGsg: `data:application/octet-stream;base64,${gsg.toString('base64')}`,
             };
           },
