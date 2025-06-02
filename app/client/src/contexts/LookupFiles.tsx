@@ -87,11 +87,94 @@ function useLookupFiles() {
       try {
         const data = (await fetchCheck(
           `${baseUrl}/api/lookupFiles`,
-        )) as Content;
+        )) as ContentLookupFiles;
 
         let sampleAttributes: any = {};
         if (isDecon()) {
+          // get building factors
+          const buildingFactors: DeconBuildingFactorsType = {};
+          data.deconBuildingClassFactors.forEach((record) => {
+            const primOcc = record.PRIM_OCC;
+            buildingFactors[primOcc] = {
+              PRIM_OCC: primOcc.includes('Unclassified')
+                ? 'Unclassified'
+                : primOcc,
+              OCC_CLS: record.OCC_CLS,
+              SOC: record.SOC,
+              Brick: parseNumeric(record.Brick),
+              Concrete: parseNumeric(record.Concrete),
+              Steel: parseNumeric(record.Steel),
+              Wood: parseNumeric(record.Wood),
+              Other: parseNumeric(record.Other),
+            };
+          });
+          data.technologyTypes.deconBuildingFactors = buildingFactors;
+
+          const deconAttributes: any = {};
+          data.deconTechFactors.forEach((record) => {
+            const MATERIAL_SPECIFIC_PARAMS: any = {};
+            data.deconMaterialFactors.forEach((f) => {
+              if (f.DECON_TECH_UUID === record.DECON_TECH_UUID) {
+                MATERIAL_SPECIFIC_PARAMS[f.MATERIAL] = {
+                  ...f,
+                  CONTAM_REMOVAL_FACTOR: parseNumeric(f.CONTAM_REMOVAL_FACTOR),
+                  LOG_REDUCTION: parseNumeric(f.LOG_REDUCTION),
+                };
+              }
+            });
+
+            const SURFACE_SPECIFIC_PARAMS: any = {};
+            data.deconBuildingFactors.forEach((f) => {
+              if (f.DECON_TECH_UUID === record.DECON_TECH_UUID) {
+                SURFACE_SPECIFIC_PARAMS[
+                  f.SURFACE.replace('Soil', 'Soil/Vegetation')
+                ] = {
+                  ...f,
+                  CONTAM_REMOVAL_FACTOR: parseNumeric(f.CONTAM_REMOVAL_FACTOR),
+                  LOG_REDUCTION: parseNumeric(f.LOG_REDUCTION),
+                  AQUEOUS_WASTE_MASS: parseNumeric(f.AQUEOUS_WASTE_MASS),
+                  AQUEOUS_WASTE_VOLUME: parseNumeric(f.AQUEOUS_WASTE_VOLUME),
+                  SOLID_WASTE_MASS: parseNumeric(f.SOLID_WASTE_MASS),
+                  SOLID_WASTE_VOLUME: parseNumeric(f.SOLID_WASTE_VOLUME),
+                };
+              }
+            });
+
+            deconAttributes[record.DECON_TECH_UUID] = {
+              ...record,
+              APPLICATION_TIME: parseNumeric(record.APPLICATION_TIME),
+              TYPEUUID: record.DECON_TECH_UUID,
+              TYPE: record.DECON_TECH,
+              FIXED_COSTS: parseNumeric(record.FIXED_COSTS),
+              SIZE_BASED_COSTS: parseNumeric(record.SIZE_BASED_COSTS),
+              SIZE_BASED_RATE_GALLONSPERSQFT: parseNumeric(
+                record.SIZE_BASED_RATE_GALLONSPERSQFT,
+              ),
+              SIZE_BASED_RATE_M3PERM2: parseNumeric(
+                record.SIZE_BASED_RATE_M3PERM2,
+              ),
+              OBJECTID: '-1',
+              PERMANENT_IDENTIFIER: null,
+              GLOBALID: null,
+              Notes: '',
+              CREATEDDATE: null,
+              UPDATEDDATE: null,
+              USERNAME: null,
+              MATERIAL_SPECIFIC_PARAMS,
+              SURFACE_SPECIFIC_PARAMS,
+            };
+          });
+          data.technologyTypes.deconAttributes = deconAttributes;
           sampleAttributes = data.technologyTypes.deconAttributes;
+
+          const deconWasteFactors: any = {};
+          data.deconWasteFactors.forEach((record) => {
+            deconWasteFactors[record.FACTOR_UUID] = {
+              ...record,
+              VALUE: parseNumeric(record.VALUE),
+            };
+          });
+          data.technologyTypes.deconWasteFactors = deconWasteFactors;
         } else {
           data.sampleMetadata.forEach((record) => {
             sampleAttributes[record.TYPE] = {
@@ -153,7 +236,17 @@ function useLookupFiles() {
         newValue['sampleSelectOptions'] = sampleSelectOptions;
         setSampleTypes(newValue);
 
-        setLookupFiles({ status: 'success', data });
+        setLookupFiles({
+          status: 'success',
+          data: {
+            ...data,
+            deconBuildingClassFactors: undefined,
+            deconBuildingFactors: undefined,
+            deconMaterialFactors: undefined,
+            deconTechFactors: undefined,
+            deconWasteFactors: undefined,
+          },
+        });
       } catch (err) {
         console.error(err);
         window.logErrorToGa(err);
@@ -174,6 +267,81 @@ export { LookupFilesContext, LookupFilesProvider, useLookupFiles };
  */
 
 type AttributesType = { [key: string]: AttributeItems | DeconAttributeItems };
+
+type ContentLookupFiles = {
+  deconBuildingClassFactors: DeconBuildingFactorType[];
+  deconBuildingFactors: {
+    AQUEOUS_WASTE_MASS: string;
+    AQUEOUS_WASTE_VOLUME: string;
+    CONTAM_REMOVAL_FACTOR: string;
+    DECON_TECH_UUID: string;
+    id: number;
+    LOG_REDUCTION: string;
+    SOLID_WASTE_MASS: string;
+    SOLID_WASTE_VOLUME: string;
+    SURFACE: string;
+  }[];
+  deconMaterialFactors: {
+    CONTAM_REMOVAL_FACTOR: string;
+    DECON_TECH_UUID: string;
+    DESTRUCTIVENESS: string;
+    id: number;
+    LOG_REDUCTION: string;
+    MATERIAL: string;
+  }[];
+  deconTechFactors: {
+    APPLICATION_MAX_AREA: number;
+    APPLICATION_METHOD: 'Surface' | 'Volumetric';
+    APPLICATION_TIME: string;
+    BREAKDOWN_TIME: number;
+    DECON_TECH: string;
+    DECON_TECH_UUID: string;
+    FIXED_COSTS: string;
+    id: number;
+    RESIDENCE_TIME: number;
+    SETUP_TIME: number;
+    SIZE_BASED_COSTS: string;
+    SIZE_BASED_COSTS_UNITS: string;
+    SIZE_BASED_RATE_GALLONSPERSQFT: string;
+    SIZE_BASED_RATE_M3PERM2: string;
+  }[];
+  deconWasteFactors: {
+    FACTOR: string | null;
+    FACTOR_UUID: string;
+    id: number;
+    SOURCE: string | null;
+    UNIT: string | null;
+    VALUE: string;
+  }[];
+  defaultGsg: string;
+  layerProps: LayerProps;
+  notifications: {
+    backgroundColor: string;
+    color: string;
+    message: string;
+  };
+  services: {
+    governmentLands: string;
+    gpServerInputMaxRecordCount: number;
+    parcel: string;
+    proxyUrl: string;
+    structures: string;
+    suitability: string;
+    totsGPServer: string;
+    totsTestGPServer: string;
+    useProxyForGPServer: boolean;
+    radarDatasets: {
+      sampleMetadata: string;
+    };
+    googleAnalyticsMapping: {
+      name: string;
+      urlLookup: string;
+      wildcardUrl: string;
+    };
+  };
+  sampleMetadata: RadarSampleMetadata[];
+  technologyTypes: SampleTypesS3;
+};
 
 type Content = {
   defaultGsg: string;
@@ -244,10 +412,22 @@ export type SampleTypes = SampleTypesS3 & {
   sampleSelectOptions: SampleSelectType[];
 };
 
+export type DeconBuildingFactorType = {
+  id: number;
+  PRIM_OCC: string;
+  OCC_CLS: string;
+  SOC: string;
+  Brick: string;
+  Concrete: string;
+  Steel: string;
+  Wood: string;
+  Other: string;
+};
+
 export type DeconBuildingFactorsType = {
   [key: string]: {
     PRIM_OCC: string;
-    OCC_Class: string;
+    OCC_CLS: string;
     SOC: string;
     Brick: number;
     Concrete: number;
@@ -257,11 +437,21 @@ export type DeconBuildingFactorsType = {
   };
 };
 
+export type DeconWastFactorType = {
+  FACTOR: string | null;
+  FACTOR_UUID: string;
+  id: number;
+  SOURCE: string | null;
+  UNIT: string | null;
+  VALUE: number;
+};
+
 export type SampleTypesS3 = {
   areaTolerance: number;
   attributesToCheck: string[];
   deconAttributes: { [key: string]: DeconAttributeItems };
   deconBuildingFactors: DeconBuildingFactorsType;
+  deconWasteFactors: { [key: string]: DeconWastFactorType };
   limitOfDetection: number;
   sampleAttributes: AttributesType;
   todsSampleRenderer: any;
