@@ -9,7 +9,12 @@
   "suitability": "https://geopub.epa.gov/arcgis/rest/services/ORD/HSRP_30m/ImageServer",
   "useProxyForGPServer": false,
   "radarDatasets": {
-    "sampleMetadata": "https://radar-staging.app.cloud.gov/api/v1/datasets/b334f501-10be-4bc3-8fbf-7eacd163eff7/data/3"
+    "sampleMetadata": "https://radar-staging.app.cloud.gov/api/v1/datasets/b334f501-10be-4bc3-8fbf-7eacd163eff7/data/3",
+    "deconTechFactors": "https://radar-staging.app.cloud.gov/api/v1/datasets/e96a8f9e-0454-4090-ba0a-8a3f5fe75a78/data/1",
+    "deconMaterialFactors": "https://radar-staging.app.cloud.gov/api/v1/datasets/e96a8f9e-0454-4090-ba0a-8a3f5fe75a78/data/2",
+    "deconBuildingFactors": "https://radar-staging.app.cloud.gov/api/v1/datasets/e96a8f9e-0454-4090-ba0a-8a3f5fe75a78/data/3",
+    "deconWasteFactors": "https://radar-staging.app.cloud.gov/api/v1/datasets/e96a8f9e-0454-4090-ba0a-8a3f5fe75a78/data/4",
+    "deconBuildingClassFactors": "https://radar-staging.app.cloud.gov/api/v1/datasets/e96a8f9e-0454-4090-ba0a-8a3f5fe75a78/data/5"
   },
   "googleAnalyticsMapping": [
     {
