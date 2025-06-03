@@ -71,14 +71,14 @@ const navButtonStyles = (selected: boolean) => css`
     */
   height: 40px;
   width: calc(100% - 30px);
-  margin-left: calc(0.75em + 23px);
+  margin-left: calc(0.75em + 20px);
 `;
 
 const verticalButtonBar = (color: string) => {
   return css`
     border-left: 6px solid ${color};
     height: 0.5em;
-    margin-left: 28px;
+    margin-left: 25px;
   `;
 };
 
@@ -98,7 +98,7 @@ const navIconStyles = (color: string) => {
 };
 
 const navTextStyles = css`
-  width: 70px;
+  width: 80px;
 `;
 
 // --- components (NavButton) ---
@@ -216,6 +216,7 @@ const mainTallyStyles = css`
 const resourceTallySeparator = css`
   border-top: none;
   border-bottom: 1px solid ${buttonVisitedColor};
+  margin: 0.5rem 0 0.5rem 0.5rem;
 `;
 
 const helpIconStyles = css`
