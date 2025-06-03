@@ -45,7 +45,7 @@ const appStyles = (offset: number) => css`
   display: flex;
   flex-direction: column;
   height: calc(100vh - ${offset}px);
-  min-height: 675px;
+  min-height: 610px;
   width: 100%;
 `;
 

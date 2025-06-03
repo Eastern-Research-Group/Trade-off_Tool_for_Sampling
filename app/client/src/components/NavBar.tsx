@@ -34,7 +34,12 @@ import {
 } from 'utils/hooks';
 // config
 import { navPanelWidth } from 'config/appConfig';
-import { deconPanels, PanelType, samplingPanels } from 'config/navigation';
+import {
+  deconPanels,
+  isDecon,
+  PanelType,
+  samplingPanels,
+} from 'config/navigation';
 // types
 import { AppType } from 'types/Navigation';
 // styles
@@ -64,6 +69,7 @@ const navButtonStyles = (selected: boolean) => css`
       shift the button so the icon centers with the 
       left side of the button 
     */
+  height: 40px;
   width: calc(100% - 30px);
   margin-left: calc(0.75em + 23px);
 `;
@@ -71,22 +77,22 @@ const navButtonStyles = (selected: boolean) => css`
 const verticalButtonBar = (color: string) => {
   return css`
     border-left: 6px solid ${color};
-    height: 1.1764em;
-    margin-left: 30px;
+    height: 0.5em;
+    margin-left: 28px;
   `;
 };
 
 const navIconStyles = (color: string) => {
   return css`
-    font-size: 18px;
-    padding: 14px;
+    font-size: 16px;
+    padding: 13px;
     margin-left: -23px;
     margin-right: 10px;
     border-radius: 50%;
     color: white;
     background-color: ${color};
-    width: 46px;
-    height: 46px;
+    width: 40px;
+    height: 40px;
     text-align: center;
   `;
 };
@@ -218,8 +224,8 @@ const helpIconStyles = css`
   margin-left: 8px;
   margin-right: 10px;
   border-radius: 50%;
-  color: ${buttonColor};
-  background-color: white;
+  color: ${isDecon() ? 'white' : buttonColor};
+  background-color: ${isDecon() ? buttonColor : 'white'};
   width: 30px;
   height: 30px;
   text-align: center;
@@ -649,14 +655,6 @@ function NavBar({ appType, height }: Props) {
                     )}
                   </div>
                 )}
-
-              <button
-                onClick={(_ev) => setGettingStartedOpen(!gettingStartedOpen)}
-                css={navButtonStyles(false)}
-              >
-                <i className="fas fa-question" css={helpIconStyles} />
-                Help
-              </button>
             </Fragment>
           )}
 
@@ -706,6 +704,14 @@ function NavBar({ appType, height }: Props) {
               <div />
             </Fragment>
           )}
+
+          <button
+            onClick={(_ev) => setGettingStartedOpen(!gettingStartedOpen)}
+            css={navButtonStyles(false)}
+          >
+            <i className="fas fa-question" css={helpIconStyles} />
+            Help
+          </button>
         </div>
       </div>
       {currentPanel && (

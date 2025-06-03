@@ -83,10 +83,22 @@
         }
       }
     },
-    "/api/userGuide": {
+    "/api/tots/userGuide": {
       "get": {
         "tags": ["Trade-off Tool for Sampling (TOTS)"],
         "description": "Get the user guide for TOTS.",
+        "summary": "Fetch user guide",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/UserGuideSuccess"
+          }
+        }
+      }
+    },
+    "/api/tods/userGuide": {
+      "get": {
+        "tags": ["Trade-off Tool for Decontamination Strategies (TODS)"],
+        "description": "Get the user guide for TODS.",
         "summary": "Fetch user guide",
         "responses": {
           "200": {

@@ -43,6 +43,33 @@ async function getFile(
       });
 }
 
+async function getUserGuide(app, res, req, path) {
+  const metadataObj = logger.populateMetdataObjFromRequest(req);
+
+  const { isLocal, isTest } = getEnvironment();
+  const isLocalTest = isLocal || isTest;
+  const s3BucketUrl = app.get('s3_bucket_url');
+
+  try {
+    const data = await getFile(
+      s3BucketUrl,
+      path,
+      isLocalTest,
+      'arraybuffer',
+      'binary',
+    );
+
+    res.contentType('application/pdf');
+    res.send(isLocalTest ? data : data.data);
+  } catch (error) {
+    logError(error, metadataObj, isLocalTest);
+
+    return res
+      .status(error?.response?.status || 500)
+      .json({ message: 'Error getting static content from S3 bucket' });
+  }
+}
+
 // local development: no further processing of strings needed
 // Cloud.gov: get data from responses
 function parseResponse(res, isLocal) {
@@ -160,31 +187,12 @@ module.exports = function (app) {
   });
 
   // --- get static content from S3
-  router.get('/userGuide', (req, res) => {
-    const metadataObj = logger.populateMetdataObjFromRequest(req);
+  router.get('/tots/userGuide', (req, res) => {
+    getUserGuide(app, res, req, 'data/documents/TOTS-Users-Guide.pdf');
+  });
 
-    const { isLocal, isTest } = getEnvironment();
-    const isLocalTest = isLocal || isTest;
-    const s3BucketUrl = app.get('s3_bucket_url');
-
-    getFile(
-      s3BucketUrl,
-      'data/documents/TOTS-Users-Guide.pdf',
-      isLocalTest,
-      'arraybuffer',
-      'binary',
-    )
-      .then((data) => {
-        res.contentType('application/pdf');
-        res.send(isLocalTest ? data : data.data);
-      })
-      .catch((error) => {
-        logError(error, metadataObj, isLocalTest);
-
-        return res
-          .status(error?.response?.status || 500)
-          .json({ message: 'Error getting static content from S3 bucket' });
-      });
+  router.get('/tods/userGuide', (req, res) => {
+    getUserGuide(app, res, req, 'data/documents/TODS-Users-Guide.pdf');
   });
 
   router.use((req, res) => {
