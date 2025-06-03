@@ -34,7 +34,12 @@ import {
 } from 'utils/hooks';
 // config
 import { navPanelWidth } from 'config/appConfig';
-import { deconPanels, PanelType, samplingPanels } from 'config/navigation';
+import {
+  deconPanels,
+  isDecon,
+  PanelType,
+  samplingPanels,
+} from 'config/navigation';
 // types
 import { AppType } from 'types/Navigation';
 // styles
@@ -218,8 +223,8 @@ const helpIconStyles = css`
   margin-left: 8px;
   margin-right: 10px;
   border-radius: 50%;
-  color: ${buttonColor};
-  background-color: white;
+  color: ${isDecon() ? 'white' : buttonColor};
+  background-color: ${isDecon() ? buttonColor : 'white'};
   width: 30px;
   height: 30px;
   text-align: center;
@@ -649,14 +654,6 @@ function NavBar({ appType, height }: Props) {
                     )}
                   </div>
                 )}
-
-              <button
-                onClick={(_ev) => setGettingStartedOpen(!gettingStartedOpen)}
-                css={navButtonStyles(false)}
-              >
-                <i className="fas fa-question" css={helpIconStyles} />
-                Help
-              </button>
             </Fragment>
           )}
 
@@ -706,6 +703,14 @@ function NavBar({ appType, height }: Props) {
               <div />
             </Fragment>
           )}
+
+          <button
+            onClick={(_ev) => setGettingStartedOpen(!gettingStartedOpen)}
+            css={navButtonStyles(false)}
+          >
+            <i className="fas fa-question" css={helpIconStyles} />
+            Help
+          </button>
         </div>
       </div>
       {currentPanel && (
