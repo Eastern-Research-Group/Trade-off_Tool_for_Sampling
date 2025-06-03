@@ -142,7 +142,7 @@ function GettingStarted({ isOpen, children }: Props) {
         <p>
           View the{' '}
           <a
-            href={`${baseUrl}/api/userGuide`}
+            href={`${baseUrl}/api/tots/userGuide`}
             target="_blank"
             rel="noopener noreferrer"
             css={linkStyles}

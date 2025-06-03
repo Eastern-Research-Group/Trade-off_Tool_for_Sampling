@@ -54,8 +54,13 @@
     },
     {
       "urlLookup": "origin",
-      "wildcardUrl": "{urlLookup}/api/userGuide",
-      "name": "s3 lookup - User Guide"
+      "wildcardUrl": "{urlLookup}/api/tots/userGuide",
+      "name": "s3 lookup - TOTS User Guide"
+    },
+    {
+      "urlLookup": "origin",
+      "wildcardUrl": "{urlLookup}/api/tods/userGuide",
+      "name": "s3 lookup - TODS User Guide"
     },
     {
       "urlLookup": "ArcGIS",

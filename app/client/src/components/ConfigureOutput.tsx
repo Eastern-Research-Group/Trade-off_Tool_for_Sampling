@@ -1096,11 +1096,7 @@ function EditAttributePopup({
   }, [dataType]);
 
   return (
-    <DialogOverlay
-      css={overlayStyles}
-      isOpen={isOpen}
-      data-testid="tots-getting-started"
-    >
+    <DialogOverlay css={overlayStyles} isOpen={isOpen}>
       <DialogContent css={dialogStyles} aria-label="Edit Attribute">
         <form
           onSubmit={() => {
