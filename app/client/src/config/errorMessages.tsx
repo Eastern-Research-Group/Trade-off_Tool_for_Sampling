@@ -232,7 +232,7 @@ export const cantUseWith3dMessage = (toolName: string) => (
   <MessageBox
     severity="warning"
     title="Not Available in 3D View"
-    message={`${toolName} cannot be used in 3D mode`}
+    message={`${toolName} cannot be used in 3D mode. Use the Settings menu to change the dimension to 2D.`}
   />
 );
 

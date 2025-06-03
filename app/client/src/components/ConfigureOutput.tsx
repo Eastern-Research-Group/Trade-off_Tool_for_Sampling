@@ -365,8 +365,9 @@ function ConfigureOutput({ appType }: Props) {
           <div>
             <p>
               Use this tab to configure what {appName} output is published to
-              your ArcGIS Online account. Select one or more of the options
-              below.
+              your ArcGIS Online account. Access the User's Guide through the
+              Help menu to view definitions of available attributes. Select one
+              or more of the options below.
             </p>
           </div>
 
