@@ -90,91 +90,94 @@ function useLookupFiles() {
         )) as ContentLookupFiles;
 
         let sampleAttributes: any = {};
+
+        // get building factors
+        const buildingFactors: DeconBuildingFactorsType = {};
+        data.deconBuildingClassFactors.forEach((record) => {
+          const primOcc = record.PRIM_OCC;
+          buildingFactors[primOcc] = {
+            PRIM_OCC: primOcc.includes('Unclassified')
+              ? 'Unclassified'
+              : primOcc,
+            OCC_CLS: record.OCC_CLS,
+            SOC: record.SOC,
+            Brick: parseNumeric(record.Brick),
+            Concrete: parseNumeric(record.Concrete),
+            Steel: parseNumeric(record.Steel),
+            Wood: parseNumeric(record.Wood),
+            Other: parseNumeric(record.Other),
+          };
+        });
+        data.technologyTypes.deconBuildingFactors = buildingFactors;
+
+        const deconAttributes: any = {};
+        data.deconTechFactors.forEach((record) => {
+          const MATERIAL_SPECIFIC_PARAMS: any = {};
+          data.deconMaterialFactors.forEach((f) => {
+            if (f.DECON_TECH_UUID === record.DECON_TECH_UUID) {
+              MATERIAL_SPECIFIC_PARAMS[f.MATERIAL] = {
+                ...f,
+                CONTAM_REMOVAL_FACTOR: parseNumeric(f.CONTAM_REMOVAL_FACTOR),
+                LOG_REDUCTION: parseNumeric(f.LOG_REDUCTION),
+              };
+            }
+          });
+
+          const SURFACE_SPECIFIC_PARAMS: any = {};
+          data.deconBuildingFactors.forEach((f) => {
+            if (f.DECON_TECH_UUID === record.DECON_TECH_UUID) {
+              SURFACE_SPECIFIC_PARAMS[
+                f.SURFACE.replace('Soil', 'Soil/Vegetation')
+              ] = {
+                ...f,
+                CONTAM_REMOVAL_FACTOR: parseNumeric(f.CONTAM_REMOVAL_FACTOR),
+                LOG_REDUCTION: parseNumeric(f.LOG_REDUCTION),
+                AQUEOUS_WASTE_MASS: parseNumeric(f.AQUEOUS_WASTE_MASS),
+                AQUEOUS_WASTE_VOLUME: parseNumeric(f.AQUEOUS_WASTE_VOLUME),
+                SOLID_WASTE_MASS: parseNumeric(f.SOLID_WASTE_MASS),
+                SOLID_WASTE_VOLUME: parseNumeric(f.SOLID_WASTE_VOLUME),
+              };
+            }
+          });
+
+          deconAttributes[record.DECON_TECH_UUID] = {
+            ...record,
+            APPLICATION_TIME: parseNumeric(record.APPLICATION_TIME),
+            TYPEUUID: record.DECON_TECH_UUID,
+            TYPE: record.DECON_TECH,
+            FIXED_COSTS: parseNumeric(record.FIXED_COSTS),
+            SIZE_BASED_COSTS: parseNumeric(record.SIZE_BASED_COSTS),
+            SIZE_BASED_RATE_GALLONSPERSQFT: parseNumeric(
+              record.SIZE_BASED_RATE_GALLONSPERSQFT,
+            ),
+            SIZE_BASED_RATE_M3PERM2: parseNumeric(
+              record.SIZE_BASED_RATE_M3PERM2,
+            ),
+            OBJECTID: '-1',
+            PERMANENT_IDENTIFIER: null,
+            GLOBALID: null,
+            Notes: '',
+            CREATEDDATE: null,
+            UPDATEDDATE: null,
+            USERNAME: null,
+            MATERIAL_SPECIFIC_PARAMS,
+            SURFACE_SPECIFIC_PARAMS,
+          };
+        });
+
+        data.technologyTypes.deconAttributes = deconAttributes;
+
+        const deconWasteFactors: any = {};
+        data.deconWasteFactors.forEach((record) => {
+          deconWasteFactors[record.FACTOR_UUID] = {
+            ...record,
+            VALUE: parseNumeric(record.VALUE),
+          };
+        });
+        data.technologyTypes.deconWasteFactors = deconWasteFactors;
+
         if (isDecon()) {
-          // get building factors
-          const buildingFactors: DeconBuildingFactorsType = {};
-          data.deconBuildingClassFactors.forEach((record) => {
-            const primOcc = record.PRIM_OCC;
-            buildingFactors[primOcc] = {
-              PRIM_OCC: primOcc.includes('Unclassified')
-                ? 'Unclassified'
-                : primOcc,
-              OCC_CLS: record.OCC_CLS,
-              SOC: record.SOC,
-              Brick: parseNumeric(record.Brick),
-              Concrete: parseNumeric(record.Concrete),
-              Steel: parseNumeric(record.Steel),
-              Wood: parseNumeric(record.Wood),
-              Other: parseNumeric(record.Other),
-            };
-          });
-          data.technologyTypes.deconBuildingFactors = buildingFactors;
-
-          const deconAttributes: any = {};
-          data.deconTechFactors.forEach((record) => {
-            const MATERIAL_SPECIFIC_PARAMS: any = {};
-            data.deconMaterialFactors.forEach((f) => {
-              if (f.DECON_TECH_UUID === record.DECON_TECH_UUID) {
-                MATERIAL_SPECIFIC_PARAMS[f.MATERIAL] = {
-                  ...f,
-                  CONTAM_REMOVAL_FACTOR: parseNumeric(f.CONTAM_REMOVAL_FACTOR),
-                  LOG_REDUCTION: parseNumeric(f.LOG_REDUCTION),
-                };
-              }
-            });
-
-            const SURFACE_SPECIFIC_PARAMS: any = {};
-            data.deconBuildingFactors.forEach((f) => {
-              if (f.DECON_TECH_UUID === record.DECON_TECH_UUID) {
-                SURFACE_SPECIFIC_PARAMS[
-                  f.SURFACE.replace('Soil', 'Soil/Vegetation')
-                ] = {
-                  ...f,
-                  CONTAM_REMOVAL_FACTOR: parseNumeric(f.CONTAM_REMOVAL_FACTOR),
-                  LOG_REDUCTION: parseNumeric(f.LOG_REDUCTION),
-                  AQUEOUS_WASTE_MASS: parseNumeric(f.AQUEOUS_WASTE_MASS),
-                  AQUEOUS_WASTE_VOLUME: parseNumeric(f.AQUEOUS_WASTE_VOLUME),
-                  SOLID_WASTE_MASS: parseNumeric(f.SOLID_WASTE_MASS),
-                  SOLID_WASTE_VOLUME: parseNumeric(f.SOLID_WASTE_VOLUME),
-                };
-              }
-            });
-
-            deconAttributes[record.DECON_TECH_UUID] = {
-              ...record,
-              APPLICATION_TIME: parseNumeric(record.APPLICATION_TIME),
-              TYPEUUID: record.DECON_TECH_UUID,
-              TYPE: record.DECON_TECH,
-              FIXED_COSTS: parseNumeric(record.FIXED_COSTS),
-              SIZE_BASED_COSTS: parseNumeric(record.SIZE_BASED_COSTS),
-              SIZE_BASED_RATE_GALLONSPERSQFT: parseNumeric(
-                record.SIZE_BASED_RATE_GALLONSPERSQFT,
-              ),
-              SIZE_BASED_RATE_M3PERM2: parseNumeric(
-                record.SIZE_BASED_RATE_M3PERM2,
-              ),
-              OBJECTID: '-1',
-              PERMANENT_IDENTIFIER: null,
-              GLOBALID: null,
-              Notes: '',
-              CREATEDDATE: null,
-              UPDATEDDATE: null,
-              USERNAME: null,
-              MATERIAL_SPECIFIC_PARAMS,
-              SURFACE_SPECIFIC_PARAMS,
-            };
-          });
-          data.technologyTypes.deconAttributes = deconAttributes;
           sampleAttributes = data.technologyTypes.deconAttributes;
-
-          const deconWasteFactors: any = {};
-          data.deconWasteFactors.forEach((record) => {
-            deconWasteFactors[record.FACTOR_UUID] = {
-              ...record,
-              VALUE: parseNumeric(record.VALUE),
-            };
-          });
-          data.technologyTypes.deconWasteFactors = deconWasteFactors;
         } else {
           data.sampleMetadata.forEach((record) => {
             sampleAttributes[record.TYPE] = {
