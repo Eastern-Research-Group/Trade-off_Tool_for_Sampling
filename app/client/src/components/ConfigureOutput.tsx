@@ -806,8 +806,8 @@ function ConfigureOutput({ appType }: Props) {
           >
             <div css={sectionContainer}>
               <p>
-                Publish AOI characterization data to ArcGIS Online. Select
-                atleast one AOI characterization item from the drop-down list.
+                Publish AOI characterization data to ArcGIS Online. Select at
+                least one AOI characterization item from the drop-down list.
               </p>
               <div>
                 <label htmlFor="publish-aoi-char-select">
@@ -851,7 +851,7 @@ function ConfigureOutput({ appType }: Props) {
           >
             <div css={sectionContainer}>
               <p>
-                Publish Staging Area data to ArcGIS Online. Select atleast one
+                Publish Staging Area data to ArcGIS Online. Select at least one
                 Staging Area item from the drop-down list.
               </p>
               <div>

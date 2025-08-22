@@ -1792,7 +1792,7 @@ function DeconSelectionPopup({
         <div css={resourceTallyContainerStyles}>
           <div>
             <div>
-              <strong>{deconOperation?.label} size: </strong>{' '}
+              <strong>{deconOperation?.label} Size: </strong>{' '}
               {formatNumber(area)} m²
             </div>
             <div>
@@ -1814,7 +1814,7 @@ function DeconSelectionPopup({
                   {Math.round(cost).toLocaleString()}
                 </div>
                 <div>
-                  <strong>Max Time day(s):</strong>{' '}
+                  <strong>Max Time Day(s):</strong>{' '}
                   {Math.round(time).toLocaleString()}
                 </div>
                 <div>

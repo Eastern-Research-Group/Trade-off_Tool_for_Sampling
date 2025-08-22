@@ -616,7 +616,7 @@ function NavBar({ appType, height }: Props) {
                         ).toLocaleString()}
                       </div>
                       <div css={mainTallyStyles}>
-                        Max Time day(s):{' '}
+                        Max Time Day(s):{' '}
                         {Math.round(
                           calculateResults.data['TOTAL_TIME'],
                         ).toLocaleString()}
@@ -681,7 +681,7 @@ function NavBar({ appType, height }: Props) {
                         ).toLocaleString()}
                       </div>
                       <div css={mainTallyStyles}>
-                        Max Time day(s):{' '}
+                        Max Time Day(s):{' '}
                         {Math.round(
                           calculateResultsDecon.data['TOTAL_TIME'],
                         ).toLocaleString()}

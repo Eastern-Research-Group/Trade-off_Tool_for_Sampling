@@ -4797,7 +4797,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       setOptions({
         title: 'Cannot Remove',
         ariaLabel: 'Cannot Remove',
-        description: `Cannot remove the "${result.title}" layer since it is linked to atleast one decon operation. Please unlink the layer and try again.`,
+        description: `Cannot remove the "${result.title}" layer since it is linked to at least one decon operation. Please unlink the layer and try again.`,
         onCancel: () => {},
       });
       return;

@@ -37,7 +37,7 @@ describe('Calculate results tests', () => {
     //Nav bar
     cy.findByText('Resource Tally', { timeout: 60000 }).should('exist');
     cy.contains('Total Cost: $').should('exist');
-    cy.contains('Max Time day(s):').should('exist');
+    cy.contains('Max Time Day(s):').should('exist');
     cy.contains('Limiting Factor').should('exist');
 
     cy.findByRole('button', { name: 'Calculate Resources' }).click({

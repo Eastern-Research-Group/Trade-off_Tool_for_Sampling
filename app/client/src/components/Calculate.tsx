@@ -1405,7 +1405,7 @@ function CalculateResultsPopup({
       summarySheet.getCell(8, 2).value =
         calculateResultsDecon.data['TOTAL_COST'];
       summarySheet.getCell(9, 1).font = labelFont;
-      summarySheet.getCell(9, 1).value = 'Max Time day(s)';
+      summarySheet.getCell(9, 1).value = 'Max Time Day(s)';
       summarySheet.getCell(9, 2).font = defaultFont;
       summarySheet.getCell(9, 2).alignment = rightAlignment;
       summarySheet.getCell(9, 2).value =
@@ -2419,7 +2419,7 @@ function CalculateResultsPopup({
                   ).toLocaleString()}
                 </div>
                 <div>
-                  <strong>Max Time day(s):</strong>{' '}
+                  <strong>Max Time Day(s):</strong>{' '}
                   {Math.round(
                     calculateResultsDecon.data['TOTAL_TIME'],
                   ).toLocaleString()}
