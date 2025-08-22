@@ -1832,6 +1832,34 @@ function DeconSelectionPopup({
           </div>
         </div>
 
+        <p>
+          For buildings, three different estimation approaches are available.
+          Each approach is independent of the other and calculations only
+          reflect the currently selected approach.
+          <ol>
+            <li>
+              Basic: Specify broad decontamination strategies applied to all
+              interior and exterior surfaces.{' '}
+            </li>
+
+            <li>
+              Advanced - Building Structural Component: Define and differentiate
+              decontamination strategies by building structural component where
+              surface areas for building interiors and exteriors are presented
+              separately.
+            </li>
+
+            <li>
+              Advanced - Building Primary Material Composition: Define and
+              differentiate decontamination strategies by building primary
+              material composition where contamination scenarios are presented
+              by type of primary building material type. An additional option is
+              available to further define a strategy for each material type by
+              building exterior or interior surfaces.
+            </li>
+          </ol>
+        </p>
+
         <strong>Select estimation approach:</strong>
 
         <div css={radioGroupStyles}>
