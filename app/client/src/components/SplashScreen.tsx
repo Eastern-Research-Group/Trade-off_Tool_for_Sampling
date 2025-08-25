@@ -51,6 +51,10 @@ const dialogStyles = css`
     }
   }
 
+  li {
+    font-size: 0.875rem;
+  }
+
   a {
     color: #fffe99;
     outline: none;
@@ -95,6 +99,16 @@ const modLinkButtonStyles = css`
     text-decoration: underline;
     color: #fffe99;
   }
+`;
+
+const subHeadingStyles = css`
+  color: white;
+  margin: 0;
+  margin-top: 1em;
+  padding: 0 0 0.5em;
+  font-size: 90%;
+  font-weight: bold;
+  line-height: 1.3;
 `;
 
 const buttonStyles = css`
@@ -269,6 +283,40 @@ function SplashScreen() {
             sampling approaches (i.e., traditional vs. innovative sampling
             methods), and sampling coverage.
           </p>
+
+          <h3 css={subHeadingStyles}>What's new?</h3>
+          <ul>
+            <li>
+              Added "Additional Tools" tab for characterizing area of interest,
+              identifying staging areas and creating custom sample types.
+            </li>
+            <li>
+              Added ability to pull in TODS decon plans into TOTS for iterative
+              approach.
+            </li>
+            <li>
+              Added ability to add samples via a statistical sampling approach.
+            </li>
+            <li>Added a tooltip for training mode selection.</li>
+            <li>Updated app to pull sample type configuration from RADAR.</li>
+            <li>Updated basemaps for published output.</li>
+            <li>Updated publish logic to include calculation results.</li>
+            <li>
+              Updated sample type selection so they are categorized as
+              established and innovative.
+            </li>
+            <li>
+              Removed locate tab and instead added a locate widget to the map.
+            </li>
+            <li>
+              Fixed bug with generic error message returned for trying to
+              publish a custom sample type without providing a name.
+            </li>
+            <li>
+              Fixed bug where View Contamination Hits was double counting
+              contamination hits when contamination plumes overlap.
+            </li>
+          </ul>
 
           <p>
             Review{' '}
