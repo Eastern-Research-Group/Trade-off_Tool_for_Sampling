@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
 
-import React, { Fragment, ReactNode } from 'react';
+import React, { Fragment, ReactNode, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
 import { DialogOverlay, DialogContent } from '@reach/dialog';
 // styles
@@ -61,9 +61,23 @@ function GettingStarted({ isOpen, children }: Props) {
 
   const app = isDecon() ? 'tods' : 'tots';
 
+  const [dialog, setDialog] = useState<HTMLDivElement | null>(null);
+  const setDialogRef = (node: HTMLDivElement | null) => {
+    setDialog(node);
+  };
+
+  useEffect(() => {
+    if (!dialog || !isOpen) return;
+    dialog.scrollTo({ top: 0, behavior: 'auto' });
+  }, [dialog, isOpen]);
+
   return (
     <DialogOverlay css={overlayStyles} isOpen={isOpen}>
-      <DialogContent css={dialogStyles} aria-label="Getting Started">
+      <DialogContent
+        ref={setDialogRef}
+        css={dialogStyles}
+        aria-label="Getting Started"
+      >
         <h1 css={headingStyles}>Getting Started</h1>
 
         {app === 'tots' ? (
@@ -250,33 +264,33 @@ function GettingStarted({ isOpen, children }: Props) {
                       </strong>
                       .
                     </p>
-                    <li>
-                      Click “Select/Edit Decontamination Technology Selections”
-                      to assign an appropriate decontamination method to each
-                      contamination scenario presented for the AOI Decon Layer.
-                      <ol>
-                        <li>
-                          For each contamination scenario listed, choose a
-                          decontamination method from the dropdown menu. Click
-                          Save to view the effect of your selection on the
-                          resource demand calculations. As you change selections
-                          and click Save, you can evaluate differences. Click
-                          Save and Continue to return to the main window.
-                        </li>
-                        <li>
-                          Repeat this process to create additional Decon
-                          Operations/AOI Decon layers to address the
-                          contamination identified from sampling.
-                        </li>
-                      </ol>
-                      Note: A Resource Tally will appear in the left navigation
-                      panel once you click the Save button in the Select Decon
-                      Technology window for at least one AOI layer; as you work
-                      on a specific AOI, an AOI-specific “tally” will display
-                      above the table.
-                    </li>
-                    <li>Click Next to continue.</li>
                   </li>
+                  <li>
+                    Click “Select/Edit Decontamination Technology Selections” to
+                    assign an appropriate decontamination method to each
+                    contamination scenario presented for the AOI Decon Layer.
+                    <ol>
+                      <li>
+                        For each contamination scenario listed, choose a
+                        decontamination method from the dropdown menu. Click
+                        Save to view the effect of your selection on the
+                        resource demand calculations. As you change selections
+                        and click Save, you can evaluate differences. Click Save
+                        and Continue to return to the main window.
+                      </li>
+                      <li>
+                        Repeat this process to create additional Decon
+                        Operations/AOI Decon layers to address the contamination
+                        identified from sampling.
+                      </li>
+                    </ol>
+                    Note: A Resource Tally will appear in the left navigation
+                    panel once you click the Save button in the Select Decon
+                    Technology window for at least one AOI layer; as you work on
+                    a specific AOI, an AOI-specific “tally” will display above
+                    the table.
+                  </li>
+                  <li>Click Next to continue.</li>
                 </ol>
               </li>
               <li>
