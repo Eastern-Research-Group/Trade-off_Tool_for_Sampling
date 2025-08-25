@@ -142,7 +142,169 @@ function GettingStarted({ isOpen, children }: Props) {
             </ul>
           </Fragment>
         ) : (
-          <p>Placeholder...</p>
+          <Fragment>
+            <p>
+              Create a decontamination (referred to as “decon” throughout the
+              tool) plan through interactive, point-and-click tools to evaluate
+              associated resource demands. Review an overview of the steps
+              below:
+            </p>
+
+            <ul>
+              <li>
+                <strong>Login</strong> - Login to your ArcGIS Online account (if
+                not already logged in).
+              </li>
+              <li>
+                <strong>Add Data (Optional)</strong> – Begin with a published
+                TOTS Sampling Plan.
+              </li>
+              <li>
+                <strong>Create Decon Plan</strong> – A single decontamination
+                plan can contain one or more decontamination operations.
+                Decontamination operations are defined by an AOI Decon Layer
+                that represents a unique area of interest (AOI) or “decision
+                unit” that is differentiated by the underlying ground surface
+                and building infrastructure characteristics.
+                <ol>
+                  <li>
+                    Click Create Decon Plan.
+                    <ol>
+                      <li>
+                        Enter a plan name and description.
+                        <br />
+                        <i>
+                          Note: If the plan name is not accepted you will need
+                          to enter a different name to avoid having two plans
+                          with the same name. Plan names must be unique.
+                        </i>
+                      </li>
+                    </ol>
+                  </li>
+                  <li>Click Save.</li>
+
+                  <p style={{ marginLeft: '-2ch' }}>
+                    In this next step, users can define one or more
+                    decontamination operations to include in the plan. For each
+                    decontamination operation, select or create a new AOI Decon
+                    Layer. An empty AOI Decon layer is loaded by default. You
+                    will select an appropriate decontamination method for each
+                    contamination scenario that is generated for the
+                    decontamination layer.
+                  </p>
+                  <li>
+                    Add a Decontamination Operation.
+                    <ol>
+                      <li>
+                        An empty decontamination operation is loaded by default.
+                      </li>
+                      <li>
+                        Click the pencil icon to rename or use the default and
+                        click Save.
+                      </li>
+                    </ol>
+                  </li>
+                  <li>
+                    An empty, default AOI Decon layer is loaded by default if no
+                    AOIs are available for selection.
+                  </li>
+                  <li>
+                    Select or create a new AOI Decon Layer.
+                    <ol>
+                      <li>
+                        Update the AOI Decon Layer Name/Desc if you choose (type
+                        in the text boxes).
+                      </li>
+                      <li>
+                        Click "Draw Area of Interest" to designate the boundary
+                        of your decontamination operation.
+                        <ol>
+                          <li>
+                            Your cursor will turn into sketching mode to draw a
+                            boundary on the map.
+                          </li>
+                          <li>
+                            Outline your boundary and double-click to finish.
+                          </li>
+                        </ol>
+                      </li>
+                      <li>
+                        Click Save and Submit.
+                        <br />
+                        <i>
+                          Note: Please be patient during this step. The tool is
+                          performing ground surface imagery analysis and
+                          retrieving building infrastructure characteristics.
+                          Smaller AOIs will return results more quickly.
+                        </i>
+                      </li>
+                    </ol>
+                    <p style={{ marginLeft: '-2ch' }}>
+                      The tool will retrieve and analyze building data and
+                      ground surface characteristics to inform decontamination
+                      strategy decisions.{' '}
+                      <strong>
+                        Once the data/layer is created, the Select/Edit
+                        Decontamination Technology Selections button will
+                        appear, and the map will refresh with new imagery
+                      </strong>
+                      .
+                    </p>
+                    <li>
+                      Click “Select/Edit Decontamination Technology Selections”
+                      to assign an appropriate decontamination method to each
+                      contamination scenario presented for the AOI Decon Layer.
+                      <ol>
+                        <li>
+                          For each contamination scenario listed, choose a
+                          decontamination method from the dropdown menu. Click
+                          Save to view the effect of your selection on the
+                          resource demand calculations. As you change selections
+                          and click Save, you can evaluate differences. Click
+                          Save and Continue to return to the main window.
+                        </li>
+                        <li>
+                          Repeat this process to create additional Decon
+                          Operations/AOI Decon layers to address the
+                          contamination identified from sampling.
+                        </li>
+                      </ol>
+                      Note: A Resource Tally will appear in the left navigation
+                      panel once you click the Save button in the Select Decon
+                      Technology window for at least one AOI layer; as you work
+                      on a specific AOI, an AOI-specific “tally” will display
+                      above the table.
+                    </li>
+                    <li>Click Next to continue.</li>
+                  </li>
+                </ol>
+              </li>
+              <li>
+                <strong>Calculate Resources</strong>
+                <ol>
+                  <li>
+                    Click View Detailed Results.
+                    <ol>
+                      <li>
+                        An overall summary is presented for the plan along with
+                        individual summaries.
+                      </li>
+                      <li>Click Next to continue.</li>
+                    </ol>
+                  </li>
+                </ol>
+              </li>
+              <li>
+                <strong>Configure Output</strong>
+                <ol>
+                  <li>Click Next to continue.</li>
+                </ol>
+              </li>
+              <li>
+                <strong>Publish Output</strong>
+              </li>
+            </ul>
+          </Fragment>
         )}
 
         <p>
