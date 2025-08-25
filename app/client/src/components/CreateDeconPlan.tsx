@@ -1792,7 +1792,7 @@ function DeconSelectionPopup({
         <div css={resourceTallyContainerStyles}>
           <div>
             <div>
-              <strong>{deconOperation?.label} size: </strong>{' '}
+              <strong>{deconOperation?.label} Size: </strong>{' '}
               {formatNumber(area)} m²
             </div>
             <div>
@@ -1814,7 +1814,7 @@ function DeconSelectionPopup({
                   {Math.round(cost).toLocaleString()}
                 </div>
                 <div>
-                  <strong>Max Time day(s):</strong>{' '}
+                  <strong>Max Time Day(s):</strong>{' '}
                   {Math.round(time).toLocaleString()}
                 </div>
                 <div>
@@ -1831,6 +1831,34 @@ function DeconSelectionPopup({
             ) : null}
           </div>
         </div>
+
+        <p>
+          For buildings, three different estimation approaches are available.
+          Each approach is independent of the other and calculations only
+          reflect the currently selected approach.
+          <ol>
+            <li>
+              Basic: Specify broad decontamination strategies applied to all
+              interior and exterior surfaces.{' '}
+            </li>
+
+            <li>
+              Advanced - Building Structural Component: Define and differentiate
+              decontamination strategies by building structural component where
+              surface areas for building interiors and exteriors are presented
+              separately.
+            </li>
+
+            <li>
+              Advanced - Building Primary Material Composition: Define and
+              differentiate decontamination strategies by building primary
+              material composition where contamination scenarios are presented
+              by type of primary building material type. An additional option is
+              available to further define a strategy for each material type by
+              building exterior or interior surfaces.
+            </li>
+          </ol>
+        </p>
 
         <strong>Select estimation approach:</strong>
 
