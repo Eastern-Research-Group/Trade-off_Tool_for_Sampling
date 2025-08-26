@@ -296,7 +296,7 @@ function SplashScreen() {
             methods), and sampling coverage.
           </p>
 
-          <h3 css={subHeadingStyles}>What's new?</h3>
+          <h3 css={subHeadingStyles}>What's new as of September 2025?</h3>
           <ul>
             <li>
               Added "Additional Tools" tab for characterizing area of interest,
