@@ -36,7 +36,7 @@ const dialogStyles = css`
     margin: 0;
     padding: 1.5rem;
     width: auto;
-    max-width: 35rem;
+    max-width: 60rem;
   }
 
   p {
