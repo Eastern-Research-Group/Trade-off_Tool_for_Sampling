@@ -163,6 +163,16 @@ function SplashScreen() {
     });
   }, [cookies, preventSplashScreen]);
 
+  const [dialog, setDialog] = useState<HTMLDivElement | null>(null);
+  const setDialogRef = (node: HTMLDivElement | null) => {
+    setDialog(node);
+  };
+
+  useEffect(() => {
+    if (!dialog || !isOpen) return;
+    dialog.scrollTo({ top: 0, behavior: 'auto' });
+  }, [dialog, isOpen]);
+
   return (
     <DialogOverlay
       css={overlayStyles}
@@ -171,6 +181,7 @@ function SplashScreen() {
     >
       {app === 'tods' ? (
         <DialogContent
+          ref={setDialogRef}
           css={dialogStyles}
           aria-label="Welcome to EPA’s Trade-off Tool for Decontamination Strategies (TODS) "
         >
@@ -248,6 +259,7 @@ function SplashScreen() {
         </DialogContent>
       ) : (
         <DialogContent
+          ref={setDialogRef}
           css={dialogStyles}
           aria-label="Welcome to EPA’s Trade-off Tool for Sampling (TOTS)"
         >
