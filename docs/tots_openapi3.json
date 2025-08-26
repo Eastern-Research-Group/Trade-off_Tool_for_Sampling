@@ -134,6 +134,39 @@
             "schema": {
               "type": "object",
               "properties": {
+                "deconBuildingClassFactors": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "deconBuildingFactors": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "deconMaterialFactors": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "deconTechFactors": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "deconWasteFactors": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "defaultGsg": {
+                  "type": "string"
+                },
                 "layerProps": {
                   "type": "object",
                   "properties": {
@@ -193,7 +226,7 @@
                 "notifications": {
                   "type": "object"
                 },
-                "sampleTypes": {
+                "sampleMetadata": {
                   "type": "object",
                   "properties": {
                     "areaTolerance": {
@@ -211,6 +244,9 @@
                   }
                 },
                 "services": {
+                  "type": "object"
+                },
+                "technologyTypes": {
                   "type": "object"
                 }
               },
