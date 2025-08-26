@@ -34,7 +34,7 @@ const dialogStyles = css`
     margin: 0;
     padding: 1.5rem;
     width: auto;
-    max-width: 35rem;
+    max-width: 65rem;
   }
 
   p,
@@ -320,19 +320,6 @@ function GettingStarted({ isOpen, children }: Props) {
             </ul>
           </Fragment>
         )}
-
-        <p>
-          View the{' '}
-          <a
-            href={`${baseUrl}/api/${app}/userGuide`}
-            target="_blank"
-            rel="noopener noreferrer"
-            css={linkStyles}
-          >
-            {app.toUpperCase()} User’s Guide (PDF)
-          </a>{' '}
-          for more detailed instructions
-        </p>
 
         {children && <Fragment>{children}</Fragment>}
       </DialogContent>
