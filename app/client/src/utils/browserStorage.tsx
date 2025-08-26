@@ -25,7 +25,7 @@ import WMSLayer from '@arcgis/core/layers/WMSLayer';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 import { DialogContext, AlertDialogOptions } from 'contexts/Dialog';
-import { LookupFilesContext } from 'contexts/LookupFiles';
+import { LookupFilesContext, useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { DefaultConfigureOutput, PublishContext } from 'contexts/Publish';
 import { PlanGraphics, SketchContext } from 'contexts/Sketch';
@@ -646,6 +646,7 @@ function usePortalLayerStorage(dbInitialized: boolean) {
   const key = 'portal_layers';
   const { setOptions } = useContext(DialogContext);
   const { map, portalLayers, setPortalLayers } = useContext(SketchContext);
+  const technologyTypes = useLookupFiles().data.technologyTypes;
 
   // Retreives portal layers from browser storage when the app loads
   const [readInitialized, setReadInitialized] = useState(false);
@@ -696,11 +697,11 @@ function usePortalLayerStorage(dbInitialized: boolean) {
         layer.load().then(() => {
           map.add(layer);
           if (isTotsLayerForTods && portalLayer.type === 'tots')
-            applyRendererForTotsLayer(layer);
+            applyRendererForTotsLayer(layer, technologyTypes);
         });
       });
     });
-  }, [map, portalLayers]);
+  }, [map, portalLayers, technologyTypes]);
 }
 
 // Uses browser storage for holding the map's view port extent.

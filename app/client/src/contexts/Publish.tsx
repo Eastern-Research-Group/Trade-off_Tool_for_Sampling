@@ -7,6 +7,7 @@ import React, {
   SetStateAction,
   useState,
 } from 'react';
+import { isDecon } from 'styles';
 // types
 import { ServiceMetaDataType } from 'types/Edits';
 import {
@@ -39,8 +40,8 @@ const defaultConfigureOutputValue: DefaultConfigureOutput = {
   includeAoiCharacterization: false,
   includeCustomSampleTypes: false,
   includePlan: false,
-  includePlanWebMap: false,
-  includePlanWebScene: false,
+  includePlanWebMap: isDecon() ? false : true,
+  includePlanWebScene: isDecon() ? false : true,
   includeStagingAreas: false,
   selectedAoiCharacterizations: [],
   selectedStagingAreas: [],

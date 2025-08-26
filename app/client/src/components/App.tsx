@@ -768,7 +768,7 @@ function App({ appType }: Props) {
 
   return (
     <div className="tots" ref={totsRef}>
-      {appType === 'sampling' && <SplashScreen />}
+      <SplashScreen />
       <div css={appStyles(offset)}>
         <div css={containerStyles}>
           <div ref={toolbarRef}>

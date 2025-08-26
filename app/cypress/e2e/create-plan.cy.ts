@@ -103,8 +103,8 @@ describe('Create Plan Drop Down Contents', function () {
     //Delete cloned plan
     cy.findByTitle('Delete Plan').click({ force: true });
 
-    cy.get('#Robot').click({ force: true });
-    cy.get('#Robot').should(
+    cy.get('#draw-sample-Robot').click({ force: true });
+    cy.get('#draw-sample-Robot').should(
       'have.css',
       'background-color',
       'rgb(231, 246, 248)',

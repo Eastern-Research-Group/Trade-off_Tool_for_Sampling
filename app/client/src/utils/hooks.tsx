@@ -87,8 +87,6 @@ export type GsgParam = { itemID: string };
 
 let view: __esri.MapView | __esri.SceneView | null = null;
 
-export const detectionLimit = 100;
-
 export const buildingColors: { [key: string]: number[] } = {
   Residential: [255, 222, 62, 191],
   Commercial: [255, 127, 127, 191],
@@ -137,6 +135,7 @@ function performBasicDeconCalculations(
   deconTech: string,
   sel: any,
   deconAttributes: any,
+  limitOfDetection: number,
   jsonDownload: any[],
   parentMedia?: string,
   removeBuildingContentsOverride?: boolean,
@@ -170,7 +169,7 @@ function performBasicDeconCalculations(
   const avgFinalContam =
     sel.avgCfu * Math.pow(contamLeftFactor, sel.numIterativeApplications);
   sel.avgFinalContamination = avgFinalContam;
-  sel.aboveDetectionLimit = avgFinalContam >= detectionLimit;
+  sel.aboveDetectionLimit = avgFinalContam >= limitOfDetection;
 
   const removeBldgContents =
     removeBuildingContentsOverride !== undefined
@@ -1931,12 +1930,18 @@ export function useCalculateDeconPlan() {
     setEfficacyResults,
     setJsonDownload,
   } = useContext(SketchContext);
+  const lookupFiles = useLookupFiles().data;
+  const technologyTypes = lookupFiles.technologyTypes;
 
   useEffect(() => {
     view = displayDimensions === '2d' ? mapView : sceneView;
   }, [displayDimensions, mapView, sceneView]);
 
+  const [lastScenarioId, setLastScenarioId] = useState('');
   useEffect(() => {
+    if (!selectedScenario || selectedScenario?.layerId === lastScenarioId)
+      return;
+    setLastScenarioId(selectedScenario.layerId);
     setCalculateResultsDecon((calculateResultsDecon) => {
       return {
         status: selectedScenario ? 'fetching' : 'none',
@@ -1944,7 +1949,7 @@ export function useCalculateDeconPlan() {
         data: null,
       };
     });
-  }, [selectedScenario, setCalculateResultsDecon]);
+  }, [lastScenarioId, selectedScenario, setCalculateResultsDecon]);
 
   type ContaminatedAoiAreas = { [planId: string]: { [key: number]: number } };
   const [aoiContamIntersect, setAoiContamIntersect] = useState<{
@@ -2273,7 +2278,8 @@ export function useCalculateDeconPlan() {
           const media = sel.media;
           if (!deconTech || deconTech === 'none') {
             sel.avgFinalContamination = sel.avgCfu;
-            sel.aboveDetectionLimit = sel.avgCfu >= detectionLimit;
+            sel.aboveDetectionLimit =
+              sel.avgCfu >= technologyTypes.limitOfDetection;
             return;
           }
 
@@ -2300,12 +2306,13 @@ export function useCalculateDeconPlan() {
                 deconTech,
                 mediaSel,
                 sampleAttributesDecon[deconTech as any],
+                technologyTypes.limitOfDetection,
                 jsonDownloadOpLevel,
                 undefined,
                 false,
               );
               deconCost += calcOutput.deconCost;
-              deconTime += calcOutput.deconTime;
+              deconTime = Math.max(calcOutput.deconTime, deconTime);
               solidWasteM3 += calcOutput.solidWasteM3;
               liquidWasteM3 += calcOutput.liquidWasteM3;
               solidWasteMass += calcOutput.solidWasteMass;
@@ -2325,11 +2332,12 @@ export function useCalculateDeconPlan() {
                 deconTech,
                 mediaSel,
                 sampleAttributesDecon[deconTech as any],
+                technologyTypes.limitOfDetection,
                 jsonDownloadOpLevel,
                 media,
               );
               deconCost += calcOutput.deconCost;
-              deconTime += calcOutput.deconTime;
+              deconTime = Math.max(calcOutput.deconTime, deconTime);
               solidWasteM3 += calcOutput.solidWasteM3;
               liquidWasteM3 += calcOutput.liquidWasteM3;
               solidWasteMass += calcOutput.solidWasteMass;
@@ -2347,13 +2355,17 @@ export function useCalculateDeconPlan() {
               deconTech,
               sel,
               sampleAttributesDecon[deconTech as any],
+              technologyTypes.limitOfDetection,
               jsonDownloadOpLevel,
             ));
           }
 
           if (deconOp.deconLayerResults) {
             deconOp.deconLayerResults.cost += deconCost;
-            deconOp.deconLayerResults.time += deconTime;
+            deconOp.deconLayerResults.time = Math.max(
+              deconTime,
+              deconOp.deconLayerResults.time,
+            );
             deconOp.deconLayerResults.wasteVolume +=
               solidWasteM3 + liquidWasteM3;
             deconOp.deconLayerResults.wasteMass +=
@@ -2365,7 +2377,7 @@ export function useCalculateDeconPlan() {
           totalSolidWasteMass += solidWasteMass;
           totalLiquidWasteMass += liquidWasteMass;
           totalDeconCost += deconCost;
-          totalDeconTime += deconTime;
+          totalDeconTime = Math.max(deconTime, totalDeconTime);
         });
 
         deconOp.deconLayerResults.resultsTable = jsonDownloadOpLevel;
@@ -2449,12 +2461,14 @@ export function useCalculateDeconPlan() {
     defaultDeconSelections,
     edits,
     layers,
+    mapView,
     sampleAttributesDecon,
     sceneViewForArea,
     selectedScenario,
     setCalculateResultsDecon,
     setEdits,
     setJsonDownload,
+    technologyTypes,
   ]);
 
   useEffect(() => {
@@ -2774,7 +2788,7 @@ export function useCalculateDeconPlan() {
                   geometry: geom,
                   symbol: !window.location.search.includes('devMode=true')
                     ? contamGraphic.symbol
-                    : newCfu < detectionLimit
+                    : newCfu < technologyTypes.limitOfDetection
                       ? ({
                           type: 'simple-fill',
                           color: [0, 255, 0],
@@ -2822,7 +2836,9 @@ export function useCalculateDeconPlan() {
                 const newG = g.clone();
                 if (window.location.search.includes('devMode=true')) {
                   (newG.symbol as any).outline.color =
-                    g.attributes.CONTAMVAL < detectionLimit ? 'green' : 'red';
+                    g.attributes.CONTAMVAL < technologyTypes.limitOfDetection
+                      ? 'green'
+                      : 'red';
                   (newG.symbol as any).outline.width = 2;
                 }
 
@@ -2862,6 +2878,7 @@ export function useCalculateDeconPlan() {
     sceneViewForArea,
     selectedScenario,
     setEfficacyResults,
+    technologyTypes,
     trainingMode,
   ]);
 
@@ -3514,7 +3531,7 @@ export function use3dSketch(appType: AppType) {
 
       // get the button and it's id
       const button = document.querySelector('.sketch-button-selected');
-      const id = button && button.id;
+      const id = (button && button.id)?.replace('draw-sample-', '');
       if (id?.includes('-sampling-mask') || id?.includes('decon-mask')) {
         deactivateButtons();
       }
@@ -3705,8 +3722,8 @@ export function useAutoConfigureOutput() {
   useEffect(() => {
     let includeAoiCharacterization = false;
     let includePlan = false;
-    let includePlanWebMap = false;
-    let includePlanWebScene = false;
+    let includePlanWebMap = isDecon() ? false : true;
+    let includePlanWebScene = isDecon() ? false : true;
     let includeStagingAreas = false;
     const selectedAoiCharacterizations: Selections = [];
     const selectedStagingAreas: Selections = [];

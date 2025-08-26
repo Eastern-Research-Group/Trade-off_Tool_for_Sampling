@@ -56,7 +56,7 @@ function AdditionalTools({ appType }: Props) {
             <p>
               Additional tools are available to support planning efforts. TOTS
               allows user to create custom sample types for use in planning. You
-              can also characterize an area of interest to understand
+              can also characterize an area of interest (AOI) to understand
               characteristics of ground surfaces and building infrastructure in
               an AOI. Use EPA’s waste staging/storage suitability feature layer
               in conjunction with other relevant GIS data (e.g., parcel
@@ -66,11 +66,11 @@ function AdditionalTools({ appType }: Props) {
           {appType === 'decon' && (
             <p>
               Additional tools are available to support planning efforts. You
-              can characterize an area of interest to understand characteristics
-              of ground surfaces and building infrastructure in an AOI. Use
-              EPA’s waste staging/storage suitability feature layer in
-              conjunction with other relevant GIS data (e.g., parcel ownership)
-              to identify staging areas.​
+              can characterize an area of interest (AOI) to understand
+              characteristics of ground surfaces and building infrastructure in
+              an AOI. Use EPA’s waste staging/storage suitability feature layer
+              in conjunction with other relevant GIS data (e.g., parcel
+              ownership) to identify staging areas.​
             </p>
           )}
 

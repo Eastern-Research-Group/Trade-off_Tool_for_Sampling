@@ -39,3 +39,6 @@ other_resources/**/Index
 other_resources/**/scratch
 other_resources/**/ImportLog
 other_resources/**/~*.xlsx
+
+# cached content
+/app/server/app/public/data/cache

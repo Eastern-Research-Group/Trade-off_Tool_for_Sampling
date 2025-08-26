@@ -34,7 +34,12 @@ import {
 } from 'utils/hooks';
 // config
 import { navPanelWidth } from 'config/appConfig';
-import { deconPanels, PanelType, samplingPanels } from 'config/navigation';
+import {
+  deconPanels,
+  isDecon,
+  PanelType,
+  samplingPanels,
+} from 'config/navigation';
 // types
 import { AppType } from 'types/Navigation';
 // styles
@@ -64,35 +69,36 @@ const navButtonStyles = (selected: boolean) => css`
       shift the button so the icon centers with the 
       left side of the button 
     */
+  height: 40px;
   width: calc(100% - 30px);
-  margin-left: calc(0.75em + 23px);
+  margin-left: calc(0.75em + 20px);
 `;
 
 const verticalButtonBar = (color: string) => {
   return css`
     border-left: 6px solid ${color};
-    height: 1.1764em;
-    margin-left: 30px;
+    height: 0.5em;
+    margin-left: 25px;
   `;
 };
 
 const navIconStyles = (color: string) => {
   return css`
-    font-size: 18px;
-    padding: 14px;
+    font-size: 16px;
+    padding: 13px;
     margin-left: -23px;
     margin-right: 10px;
     border-radius: 50%;
     color: white;
     background-color: ${color};
-    width: 46px;
-    height: 46px;
+    width: 40px;
+    height: 40px;
     text-align: center;
   `;
 };
 
 const navTextStyles = css`
-  width: 70px;
+  width: 80px;
 `;
 
 // --- components (NavButton) ---
@@ -210,6 +216,7 @@ const mainTallyStyles = css`
 const resourceTallySeparator = css`
   border-top: none;
   border-bottom: 1px solid ${buttonVisitedColor};
+  margin: 0.5rem 0 0.5rem 0.5rem;
 `;
 
 const helpIconStyles = css`
@@ -218,8 +225,8 @@ const helpIconStyles = css`
   margin-left: 8px;
   margin-right: 10px;
   border-radius: 50%;
-  color: ${buttonColor};
-  background-color: white;
+  color: ${isDecon() ? 'white' : buttonColor};
+  background-color: ${isDecon() ? buttonColor : 'white'};
   width: 30px;
   height: 30px;
   text-align: center;
@@ -609,7 +616,7 @@ function NavBar({ appType, height }: Props) {
                         ).toLocaleString()}
                       </div>
                       <div css={mainTallyStyles}>
-                        Max Time day(s):{' '}
+                        Max Time Day(s):{' '}
                         {Math.round(
                           calculateResults.data['TOTAL_TIME'],
                         ).toLocaleString()}
@@ -649,14 +656,6 @@ function NavBar({ appType, height }: Props) {
                     )}
                   </div>
                 )}
-
-              <button
-                onClick={(_ev) => setGettingStartedOpen(!gettingStartedOpen)}
-                css={navButtonStyles(false)}
-              >
-                <i className="fas fa-question" css={helpIconStyles} />
-                Help
-              </button>
             </Fragment>
           )}
 
@@ -682,7 +681,7 @@ function NavBar({ appType, height }: Props) {
                         ).toLocaleString()}
                       </div>
                       <div css={mainTallyStyles}>
-                        Max Time day(s):{' '}
+                        Max Time Day(s):{' '}
                         {Math.round(
                           calculateResultsDecon.data['TOTAL_TIME'],
                         ).toLocaleString()}
@@ -706,6 +705,14 @@ function NavBar({ appType, height }: Props) {
               <div />
             </Fragment>
           )}
+
+          <button
+            onClick={(_ev) => setGettingStartedOpen(!gettingStartedOpen)}
+            css={navButtonStyles(false)}
+          >
+            <i className="fas fa-question" css={helpIconStyles} />
+            Help
+          </button>
         </div>
       </div>
       {currentPanel && (

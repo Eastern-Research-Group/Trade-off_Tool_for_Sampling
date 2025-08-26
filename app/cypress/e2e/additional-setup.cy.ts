@@ -10,7 +10,7 @@ describe('Create Plan Drop Down Contents', function () {
   });
 
   it('Verify creating new custom sample type', function () {
-    cy.findByRole('button', { name: 'Additional Setup' })
+    cy.findByRole('button', { name: 'Additional Tools' })
       .should('exist')
       .click({ force: true });
 
@@ -54,7 +54,7 @@ describe('Create Plan Drop Down Contents', function () {
     cy.findByTitle('Draw a xyz_sample_name (1): 0').should('exist');
 
     //Delete
-    cy.findByRole('button', { name: 'Additional Setup' })
+    cy.findByRole('button', { name: 'Additional Tools' })
       .should('exist')
       .click({ force: true });
     cy.findByText('Create Custom Sample Types')

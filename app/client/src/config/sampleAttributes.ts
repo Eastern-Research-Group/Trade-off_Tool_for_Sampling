@@ -55,11 +55,14 @@ export type AttributeItems = {
 };
 
 export type DeconAttributeItems = {
+  id: number;
   OBJECTID: number | string | null;
   PERMANENT_IDENTIFIER: string | null;
   GLOBALID: string | null;
   TYPEUUID: string;
   TYPE: string;
+  DECON_TECH_UUID: string;
+  DECON_TECH: string;
   APPLICATION_MAX_AREA: number | null;
   APPLICATION_METHOD: 'Surface' | 'Volumetric';
   SETUP_TIME: number | null;
@@ -68,25 +71,34 @@ export type DeconAttributeItems = {
   RESIDENCE_TIME: number | null;
   FIXED_COSTS: number | null;
   SIZE_BASED_COSTS: number | null;
+  SIZE_BASED_COSTS_UNITS: string | null;
+  SIZE_BASED_RATE_GALLONSPERSQFT: number | null;
+  SIZE_BASED_RATE_M3PERM2: number | null;
   Notes: string | null;
   CREATEDDATE: string | null;
   UPDATEDDATE: null;
   USERNAME: string | null;
   MATERIAL_SPECIFIC_PARAMS: {
     [key: string]: {
-      LOG_REDUCTION: number | null;
       CONTAM_REMOVAL_FACTOR: number | null;
+      DECON_TECH_UUID: string | null;
       DESTRUCTIVENESS: 'Low' | 'Moderate' | 'High' | 'Uncertain';
+      id: number;
+      LOG_REDUCTION: number | null;
+      MATERIAL: string | null;
     };
   };
   SURFACE_SPECIFIC_PARAMS: {
     [key: string]: {
-      LOG_REDUCTION: number | null;
-      CONTAM_REMOVAL_FACTOR: number | null;
-      SOLID_WASTE_VOLUME: number | null;
-      SOLID_WASTE_MASS: number | null;
-      AQUEOUS_WASTE_VOLUME: number | null;
       AQUEOUS_WASTE_MASS: number | null;
+      AQUEOUS_WASTE_VOLUME: number | null;
+      CONTAM_REMOVAL_FACTOR: number | null;
+      DECON_TECH_UUID: string | null;
+      id: number;
+      LOG_REDUCTION: number | null;
+      SOLID_WASTE_MASS: number | null;
+      SOLID_WASTE_VOLUME: number | null;
+      SURFACE: string | null;
     };
   };
 };

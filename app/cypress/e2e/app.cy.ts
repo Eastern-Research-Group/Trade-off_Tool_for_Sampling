@@ -15,7 +15,7 @@ describe('Homepage', function () {
     cy.findByRole('dialog')
       .contains('a', 'TOTS User’s Guide (PDF)')
       .should('have.attr', 'href')
-      .and('include', '/api/userGuide');
+      .and('include', '/api/tots/userGuide');
     cy.findByRole('button', { name: 'Close' }).should('exist').click();
     cy.findByRole('dialog').should('not.exist');
   });

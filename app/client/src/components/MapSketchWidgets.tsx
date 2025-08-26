@@ -106,7 +106,10 @@ function setupPopupWatchers(
         if (event.action.id === 'delete' && view?.popup?.selectedFeature) {
           setSamplesToDelete([view.popup.selectedFeature]);
         }
-        if (event.action.id === 'delete-multi') {
+        if (
+          event.action.id === 'delete-multi' &&
+          sketchVM.updateGraphics.length > 0
+        ) {
           setSamplesToDelete(sketchVM.updateGraphics.toArray());
         }
         if (['table', 'table-multi'].includes(event.action.id)) {
@@ -481,7 +484,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
 
     // get the button and it's id
     const button = document.querySelector('.sketch-button-selected');
-    const id = button && button.id;
+    const id = (button && button.id)?.replace('draw-sample-', '');
     if (id && Object.prototype.hasOwnProperty.call(sampleAttributes, id)) {
       if (appType === 'decon') {
         sketchVM['2d'].cancel();
@@ -626,7 +629,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
         async function processSketchEvent() {
           // get the button and it's id
           const button = document.querySelector('.sketch-button-selected');
-          const id = button && button.id;
+          const id = (button && button.id)?.replace('draw-sample-', '');
           if (
             id?.includes('-sampling-mask') ||
             id?.includes('decon-mask') ||

@@ -1,10 +1,12 @@
 const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
+const cron = require('node-cron');
 const favicon = require('serve-favicon');
 const basicAuth = require('express-basic-auth');
 const { checkClientRouteExists } = require('./middleware');
 const { getEnvironment } = require('./server/utilities/environment');
+const refreshCacheData = require('./tasks/refreshCacheData');
 const logger = require('./server/utilities/logger');
 const log = logger.logger;
 
@@ -182,6 +184,25 @@ if (!isLocal && !isTest) {
 }
 
 /****************************************************************
+ Start a cron job for syncing configs from RADAR
+****************************************************************/
+// schedule a recurring task to cache RADAR data,
+// but only assign the task to one server instance
+if (isLocal || process.env.CF_INSTANCE_INDEX === '0') {
+  // run cache refresh task once at start-up
+  refreshCacheData();
+
+  log.info('Scheduling cache refresh cron task to run every day at 1AM');
+  cron.schedule(
+    '0 1 * * *',
+    () => {
+      refreshCacheData();
+    },
+    { scheduled: true },
+  );
+}
+
+/****************************************************************
  Setup server and routes
 ****************************************************************/
 // setup server routes
@@ -194,7 +215,7 @@ app.use(express.static(__dirname + '/public'));
 app.use(checkClientRouteExists);
 
 // setup client routes (built React app)
-app.get('*', function (req, res) {
+app.use(function (req, res) {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 

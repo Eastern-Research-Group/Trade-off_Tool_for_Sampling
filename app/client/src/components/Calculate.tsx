@@ -143,7 +143,7 @@ function getOperationSummary(
       totalOpSolidWasteVolume += d.solidWasteVolumeM3;
       totalOpLiquidWasteVolume += d.liquidWasteVolumeM3;
       totalOpDeconCost += d.decontaminationCost;
-      totalOpDeconTime += d.decontaminationTimeDays;
+      totalOpDeconTime = Math.max(d.decontaminationTimeDays, totalOpDeconTime);
       totalOpInitialContamination += d.averageInitialContamination;
       totalOpFinalContamination += d.averageFinalContamination;
     });
@@ -151,7 +151,7 @@ function getOperationSummary(
     totalSolidWasteVolume += totalOpSolidWasteVolume;
     totalLiquidWasteVolume += totalOpLiquidWasteVolume;
     totalDeconCost += totalOpDeconCost;
-    totalDeconTime += totalOpDeconTime;
+    totalDeconTime = Math.max(totalOpDeconTime, totalDeconTime);
     totalInitialContamination += totalOpInitialContamination;
     totalFinalContamination += totalOpFinalContamination;
 
@@ -1405,7 +1405,7 @@ function CalculateResultsPopup({
       summarySheet.getCell(8, 2).value =
         calculateResultsDecon.data['TOTAL_COST'];
       summarySheet.getCell(9, 1).font = labelFont;
-      summarySheet.getCell(9, 1).value = 'Max Time day(s)';
+      summarySheet.getCell(9, 1).value = 'Max Time Day(s)';
       summarySheet.getCell(9, 2).font = defaultFont;
       summarySheet.getCell(9, 2).alignment = rightAlignment;
       summarySheet.getCell(9, 2).value =
@@ -2403,11 +2403,7 @@ function CalculateResultsPopup({
   );
 
   return (
-    <DialogOverlay
-      css={overlayStyles}
-      isOpen={isOpen}
-      data-testid="tots-getting-started"
-    >
+    <DialogOverlay css={overlayStyles} isOpen={isOpen}>
       <DialogContent css={dialogStyles} aria-label="Edit Attribute">
         <h1>Decon Resource Demand Summary</h1>
 
@@ -2423,7 +2419,7 @@ function CalculateResultsPopup({
                   ).toLocaleString()}
                 </div>
                 <div>
-                  <strong>Max Time day(s):</strong>{' '}
+                  <strong>Max Time Day(s):</strong>{' '}
                   {Math.round(
                     calculateResultsDecon.data['TOTAL_TIME'],
                   ).toLocaleString()}
@@ -2520,7 +2516,10 @@ function CalculateResultsPopup({
               totalLiquidWasteVolume += d.liquidWasteVolumeM3;
               totalLiquidWasteMass += d.liquidWasteMassKg;
               totalDeconCost += d.decontaminationCost;
-              totalDeconTime += d.decontaminationTimeDays;
+              totalDeconTime = Math.max(
+                d.decontaminationTimeDays,
+                totalDeconTime,
+              );
               totalInitialContamination += d.averageInitialContamination;
               totalFinalContamination += d.averageFinalContamination;
               return {

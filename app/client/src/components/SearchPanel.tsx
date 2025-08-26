@@ -2074,7 +2074,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
       // add all of the layers to the map
       map.addMany(mapLayersToAdd);
-      applyRendererForTotsLayer(layer);
+      applyRendererForTotsLayer(layer, technologyTypes);
 
       // zoom to the layer if it has an extent
       if (layer.fullExtent) {
@@ -4797,7 +4797,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
       setOptions({
         title: 'Cannot Remove',
         ariaLabel: 'Cannot Remove',
-        description: `Cannot remove the "${result.title}" layer since it is linked to atleast one decon operation. Please unlink the layer and try again.`,
+        description: `Cannot remove the "${result.title}" layer since it is linked to at least one decon operation. Please unlink the layer and try again.`,
         onCancel: () => {},
       });
       return;
