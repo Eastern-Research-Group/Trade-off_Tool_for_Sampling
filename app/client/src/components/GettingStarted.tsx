@@ -154,6 +154,19 @@ function GettingStarted({ isOpen, children }: Props) {
                 to your ArcGIS Online account.
               </li>
             </ul>
+
+            <p>
+              View the{' '}
+              <a
+                href={`${baseUrl}/api/${app}/userGuide`}
+                target="_blank"
+                rel="noopener noreferrer"
+                css={linkStyles}
+              >
+                {app.toUpperCase()} User’s Guide (PDF)
+              </a>{' '}
+              for more detailed instructions
+            </p>
           </Fragment>
         ) : (
           <Fragment>
