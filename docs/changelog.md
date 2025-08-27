@@ -1,5 +1,39 @@
 # Change Log
 
+## 4.0.0 (September 2025)
+
+### Added
+
+- Added the Trade-off Tool for Decontamination Strategies (TODS) tool for designing decontamination strategies, available at https://tots.epa.gov/decon.
+
+- Added "Additional Tools" tab for characterizing area of interest, identifying staging areas and creating custom sample types.
+
+- Added ability to pull in TODS decon plans into TOTS for iterative approach.
+
+- Added ability to add samples via a statistical sampling approach.
+
+- Added a tooltip for training mode selection.
+
+### Changed
+
+- Updated app to pull sample type configuration from RADAR.
+
+- Updated basemaps for published output.
+
+- Updated publish logic to include calculation results.
+
+- Updated sample type selection so they are categorized as established and innovative.
+
+- Removed locate tab and instead added a locate widget to the map.
+
+- Fixed bug with generic error message returned for trying to publish a custom sample type without providing a name.
+
+- Fixed bug where View Contamination Hits was double counting contamination hits when contamination plumes overlap.
+
+### Chores
+
+- Updated dependencies.
+
 ## 3.0.1 (April 2025)
 
 ### Changed
