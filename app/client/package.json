@@ -1,6 +1,6 @@
 {
   "name": "epa-hsrp-tots-client",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "Trade-off Tool for Sampling (TOTS) is JavaScript Web Mapping application to create sampling strategy for chemical and radiological contamination characterization easily accessible to field collection applications via the EPA GeoPlatform.",
   "keywords": [
     "TOTS",
