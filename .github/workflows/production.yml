@@ -13,7 +13,7 @@ on:
 
 # Set shared environment variables
 env:
-  APP_VERSION: 3.1.0
+  APP_VERSION: 4.0.0
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
