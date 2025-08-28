@@ -364,6 +364,7 @@ type Content = {
     totsGPServer: string;
     totsTestGPServer: string;
     useProxyForGPServer: boolean;
+    todsUserGuideVisible: boolean;
     radarDatasets: {
       sampleMetadata: string;
     };

@@ -3,6 +3,8 @@
 import React, { Fragment, ReactNode, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
 import { DialogOverlay, DialogContent } from '@reach/dialog';
+// context
+import { useLookupFiles } from 'contexts/LookupFiles';
 // styles
 import { colors, isDecon } from 'styles';
 
@@ -58,6 +60,7 @@ type Props = {
 function GettingStarted({ isOpen, children }: Props) {
   const { VITE_SERVER_URL } = import.meta.env;
   const baseUrl = VITE_SERVER_URL || window.location.origin;
+  const services = useLookupFiles().data.services;
 
   const app = isDecon() ? 'tods' : 'tots';
 
@@ -154,19 +157,6 @@ function GettingStarted({ isOpen, children }: Props) {
                 to your ArcGIS Online account.
               </li>
             </ul>
-
-            <p>
-              View the{' '}
-              <a
-                href={`${baseUrl}/api/${app}/userGuide`}
-                target="_blank"
-                rel="noopener noreferrer"
-                css={linkStyles}
-              >
-                {app.toUpperCase()} User’s Guide (PDF)
-              </a>{' '}
-              for more detailed instructions
-            </p>
           </Fragment>
         ) : (
           <Fragment>
@@ -332,6 +322,22 @@ function GettingStarted({ isOpen, children }: Props) {
               </li>
             </ul>
           </Fragment>
+        )}
+
+        {(app === 'tots' ||
+          (app === 'tods' && services.todsUserGuideVisible)) && (
+          <p>
+            View the{' '}
+            <a
+              href={`${baseUrl}/api/${app}/userGuide`}
+              target="_blank"
+              rel="noopener noreferrer"
+              css={linkStyles}
+            >
+              {app.toUpperCase()} User’s Guide (PDF)
+            </a>{' '}
+            for more detailed instructions
+          </p>
         )}
 
         {children && <Fragment>{children}</Fragment>}
