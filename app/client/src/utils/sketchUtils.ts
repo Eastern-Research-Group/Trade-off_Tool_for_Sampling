@@ -3087,6 +3087,10 @@ function setRenderer(
     classBreakInfos: technologyTypes.todsSampleRenderer.classBreakInfos.map(
       (classBreakInfo: any) => ({
         ...classBreakInfo,
+        maxValue:
+          classBreakInfo.maxValue === 'MAX_INTEGER'
+            ? Number.MAX_SAFE_INTEGER
+            : classBreakInfo.maxValue,
         symbol: {
           ...classBreakInfo.symbol,
           type,
