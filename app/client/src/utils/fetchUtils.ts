@@ -206,9 +206,9 @@ export async function retryCall<T>(
       await delay(retryIntervalSeconds * 1000);
       return await retryCall(
         task,
-        retryCount + 1,
         retryLimit,
         retryIntervalSeconds,
+        retryCount + 1,
       );
     } else throw err;
   }
