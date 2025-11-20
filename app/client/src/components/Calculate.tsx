@@ -53,7 +53,7 @@ import {
 } from 'config/errorMessages';
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
-import { geoprocessorFetch } from 'utils/fetchUtils';
+import { geoprocessorFetch, retryCall } from 'utils/fetchUtils';
 import { useDynamicPopup } from 'utils/hooks';
 import {
   generateUUID,
@@ -2763,10 +2763,12 @@ function CalculateResultsPopup({
                 };
                 appendEnvironmentObjectParam(params);
 
-                const response = await geoprocessorFetch({
-                  url: `${services.totsGPServer}/Export ShapeFile`,
-                  inputParameters: params,
-                });
+                const response = await retryCall(() =>
+                  geoprocessorFetch({
+                    url: `${services.totsGPServer}/Export ShapeFile`,
+                    inputParameters: params,
+                  }),
+                );
 
                 saveAs(
                   response.results[0].value.url,
