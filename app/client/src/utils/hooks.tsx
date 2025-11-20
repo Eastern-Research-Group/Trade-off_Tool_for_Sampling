@@ -64,7 +64,12 @@ import { ReferenceLayerSelections } from 'types/Publish';
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
 import { writeToStorage } from 'utils/browserStorage';
-import { fetchPost, fetchPostFile, geoprocessorFetch } from 'utils/fetchUtils';
+import {
+  fetchPost,
+  fetchPostFile,
+  geoprocessorFetch,
+  retryCall,
+} from 'utils/fetchUtils';
 import {
   calculateArea,
   convertToPoint,
@@ -474,10 +479,12 @@ export async function fetchBuildingData(
   const countRequests: any[] = [];
   aoiGraphics.forEach((graphic) => {
     countRequests.push(
-      query.executeForCount(services.structures, {
-        geometry: graphic.geometry,
-        returnGeometry: false,
-      }),
+      retryCall<number>(() =>
+        query.executeForCount(services.structures, {
+          geometry: graphic.geometry,
+          returnGeometry: false,
+        }),
+      ),
     );
   });
 
@@ -497,11 +504,13 @@ export async function fetchBuildingData(
   const requests: any[] = [];
   aoiGraphics.forEach((graphic) => {
     requests.push(
-      query.executeQueryJSON(services.structures, {
-        geometry: graphic.geometry,
-        returnGeometry: true,
-        outFields: ['*'],
-      }),
+      retryCall(() =>
+        query.executeQueryJSON(services.structures, {
+          geometry: graphic.geometry,
+          returnGeometry: true,
+          outFields: ['*'],
+        }),
+      ),
     );
   });
 
@@ -767,70 +776,86 @@ export async function fetchBuildingData(
 
   let gsgParam: GsgParam | undefined = undefined;
   if (gsgFile) {
-    const gsgFileUploaded: any = await fetchPostFile(
-      `${services.totsGPServer}/uploads/upload`,
-      {
-        f: 'json',
-      },
-      gsgFile,
+    const gsgFileUploaded: any = await retryCall(() =>
+      fetchPostFile(
+        `${services.totsGPServer}/uploads/upload`,
+        {
+          f: 'json',
+        },
+        gsgFile,
+      ),
     );
     gsgParam = {
       itemID: gsgFileUploaded.item.itemID,
     };
   }
 
-  const iaResponses: any[] = [];
-  for (const graphic of aoiGraphics) {
-    removeZValues(graphic);
+  let iaResponses: any[] = [];
+  let errorToRethrow = null;
+  try {
+    const iaRequests: Promise<any>[] = [];
+    for (const graphic of aoiGraphics) {
+      removeZValues(graphic);
 
-    const featureSet = new FeatureSet({
-      displayFieldName: '',
-      geometryType: 'polygon',
-      spatialReference: {
-        wkid: 3857,
-      },
-      fields: [
-        {
-          name: 'OBJECTID',
-          type: 'oid',
-          alias: 'OBJECTID',
+      const featureSet = new FeatureSet({
+        displayFieldName: '',
+        geometryType: 'polygon',
+        spatialReference: {
+          wkid: 3857,
         },
-        {
-          name: 'PERMANENT_IDENTIFIER',
-          type: 'guid',
-          alias: 'PERMANENT_IDENTIFIER',
-        },
-      ],
-      features: [graphic],
-    });
+        fields: [
+          {
+            name: 'OBJECTID',
+            type: 'oid',
+            alias: 'OBJECTID',
+          },
+          {
+            name: 'PERMANENT_IDENTIFIER',
+            type: 'guid',
+            alias: 'PERMANENT_IDENTIFIER',
+          },
+        ],
+        features: [graphic],
+      });
 
-    // call gp service
-    const props = {
-      f: 'json',
-      Area_of_Interest_Mask: featureSet.toJSON(),
-      GSGFile: gsgParam,
-      ImageryLayer:
-        'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
-    };
-
-    appendEnvironmentObjectParam(props);
-
-    iaResponses.push(
-      await geoprocessorFetch({
-        url: `${services.totsGPServer}/Classify%20AOI`,
-        inputParameters: props,
-      }),
-    );
-  }
-
-  if (gsgParam) {
-    await fetchPost(
-      `${services.totsGPServer}/uploads/${gsgParam.itemID}/delete`,
-      {
+      // call gp service
+      const props = {
         f: 'json',
-      },
-    );
+        Area_of_Interest_Mask: featureSet.toJSON(),
+        GSGFile: gsgParam,
+        ImageryLayer:
+          'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
+      };
+
+      appendEnvironmentObjectParam(props);
+
+      iaRequests.push(
+        retryCall(() =>
+          geoprocessorFetch({
+            url: `${services.totsGPServer}/Classify%20AOI`,
+            inputParameters: props,
+          }),
+        ),
+      );
+    }
+
+    iaResponses = await Promise.all(iaRequests);
+  } catch (err) {
+    errorToRethrow = err;
+  } finally {
+    if (gsgParam) {
+      await retryCall(() =>
+        fetchPost(
+          `${services.totsGPServer}/uploads/${gsgParam.itemID}/delete`,
+          {
+            f: 'json',
+          },
+        ),
+      );
+    }
   }
+
+  if (errorToRethrow) throw errorToRethrow;
 
   iaResponses.forEach((response, index) => {
     const summaryOutput = response.results.find(

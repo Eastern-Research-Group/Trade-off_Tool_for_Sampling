@@ -1,4 +1,4 @@
-import { escapeRegex } from 'utils/utils';
+import { delay, escapeRegex } from 'utils/utils';
 import * as geoprocessor from '@arcgis/core/rest/geoprocessor';
 
 /**
@@ -178,6 +178,40 @@ export function geoprocessorFetch({
         reject(err);
       });
   });
+}
+
+/**
+ * Retries the task that is passed in and returns
+ * the result.
+ *
+ * @param task The task to run and retry on failure
+ * @param retryLimit Amount of times to retry
+ * @param retryIntervalSeconds Time in between retries
+ * @param retryCount (DO NOT USE) Number of times retried
+ * @returns Result of the task that was passed in
+ */
+export async function retryCall<T>(
+  task: () => Promise<T>,
+  retryLimit = 3,
+  retryIntervalSeconds = 1,
+  retryCount = 0,
+) {
+  try {
+    return await task();
+  } catch (err: unknown) {
+    if (retryCount < retryLimit) {
+      console.log(err);
+      console.log(`Retrying API call (${retryCount + 1} of ${retryLimit}) `);
+
+      await delay(retryIntervalSeconds * 1000);
+      return await retryCall(
+        task,
+        retryCount + 1,
+        retryLimit,
+        retryIntervalSeconds,
+      );
+    } else throw err;
+  }
 }
 
 /**
