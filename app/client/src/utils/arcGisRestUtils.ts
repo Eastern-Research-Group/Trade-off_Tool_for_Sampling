@@ -4,7 +4,7 @@ import { LayerType } from 'types/Layer';
 import { LayerProps } from 'types/Misc';
 import { AttributesType, ReferenceLayerSelections } from 'types/Publish';
 // utils
-import { fetchPost, fetchCheck } from 'utils/fetchUtils';
+import { fetchPost, fetchCheck, retryCall } from 'utils/fetchUtils';
 import { generateUUID, getCurrentDateTime } from 'utils/sketchUtils';
 import { chunkArray, escapeForLucene } from 'utils/utils';
 
@@ -88,9 +88,11 @@ export async function isServiceNameAvailable(
     };
     appendEnvironmentObjectParam(params);
 
-    return await fetchPost(
-      `${portal.restUrl}/portals/${portal.id}/isServiceNameAvailable`,
-      params,
+    return await retryCall(() =>
+      fetchPost(
+        `${portal.restUrl}/portals/${portal.id}/isServiceNameAvailable`,
+        params,
+      ),
     );
   } catch (err) {
     console.error(err);
@@ -307,7 +309,9 @@ function createFeatureService(portal: __esri.Portal, featureService: any) {
     appendEnvironmentObjectParam(data);
 
     // create the feature service
-    fetchPost(`${portal.user.userContentUrl}/createService`, data)
+    retryCall(() =>
+      fetchPost(`${portal.user.userContentUrl}/createService`, data),
+    )
       .then((res: any) => {
         // Add metadata to the new feature service.
         // NOTE: It is unfortunate, but we have to do a separate call to update the feature
@@ -325,9 +329,11 @@ function createFeatureService(portal: __esri.Portal, featureService: any) {
         };
         appendEnvironmentObjectParam(indata);
 
-        fetchPost(
-          `${portal.user.userContentUrl}/items/${res.itemId}/update`,
-          indata,
+        retryCall(() =>
+          fetchPost(
+            `${portal.user.userContentUrl}/items/${res.itemId}/update`,
+            indata,
+          ),
         ).then((res: any) => {
           featureService.value = res.id;
           // get the feature service from the portal and return it
@@ -356,8 +362,10 @@ function createFeatureService(portal: __esri.Portal, featureService: any) {
  */
 export function getFeatureLayers(serviceUrl: string, token: string) {
   return new Promise((resolve, reject) => {
-    fetchCheck(
-      `${serviceUrl}?f=json&${getEnvironmentStringParam()}&token=${token}`,
+    retryCall(() =>
+      fetchCheck(
+        `${serviceUrl}?f=json&${getEnvironmentStringParam()}&token=${token}`,
+      ),
     )
       .then((res: any) => {
         if (res) resolve(res);
@@ -380,8 +388,10 @@ export function getFeatureLayers(serviceUrl: string, token: string) {
  */
 export function getFeatureTables(serviceUrl: string, token: string) {
   return new Promise((resolve, reject) => {
-    fetchCheck(
-      `${serviceUrl}?f=json&${getEnvironmentStringParam()}&token=${token}`,
+    retryCall(() =>
+      fetchCheck(
+        `${serviceUrl}?f=json&${getEnvironmentStringParam()}&token=${token}`,
+      ),
     )
       .then((res: any) => {
         if (res) resolve(res.tables);
@@ -401,8 +411,10 @@ export function getFeatureTables(serviceUrl: string, token: string) {
  */
 export function getFeatureLayer(serviceUrl: string, token: string, id: number) {
   return new Promise((resolve, reject) => {
-    fetchCheck(
-      `${serviceUrl}/${id}?f=json&${getEnvironmentStringParam()}=1&token=${token}`,
+    retryCall(() =>
+      fetchCheck(
+        `${serviceUrl}/${id}?f=json&${getEnvironmentStringParam()}=1&token=${token}`,
+      ),
     )
       .then((layer: any) => {
         resolve(layer);
@@ -642,7 +654,7 @@ function createFeatureLayers(
       'rest/services',
       'rest/admin/services',
     );
-    fetchPost(`${adminServiceUrl}/addToDefinition`, data)
+    retryCall(() => fetchPost(`${adminServiceUrl}/addToDefinition`, data))
       .then((res: any) => {
         res.layers.forEach((l: any, index: number) => {
           l['layerId'] = layerIds[index];
@@ -1030,21 +1042,27 @@ async function updateFeatureLayers({
     // fire off delete requests
     const deleteRequests: any[] = [];
     deleteParams.forEach((requestParam) => {
-      deleteRequests.push(fetchPost(requestParam.url, requestParam.params));
+      deleteRequests.push(
+        retryCall(() => fetchPost(requestParam.url, requestParam.params)),
+      );
     });
     const deleteResponses = await Promise.all(deleteRequests);
 
     // fire off add requests
     const addRequests: any[] = [];
     addParams.forEach((requestParam) => {
-      addRequests.push(fetchPost(requestParam.url, requestParam.params));
+      addRequests.push(
+        retryCall(() => fetchPost(requestParam.url, requestParam.params)),
+      );
     });
     const addResponses = await Promise.all(addRequests);
 
     // fire off update requests
     const updateRequests: any[] = [];
     updateParams.forEach((requestParam) => {
-      updateRequests.push(fetchPost(requestParam.url, requestParam.params));
+      updateRequests.push(
+        retryCall(() => fetchPost(requestParam.url, requestParam.params)),
+      );
     });
     const updateResponses = await Promise.all(updateRequests);
 
@@ -1093,7 +1111,7 @@ export function deleteFeatureLayer(
       'rest/services',
       'rest/admin/services',
     );
-    fetchPost(`${adminServiceUrl}/deleteFromDefinition`, data)
+    retryCall(() => fetchPost(`${adminServiceUrl}/deleteFromDefinition`, data))
       .then((res) => resolve(res))
       .catch((err) => {
         window.logErrorToGa(err);
@@ -1128,7 +1146,7 @@ export function getAllFeatures(
     };
     appendEnvironmentObjectParam(query);
 
-    fetchPost(`${serviceUrl}/query`, query)
+    retryCall(() => fetchPost(`${serviceUrl}/query`, query))
       .then((objectIds: any) => {
         if (objectIds.objectIds.length === 0) {
           resolve({
@@ -1156,7 +1174,9 @@ export function getAllFeatures(
           };
           appendEnvironmentObjectParam(data);
 
-          const request = fetchPost(`${serviceUrl}/query`, data);
+          const request = retryCall(() =>
+            fetchPost(`${serviceUrl}/query`, data),
+          );
           requests.push(request);
         });
 
@@ -1332,7 +1352,9 @@ async function applyEdits({
       };
       appendEnvironmentObjectParam(data);
 
-      clearPromises.push(fetchPost(`${serviceUrl}/${id}/deleteFeatures`, data));
+      clearPromises.push(
+        retryCall(() => fetchPost(`${serviceUrl}/${id}/deleteFeatures`, data)),
+      );
     });
     const clearResponses = await Promise.all(clearPromises);
     console.log('clearResponses: ', clearResponses);
@@ -1431,7 +1453,9 @@ async function applyEdits({
     };
     appendEnvironmentObjectParam(data);
 
-    const res = await fetchPost(`${serviceUrl}/applyEdits`, data);
+    const res = await retryCall(() =>
+      fetchPost(`${serviceUrl}/applyEdits`, data),
+    );
 
     return {
       response: res,
@@ -1814,7 +1838,7 @@ function addWebMapScene({
       ? `${existingWebMapScene.userItemUrl}/update`
       : `${portal.user.userContentUrl}/addItem`;
 
-    fetchPost(url, data)
+    retryCall(() => fetchPost(url, data))
       .then((res) => resolve(res))
       .catch((err) => {
         window.logErrorToGa(err);
