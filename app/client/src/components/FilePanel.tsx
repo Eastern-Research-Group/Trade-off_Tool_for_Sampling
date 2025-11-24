@@ -31,7 +31,12 @@ import { SketchContext } from 'contexts/Sketch';
 import { NavigationContext } from 'contexts/Navigation';
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
-import { fetchPost, fetchPostFile, geoprocessorFetch } from 'utils/fetchUtils';
+import {
+  fetchPost,
+  fetchPostFile,
+  geoprocessorFetch,
+  retryCall,
+} from 'utils/fetchUtils';
 import { useDynamicPopup } from 'utils/hooks';
 import {
   convertToPoint,
@@ -720,10 +725,12 @@ function FilePanel({ appType }: Props) {
               };
               appendEnvironmentObjectParam(params);
 
-              const request = geoprocessorFetch({
-                url: `${services.totsGPServer}/VSP%20Import`,
-                inputParameters: params,
-              });
+              const request = retryCall(() =>
+                geoprocessorFetch({
+                  url: `${services.totsGPServer}/VSP%20Import`,
+                  inputParameters: params,
+                }),
+              );
               requests.push(request);
             });
 

@@ -39,7 +39,7 @@ import {
 import { PolygonSymbol, SampleSelectType } from 'config/sampleAttributes';
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
-import { geoprocessorFetch } from 'utils/fetchUtils';
+import { geoprocessorFetch, retryCall } from 'utils/fetchUtils';
 import { useDynamicPopup, useMemoryState } from 'utils/hooks';
 import {
   activateSketchButton,
@@ -389,10 +389,12 @@ function GenerateSamples({ id, type }: GenerateSamplesProps) {
 
     let i = 0;
     for (const params of parameters) {
-      const request = geoprocessorFetch({
-        url: `${services.totsGPServer}/Generate%20Random`,
-        inputParameters: params.inputParameters,
-      });
+      const request = retryCall(() =>
+        geoprocessorFetch({
+          url: `${services.totsGPServer}/Generate%20Random`,
+          inputParameters: params.inputParameters,
+        }),
+      );
       requests.push({
         request,
         originalValuesZ: params.originalValuesZ,

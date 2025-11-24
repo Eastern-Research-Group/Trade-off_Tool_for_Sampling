@@ -1379,6 +1379,12 @@ const infoIconStylesOperations = css`
   margin-bottom: 3px;
 `;
 
+const numberedListStyles = css`
+  font-size: 0.875rem;
+  line-height: 1.375;
+  margin: 1rem 0;
+`;
+
 const messageBoxStyles = css`
   margin-top: 1rem;
 `;
@@ -1832,7 +1838,7 @@ function DeconSelectionPopup({
           </div>
         </div>
 
-        <p>
+        <div css={numberedListStyles}>
           For buildings, three different estimation approaches are available.
           Each approach is independent of the other and calculations only
           reflect the currently selected approach.
@@ -1858,7 +1864,7 @@ function DeconSelectionPopup({
               building exterior or interior surfaces.
             </li>
           </ol>
-        </p>
+        </div>
 
         <strong>Select estimation approach:</strong>
 
