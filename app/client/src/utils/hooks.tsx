@@ -651,6 +651,7 @@ export async function fetchBuildingData(
         new Graphic({
           attributes: {
             ...feature.attributes,
+            GlobalID: undefined,
             PERMANENT_IDENTIFIER: permId,
             PROD_DATE: prodDate ? new Date(prodDate).toLocaleString() : '',
             IMAGE_DATE: imageDate ? new Date(imageDate).toLocaleString() : '',
