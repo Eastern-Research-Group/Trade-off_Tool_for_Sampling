@@ -184,7 +184,7 @@ const zoomButtonStyles = css`
   background-color: transparent;
   color: black;
   margin: 0;
-  padding: 3px 6px;
+  padding: 0;
   font-size: 16px;
 `;
 
