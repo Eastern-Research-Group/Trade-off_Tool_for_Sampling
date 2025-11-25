@@ -79,14 +79,20 @@ const globalStyles = css`
 
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-      'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
-      'Helvetica Neue', sans-serif;
+    font-family:
+      -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 
     /* re-apply EPA's html element font-size, just scoped to the body element */
     font-size: 106.25%;
+  }
+
+  :root {
+    --calcite-spacing-md: 0.25rem;
+    --calcite-internal-action-padding-inline: 0.6rem;
   }
 
   .tots {
@@ -124,6 +130,10 @@ const globalStyles = css`
     &:focus {
       outline: none;
     }
+  }
+
+  .esri-sketch {
+    margin-bottom: 10px;
   }
 `;
 
