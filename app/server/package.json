@@ -27,10 +27,10 @@
     "refreshCacheData": "node -r dotenv/config --inspect app/tasks/refreshCacheData.js dotenv_config_path=./.env.local"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.873.0",
-    "axios": "1.11.0",
-    "body-parser": "2.2.0",
-    "dotenv": "17.2.1",
+    "@aws-sdk/client-s3": "3.939.0",
+    "axios": "1.13.2",
+    "body-parser": "2.2.1",
+    "dotenv": "17.2.3",
     "express": "5.1.0",
     "express-basic-auth": "1.2.1",
     "helmet": "8.1.0",
@@ -39,12 +39,12 @@
     "serve-favicon": "2.5.1"
   },
   "devDependencies": {
-    "@cypress/code-coverage": "3.14.6",
+    "@cypress/code-coverage": "3.14.7",
     "browser-sync": "3.0.4",
     "husky": "9.1.7",
-    "jest": "30.0.5",
-    "lint-staged": "16.1.5",
-    "nodemon": "3.1.10",
+    "jest": "30.2.0",
+    "lint-staged": "16.2.7",
+    "nodemon": "3.1.11",
     "nyc": "17.1.0",
     "prettier": "3.6.2",
     "supertest": "7.1.4"
