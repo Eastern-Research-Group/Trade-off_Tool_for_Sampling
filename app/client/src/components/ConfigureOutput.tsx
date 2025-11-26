@@ -142,7 +142,7 @@ const editButtonStyles = css`
   background-color: transparent;
   color: black;
   margin: 0;
-  padding: 3px 6px;
+  padding: 3px 4px;
   font-size: 16px;
 `;
 

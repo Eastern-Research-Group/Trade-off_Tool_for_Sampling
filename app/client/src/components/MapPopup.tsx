@@ -325,6 +325,7 @@ function MapPopup({
                 setSelectedLayer(ev as LayerType);
               }}
               options={layerOptions}
+              menuPortalTarget={document.body}
             />
           </div>
           <div>
