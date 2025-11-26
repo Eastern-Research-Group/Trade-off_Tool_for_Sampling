@@ -23,7 +23,7 @@
   "scripts": {
     "start": "nodemon -r dotenv/config --inspect app/server.js dotenv_config_path=./.env.local",
     "start_coverage": "nyc --silent node --env-file=./.env.local app/server.js",
-    "test": "npx rimraf .nyc_output/out.json && npx rimraf coverage && jest --coverage --coverageDirectory='coverage'",
+    "test": "npx rimraf .nyc_output/out.json && npx rimraf coverage && jest --coverage --coverageDirectory=coverage",
     "refreshCacheData": "node -r dotenv/config --inspect app/tasks/refreshCacheData.js dotenv_config_path=./.env.local"
   },
   "dependencies": {
