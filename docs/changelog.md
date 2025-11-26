@@ -14,6 +14,8 @@
 
 - Added a tooltip for training mode selection.
 
+- Added a sitemap.xml file.
+
 ### Changed
 
 - Updated app to pull sample type configuration from RADAR.
@@ -39,6 +41,8 @@
 - Updated dependencies.
 
 - Updated to NodeJS v24.
+
+- Updated EPA template.
 
 - Switched to Vite from Create React App.
 
