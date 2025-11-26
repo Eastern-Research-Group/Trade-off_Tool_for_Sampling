@@ -1167,7 +1167,7 @@ function CharacterizeAOI({
       <div>
         <div css={iconButtonContainerStyles}>
           <div css={verticalCenterTextStyles}>
-            <label htmlFor="scenario-select-input">{label}</label>
+            <label htmlFor="characterize-aoi-select-input">{label}</label>
           </div>
           <div css={layerButtonContainerStyles}>
             <div>

@@ -1011,7 +1011,7 @@ function App({ appType }: Props) {
 
                         return [
                           {
-                            header: () => null,
+                            header: () => <span className="sr-only">Zoom</span>,
                             id: 'zoom-button',
                             size: 30,
                             cell: ({ row }: { row: any }) => (

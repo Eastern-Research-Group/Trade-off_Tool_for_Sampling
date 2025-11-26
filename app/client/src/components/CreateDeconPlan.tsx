@@ -733,7 +733,7 @@ function CreateDeconPlan() {
                 <div css={iconButtonContainerStyles}>
                   <div css={infoIconOperationsStyles}>
                     <span>
-                      <label htmlFor="scenario-select-input">
+                      <label htmlFor="decon-operation-select-input">
                         Decon
                         <br />
                         Operation(s)
@@ -2009,6 +2009,7 @@ function DeconSelectionPopup({
                 size: 150,
                 cell: ReactTableEditableCell,
                 editType: 'select',
+                ariaLabelCol: 'media',
                 options: allDeconOptionsGrouped,
               },
               {
@@ -2017,6 +2018,7 @@ function DeconSelectionPopup({
                 size: 75,
                 cell: ReactTableEditableCell,
                 editType: 'input',
+                ariaLabelCol: 'media',
                 show: selectedApproach === 'Advanced',
               },
               {
@@ -2025,6 +2027,7 @@ function DeconSelectionPopup({
                 size: 75,
                 cell: ReactTableEditableCell,
                 editType: 'input',
+                ariaLabelCol: 'media',
                 show: selectedApproach === 'Advanced',
               },
               {
@@ -2161,6 +2164,7 @@ function DeconSelectionPopup({
                       size: 150,
                       cell: ReactTableEditableCell,
                       editType: 'select',
+                      ariaLabelCol: 'media',
                       options: allDeconOptionsGrouped,
                     },
                     {
@@ -2169,6 +2173,7 @@ function DeconSelectionPopup({
                       size: 50,
                       cell: ReactTableEditableCell,
                       editType: 'checkbox',
+                      ariaLabelCol: 'media',
                     },
                     {
                       header: 'Number of Decon Iterations',
@@ -2176,6 +2181,7 @@ function DeconSelectionPopup({
                       size: 75,
                       cell: ReactTableEditableCell,
                       editType: 'input',
+                      ariaLabelCol: 'media',
                       show: selectedApproach === 'Advanced',
                     },
                     {
@@ -2184,6 +2190,7 @@ function DeconSelectionPopup({
                       size: 75,
                       cell: ReactTableEditableCell,
                       editType: 'input',
+                      ariaLabelCol: 'media',
                       show: selectedApproach === 'Advanced',
                     },
                     {
@@ -2348,6 +2355,7 @@ function DeconSelectionPopup({
                       size: 150,
                       cell: ReactTableEditableCell,
                       editType: 'select',
+                      ariaLabelCol: 'media',
                       options: allDeconOptionsGrouped,
                     },
                     {
@@ -2356,6 +2364,7 @@ function DeconSelectionPopup({
                       size: 50,
                       cell: ReactTableEditableCell,
                       editType: 'checkbox',
+                      ariaLabelCol: 'media',
                     },
                     {
                       header: 'Number of Decon Iterations',
@@ -2363,6 +2372,7 @@ function DeconSelectionPopup({
                       size: 75,
                       cell: ReactTableEditableCell,
                       editType: 'input',
+                      ariaLabelCol: 'media',
                       show: selectedApproach === 'Advanced',
                     },
                     {
@@ -2371,6 +2381,7 @@ function DeconSelectionPopup({
                       size: 75,
                       cell: ReactTableEditableCell,
                       editType: 'input',
+                      ariaLabelCol: 'media',
                       show: selectedApproach === 'Advanced',
                     },
                     {

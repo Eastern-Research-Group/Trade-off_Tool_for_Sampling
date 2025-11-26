@@ -539,9 +539,7 @@ function ConfigureOutput({ appType }: Props) {
                           Add New Attribute
                         </button>
                         <br />
-                        <label htmlFor="">
-                          <strong>Attributes to Include:</strong>
-                        </label>
+                        <strong>Attributes to Include:</strong>
                         <ReactTable
                           id="tots-survey123-attributes-table"
                           data={[
@@ -565,7 +563,11 @@ function ConfigureOutput({ appType }: Props) {
                                 size: 50,
                               },
                               {
-                                header: () => null,
+                                header: () => (
+                                  <span className="sr-only">
+                                    Edit/Delete Attribute
+                                  </span>
+                                ),
                                 id: 'edit-column',
                                 renderCell: true,
                                 size: 70,
@@ -583,6 +585,9 @@ function ConfigureOutput({ appType }: Props) {
                                         }}
                                       >
                                         <i className="fas fa-edit" />
+                                        <span className="sr-only">
+                                          Edit Attribute
+                                        </span>
                                       </button>
                                       <button
                                         css={editButtonStyles}
@@ -623,6 +628,9 @@ function ConfigureOutput({ appType }: Props) {
                                         }}
                                       >
                                         <i className="fas fa-trash-alt" />
+                                        <span className="sr-only">
+                                          Delete Attribute
+                                        </span>
                                       </button>
                                     </div>
                                   );
@@ -1337,7 +1345,7 @@ function EditAttributePopup({
 
               {domainType?.value === 'coded' && (
                 <div css={codedContainerStyles}>
-                  <label>Coded Values:</label>
+                  <span>Coded Values:</span>
                   <ReactTableEditable
                     id="tots-survey123-attributes-table"
                     data={codes}
