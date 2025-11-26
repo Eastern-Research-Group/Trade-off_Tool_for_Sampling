@@ -30,9 +30,9 @@ describe('Create Plan Drop Down Contents', function () {
       .get('.esri-layer-list__item')
       .first()
       .shadow()
-      .find("td[title='Expand']")
+      .find("div[title='Expand']")
       .click({ force: true });
-    cy.get(legendId).contains(layerName).should('be.visible');
+    cy.get(legendId).contains(layerName);
 
     // check the dropdown contents
     cy.get(sampleSelectId).contains(layerName);

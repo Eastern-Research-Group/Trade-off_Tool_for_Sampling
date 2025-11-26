@@ -213,7 +213,7 @@ describe('Visual Testing', () => {
 
   it('Verify location from Locate', () => {
     cy.mapLoadDelay();
-    cy.findAllByPlaceholderText('Find address or place').type('dallas{enter}');
+    cy.get('[placeholder="Find address or place"]').type('dallas{enter}');
 
     //need for map load from given input
     cy.wait(10000);

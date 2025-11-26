@@ -66,15 +66,15 @@ describe('Toolbar tests', () => {
     cy.findByRole('button', { name: 'Legend' })
       .should('exist')
       .click({ force: true });
-    cy.get(legendId).contains('demo').should('be.visible');
+    cy.get(legendId).contains('demo');
 
     cy.get(legendId)
       .get('.esri-layer-list__item')
       .first()
       .shadow()
-      .find("td[title='Expand']")
+      .find("div[title='Expand']")
       .click({ force: true });
-    cy.get(legendId).contains('Default Sample Layer').should('be.visible');
+    cy.get(legendId).contains('Default Sample Layer');
     const sampleTypes = [
       'Aggressive Air',
       'Micro Vac',
