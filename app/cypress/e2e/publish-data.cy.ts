@@ -59,7 +59,7 @@ describe('Add data from file uploads', function () {
       .click({ force: true });
 
     cy.fixture('2.5-week-swab.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
     cy.findByRole('button', { name: 'Next' })
       .should('exist')

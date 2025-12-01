@@ -12,15 +12,16 @@ declare global {
        * Custom command to select DOM element by data-cy attribute.
        * @example cy.dataCy('greeting')
        */
-      displayMode(
-        dimensions: string,
-        shape: string,
-        terrain3d?: boolean,
-      ): Chainable<Element>;
       loadPage(initial?: boolean, url?: string): Chainable<Element>;
       login(): Chainable<Element>;
       mapLoadDelay(): Chainable<Element>;
       matchSnapshot(name?: string, options?: Options): Chainable<Element>;
+      setDisplayMode(
+        dimensions: string,
+        shape: string,
+        terrain3d?: boolean,
+      ): Chainable<Element>;
+      setIndexedDbValue(key: string, value: any): Chainable<Element>;
       upload(file: any, fileName: string, type?: string): Chainable<Element>;
       validateSession(
         key: string,
@@ -99,17 +100,23 @@ Cypress.Commands.add('mapLoadDelay', () => {
 });
 
 Cypress.Commands.add(
-  'displayMode',
+  'setDisplayMode',
   (dimensions: string, shape: string, terrain3d: boolean = true) => {
-    setIndexedDbValue('display_mode', {
-      dimensions,
-      geometryType: shape,
-      terrain3dVisible: terrain3d,
-      terrain3dUseElevation: true,
-      viewUnderground3d: false,
-    });
+    cy.then(() =>
+      cy.setIndexedDbValue('display_mode', {
+        dimensions,
+        geometryType: shape,
+        terrain3dVisible: terrain3d,
+        terrain3dUseElevation: true,
+        viewUnderground3d: false,
+      }),
+    );
   },
 );
+
+Cypress.Commands.add('setIndexedDbValue', (key: string, value: any) => {
+  cy.then(() => setIndexedDbValue(key, value));
+});
 
 Cypress.Commands.add(
   'validateSession',
