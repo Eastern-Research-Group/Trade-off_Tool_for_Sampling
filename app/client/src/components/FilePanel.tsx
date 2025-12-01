@@ -31,7 +31,12 @@ import { SketchContext } from 'contexts/Sketch';
 import { NavigationContext } from 'contexts/Navigation';
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
-import { fetchPost, fetchPostFile, geoprocessorFetch } from 'utils/fetchUtils';
+import {
+  fetchPost,
+  fetchPostFile,
+  geoprocessorFetch,
+  retryCall,
+} from 'utils/fetchUtils';
 import { useDynamicPopup } from 'utils/hooks';
 import {
   convertToPoint,
@@ -148,8 +153,11 @@ const fileIconTextColor = css`
 const fileIconText = css`
   ${fileIconTextColor}
   font-size: 16px;
-  margin-top: 5px;
+  margin-top: 16px;
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const checkBoxStyles = css`
@@ -720,10 +728,12 @@ function FilePanel({ appType }: Props) {
               };
               appendEnvironmentObjectParam(params);
 
-              const request = geoprocessorFetch({
-                url: `${services.totsGPServer}/VSP%20Import`,
-                inputParameters: params,
-              });
+              const request = retryCall(() =>
+                geoprocessorFetch({
+                  url: `${services.totsGPServer}/VSP%20Import`,
+                  inputParameters: params,
+                }),
+              );
               requests.push(request);
             });
 

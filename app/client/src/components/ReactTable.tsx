@@ -661,6 +661,7 @@ export function ReactTableEditableCell({
   // Get necessary properties
   const index = row.index;
   const id = column.id;
+  const ariaLabelCol = column.columnDef.ariaLabelCol;
   const editType = column.columnDef.editType;
   const options = column.columnDef.options;
 
@@ -688,47 +689,69 @@ export function ReactTableEditableCell({
     setValue(getValue());
   }, [getValue]);
 
+  const rowId = row.original.id;
+  const colName = column.columnDef.header?.toString() || 'Unknown';
+  let label = colName;
+  if (ariaLabelCol && row.original[ariaLabelCol])
+    label += ` for ${row.original[ariaLabelCol]}`;
+
   if (editType === 'checkbox') {
     if (row.original.media?.includes('Exterior')) return null;
     return (
       <div css={checkboxStyles}>
-        <input
-          type="checkbox"
-          checked={value}
-          onChange={onChange}
-          onBlur={onBlur}
-          onKeyDown={onKeyDown}
-        />
+        <label>
+          <input
+            type="checkbox"
+            checked={value}
+            onChange={onChange}
+            onBlur={onBlur}
+            onKeyDown={onKeyDown}
+          />
+          <span className="sr-only">{label}</span>
+        </label>
       </div>
     );
   }
 
   if (editType === 'input')
     return (
-      <input
-        value={value}
-        onChange={onChange}
-        onBlur={onBlur}
-        onKeyDown={onKeyDown}
-        css={inputStyles}
-      />
+      <label>
+        <input
+          value={value}
+          onChange={onChange}
+          onBlur={onBlur}
+          onKeyDown={onKeyDown}
+          css={inputStyles}
+        />
+        <span className="sr-only">{label}</span>
+      </label>
     );
 
   if (editType === 'select')
     return (
-      <Select
-        styles={{
-          menuPortal: (base) => ({ ...base, fontSize: '0.78em', zIndex: 9999 }),
-        }}
-        value={value}
-        options={options}
-        menuPortalTarget={document.body}
-        onChange={(selectedOption) => {
-          setValue(selectedOption?.value || '');
-          updateMyData(index, id, selectedOption || '');
-        }}
-        isClearable={true}
-      />
+      <Fragment>
+        <label className="sr-only" htmlFor={`${rowId}_${colName}`}>
+          {label}
+        </label>
+        <Select
+          inputId={`${rowId}_${colName}`}
+          styles={{
+            menuPortal: (base) => ({
+              ...base,
+              fontSize: '0.78em',
+              zIndex: 9999,
+            }),
+          }}
+          value={value}
+          options={options}
+          menuPortalTarget={document.body}
+          onChange={(selectedOption) => {
+            setValue(selectedOption?.value || '');
+            updateMyData(index, id, selectedOption || '');
+          }}
+          isClearable={true}
+        />
+      </Fragment>
     );
 
   return value;

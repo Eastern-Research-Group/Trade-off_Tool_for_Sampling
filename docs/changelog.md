@@ -1,6 +1,6 @@
 # Change Log
 
-## 4.0.0 (September 2025)
+## 4.0.0 (December 2025)
 
 ### Added
 
@@ -14,6 +14,8 @@
 
 - Added a tooltip for training mode selection.
 
+- Added a sitemap.xml file.
+
 ### Changed
 
 - Updated app to pull sample type configuration from RADAR.
@@ -24,15 +26,25 @@
 
 - Updated sample type selection so they are categorized as established and innovative.
 
+- Updated GP server calls and publishing API calls to retry three times.
+
 - Removed locate tab and instead added a locate widget to the map.
 
 - Fixed bug with generic error message returned for trying to publish a custom sample type without providing a name.
 
 - Fixed bug where View Contamination Hits was double counting contamination hits when contamination plumes overlap.
 
+- Fixed issue of FontAwesome icons not always loading.
+
 ### Chores
 
 - Updated dependencies.
+
+- Updated to NodeJS v24.
+
+- Updated EPA template.
+
+- Switched to Vite from Create React App.
 
 ## 3.0.1 (April 2025)
 

@@ -53,7 +53,7 @@ import {
 } from 'config/errorMessages';
 // utils
 import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
-import { geoprocessorFetch } from 'utils/fetchUtils';
+import { geoprocessorFetch, retryCall } from 'utils/fetchUtils';
 import { useDynamicPopup } from 'utils/hooks';
 import {
   generateUUID,
@@ -61,7 +61,7 @@ import {
   removeZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import { formatNumber, parseSmallFloat } from 'utils/utils';
+import { delay, formatNumber, parseSmallFloat } from 'utils/utils';
 // styles
 import { colors, reactSelectStyles } from 'styles';
 
@@ -538,8 +538,6 @@ function Calculate({ appType }: Props) {
       else if (str.includes('{') && !str.includes('}')) return `${str}}`;
       else return str;
     }
-
-    const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
     const sketchedGraphics = [...sketchedGraphicsTmp];
     sketchedGraphics.forEach((g) => {
@@ -2765,10 +2763,12 @@ function CalculateResultsPopup({
                 };
                 appendEnvironmentObjectParam(params);
 
-                const response = await geoprocessorFetch({
-                  url: `${services.totsGPServer}/Export ShapeFile`,
-                  inputParameters: params,
-                });
+                const response = await retryCall(() =>
+                  geoprocessorFetch({
+                    url: `${services.totsGPServer}/Export ShapeFile`,
+                    inputParameters: params,
+                  }),
+                );
 
                 saveAs(
                   response.results[0].value.url,

@@ -595,7 +595,7 @@ function NavBar({ appType, height }: Props) {
               {calculateResults.status === 'success' &&
                 calculateResults.data && (
                   <div css={resourceTallyStyles}>
-                    <h3 css={tallyTitle}>Resource Tally</h3>
+                    <h2 css={tallyTitle}>Resource Tally</h2>
                     <div css={resourceTallyContainerStyles}>
                       <div css={mainTallyStyles}>
                         Total Cost: $
@@ -672,7 +672,7 @@ function NavBar({ appType, height }: Props) {
               {calculateResultsDecon.status === 'success' &&
                 calculateResultsDecon.data && (
                   <div css={resourceTallyStyles}>
-                    <h3 css={tallyTitle}>Resource Tally</h3>
+                    <h2 css={tallyTitle}>Resource Tally</h2>
                     <div css={resourceTallyContainerStyles}>
                       <div css={mainTallyStyles}>
                         Total Cost: $

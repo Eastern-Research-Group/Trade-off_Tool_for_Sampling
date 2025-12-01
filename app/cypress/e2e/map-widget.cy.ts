@@ -54,7 +54,11 @@ describe('Map Widget', function () {
       .click({ force: true });
     cy.get('#graphic-note').type('graphic note');
     cy.findByRole('button', { name: 'Save' }).should('exist').click();
-    cy.get('body').trigger('keydown', { keyCode: 27 });
+    cy.get('.esri-view-surface')
+      .filter(':visible')
+      .first()
+      .focus()
+      .realPress('{esc}');
     cy.findByRole('dialog').should('not.exist');
   });
 });

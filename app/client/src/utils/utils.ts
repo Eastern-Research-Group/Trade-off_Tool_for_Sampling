@@ -74,6 +74,17 @@ export function createErrorObject(error: any) {
 }
 
 /**
+ * Delays code execution for the provided milliseconds
+ * when awaited.
+ *
+ * @param ms milliseconds to delay
+ * @returns The promise that waits for the desired milliseconds
+ */
+export function delay(ms: number) {
+  return new Promise((res) => setTimeout(res, ms));
+}
+
+/**
  * Script from ESRI for escaping an ArcGIS Online usernames and
  * organization ids.
  *

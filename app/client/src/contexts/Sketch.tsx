@@ -13,7 +13,7 @@ import React, {
 import { LookupFilesContext, useLookupFiles } from 'contexts/LookupFiles';
 // utils
 import { getEnvironmentStringParam } from 'utils/arcGisRestUtils';
-import { fetchCheck } from 'utils/fetchUtils';
+import { fetchCheck, retryCall } from 'utils/fetchUtils';
 import { updatePointSymbol, updatePolygonSymbol } from 'utils/sketchUtils';
 // types
 import {
@@ -645,7 +645,7 @@ export function SketchProvider({ children }: Props) {
       url += `${services.totsGPServer}?f=json${getEnvironmentStringParam()}`;
 
       // get the max record count from the gp server
-      fetchCheck(url)
+      retryCall(() => fetchCheck(url))
         .then((res: any) => {
           const maxRecordCount = res.maximumRecords;
           setGpMaxRecordCount(maxRecordCount);

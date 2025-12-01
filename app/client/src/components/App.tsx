@@ -184,7 +184,7 @@ const zoomButtonStyles = css`
   background-color: transparent;
   color: black;
   margin: 0;
-  padding: 3px 6px;
+  padding: 0;
   font-size: 16px;
 `;
 
@@ -1011,7 +1011,7 @@ function App({ appType }: Props) {
 
                         return [
                           {
-                            header: () => null,
+                            header: () => <span className="sr-only">Zoom</span>,
                             id: 'zoom-button',
                             size: 30,
                             cell: ({ row }: { row: any }) => (

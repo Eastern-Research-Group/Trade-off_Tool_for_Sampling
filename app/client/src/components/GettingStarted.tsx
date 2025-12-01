@@ -198,17 +198,19 @@ function GettingStarted({ isOpen, children }: Props) {
                       </li>
                     </ol>
                   </li>
-                  <li>Click Save.</li>
+                  <li>
+                    Click Save.
+                    <p style={{ marginTop: '1rem', marginLeft: '-2ch' }}>
+                      In this next step, users can define one or more
+                      decontamination operations to include in the plan. For
+                      each decontamination operation, select or create a new AOI
+                      Decon Layer. An empty AOI Decon layer is loaded by
+                      default. You will select an appropriate decontamination
+                      method for each contamination scenario that is generated
+                      for the decontamination layer.
+                    </p>
+                  </li>
 
-                  <p style={{ marginLeft: '-2ch' }}>
-                    In this next step, users can define one or more
-                    decontamination operations to include in the plan. For each
-                    decontamination operation, select or create a new AOI Decon
-                    Layer. An empty AOI Decon layer is loaded by default. You
-                    will select an appropriate decontamination method for each
-                    contamination scenario that is generated for the
-                    decontamination layer.
-                  </p>
                   <li>
                     Add a Decontamination Operation.
                     <ol>
