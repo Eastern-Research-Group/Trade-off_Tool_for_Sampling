@@ -28,6 +28,8 @@ import {
   urlLayerFailureMessage,
   urlLayerSuccessMessage,
 } from 'config/errorMessages';
+// styles
+import { reactSelectStyles } from 'styles';
 
 // --- styles (URLPanel) ---
 const addButtonStyles = css`
@@ -205,6 +207,7 @@ function URLPanel() {
       <Select
         inputId="url-type-select"
         value={urlType}
+        styles={reactSelectStyles as any}
         onChange={(ev) => {
           setUrlType(ev as UrlType);
           setStatus('none');

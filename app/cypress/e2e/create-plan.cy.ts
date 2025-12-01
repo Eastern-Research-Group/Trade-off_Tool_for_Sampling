@@ -1,5 +1,3 @@
-import { setIndexedDbValue } from 'cypress/support/utilities';
-
 describe('Create Plan Drop Down Contents', function () {
   const sampleSelectId = '#sampling-layer-select';
   const legendId = '#legend-container';
@@ -58,7 +56,7 @@ describe('Create Plan Drop Down Contents', function () {
 
   it('Verify Add Multiple Random Samples', function () {
     cy.fixture('sample-mask.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
 
     cy.mapLoadDelay();
@@ -113,7 +111,7 @@ describe('Create Plan Drop Down Contents', function () {
 
   it('Verify start over', function () {
     cy.fixture('micro-vac.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
     cy.findByRole('button', { name: 'Start Over' })
       .should('exist')
@@ -124,7 +122,7 @@ describe('Create Plan Drop Down Contents', function () {
 
   it('Verify Delete all samples', function () {
     cy.fixture('micro-vac.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
     cy.findByRole('button', { name: 'Delete All Samples' })
       .should('exist')

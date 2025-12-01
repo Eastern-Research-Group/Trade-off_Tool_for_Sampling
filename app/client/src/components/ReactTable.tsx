@@ -29,6 +29,8 @@ import {
 } from '@tanstack/react-virtual';
 // components
 import Select from 'components/Select';
+// styles
+import { reactSelectStyles } from 'styles';
 
 const baseInputStyles = css`
   width: 100%;
@@ -736,6 +738,7 @@ export function ReactTableEditableCell({
         <Select
           inputId={`${rowId}_${colName}`}
           styles={{
+            ...(reactSelectStyles as any),
             menuPortal: (base) => ({
               ...base,
               fontSize: '0.78em',

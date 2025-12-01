@@ -90,6 +90,8 @@ import {
   DefaultSymbolsType,
   SampleSelectType,
 } from 'config/sampleAttributes';
+// styles
+import { reactSelectStyles } from 'styles';
 
 type LayerGraphics = {
   [key: string]: __esri.Graphic[];
@@ -512,6 +514,7 @@ function SearchPanel({ appType }: Props) {
       <Select
         inputId="locations-select"
         value={location}
+        styles={reactSelectStyles as any}
         onChange={(ev) => setLocation(ev as LocationType)}
         options={[
           { value: 'ArcGIS Online', label: 'ArcGIS Online' },
@@ -526,6 +529,7 @@ function SearchPanel({ appType }: Props) {
           <Select
             inputId="group-select"
             value={group}
+            styles={reactSelectStyles as any}
             onChange={(ev) => setGroup(ev as GroupType)}
             options={
               userInfo?.groups?.length > 0
@@ -563,6 +567,7 @@ function SearchPanel({ appType }: Props) {
           value={layerTypeSelections}
           onChange={(ev) => setLayerTypeSelections(ev as any)}
           css={multiSelectStyles}
+          styles={reactSelectStyles as any}
         />
       </div>
       <label htmlFor="search-input">Search</label>
@@ -596,6 +601,7 @@ function SearchPanel({ appType }: Props) {
         <Select
           inputId="sort-by-select"
           css={sortSelectStyles}
+          styles={reactSelectStyles as any}
           value={sortBy}
           onChange={(ev) => {
             const evTyped = ev as SortByType;

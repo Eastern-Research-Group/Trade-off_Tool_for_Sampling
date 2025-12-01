@@ -41,7 +41,7 @@ import {
 // config
 import { notLoggedInMessage } from 'config/errorMessages';
 // styles
-import { colors, infoIconStyles, isDecon } from 'styles';
+import { colors, infoIconStyles, isDecon, reactSelectStyles } from 'styles';
 // utils
 import { getDefaultWebMapSceneSelections } from 'utils/sketchUtils';
 
@@ -469,6 +469,7 @@ function ConfigureOutput({ appType }: Props) {
                             setWebMapReferenceLayerSelections(ev as any)
                           }
                           css={multiSelectStyles}
+                          styles={reactSelectStyles as any}
                         />
                       </div>
                     </AccordionItem>
@@ -516,6 +517,7 @@ function ConfigureOutput({ appType }: Props) {
                             setWebSceneReferenceLayerSelections(ev as any)
                           }
                           css={multiSelectStyles}
+                          styles={reactSelectStyles as any}
                         />
                       </div>
                     </AccordionItem>
@@ -693,6 +695,7 @@ function ConfigureOutput({ appType }: Props) {
                       value={sampleTypeSelections}
                       onChange={(ev) => setSampleTypeSelections(ev as any)}
                       css={multiSelectStyles}
+                      styles={reactSelectStyles as any}
                     />
                   </div>
 
@@ -781,6 +784,7 @@ function ConfigureOutput({ appType }: Props) {
                       setWebMapReferenceLayerSelections(ev as any)
                     }
                     css={multiSelectStyles}
+                    styles={reactSelectStyles as any}
                   />
                 </div>
               </div>
@@ -829,6 +833,7 @@ function ConfigureOutput({ appType }: Props) {
                   value={selectedAoiCharacterizations}
                   onChange={(ev) => setSelectedAoiCharacterizations(ev as any)}
                   css={multiSelectStyles}
+                  styles={reactSelectStyles as any}
                 />
               </div>
             </div>
@@ -874,6 +879,7 @@ function ConfigureOutput({ appType }: Props) {
                   value={selectedStagingAreas}
                   onChange={(ev) => setSelectedStagingAreas(ev as any)}
                   css={multiSelectStyles}
+                  styles={reactSelectStyles as any}
                 />
               </div>
             </div>
@@ -1251,7 +1257,10 @@ function EditAttributePopup({
               { label: 'Integer', value: 'integer' },
               { label: 'String', value: 'string' },
             ]}
-            styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+            styles={{
+              ...(reactSelectStyles as any),
+              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+            }}
             menuPortalTarget={document.body}
             menuPosition={'fixed'}
             menuPlacement={'bottom'}
@@ -1299,7 +1308,10 @@ function EditAttributePopup({
                 value={domainType}
                 onChange={(ev) => setDomainType(ev as DataType)}
                 options={domainTypeOptions}
-                styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+                styles={{
+                  ...(reactSelectStyles as any),
+                  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                }}
                 menuPortalTarget={document.body}
                 menuPosition={'fixed'}
                 menuPlacement={'bottom'}

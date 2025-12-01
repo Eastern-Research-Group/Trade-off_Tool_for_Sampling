@@ -20,7 +20,7 @@ import { NavigationContext } from 'contexts/Navigation';
 import Select from 'components/Select';
 import { SketchContext } from 'contexts/Sketch';
 // styles
-import { infoIconStyles } from 'styles';
+import { infoIconStyles, reactSelectStyles } from 'styles';
 // types
 import { EditsType, LayerEditsType } from 'types/Edits';
 import { LayerType } from 'types/Layer';
@@ -516,6 +516,7 @@ function StagingAreas() {
           id="suitability-aoi-select-input-container"
           inputId="suitability-aoi-select-input"
           css={layerSelectStyles}
+          styles={reactSelectStyles as any}
           isDisabled={addScenarioVisible || editScenarioVisible}
           options={stagingLayers}
           value={stagingAreaLayer}

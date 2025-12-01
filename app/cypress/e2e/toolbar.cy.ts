@@ -1,5 +1,3 @@
-import { setIndexedDbValue } from 'cypress/support/utilities';
-
 Cypress.on('uncaught:exception', (err, runnable) => {
   // returning false here prevents Cypress from
   // failing the test
@@ -59,7 +57,7 @@ describe('Toolbar tests', () => {
 
   it('Verify Legend', () => {
     cy.fixture('micro-vac.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
     cy.mapLoadDelay();
 

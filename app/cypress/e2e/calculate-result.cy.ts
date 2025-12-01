@@ -1,8 +1,4 @@
-import {
-  initializeDb,
-  setDisplayMode,
-  setIndexedDbValue,
-} from 'cypress/support/utilities';
+import { initializeDb } from 'cypress/support/utilities';
 
 describe('Calculate results tests', () => {
   const loadingSpinnerId = 'tots-loading-spinner';
@@ -27,9 +23,9 @@ describe('Calculate results tests', () => {
 
   it('Calculate wet-vac samples', () => {
     cy.fixture('wet-vac.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
-    setDisplayMode('2d', 'polygons');
+    cy.setDisplayMode('2d', 'polygons');
     cy.loadPage();
     cy.findByRole('button', { name: 'OK' }).click({ force: true });
     cy.findByRole('button', { name: 'Create Plan' }).click({ force: true });
@@ -90,7 +86,7 @@ describe('Calculate results tests', () => {
   it('Calculate wet-vac download file', () => {
     initializeDb();
     cy.fixture('wet-vac.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
     cy.loadPage();
     cy.findByRole('button', { name: 'OK' }).click({ force: true });
@@ -131,7 +127,7 @@ describe('Calculate results tests', () => {
 
   it('Verify traning-mode Analyze Sample Results without file', () => {
     initializeDb();
-    setIndexedDbValue('training_mode', true);
+    cy.setIndexedDbValue('training_mode', true);
 
     cy.loadPage();
     cy.findByRole('button', { name: 'OK' })
@@ -157,9 +153,9 @@ describe('Calculate results tests', () => {
 
   it('Verify traning-mode Analyze Sample Results with file', () => {
     initializeDb();
-    setIndexedDbValue('training_mode', true);
+    cy.setIndexedDbValue('training_mode', true);
     cy.fixture('wet-vac.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
 
     cy.loadPage();
@@ -196,9 +192,9 @@ describe('Calculate results tests', () => {
 
   it('Verify Calculate Resources', () => {
     cy.fixture('wet-vac.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
-    setDisplayMode('2d', 'polygons');
+    cy.setDisplayMode('2d', 'polygons');
     cy.loadPage();
     cy.findByRole('button', { name: 'OK' }).click({ force: true });
     cy.findByRole('button', { name: 'Create Plan' }).click({ force: true });

@@ -1,8 +1,4 @@
-import {
-  initializeDb,
-  setDisplayMode,
-  setIndexedDbValue,
-} from 'cypress/support/utilities';
+import { initializeDb } from 'cypress/support/utilities';
 
 Cypress.on('uncaught:exception', (err, runnable) => {
   // returning false here prevents Cypress from
@@ -22,7 +18,7 @@ describe('Visual Testing', () => {
   });
 
   it('Verify zoom to Colorado Springs', () => {
-    setIndexedDbValue('map_scene_position', {
+    cy.setIndexedDbValue('map_scene_position', {
       position: {
         spatialReference: { latestWkid: 3857, wkid: 102100 },
         x: -11556344.446372677,
@@ -30,7 +26,7 @@ describe('Visual Testing', () => {
       },
     });
 
-    setIndexedDbValue('map_2d_extent', {
+    cy.setIndexedDbValue('map_2d_extent', {
       spatialReference: { latestWkid: 3857, wkid: 102100 },
       xmin: -11824332.66754049,
       ymin: 4552921.522367159,
@@ -44,7 +40,7 @@ describe('Visual Testing', () => {
   });
 
   it('Verify sponge', () => {
-    setIndexedDbValue('map_scene_position', {
+    cy.setIndexedDbValue('map_scene_position', {
       fov: 55,
       heading: 0,
       position: {
@@ -58,7 +54,7 @@ describe('Visual Testing', () => {
       tilt: 0,
     });
 
-    setIndexedDbValue('map_2d_extent', {
+    cy.setIndexedDbValue('map_2d_extent', {
       spatialReference: {
         latestWkid: 3857,
         wkid: 102100,
@@ -70,7 +66,7 @@ describe('Visual Testing', () => {
     });
 
     cy.fixture('sponge.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
     cy.mapLoadDelay();
 
@@ -78,14 +74,14 @@ describe('Visual Testing', () => {
   });
 
   it('Verify Micro Vac', () => {
-    setIndexedDbValue('map_scene_position', {
+    cy.setIndexedDbValue('map_scene_position', {
       position: {
         spatialReference: { latestWkid: 3857, wkid: 102100 },
         x: -10741219.976739783,
         y: 3863306.6531785084,
       },
     });
-    setIndexedDbValue('map_2d_extent', {
+    cy.setIndexedDbValue('map_2d_extent', {
       spatialReference: { latestWkid: 3857, wkid: 102100 },
       xmin: -11009208.197907597,
       ymin: 3766231.6272563394,
@@ -94,7 +90,7 @@ describe('Visual Testing', () => {
     });
 
     cy.fixture('micro-vac.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
     cy.mapLoadDelay();
 
@@ -102,14 +98,14 @@ describe('Visual Testing', () => {
   });
 
   it('Verify Wet Vac', () => {
-    setIndexedDbValue('map_scene_position', {
+    cy.setIndexedDbValue('map_scene_position', {
       position: {
         spatialReference: { latestWkid: 3857, wkid: 102100 },
         x: -7976798.4117788365,
         y: 5165105.681902991,
       },
     });
-    setIndexedDbValue('map_2d_extent', {
+    cy.setIndexedDbValue('map_2d_extent', {
       spatialReference: { latestWkid: 3857, wkid: 102100 },
       xmin: -8512774.85411435,
       ymin: 4970955.630058695,
@@ -118,23 +114,23 @@ describe('Visual Testing', () => {
     });
 
     cy.fixture('wet-vac.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
-    setDisplayMode('2d', 'polygons');
+    cy.setDisplayMode('2d', 'polygons');
     cy.mapLoadDelay();
 
     cy.get(mapId).matchSnapshot('verify-wet-vac');
   });
 
   it('Verify Robot', () => {
-    setIndexedDbValue('map_scene_position', {
+    cy.setIndexedDbValue('map_scene_position', {
       position: {
         spatialReference: { latestWkid: 3857, wkid: 102100 },
         x: -10753385.934498046,
         y: 3871393.215348695,
       },
     });
-    setIndexedDbValue('map_2d_extent', {
+    cy.setIndexedDbValue('map_2d_extent', {
       spatialReference: { latestWkid: 3857, wkid: 102100 },
       xmin: -10770135.198321013,
       ymin: 3865326.026228567,
@@ -143,33 +139,33 @@ describe('Visual Testing', () => {
     });
 
     cy.fixture('robot.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
-    setDisplayMode('2d', 'polygons');
+    cy.setDisplayMode('2d', 'polygons');
     cy.mapLoadDelay();
 
     cy.get(mapId).matchSnapshot('verify-robot');
   });
 
   it('Verify aggressive-air', () => {
-    setIndexedDbValue('map_scene_position', {
+    cy.setIndexedDbValue('map_scene_position', {
       position: {
         spatialReference: { latestWkid: 3857, wkid: 102100 },
         x: -11556344.446372677,
         y: 4649996.548289328,
       },
     });
-    setIndexedDbValue('map_2d_extent', {
+    cy.setIndexedDbValue('map_2d_extent', {
       spatialReference: { latestWkid: 3857, wkid: 102100 },
       xmin: -11824332.66754049,
       ymin: 4552921.522367159,
       xmax: -11288356.225204863,
       ymax: 4747071.574211497,
     });
-    setDisplayMode('2d', 'polygons');
+    cy.setDisplayMode('2d', 'polygons');
 
     cy.fixture('aggressive-air.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
 
     cy.mapLoadDelay();
@@ -178,14 +174,14 @@ describe('Visual Testing', () => {
   });
 
   it('Verify Swab', () => {
-    setIndexedDbValue('map_scene_position', {
+    cy.setIndexedDbValue('map_scene_position', {
       position: {
         spatialReference: { latestWkid: 3857, wkid: 102100 },
         x: -12259106.484426407,
         y: 5028436.275329143,
       },
     });
-    setIndexedDbValue('map_2d_extent', {
+    cy.setIndexedDbValue('map_2d_extent', {
       spatialReference: { latestWkid: 3857, wkid: 102100 },
       xmin: -12795082.926761921,
       ymin: 4834286.223484847,
@@ -194,7 +190,7 @@ describe('Visual Testing', () => {
     });
 
     cy.fixture('swab.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
 
     cy.mapLoadDelay();
@@ -204,7 +200,7 @@ describe('Visual Testing', () => {
 
   it('Verify All established sample types with shape point', () => {
     cy.fixture('all-established-sample-types.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
 
     cy.mapLoadDelay();
@@ -222,9 +218,9 @@ describe('Visual Testing', () => {
   });
 
   it('Verify 3d', () => {
-    setDisplayMode('3d', 'polygons');
+    cy.setDisplayMode('3d', 'polygons');
 
-    setIndexedDbValue('map_3d_extent', {
+    cy.setIndexedDbValue('map_3d_extent', {
       spatialReference: {
         latestWkid: 3857,
         wkid: 102100,
@@ -234,7 +230,7 @@ describe('Visual Testing', () => {
       xmax: 266638.8057068905,
       ymax: 7268225.16362042,
     });
-    setIndexedDbValue('map_scene_position', {
+    cy.setIndexedDbValue('map_scene_position', {
       fov: 55,
       heading: 359.98720300386617,
       position: {
@@ -254,14 +250,14 @@ describe('Visual Testing', () => {
   });
 
   it('Verify various sample types 2d', () => {
-    setIndexedDbValue('map_scene_position', {
+    cy.setIndexedDbValue('map_scene_position', {
       position: {
         spatialReference: { latestWkid: 3857, wkid: 102100 },
         x: -8574154.489479987,
         y: 4705946.126231769,
       },
     });
-    setIndexedDbValue('map_2d_extent', {
+    cy.setIndexedDbValue('map_2d_extent', {
       spatialReference: { latestWkid: 3857, wkid: 102100 },
       xmin: -8576046.305930095,
       ymin: 4704572.648379734,
@@ -270,29 +266,29 @@ describe('Visual Testing', () => {
     });
 
     cy.fixture('various-sample-types.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
 
-    setDisplayMode('2d', 'points');
+    cy.setDisplayMode('2d', 'points');
     cy.mapLoadDelay();
     cy.get(mapId).matchSnapshot('verify-various-sample-types-2d-points');
-    setDisplayMode('2d', 'polygons');
+    cy.setDisplayMode('2d', 'polygons');
     cy.mapLoadDelay();
     cy.get(mapId).matchSnapshot('verify-various-sample-types-2d-polygons');
-    setDisplayMode('2d', 'hybrid');
+    cy.setDisplayMode('2d', 'hybrid');
     cy.mapLoadDelay();
     cy.get(mapId).matchSnapshot('verify-various-sample-types-2d-hybrid');
   });
 
   it('Verify various sample types 3d', () => {
-    setIndexedDbValue('map_3d_extent', {
+    cy.setIndexedDbValue('map_3d_extent', {
       spatialReference: { latestWkid: 3857, wkid: 102100 },
       xmin: -8575458.210635686,
       ymin: 4704934.285308629,
       xmax: -8572766.689907813,
       ymax: 4706889.036217,
     });
-    setIndexedDbValue('map_scene_position', {
+    cy.setIndexedDbValue('map_scene_position', {
       fov: 55,
       heading: 1.1564560067040883,
       position: {
@@ -305,17 +301,20 @@ describe('Visual Testing', () => {
     });
 
     cy.fixture('various-sample-types.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
 
-    setDisplayMode('3d', 'points', false);
+    cy.setDisplayMode('3d', 'points', false);
     cy.mapLoadDelay();
+    cy.wait(2000);
     cy.get(mapId).matchSnapshot('verify-various-sample-types-3d-points');
-    setDisplayMode('3d', 'polygons', false);
+    cy.setDisplayMode('3d', 'polygons', false);
     cy.mapLoadDelay();
+    cy.wait(2000);
     cy.get(mapId).matchSnapshot('verify-various-sample-types-3d-polygons');
-    setDisplayMode('3d', 'hybrid', false);
+    cy.setDisplayMode('3d', 'hybrid', false);
     cy.mapLoadDelay();
+    cy.wait(2000);
     cy.get(mapId).matchSnapshot('verify-various-sample-types-3d-hybrid');
   });
 });

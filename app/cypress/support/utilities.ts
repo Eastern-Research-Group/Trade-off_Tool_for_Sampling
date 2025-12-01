@@ -19,20 +19,6 @@ export function setIndexedDbValue(key: string, value: any) {
   db.table(dataTableName).put({ key: `${sessionId}-${key}`, value });
 }
 
-export function setDisplayMode(
-  dimensions: string,
-  shape: string,
-  terrain3d: boolean = true,
-) {
-  setIndexedDbValue('display_mode', {
-    dimensions,
-    geometryType: shape,
-    terrain3dVisible: terrain3d,
-    terrain3dUseElevation: true,
-    viewUnderground3d: false,
-  });
-}
-
 export async function readFromStorage(key: string) {
   return (await db.table(dataTableName).get(`${sessionId}-${key}`))?.value;
 }

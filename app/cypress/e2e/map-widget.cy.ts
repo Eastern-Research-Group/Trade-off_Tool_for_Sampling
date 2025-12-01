@@ -1,4 +1,4 @@
-import { initializeDb, setIndexedDbValue } from 'cypress/support/utilities';
+import { initializeDb } from 'cypress/support/utilities';
 
 Cypress.on('uncaught:exception', (err, runnable) => {
   // returning false here prevents Cypress from
@@ -11,9 +11,9 @@ describe('Map Widget', function () {
   });
 
   it('Verify MapPopup', function () {
-    cy.displayMode('2d', 'polygons');
+    cy.setDisplayMode('2d', 'polygons');
 
-    setIndexedDbValue('map_scene_position', {
+    cy.setIndexedDbValue('map_scene_position', {
       fov: 55,
       heading: 0,
       position: {
@@ -26,7 +26,7 @@ describe('Map Widget', function () {
       },
       tilt: 0,
     });
-    setIndexedDbValue('map_2d_extent', {
+    cy.setIndexedDbValue('map_2d_extent', {
       spatialReference: {
         latestWkid: 3857,
         wkid: 102100,
@@ -38,7 +38,7 @@ describe('Map Widget', function () {
     });
 
     cy.fixture('map-popup.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
 
     cy.mapLoadDelay();

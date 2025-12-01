@@ -28,6 +28,8 @@ import {
   getPointSymbol,
   updateLayerEdits,
 } from 'utils/sketchUtils';
+// styles
+import { reactSelectStyles } from 'styles';
 
 type ShapeTypeSelect = {
   value: string;
@@ -644,6 +646,7 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
         id="cst-sample-type-select"
         inputId="cst-sample-type-select-input"
         css={fullWidthSelectStyles}
+        styles={reactSelectStyles as any}
         isDisabled={editingStatus ? true : false}
         value={userDefinedSampleType}
         onChange={(ev) => setUserDefinedSampleType(ev as SampleSelectType)}
@@ -662,6 +665,7 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
             id="point-style-select"
             inputId="point-style-select-input"
             css={fullWidthSelectStyles}
+            styles={reactSelectStyles as any}
             value={pointStyle}
             isDisabled={editingStatus === 'view'}
             onChange={(ev) => setPointStyle(ev as ShapeTypeSelect)}
@@ -695,6 +699,7 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
               id="shape-type-select"
               inputId="shape-type-select-input"
               css={fullWidthSelectStyles}
+              styles={reactSelectStyles as any}
               value={shapeType}
               isDisabled={editingStatus === 'view'}
               onChange={(ev) => setShapeType(ev as ShapeTypeSelect)}

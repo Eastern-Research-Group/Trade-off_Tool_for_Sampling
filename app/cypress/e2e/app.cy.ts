@@ -1,5 +1,3 @@
-import { setIndexedDbValue } from 'cypress/support/utilities';
-
 describe('Homepage', function () {
   it('contains placeholder text', function () {
     cy.loadPage(true);
@@ -31,9 +29,9 @@ describe('Homepage', function () {
 
   it('Verify Expand Table Panel', function () {
     cy.fixture('swab.json').then((file) => {
-      setIndexedDbValue('edits', file);
+      cy.setIndexedDbValue('edits', file);
     });
-    setIndexedDbValue('table_panel', {
+    cy.setIndexedDbValue('table_panel', {
       expanded: true,
       height: 200,
     });
