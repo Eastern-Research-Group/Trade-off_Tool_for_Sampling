@@ -73,6 +73,8 @@ import {
   userCanceledMessage,
   webServiceErrorMessage,
 } from 'config/errorMessages';
+// styles
+import { reactSelectStyles } from 'styles';
 
 const layerOptions: LayerSelectType[] = [
   { value: 'Contamination Map', label: 'Contamination Map' },
@@ -1480,6 +1482,7 @@ function FilePanel({ appType }: Props) {
         id="layer-type-select"
         inputId="layer-type-select-input"
         css={selectStyles}
+        styles={reactSelectStyles as any}
         value={layerType}
         onChange={(ev) => {
           setLayerType(ev as LayerSelectType);
@@ -1529,6 +1532,7 @@ function FilePanel({ appType }: Props) {
                 id="sample-type-select"
                 inputId="sample-type-select-input"
                 css={selectStyles}
+                styles={reactSelectStyles as any}
                 value={sampleType}
                 onChange={(ev) => {
                   setSampleType(ev as SampleSelectType);

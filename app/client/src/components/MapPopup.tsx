@@ -25,7 +25,7 @@ import {
 } from 'utils/sketchUtils';
 import { parseSmallFloat } from 'utils/utils';
 // styles
-import { colors, linkButtonStyles } from 'styles';
+import { colors, linkButtonStyles, reactSelectStyles } from 'styles';
 
 type SaveStatusType = 'none' | 'success' | 'failure';
 
@@ -326,6 +326,7 @@ function MapPopup({
               }}
               options={layerOptions}
               menuPortalTarget={document.body}
+              styles={reactSelectStyles as any}
             />
           </div>
           <div>

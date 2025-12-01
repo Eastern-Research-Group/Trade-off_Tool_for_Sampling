@@ -46,7 +46,7 @@ import {
   webServiceErrorMessage,
 } from 'config/errorMessages';
 // styles
-import { colors, isDecon, linkButtonStyles } from 'styles';
+import { colors, isDecon, linkButtonStyles, reactSelectStyles } from 'styles';
 
 const failedStatuses = [
   'failure',
@@ -1029,6 +1029,7 @@ export function EditCustomSampleTypesTable({
               <Select
                 inputId="feature-service-select"
                 css={fullWidthSelectStyles}
+                styles={reactSelectStyles as any}
                 value={selectedService}
                 onChange={(ev) => setSelectedService(ev as SelectedService)}
                 options={featureServices.data}

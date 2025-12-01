@@ -12,6 +12,8 @@ import NavigationButton from 'components/NavigationButton';
 import { NavigationContext } from 'contexts/Navigation';
 // types
 import { AppType, LocationType } from 'types/Navigation';
+// styles
+import { reactSelectStyles } from 'styles';
 
 const addFromOptions: LocationType[] = [
   { value: 'search', label: 'Search for Layers' },
@@ -67,6 +69,7 @@ function AddData({ appType }: Props) {
         <Select
           inputId="add-data-select"
           css={panelSelectStyles}
+          styles={reactSelectStyles as any}
           value={location}
           onChange={(ev) => setLocation(ev as LocationType)}
           options={addFromOptions}

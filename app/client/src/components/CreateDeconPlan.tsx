@@ -646,6 +646,7 @@ function CreateDeconPlan() {
                 id="scenario-select-input-container"
                 inputId="scenario-select-input"
                 css={layerSelectStyles}
+                styles={reactSelectStyles as any}
                 isDisabled={addPlanVisible || editPlanVisible}
                 value={selectedScenario}
                 onChange={(ev) => {
@@ -1066,6 +1067,7 @@ function CreateDeconPlan() {
                   id="decon-operation-select-input-container"
                   inputId="decon-operation-select-input"
                   css={layerSelectStyles}
+                  styles={reactSelectStyles as any}
                   isDisabled={addOperationVisible || editOperationVisible}
                   options={deconLayers}
                   value={deconOperation}

@@ -1234,6 +1234,7 @@ function CharacterizeAOI({
           id="characterize-aoi-select-input-container"
           inputId="characterize-aoi-select-input"
           css={layerSelectStyles}
+          styles={reactSelectStyles as any}
           isDisabled={addScenarioVisible || editScenarioVisible}
           options={deconLayers}
           value={deconSketchLayer}

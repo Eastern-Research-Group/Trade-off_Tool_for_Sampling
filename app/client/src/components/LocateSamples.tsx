@@ -40,7 +40,7 @@ import {
 } from 'utils/sketchUtils';
 import { getNewName, getScenarioName } from 'utils/utils';
 // styles
-import { isDecon } from 'styles';
+import { isDecon, reactSelectStyles } from 'styles';
 
 // --- styles (SketchButton) ---
 const buttonContainerStyles = css`
@@ -780,6 +780,7 @@ function LocateSamples() {
                 id="scenario-select-input-container"
                 inputId="scenario-select-input"
                 css={layerSelectStyles}
+                styles={reactSelectStyles as any}
                 isDisabled={addScenarioVisible || editScenarioVisible}
                 value={selectedScenario}
                 onChange={(ev) => {
@@ -1372,6 +1373,7 @@ function LocateSamples() {
                 id="sampling-layer-select"
                 inputId="sampling-layer-select-input"
                 css={layerSelectStyles}
+                styles={reactSelectStyles as any}
                 isDisabled={addLayerVisible || editLayerVisible}
                 value={sketchLayer}
                 onChange={(ev) => setSketchLayer(ev as LayerType)}

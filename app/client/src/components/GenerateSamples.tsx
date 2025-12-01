@@ -1163,6 +1163,7 @@ function GenerateSamples({ id, type }: GenerateSamplesProps) {
                 id={`${id}-sample-type-select`}
                 inputId={`${id}-sample-type-select-input`}
                 css={fullWidthSelectStyles}
+                styles={reactSelectStyles as any}
                 value={sampleType}
                 onChange={(ev) => setSampleType(ev as SampleSelectType)}
                 options={allSampleOptions}
