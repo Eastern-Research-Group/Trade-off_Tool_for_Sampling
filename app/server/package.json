@@ -27,11 +27,11 @@
     "refreshCacheData": "node -r dotenv/config --inspect app/tasks/refreshCacheData.js dotenv_config_path=./.env.local"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.940.0",
+    "@aws-sdk/client-s3": "3.943.0",
     "axios": "1.13.2",
     "body-parser": "2.2.1",
     "dotenv": "17.2.3",
-    "express": "5.1.0",
+    "express": "5.2.1",
     "express-basic-auth": "1.2.1",
     "helmet": "8.1.0",
     "log4js": "6.9.1",
@@ -46,7 +46,7 @@
     "lint-staged": "16.2.7",
     "nodemon": "3.1.11",
     "nyc": "17.1.0",
-    "prettier": "3.6.2",
+    "prettier": "3.7.4",
     "supertest": "7.1.4"
   },
   "husky": {
