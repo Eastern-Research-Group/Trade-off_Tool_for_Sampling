@@ -436,6 +436,7 @@ const toolBarButtonStyles = (width?: string) => {
 
     &:hover {
       background-color: ${appTheme.headerBackgroundColor};
+      color: ${appTheme.headerColor};
     }
 
     &:visited {
