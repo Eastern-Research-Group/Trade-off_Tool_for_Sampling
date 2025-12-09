@@ -36,6 +36,8 @@
 
 - Fixed issue of FontAwesome icons not always loading.
 
+- Fixed an issue where malicious calls to the proxy could possibly crash the app.
+
 ### Chores
 
 - Updated dependencies.
