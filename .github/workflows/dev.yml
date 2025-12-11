@@ -90,7 +90,7 @@ jobs:
 
       - name: Build front-end files and move to server
         run: |
-          export NODE_OPTIONS="--max_old_space_size=4096"
+          export NODE_OPTIONS="--max_old_space_size=6144"
           PUBLIC_URL="$SERVER_URL" \
             VITE_ARCGIS_CLIENT_ID="$VITE_ARCGIS_CLIENT_ID" \
             npm run build
