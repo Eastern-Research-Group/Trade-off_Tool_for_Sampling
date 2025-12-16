@@ -821,12 +821,6 @@ function ResultCard({ appType, result }: ResultCardProps) {
 
   // removes the esri watch handle when the card is removed from the DOM.
   const [status, setStatus] = useState('');
-  const [watcher, setWatcher] = useState<IHandle | null>(null);
-  useEffect(() => {
-    return function cleanup() {
-      if (watcher) watcher.remove();
-    };
-  }, [watcher]);
 
   /**
    * Adds layers, published through TOTS, such that the sample layer is
@@ -4132,6 +4126,7 @@ function ResultCard({ appType, result }: ResultCardProps) {
               },
             ]);
             setStatus('');
+            watcher.remove();
 
             // set the min/max scale for tile layers
             if (layer.type === 'tile') {
@@ -4151,11 +4146,10 @@ function ResultCard({ appType, result }: ResultCardProps) {
             }
           } else if (layer.loadStatus === 'failed') {
             setStatus('error');
+            watcher.remove();
           }
         },
       );
-
-      setWatcher(watcher);
 
       // add the layer to the map
       map.add(layer);
