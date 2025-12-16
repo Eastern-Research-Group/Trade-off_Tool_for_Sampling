@@ -15,14 +15,17 @@ import Field from '@arcgis/core/layers/support/Field';
 import * as geometryJsonUtils from '@arcgis/core/geometry/support/jsonUtils';
 import GeoRSSLayer from '@arcgis/core/layers/GeoRSSLayer';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
+import IdentityManager from '@arcgis/core/identity/IdentityManager';
 import KMLLayer from '@arcgis/core/layers/KMLLayer';
 import Layer from '@arcgis/core/layers/Layer';
+import Portal from '@arcgis/core/portal/Portal';
 import PortalItem from '@arcgis/core/portal/PortalItem';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 import * as rendererJsonUtils from '@arcgis/core/renderers/support/jsonUtils';
 import Viewpoint from '@arcgis/core/Viewpoint';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
 // contexts
+import { AuthenticationContext } from 'contexts/Authentication';
 import { CalculateContext } from 'contexts/Calculate';
 import { DialogContext, AlertDialogOptions } from 'contexts/Dialog';
 import { LookupFilesContext, useLookupFiles } from 'contexts/LookupFiles';
@@ -47,13 +50,13 @@ import {
   UserDefinedAttributes,
 } from 'config/sampleAttributes';
 // utils
-import { useDynamicPopup } from 'utils/hooks';
+import { useDynamicPopup, useTotsLayerAdder } from 'utils/hooks';
 import {
   applyRendererForTotsLayer,
   createLayer,
   generateUUID,
 } from 'utils/sketchUtils';
-import { getEnvironment } from 'utils/utils';
+import { getEnvironment, removeUrlParams } from 'utils/utils';
 
 let appKey = isDecon() ? 'tods' : 'tots';
 
@@ -261,8 +264,15 @@ function useTrainingModeStorage(dbInitialized: boolean) {
 
     setReadInitialized(true);
     readFromStorage(key).then((trainingMode) => {
+      if (window.location.search.includes('trainingMode=true')) {
+        setTrainingMode(true);
+      } else {
+        setTrainingMode(Boolean(trainingMode));
+      }
+
+      removeUrlParams('trainingMode');
+
       setReadDone(true);
-      setTrainingMode(Boolean(trainingMode));
     });
   }, [dbInitialized, readInitialized, setTrainingMode]);
 
@@ -276,6 +286,9 @@ function useTrainingModeStorage(dbInitialized: boolean) {
 // Uses browser storage for holding any editable layers.
 function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
   const key = 'edits';
+  const { oAuthInfo, portal, setPortal, setSignedIn, signedIn } = useContext(
+    AuthenticationContext,
+  );
   const { setCalculateResultsDecon } = useContext(CalculateContext);
   const { setOptions } = useContext(DialogContext);
   const {
@@ -291,6 +304,9 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
     symbolsInitialized,
   } = useContext(SketchContext);
   const getPopupTemplate = useDynamicPopup(appType);
+  const { addTotsLayerAutoSelect } = useTotsLayerAdder(appType);
+
+  const [urlIdsToAdd, setUrlIdsToAdd] = useState<string[]>([]);
 
   // Retreives edit data from browser storage when the app loads
   const [readInitialized, setReadInitialized] = useState(false);
@@ -305,16 +321,24 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
     )
       return;
 
-    setReadInitialized(true);
+    async function performRead() {
+      setReadInitialized(true);
 
-    readFromStorage(key).then((edits: EditsType | null | undefined) => {
+      const search = window.location.search;
+      let planIds: string[] = [];
+      if (search.includes('planId=')) {
+        const urlParams = new URLSearchParams(search);
+        planIds = urlParams.get('planId')?.split(',') ?? [];
+      }
+
+      const edits: EditsType | null | undefined = await readFromStorage(key);
       if (!edits) {
         setLayersInitialized(true);
+        setUrlIdsToAdd(planIds);
         return;
       }
 
       // change the edit type to add and set the edit context state
-      // const edits: EditsType = JSON.parse(editsStr);
       edits.edits.forEach((edit) => {
         edit.editType = 'add';
       });
@@ -324,8 +348,11 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
       const graphicsLayers: (__esri.GraphicsLayer | __esri.GroupLayer)[] = [];
       let calculateResults: any | null = null;
       const newAoiCharacterizationGraphics: PlanGraphics = {};
+      const portalIdsAdded: string[] = [];
 
       edits.edits.forEach((editsLayer) => {
+        portalIdsAdded.push(editsLayer.portalId);
+
         // add layer edits directly
         if (editsLayer.type === 'layer') {
           graphicsLayers.push(
@@ -459,8 +486,13 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
         map.addMany(graphicsLayers);
       }
 
+      if (planIds.length > 0)
+        setUrlIdsToAdd(planIds.filter((p) => !portalIdsAdded.includes(p)));
+
       setLayersInitialized(true);
-    });
+    }
+
+    performRead();
   }, [
     dbInitialized,
     defaultSymbols,
@@ -482,6 +514,59 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
     if (!layersInitialized) return;
     writeToStorage(key, edits, setOptions);
   }, [edits, layersInitialized, setOptions]);
+
+  // Sign in if necessary
+  useEffect(() => {
+    if (!oAuthInfo || urlIdsToAdd.length === 0) return;
+
+    // have the user login if necessary
+    if (!portal || !signedIn) {
+      IdentityManager.getCredential(`${oAuthInfo.portalUrl}/sharing`, {
+        oAuthPopupConfirmation: false,
+      })
+        .then(() => {
+          setSignedIn(true);
+
+          const portal = new Portal();
+          portal.authMode = 'immediate';
+          portal.load().then(() => {
+            setPortal(portal);
+          });
+        })
+        .catch((err) => {
+          console.error(err);
+          setSignedIn(false);
+          setPortal(null);
+        });
+    }
+  }, [oAuthInfo, portal, setPortal, setSignedIn, signedIn, urlIdsToAdd]);
+
+  // Add any layers in the url parameters that aren't already in
+  // session storage
+  useEffect(() => {
+    if (!portal || !signedIn || urlIdsToAdd.length === 0) return;
+
+    async function performWork() {
+      const tmpPortal = portal ? portal : new Portal();
+
+      setUrlIdsToAdd([]);
+      try {
+        const res = await tmpPortal.queryItems({
+          query: `id: "${urlIdsToAdd.join('" OR "')}"`,
+          num: urlIdsToAdd.length,
+        });
+
+        res.results.forEach((item) => {
+          addTotsLayerAutoSelect(item, tmpPortal);
+        });
+      } catch (err) {
+        // TODO - do something better here
+        console.error(err);
+      }
+    }
+
+    performWork();
+  }, [addTotsLayerAutoSelect, portal, signedIn, urlIdsToAdd]);
 }
 
 // Uses browser storage for holding the reference layers that have been added.

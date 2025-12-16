@@ -240,6 +240,25 @@ export function parseSmallFloat(number: number, precision: number = 15) {
 }
 
 /**
+ * Removes parameters from the url in the browser address bar.
+ *
+ * @param paramsToDelete
+ */
+export function removeUrlParams(paramsToDelete: string | string[]) {
+  const url = new URL(window.location.href);
+  const params = url.searchParams;
+
+  (Array.isArray(paramsToDelete) ? paramsToDelete : [paramsToDelete]).forEach(
+    (param) => {
+      params.delete(param);
+    },
+  );
+
+  // Update the URL in the browser's address bar without reloading the page
+  window.history.replaceState({}, document.title, url.pathname + url.search);
+}
+
+/**
  * Joins the input string into a sentance (i.e., "A, B, and C", "A and B" or "A").
  *
  * @param values values to be joined

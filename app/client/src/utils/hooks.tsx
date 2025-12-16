@@ -1,6 +1,7 @@
 /** @jsxImportSource @emotion/react */
 
 import React, {
+  Attributes,
   Dispatch,
   SetStateAction,
   useCallback,
@@ -11,11 +12,15 @@ import React, {
 } from 'react';
 import { createRoot } from 'react-dom/client';
 import Collection from '@arcgis/core/core/Collection';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
+import Field from '@arcgis/core/layers/support/Field';
 import FillSymbol3DLayer from '@arcgis/core/symbols/FillSymbol3DLayer';
 import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import Graphic from '@arcgis/core/Graphic';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
+import GroupLayer from '@arcgis/core/layers/GroupLayer';
+import Layer from '@arcgis/core/layers/Layer';
 import LineStylePattern3D from '@arcgis/core/symbols/patterns/LineStylePattern3D';
 import LineSymbol3D from '@arcgis/core/symbols/LineSymbol3D';
 import LineSymbol3DLayer from '@arcgis/core/symbols/LineSymbol3DLayer';
@@ -23,8 +28,10 @@ import Point from '@arcgis/core/geometry/Point';
 import Polygon from '@arcgis/core/geometry/Polygon';
 import PolygonSymbol3D from '@arcgis/core/symbols/PolygonSymbol3D';
 import PopupTemplate from '@arcgis/core/PopupTemplate';
+import PortalItem from '@arcgis/core/portal/PortalItem';
 import * as query from '@arcgis/core/rest/query';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
+import * as rendererJsonUtils from '@arcgis/core/renderers/support/jsonUtils';
 import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 // components
 import MapPopup, {
@@ -34,9 +41,13 @@ import MapPopup, {
 } from 'components/MapPopup';
 // contexts
 import { AuthenticationContext } from 'contexts/Authentication';
-import { CalculateContext } from 'contexts/Calculate';
+import { CalculateContext, settingDefaults } from 'contexts/Calculate';
 import { DialogContext } from 'contexts/Dialog';
-import { SampleTypesS3, useLookupFiles } from 'contexts/LookupFiles';
+import {
+  LookupFilesContext,
+  SampleTypesS3,
+  useLookupFiles,
+} from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { PublishContext, Selections } from 'contexts/Publish';
 import {
@@ -53,16 +64,32 @@ import {
   CalculateResultsDeconDataType,
 } from 'types/CalculateResults';
 import {
+  CalculateSettingsBaseType,
   EditsType,
   LayerAoiAnalysisEditsType,
   LayerDeconEditsType,
+  LayerEditsType,
+  ReferenceLayersTableType,
+  ReferenceLayerTableType,
   ScenarioEditsType,
 } from 'types/Edits';
-import { FieldInfos, LayerType, LayerTypeName } from 'types/Layer';
+import {
+  FieldInfos,
+  LayerType,
+  LayerTypeName,
+  PortalLayerType,
+  UrlLayerType,
+} from 'types/Layer';
 import { AppType } from 'types/Navigation';
-import { ReferenceLayerSelections } from 'types/Publish';
+import { AttributesType, ReferenceLayerSelections } from 'types/Publish';
 // utils
-import { appendEnvironmentObjectParam } from 'utils/arcGisRestUtils';
+import {
+  appendEnvironmentObjectParam,
+  buildCustomAttributeFromField,
+  getAllFeatures,
+  getFeatureLayer,
+  getFeatureLayers,
+} from 'utils/arcGisRestUtils';
 import { writeToStorage } from 'utils/browserStorage';
 import {
   fetchPost,
@@ -71,22 +98,30 @@ import {
   retryCall,
 } from 'utils/fetchUtils';
 import {
+  applyRendererForTotsLayer,
   calculateArea,
   convertToPoint,
+  convertToSimpleGraphic,
   createBuffer,
+  createLayerEditTemplate,
   deactivateButtons,
+  deepCopyObject,
   findLayerInEdits,
   generateUUID,
   getCurrentDateTime,
   getDefaultWebMapSceneSelections,
+  getSimplePopupTemplate,
   handlePopupClick,
   removeZValues,
+  sampleValidation,
   setZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
 import { parseSmallFloat } from 'utils/utils';
 // config
+import { sampleIssuesPopupMessage } from 'config/errorMessages';
 import { isDecon } from 'config/navigation';
+import { DefaultSymbolsType, SampleSelectType } from 'config/sampleAttributes';
 
 export type GsgParam = { itemID: string };
 
@@ -1374,6 +1409,8 @@ export function useStartOver() {
         )
         .toArray() ?? [];
     if (layersToRemove.length > 0) map?.removeMany(layersToRemove);
+
+    // TODO remove any URL parameters, except for devMode or gameMode
 
     // set the layers to just the defaults
     setLayers([]);
@@ -3997,4 +4034,2609 @@ export function useAbort() {
   );
 
   return { abort, getSignal };
+}
+
+export function useTotsLayerAdder(appType: AppType) {
+  const { contaminationMap, setContaminationMap } =
+    useContext(CalculateContext);
+  const { setOptions } = useContext(DialogContext);
+  const { sampleTypes } = useContext(LookupFilesContext);
+  const { trainingMode } = useContext(NavigationContext);
+  const {
+    defaultDeconSelections,
+    defaultSymbols,
+    setDefaultSymbols,
+    displayDimensions,
+    edits,
+    setEdits,
+    layers,
+    setLayers,
+    map,
+    mapView,
+    setPortalLayers,
+    setReferenceLayers,
+    sampleAttributes,
+    sceneView,
+    sceneViewForArea,
+    setSelectedScenario,
+    setSketchLayer,
+    setUrlLayers,
+    setUserDefinedOptions,
+    userDefinedAttributes,
+    setUserDefinedAttributes,
+  } = useContext(SketchContext);
+  const getPopupTemplate = useDynamicPopup(appType);
+  const layerProps = useLookupFiles().data.layerProps;
+  const technologyTypes = useLookupFiles().data.technologyTypes;
+
+  // TODO - figure out if we need to do anything special with the setStatus items below
+
+  /**
+   * Adds layers, published through TOTS, such that the sample layer is
+   * editable in TOTS. Any non-sample layers will just be added
+   * as reference layers, though this could change in the future.
+   */
+  async function addTotsLayer(result: any, portal: __esri.Portal) {
+    if (!map) return;
+
+    // setStatus('loading');
+
+    const tempPortal = portal as any;
+    const token = tempPortal.credential.token;
+    let addedSampleTypesViaTable = false;
+
+    function getAddedSampleTypesViaTable() {
+      return addedSampleTypesViaTable;
+    }
+
+    // function used for finalizing the adding of layers. This function is needed
+    // for displaying a popup mesage if there is an issue with any of the samples
+    function finalizeLayerAdd({
+      mapLayersToAdd,
+      newUserSampleTypes,
+      newAttributes,
+      zoomToGraphics,
+      editsCopy,
+      layersToAdd,
+      refLayersToAdd,
+      newScenario,
+    }: {
+      mapLayersToAdd: __esri.Layer[];
+      newUserSampleTypes: SampleSelectType[];
+      newAttributes: Attributes;
+      zoomToGraphics: __esri.Graphic[];
+      editsCopy: EditsType;
+      layersToAdd: LayerType[];
+      refLayersToAdd: any[];
+      newScenario: ScenarioEditsType | null;
+    }) {
+      if (!map) return;
+
+      // replace sample attributes the correct ones
+      mapLayersToAdd.forEach((parentLayer) => {
+        if (parentLayer.type !== 'group') return;
+
+        const tempParentLayer = parentLayer as __esri.GroupLayer;
+        tempParentLayer.layers.forEach((layer) => {
+          const tempLayer = layer as __esri.GraphicsLayer;
+
+          tempLayer.graphics.forEach((graphic) => {
+            if (
+              !Object.prototype.hasOwnProperty.call(
+                sampleAttributes,
+                graphic.attributes.TYPEUUID,
+              )
+            )
+              return;
+
+            const predefinedAttributes: any =
+              sampleAttributes[graphic.attributes.TYPEUUID];
+            Object.keys(predefinedAttributes).forEach((key) => {
+              if (!sampleTypes?.attributesToCheck.includes(key)) {
+                return;
+              }
+
+              graphic.attributes[key] = predefinedAttributes[key];
+            });
+          });
+        });
+      });
+
+      // add custom sample types to browser storage
+      if (newUserSampleTypes.length > 0) {
+        setUserDefinedAttributes((item) => {
+          Object.keys(newAttributes).forEach((key) => {
+            const attributes = newAttributes[key];
+            sampleAttributes[attributes.attributes.TYPEUUID as any] =
+              attributes.attributes;
+            item.sampleTypes[attributes.attributes.TYPEUUID as any] =
+              attributes;
+          });
+
+          return {
+            editCount: item.editCount + 1,
+            sampleTypes: item.sampleTypes,
+          };
+        });
+
+        setUserDefinedOptions((options) => {
+          return [...options, ...newUserSampleTypes];
+        });
+      }
+
+      // add all of the layers to the map
+      map.addMany(mapLayersToAdd);
+
+      // zoom to the graphics layer
+      if (zoomToGraphics.length > 0) {
+        if (mapView && displayDimensions === '2d') mapView.goTo(zoomToGraphics);
+        if (sceneView && displayDimensions === '3d')
+          sceneView.goTo(zoomToGraphics);
+      }
+
+      // set the state for session storage
+      setEdits(editsCopy);
+      window.totsLayers = [...layers, ...layersToAdd];
+      setLayers((layers) => [...layers, ...layersToAdd]);
+      setReferenceLayers((layers: any) => [...layers, ...refLayersToAdd]);
+
+      if (newScenario) {
+        setSelectedScenario((scenario) => {
+          if (scenario) return scenario;
+          else return newScenario;
+        });
+      }
+
+      // set the sketchLayer to the first tots sample layer
+      if (layersToAdd.length > -1) setSketchLayer(layersToAdd[0]);
+
+      // set the contamination map if one hasn't already been selected
+      const contamMap = layersToAdd.find(
+        (l) => l.layerType === 'Contamination Map',
+      );
+      if (contamMap && !contaminationMap) setContaminationMap(contamMap);
+
+      // add the portal id to portal layers. This needed so the card on
+      // the search panel shows up as the layer having been added.
+      setPortalLayers((portalLayers) => [
+        ...portalLayers,
+        {
+          categories: result.categories,
+          id: result.id,
+          label: result.title,
+          layerType: 'Feature Service',
+          type: 'tots',
+          url: result.url,
+        },
+      ]);
+
+      // reset the status
+      // setStatus('');
+    }
+
+    // Updates the pointIds on the layers and edits objects
+    function updatePointIds(
+      layerFeatures: any,
+      layerDetails: any,
+      layersToAdd: LayerType[],
+      editsCopy: EditsType,
+    ) {
+      // get the layer uuid from the first feature
+      layerFeatures.features.forEach((feature: any) => {
+        const uuid = feature.attributes?.DECISIONUNITUUID;
+        if (!uuid) return;
+
+        // find the layer in layersToAdd and update the id
+        const layer = layersToAdd.find((l) => l.layerId === uuid);
+        if (layer) layer.pointsId = layerDetails.id;
+
+        // find the layer in editsCopy and update the id
+        const editsLayer = editsCopy.edits.find(
+          (l) => l.portalId === layerDetails.serviceItemId,
+        ) as ScenarioEditsType;
+        if (editsLayer) {
+          editsLayer.pointsId = layerDetails.id;
+
+          const editsLayerTemp = editsLayer as ScenarioEditsType;
+          if (editsLayerTemp?.layers) {
+            const sublayer = editsLayerTemp.layers.find((s) => s.uuid === uuid);
+            if (sublayer) sublayer.pointsId = layerDetails.id;
+          }
+        }
+      });
+    }
+
+    function addUserDefinedType(
+      graphic: any,
+      newUserSampleTypes: SampleSelectType[],
+      newAttributes: Attributes,
+    ) {
+      // get the type uuid or generate it if necessary
+      const attributes = graphic.attributes;
+      let typeUuid = attributes.TYPEUUID;
+      if (!typeUuid) {
+        const keysToCheck = [
+          'TYPE',
+          'ShapeType',
+          'TTPK',
+          'TTC',
+          'TTA',
+          'TTPS',
+          'LOD_P',
+          'LOD_NON',
+          'MCPS',
+          'TCPS',
+          'WVPS',
+          'WWPS',
+          'SA',
+          'ALC',
+          'AMC',
+        ];
+        // check if the udt has already been added
+        Object.values(userDefinedAttributes.sampleTypes).forEach((udt: any) => {
+          const tempUdt: any = {};
+          const tempAtt: any = {};
+          keysToCheck.forEach((key) => {
+            tempUdt[key] = udt[key];
+            tempAtt[key] = attributes[key];
+          });
+
+          if (JSON.stringify(tempUdt) === JSON.stringify(tempAtt)) {
+            typeUuid = udt.TYPEUUID;
+          }
+        });
+
+        if (!typeUuid) {
+          if (
+            Object.prototype.hasOwnProperty.call(
+              sampleTypes?.sampleAttributes,
+              attributes.TYPE,
+            )
+          ) {
+            typeUuid = attributes.TYPE;
+          } else {
+            typeUuid = generateUUID();
+          }
+        }
+
+        graphic.attributes['TYPEUUID'] = typeUuid;
+      }
+
+      if (
+        !Object.prototype.hasOwnProperty.call(
+          sampleAttributes,
+          attributes.TYPEUUID,
+        ) &&
+        !Object.prototype.hasOwnProperty.call(
+          newAttributes,
+          attributes.TYPEUUID,
+        )
+      ) {
+        newUserSampleTypes.push({
+          value: attributes.TYPEUUID,
+          label: attributes.TYPE,
+          isPredefined: false,
+        });
+        newAttributes[attributes.TYPEUUID] = {
+          status: newAttributes[attributes.TYPEUUID]?.status
+            ? newAttributes[attributes.TYPEUUID].status
+            : 'add',
+          serviceId: '',
+          attributes: {
+            OBJECTID: '-1',
+            PERMANENT_IDENTIFIER: null,
+            GLOBALID: null,
+            TYPEUUID: attributes.TYPEUUID,
+            TYPE: attributes.TYPE,
+            ShapeType: attributes.ShapeType,
+            POINT_STYLE: attributes.POINT_STYLE || 'circle',
+            TTPK: attributes.TTPK ? Number(attributes.TTPK) : null,
+            TTC: attributes.TTC ? Number(attributes.TTC) : null,
+            TTA: attributes.TTA ? Number(attributes.TTA) : null,
+            TTPS: attributes.TTPS ? Number(attributes.TTPS) : null,
+            LOD_P: attributes.LOD_P ? Number(attributes.LOD_P) : null,
+            LOD_NON: attributes.LOD_NON ? Number(attributes.LOD_NON) : null,
+            MCPS: attributes.MCPS ? Number(attributes.MCPS) : null,
+            TCPS: attributes.TCPS ? Number(attributes.TCPS) : null,
+            WVPS: attributes.WVPS ? Number(attributes.WVPS) : null,
+            WWPS: attributes.WWPS ? Number(attributes.WWPS) : null,
+            SA: attributes.SA ? Number(attributes.SA) : null,
+            AA: null,
+            ALC: attributes.ALC ? Number(attributes.ALC) : null,
+            AMC: attributes.AMC ? Number(attributes.AMC) : null,
+            Notes: '',
+            CONTAMTYPE: null,
+            CONTAMVAL: null,
+            CONTAMUNIT: null,
+            CREATEDDATE: null,
+            UPDATEDDATE: null,
+            USERNAME: null,
+            ORGANIZATION: null,
+            DECISIONUNITUUID: null,
+            DECISIONUNIT: null,
+            DECISIONUNITSORT: 0,
+          },
+        };
+      }
+    }
+
+    try {
+      // get the list of feature layers in this feature server
+      const featureLayersRes: any = await getFeatureLayers(result.url, token);
+
+      // fire off requests to get the details and features for each layer
+      const layerPromises: Promise<any>[] = [];
+
+      // ensure -points layer calls are done last
+      const resPolys: any[] = [];
+      const resPoints: any[] = [];
+      featureLayersRes.layers.forEach((layer: any) => {
+        if (layer.geometryType === 'esriGeometryPoint') {
+          resPoints.push(layer);
+        } else {
+          resPolys.push(layer);
+        }
+      });
+
+      const resSampleTypes: any[] = [];
+      const resRefLayersTypes: any[] = [];
+      const resCalculateSettings: any[] = [];
+      const resCalculateResults: any[] = [];
+      featureLayersRes.tables.forEach((table: any) => {
+        if (table.name.endsWith('-sample-types')) {
+          resSampleTypes.push(table);
+        }
+        if (table.name.endsWith('-reference-layers')) {
+          resRefLayersTypes.push(table);
+        }
+        if (table.name.endsWith('-calculate-settings')) {
+          resCalculateSettings.push(table);
+        }
+        if (table.name.endsWith('-calculate-results')) {
+          resCalculateResults.push(table);
+        }
+      });
+
+      // fire off the calls with the points layers last
+      const resCombined = [
+        ...resCalculateResults,
+        ...resCalculateSettings,
+        ...resRefLayersTypes,
+        ...resSampleTypes,
+        ...resPolys,
+        ...resPoints,
+      ];
+      resCombined.forEach((layer: any) => {
+        // get the layer details promise
+        const layerCall = getFeatureLayer(result.url, token, layer.id);
+        layerPromises.push(layerCall);
+      });
+
+      // wait for layer detail promises to resolve
+      const layerDetailResponses = await Promise.all(layerPromises);
+
+      // fire off requests for features of each layer using the objectIdField
+      const featurePromises: any[] = [];
+      layerDetailResponses.forEach((layerDetails: any) => {
+        // get the layer features promise
+        const featuresCall = getAllFeatures(
+          portal,
+          result.url + '/' + layerDetails.id,
+          layerDetails.objectIdField,
+        );
+        featurePromises.push(featuresCall);
+      });
+
+      // wait for feature promises to resolve
+      const featureResponses = await Promise.all(featurePromises);
+
+      // define items used for updating states
+      let editsCopy: EditsType = deepCopyObject(edits);
+      let calcSettings: CalculateSettingsBaseType | null = null;
+      let calcResults: CalculateResultsDataType | null = null;
+      const mapLayersToAdd: __esri.Layer[] = [];
+      const newAttributes: Attributes = {};
+      const newCustomAttributes: AttributesType[] = [];
+      const newUserSampleTypes: SampleSelectType[] = [];
+      const layersToAdd: LayerType[] = [];
+      const refLayersToAdd: any[] = [];
+      const zoomToGraphics: __esri.Graphic[] = [];
+      const table: any = {};
+      let referenceLayersTable: ReferenceLayersTableType = {
+        id: -1,
+        referenceLayers: [],
+      };
+
+      let isSampleLayer = false;
+      let isVspLayer = false;
+      let isPointsSampleLayer = false;
+      let isVspPointsSampleLayer = false;
+      let isContamMapLayer = false;
+      const typesLoop = (type: __esri.FeatureType) => {
+        if (type.id === 'epa-tots-vsp-layer') isVspLayer = true;
+        if (type.id === 'epa-tots-sample-layer') isSampleLayer = true;
+        if (type.id === 'epa-tots-sample-points-layer')
+          isPointsSampleLayer = true;
+        if (type.id === 'epa-tots-vsp-points-layer')
+          isVspPointsSampleLayer = true;
+        if (type.id === 'epa-tots-contamination-map-layer')
+          isContamMapLayer = true;
+      };
+
+      let fields: __esri.Field[] = [];
+      const fieldsLoop = (field: __esri.Field) => {
+        fields.push(Field.fromJSON(field));
+      };
+
+      // get the popup template
+      const popupTemplate = getPopupTemplate('Samples', trainingMode);
+
+      // create the layers to be added to the map
+      let scenarioId: string | null = null;
+      for (let i = 0; i < layerDetailResponses.length; i++) {
+        const layerDetails = layerDetailResponses[i];
+        const layerFeatures = featureResponses[i];
+        const scenarioName = layerDetails.name;
+
+        // figure out if this layer is a sample layer or not
+        isSampleLayer = false;
+        isVspLayer = false;
+        isContamMapLayer = false;
+        if (layerDetails?.types) {
+          layerDetails.types.forEach(typesLoop);
+        }
+
+        // add sample layers as graphics layers
+        if (
+          layerDetails.type === 'Table' &&
+          layerDetails.name.endsWith('-sample-types')
+        ) {
+          table.id = layerDetails.id;
+          table.sampleTypes = {};
+
+          layerFeatures.features.forEach((feature: any) => {
+            addUserDefinedType(feature, newUserSampleTypes, newAttributes);
+            table.sampleTypes[feature.attributes.TYPEUUID] = feature.attributes;
+          });
+
+          addedSampleTypesViaTable = true;
+        } else if (
+          layerDetails.type === 'Table' &&
+          layerDetails.name.endsWith('-reference-layers')
+        ) {
+          const newUrlLayers: UrlLayerType[] = [];
+          const newPortalLayers: PortalLayerType[] = [];
+          const referenceLayers: ReferenceLayerTableType[] = [];
+          for (const f of layerFeatures.features) {
+            if (f.attributes.TYPE === 'arcgis') {
+              newPortalLayers.push({
+                categories: [],
+                id: f.attributes.LAYERID,
+                label: f.attributes.LABEL,
+                layerType: f.attributes.LAYERTYPE,
+                type: f.attributes.TYPE,
+                url: f.attributes.URL,
+              });
+            }
+            if (f.attributes.TYPE === 'url') {
+              newUrlLayers.push({
+                layerId: f.attributes.LAYERID,
+                label: f.attributes.LABEL,
+                layerType: f.attributes.LAYERTYPE,
+                type: f.attributes.URLTYPE,
+                url: f.attributes.URL,
+              });
+            }
+            if (f.attributes.TYPE === 'tots' && f.attributes.TOTSLAYERID) {
+              const output = await addAoiCharacterizationLayer(
+                {
+                  categories: ['contains-epa-tots-aoi-characterization'],
+                  id: f.attributes.LAYERID,
+                  title: f.attributes.LABEL,
+                  url: f.attributes.URL,
+                  created: '',
+                  description: '',
+                },
+                editsCopy,
+                false,
+                portal,
+              );
+              if (output?.zoomToGraphics)
+                zoomToGraphics.push(...output.zoomToGraphics);
+              if (output?.editsCopy) editsCopy = output.editsCopy;
+            }
+
+            referenceLayers.push({
+              globalId: f.attributes.GLOBALID,
+              layerId: f.attributes.LAYERID,
+              label: f.attributes.LABEL,
+              layerType: f.attributes.LAYERTYPE,
+              objectId: f.attributes.OBJECTID,
+              onWebMap: f.attributes.ONWEBMAP,
+              onWebScene: f.attributes.ONWEBSCENE,
+              type: f.attributes.TYPE,
+              url: f.attributes.URL,
+              urlType: f.attributes.URLTYPE,
+            });
+          }
+          referenceLayersTable = {
+            id: layerDetails.id,
+            referenceLayers,
+          };
+
+          if (newPortalLayers.length > 0) {
+            setPortalLayers(newPortalLayers);
+          }
+          if (newUrlLayers.length > 0) setUrlLayers(newUrlLayers);
+        } else if (
+          layerDetails.type === 'Table' &&
+          layerDetails.name.endsWith('-calculate-settings')
+        ) {
+          if (layerFeatures.features.length > 0) {
+            calcSettings = {
+              ...layerFeatures.features[0].attributes,
+            };
+          }
+        } else if (
+          layerDetails.type === 'Table' &&
+          layerDetails.name.endsWith('-calculate-results')
+        ) {
+          if (layerFeatures.features.length > 0) {
+            calcResults = {
+              ...layerFeatures.features[0].attributes,
+            };
+          }
+        } else if (isPointsSampleLayer || isVspPointsSampleLayer) {
+          if (layerFeatures.features?.length > 0) {
+            updatePointIds(layerFeatures, layerDetails, layersToAdd, editsCopy);
+          }
+        } else if (isSampleLayer || isVspLayer) {
+          let newSymbolsAdded = false;
+          const newDefaultSymbols: DefaultSymbolsType = {
+            editCount: defaultSymbols.editCount + 1,
+            symbols: { ...defaultSymbols.symbols },
+          };
+
+          // add symbol styles if necessary
+          const uniqueValueInfos =
+            layerDetails?.drawingInfo?.renderer?.uniqueValueInfos;
+          if (uniqueValueInfos) {
+            uniqueValueInfos.forEach((value: any) => {
+              // exit if value exists already
+              if (
+                Object.prototype.hasOwnProperty.call(
+                  defaultSymbols.symbols,
+                  value.value,
+                )
+              ) {
+                return;
+              }
+
+              newSymbolsAdded = true;
+
+              newDefaultSymbols.symbols[value.value] = {
+                type: 'simple-fill',
+                color: [
+                  value.symbol.color[0],
+                  value.symbol.color[1],
+                  value.symbol.color[2],
+                  value.symbol.color[3] / 255,
+                ],
+                outline: {
+                  color: [
+                    value.symbol.outline.color[0],
+                    value.symbol.outline.color[1],
+                    value.symbol.outline.color[2],
+                    value.symbol.outline.color[3] / 255,
+                  ],
+                  width: value.symbol.outline.width,
+                },
+              };
+            });
+
+            if (newSymbolsAdded) setDefaultSymbols(newDefaultSymbols);
+          }
+
+          // get the graphics from the layer
+          const graphics: PlanGraphics = {};
+          layerFeatures.features.forEach((feature: any) => {
+            const graphic: any = Graphic.fromJSON(feature);
+            graphic.geometry.spatialReference = {
+              wkid: 3857,
+            };
+            graphic.popupTemplate = popupTemplate;
+
+            const newGraphic: any = {
+              geometry: graphic.geometry,
+              symbol: graphic.symbol,
+              popupTemplate: graphic.popupTemplate,
+            };
+
+            // Add the user defined type if it does not exist
+            if (!getAddedSampleTypesViaTable()) {
+              newGraphic.attributes = { ...graphic.attributes };
+              addUserDefinedType(graphic, newUserSampleTypes, newAttributes);
+            } else {
+              const typeUuid = graphic.attributes.TYPEUUID;
+              let customAttributes = {};
+              if (
+                Object.prototype.hasOwnProperty.call(newAttributes, typeUuid)
+              ) {
+                customAttributes = newAttributes[typeUuid].attributes;
+              } else if (
+                Object.prototype.hasOwnProperty.call(sampleAttributes, typeUuid)
+              ) {
+                customAttributes = sampleAttributes[typeUuid];
+              }
+              newGraphic.attributes = {
+                ...customAttributes,
+                ...graphic.attributes,
+              };
+            }
+
+            const typeUuid = feature.attributes.TYPEUUID;
+            newGraphic.symbol =
+              newDefaultSymbols.symbols[
+                Object.prototype.hasOwnProperty.call(
+                  newDefaultSymbols.symbols,
+                  typeUuid,
+                )
+                  ? typeUuid
+                  : 'Samples'
+              ];
+            if (
+              Object.prototype.hasOwnProperty.call(
+                newDefaultSymbols.symbols,
+                typeUuid,
+              )
+            ) {
+              graphic.symbol = newDefaultSymbols.symbols[typeUuid];
+            }
+
+            zoomToGraphics.push(graphic);
+
+            // add the graphic to the correct layer uuid
+            const decisionUuid = newGraphic.attributes.DECISIONUNITUUID;
+            if (Object.prototype.hasOwnProperty.call(graphics, decisionUuid)) {
+              graphics[decisionUuid].push(newGraphic);
+            } else {
+              graphics[decisionUuid] = [newGraphic];
+            }
+          });
+
+          // need to build the scenario and group layer here
+          const groupLayer = new GroupLayer({
+            title: scenarioName,
+          });
+
+          const defaultFields = layerProps.defaultFields;
+          layerDetails.fields.forEach((field: any, index: number) => {
+            if (['Shape__Area', 'Shape__Length'].includes(field.name)) return;
+
+            const wasAlreadyAdded =
+              newCustomAttributes.findIndex((f: any) => f.name === field.name) >
+              -1;
+            if (wasAlreadyAdded) return;
+
+            const isDefaultField =
+              defaultFields.findIndex((f: any) => f.name === field.name) > -1;
+            if (isDefaultField) return;
+
+            newCustomAttributes.push(
+              buildCustomAttributeFromField(field, index),
+            );
+          });
+
+          scenarioId = groupLayer.id;
+          const newScenario: ScenarioEditsType = {
+            type: 'scenario',
+            id: layerDetails.id,
+            pointsId: -1,
+            layerId: groupLayer.id,
+            portalId: result.id,
+            name: scenarioName,
+            label: scenarioName,
+            value: groupLayer.id,
+            layerType: isVspLayer ? 'VSP' : 'Samples',
+            addedFrom: 'tots',
+            hasContaminationRan: false,
+            status: 'published',
+            editType: 'add',
+            visible: true,
+            listMode: 'show',
+            scenarioName: scenarioName,
+            scenarioDescription: layerDetails.description,
+            layers: [],
+            table,
+            referenceLayersTable,
+            customAttributes: newCustomAttributes,
+            calculateSettings: {
+              current: calcSettings || settingDefaults,
+              published: calcSettings || undefined,
+            },
+            calculateResultsPublished: calcResults,
+          };
+
+          // make a copy of the edits context variable
+          editsCopy = {
+            count: editsCopy.count + 1,
+            edits: [...editsCopy.edits, newScenario],
+          };
+
+          // loop through the graphics uuids and add the necessary
+          // layers to the scenario along with the graphics
+          const keys = Object.keys(graphics);
+          for (let j = 0; j < keys.length; j++) {
+            const uuid = keys[j];
+            const graphicsList = graphics[uuid];
+            const firstAttributes = graphicsList[0].attributes;
+            const layerName = firstAttributes.DECISIONUNIT
+              ? firstAttributes.DECISIONUNIT
+              : scenarioName;
+
+            // build the graphics layer
+            const graphicsLayer = new GraphicsLayer({
+              id: firstAttributes.DECISIONUNITUUID,
+              graphics: graphicsList,
+              title: layerName,
+            });
+
+            // convert the polygon graphics into points
+            const pointGraphics: __esri.Graphic[] = [];
+            const hybridGraphics: __esri.Graphic[] = [];
+            graphicsList.forEach((graphicParams) => {
+              const graphic = new Graphic(graphicParams);
+              pointGraphics.push(convertToPoint(graphic));
+              hybridGraphics.push(
+                graphic.attributes.ShapeType === 'point'
+                  ? convertToPoint(graphic)
+                  : graphic.clone(),
+              );
+            });
+
+            const pointsLayer = new GraphicsLayer({
+              id: firstAttributes.DECISIONUNITUUID + '-points',
+              graphics: pointGraphics,
+              title: layerName,
+              visible: false,
+              listMode: 'hide',
+            });
+
+            const hybridLayer = new GraphicsLayer({
+              id: firstAttributes.DECISIONUNITUUID + '-hybrid',
+              graphics: hybridGraphics,
+              title: layerName,
+              visible: false,
+              listMode: 'hide',
+            });
+
+            groupLayer.addMany([graphicsLayer, pointsLayer, hybridLayer]);
+
+            // build the layer
+            const layerToAdd: LayerType = {
+              id: layerDetails.id,
+              pointsId: -1,
+              uuid: firstAttributes.DECISIONUNITUUID,
+              layerId: graphicsLayer.id,
+              portalId: result.id,
+              value: layerName,
+              name: layerName,
+              label: layerName,
+              layerType: isVspLayer ? 'VSP' : 'Samples',
+              editType: 'add',
+              visible: true,
+              listMode: 'show',
+              sort: firstAttributes.DECISIONUNITSORT,
+              geometryType: layerDetails.geometryType,
+              addedFrom: 'tots',
+              status: 'published',
+              sketchLayer: graphicsLayer,
+              pointsLayer,
+              hybridLayer,
+              parentLayer: groupLayer,
+            };
+            layersToAdd.push(layerToAdd);
+
+            // make a copy of the edits context variable
+            editsCopy = updateLayerEdits({
+              appType,
+              edits: editsCopy,
+              scenario: newScenario,
+              layer: layerToAdd,
+              type: 'arcgis',
+              changes: graphicsLayer.graphics,
+            });
+          }
+
+          mapLayersToAdd.push(groupLayer); // replace with group layer
+        } else if (isContamMapLayer) {
+          const layerType: LayerTypeName = 'Contamination Map';
+          const symbol = SimpleFillSymbol.fromJSON(
+            layerDetails.drawingInfo.renderer.symbol,
+          );
+
+          // get the graphics from the layer
+          const graphics: __esri.Graphic[] = [];
+          layerFeatures.features.forEach((feature: any) => {
+            const graphic: any = Graphic.fromJSON(feature);
+            graphic.geometry.spatialReference = {
+              wkid: 3857,
+            };
+            graphic.popupTemplate = getPopupTemplate(layerType, false);
+            graphic.symbol = symbol;
+            graphics.push(graphic);
+          });
+
+          const name = layerDetails.name.replace(
+            '-contamination-map',
+            ' Contamination Map',
+          );
+          const sketchLayer = new GraphicsLayer({
+            id: generateUUID(),
+            listMode: 'hide',
+            title: name,
+            visible: false,
+            graphics,
+          });
+          mapLayersToAdd.push(sketchLayer);
+
+          const layerContamMap: LayerEditsType = {
+            type: 'layer',
+            id: layerDetails.id,
+            layerId: sketchLayer.id,
+            portalId: result.id,
+            name,
+            label: name,
+            layerType: 'Contamination Map',
+            addedFrom: 'tots',
+            status: 'published',
+            editType: 'add',
+            visible: sketchLayer.visible,
+            listMode: sketchLayer.listMode,
+            pointsId: -1,
+            uuid: sketchLayer.id,
+            hasContaminationRan: true,
+            sort: 0,
+            adds: sketchLayer.graphics
+              .toArray()
+              .map((graphic) => convertToSimpleGraphic(graphic)),
+            updates: [],
+            deletes: [],
+            published: [],
+          };
+          // make a copy of the edits context variable
+          editsCopy = {
+            count: editsCopy.count + 1,
+            edits: [...editsCopy.edits, layerContamMap],
+          };
+
+          layersToAdd.push({
+            addedFrom: layerContamMap.addedFrom,
+            editType: layerContamMap.editType,
+            geometryType: 'esriGeometryPolygon',
+            hybridLayer: null,
+            id: layerContamMap.id,
+            label: layerContamMap.label,
+            layerId: layerContamMap.layerId,
+            layerType: layerContamMap.layerType,
+            listMode: layerContamMap.listMode,
+            name: layerContamMap.label,
+            parentLayer: null,
+            pointsId: layerContamMap.pointsId,
+            pointsLayer: null,
+            portalId: layerContamMap.portalId,
+            sketchLayer: sketchLayer,
+            sort: layerContamMap.sort,
+            status: layerContamMap.status,
+            uuid: layerContamMap.layerId,
+            value: layerContamMap.layerId,
+            visible: layerContamMap.visible,
+          });
+        } else {
+          // add non-sample layers as feature layers
+          fields = [];
+          layerDetails.fields.forEach(fieldsLoop);
+
+          const source: __esri.Graphic[] = [];
+          layerFeatures.features.forEach((feature: any) => {
+            const graphic: any = Graphic.fromJSON(feature);
+            if (graphic.geometry) {
+              graphic.geometry.spatialReference = {
+                wkid: 3857,
+              };
+            }
+            source.push(graphic);
+          });
+
+          // use jsonUtils to convert the REST API renderer to an ArcGIS JS renderer
+          const renderer: __esri.Renderer = rendererJsonUtils.fromJSON(
+            layerDetails.drawingInfo.renderer,
+          );
+
+          // create the popup template if popup information was provided
+          let popupTemplate;
+          if (layerDetails.popupInfo) {
+            popupTemplate = {
+              title: layerDetails.popupInfo.title,
+              content: layerDetails.popupInfo.description,
+            };
+          }
+          // if no popup template, then make the template all of the attributes
+          if (!layerDetails.popupInfo && source.length > 0) {
+            popupTemplate = getSimplePopupTemplate(source[0].attributes);
+          }
+
+          // add the feature layer
+          const featureLayerProps: __esri.FeatureLayerProperties = {
+            fields,
+            source,
+            objectIdField: layerFeatures.objectIdFieldName,
+            outFields: ['*'],
+            title: layerDetails.name,
+            renderer,
+            popupTemplate,
+          };
+          const featureLayer = new FeatureLayer(featureLayerProps);
+          mapLayersToAdd.push(featureLayer);
+
+          // add the layer to referenceLayers with the layer id
+          refLayersToAdd.push({
+            ...featureLayerProps,
+            layerId: featureLayer.id,
+            portalId: result.id,
+          });
+        }
+      }
+
+      const newScenario =
+        (editsCopy.edits.find(
+          (e) => e.type === 'scenario' && e.layerId === scenarioId,
+        ) as ScenarioEditsType | undefined) ?? null;
+
+      // get the age of the layer in seconds
+      const created: number = new Date(result.created).getTime();
+      const curTime: number = Date.now();
+      const duration = (curTime - created) / 1000;
+
+      // validate the area and attributes of features of the uploads. If there is an
+      // issue, display a popup asking the user if they would like the samples to be updated.
+      if (zoomToGraphics.length > 0) {
+        const output = await sampleValidation(
+          sampleTypes,
+          sceneViewForArea,
+          zoomToGraphics,
+          true,
+          false,
+        );
+
+        if (output?.areaOutOfTolerance || output?.attributeMismatch) {
+          setOptions({
+            title: 'Sample Issues',
+            ariaLabel: 'Sample Issues',
+            description: sampleIssuesPopupMessage(
+              output,
+              sampleTypes?.areaTolerance ?? 1,
+            ),
+            onContinue: () =>
+              finalizeLayerAdd({
+                mapLayersToAdd,
+                newUserSampleTypes,
+                newAttributes,
+                zoomToGraphics,
+                editsCopy,
+                layersToAdd,
+                refLayersToAdd,
+                newScenario,
+              }),
+            // onCancel: () => setStatus('canceled'),
+          });
+        } else {
+          finalizeLayerAdd({
+            mapLayersToAdd,
+            newUserSampleTypes,
+            newAttributes,
+            zoomToGraphics,
+            editsCopy,
+            layersToAdd,
+            refLayersToAdd,
+            newScenario,
+          });
+        }
+      } else if (zoomToGraphics.length === 0 && duration < 300) {
+        // display a message if the layer is empty and the layer is less
+        // than 5 minutes old
+        setOptions({
+          title: 'No Data',
+          ariaLabel: 'No Data',
+          description: `The "${result.title}" layer was recently added and currently does not have any data. This could be due to a delay in processing the new data. Please try again later.`,
+          // onCancel: () => setStatus('no-data'),
+        });
+      } else {
+        finalizeLayerAdd({
+          mapLayersToAdd,
+          newUserSampleTypes,
+          newAttributes,
+          zoomToGraphics,
+          editsCopy,
+          layersToAdd,
+          refLayersToAdd,
+          newScenario,
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      // setStatus('error');
+
+      window.logErrorToGa(err);
+    }
+  }
+
+  async function addTotsLayerForTods(result: any, portal: __esri.Portal) {
+    if (!map) return;
+
+    // setStatus('loading');
+
+    const tempPortal = portal as any;
+    const token = tempPortal.credential.token;
+    const mapLayersToAdd: __esri.Layer[] = [];
+
+    const layer = await Layer.fromPortalItem({
+      portalItem: new PortalItem({
+        id: result.id,
+      }),
+    });
+    await layer.load();
+    mapLayersToAdd.push(layer);
+
+    // function used for finalizing the adding of layers. This function is needed
+    // for displaying a popup mesage if there is an issue with any of the samples
+    function finalizeLayerAdd({
+      mapLayersToAdd,
+      editsCopy,
+      layersToAdd,
+      linkedLayerIds,
+    }: {
+      mapLayersToAdd: __esri.Layer[];
+      editsCopy: EditsType;
+      layersToAdd: LayerType[];
+      linkedLayerIds: string[];
+    }) {
+      if (!map) return;
+
+      // add all of the layers to the map
+      map.addMany(mapLayersToAdd);
+      applyRendererForTotsLayer(layer, technologyTypes);
+
+      // zoom to the layer if it has an extent
+      if (layer.fullExtent) {
+        if (mapView && displayDimensions === '2d')
+          mapView.goTo(layer.fullExtent);
+        if (sceneView && displayDimensions === '3d')
+          sceneView.goTo(layer.fullExtent);
+      }
+
+      // set the state for session storage
+      setEdits(editsCopy);
+      window.totsLayers = [...layers, ...layersToAdd];
+      setLayers((layers) => [...layers, ...layersToAdd]);
+
+      // set the contamination map if one hasn't already been selected
+      const contamMap = layersToAdd.find(
+        (l) => l.layerType === 'Contamination Map',
+      );
+      if (contamMap && !contaminationMap) setContaminationMap(contamMap);
+
+      // add the portal id to portal layers. This needed so the card on
+      // the search panel shows up as the layer having been added.
+      setPortalLayers((portalLayers) => [
+        ...portalLayers,
+        {
+          categories: result.categories,
+          id: result.id,
+          label: result.title,
+          layerType: 'Feature Service',
+          type: 'tots',
+          url: result.url,
+          linkedIds: linkedLayerIds,
+        },
+      ]);
+
+      // reset the status
+      // setStatus('');
+    }
+
+    try {
+      // get the list of feature layers in this feature server
+      const featureLayersRes: any = await getFeatureLayers(result.url, token);
+
+      // fire off requests to get the details and features for each layer
+      const layerPromises: Promise<any>[] = [];
+
+      const resLayers: any[] = [];
+      featureLayersRes.layers.forEach((layer: any) => {
+        resLayers.push(layer);
+      });
+
+      const resRefLayersTypes: any[] = [];
+      featureLayersRes.tables.forEach((table: any) => {
+        if (table.name.endsWith('-reference-layers')) {
+          resRefLayersTypes.push(table);
+        }
+      });
+
+      // fire off the calls with the points layers last
+      const resCombined = [...resRefLayersTypes, ...resLayers];
+      resCombined.forEach((layer: any) => {
+        // get the layer details promise
+        const layerCall = getFeatureLayer(result.url, token, layer.id);
+        layerPromises.push(layerCall);
+      });
+
+      // wait for layer detail promises to resolve
+      const layerDetailResponses = await Promise.all(layerPromises);
+
+      // fire off requests for features of each layer using the objectIdField
+      const featurePromises: any[] = [];
+      layerDetailResponses.forEach((layerDetails: any) => {
+        // get the layer features promise
+        const featuresCall = getAllFeatures(
+          portal,
+          result.url + '/' + layerDetails.id,
+          layerDetails.objectIdField,
+        );
+        featurePromises.push(featuresCall);
+      });
+
+      // wait for feature promises to resolve
+      const featureResponses = await Promise.all(featurePromises);
+
+      // define items used for updating states
+      let editsCopy: EditsType = deepCopyObject(edits);
+      const layersToAdd: LayerType[] = [];
+
+      let isContamMapLayer = false;
+      const typesLoop = (type: __esri.FeatureType) => {
+        if (type.id === 'epa-tots-contamination-map-layer')
+          isContamMapLayer = true;
+      };
+
+      // create the layers to be added to the map
+      const linkedLayerIds: string[] = [];
+      for (let i = 0; i < layerDetailResponses.length; i++) {
+        const layerDetails = layerDetailResponses[i];
+        const layerFeatures = featureResponses[i];
+
+        // figure out if this layer is a sample layer or not
+        isContamMapLayer = false;
+        if (layerDetails?.types) {
+          layerDetails.types.forEach(typesLoop);
+        }
+
+        // add staging area layers as graphics layers
+        if (
+          layerDetails.type === 'Table' &&
+          layerDetails.name.endsWith('-reference-layers')
+        ) {
+          const newUrlLayers: UrlLayerType[] = [];
+          const newPortalLayers: PortalLayerType[] = [];
+          for (const f of layerFeatures.features) {
+            if (f.attributes.TYPE === 'arcgis') {
+              newPortalLayers.push({
+                categories: [],
+                id: f.attributes.LAYERID,
+                label: f.attributes.LABEL,
+                layerType: f.attributes.LAYERTYPE,
+                type: f.attributes.TYPE,
+                url: f.attributes.URL,
+              });
+            }
+            if (f.attributes.TYPE === 'url') {
+              newUrlLayers.push({
+                layerId: f.attributes.LAYERID,
+                label: f.attributes.LABEL,
+                layerType: f.attributes.LAYERTYPE,
+                type: f.attributes.URLTYPE,
+                url: f.attributes.URL,
+              });
+            }
+            if (f.attributes.TYPE === 'tots' && f.attributes.TOTSLAYERID) {
+              const id = f.attributes.LAYERID;
+              if (id && !linkedLayerIds.includes(id)) linkedLayerIds.push(id);
+              const output = await addAoiCharacterizationLayer(
+                {
+                  categories: ['contains-epa-tots-aoi-characterization'],
+                  id,
+                  title: f.attributes.LABEL,
+                  url: f.attributes.URL,
+                  created: '',
+                  description: '',
+                },
+                editsCopy,
+                false,
+                portal,
+              );
+              if (output?.editsCopy) editsCopy = output.editsCopy;
+            }
+          }
+
+          if (newPortalLayers.length > 0) setPortalLayers(newPortalLayers);
+          if (newUrlLayers.length > 0) setUrlLayers(newUrlLayers);
+        } else if (isContamMapLayer) {
+          const layerType: LayerTypeName = 'Contamination Map';
+          const symbol = SimpleFillSymbol.fromJSON(
+            layerDetails.drawingInfo.renderer.symbol,
+          );
+
+          // get the graphics from the layer
+          const graphics: __esri.Graphic[] = [];
+          layerFeatures.features.forEach((feature: any) => {
+            const graphic: any = Graphic.fromJSON(feature);
+            graphic.geometry.spatialReference = {
+              wkid: 3857,
+            };
+            graphic.popupTemplate = getPopupTemplate(layerType, false);
+            graphic.symbol = symbol;
+            graphics.push(graphic);
+          });
+
+          const name = layerDetails.name.replace(
+            '-contamination-map',
+            ' Contamination Map',
+          );
+          const sketchLayer = new GraphicsLayer({
+            id: generateUUID(),
+            listMode: 'hide',
+            title: name,
+            visible: false,
+            graphics,
+          });
+          mapLayersToAdd.push(sketchLayer);
+
+          const layerContamMap: LayerEditsType = {
+            type: 'layer',
+            id: layerDetails.id,
+            layerId: sketchLayer.id,
+            portalId: result.id,
+            name,
+            label: name,
+            layerType: 'Contamination Map',
+            addedFrom: 'tots',
+            status: 'published',
+            editType: 'add',
+            visible: sketchLayer.visible,
+            listMode: sketchLayer.listMode,
+            pointsId: -1,
+            uuid: sketchLayer.id,
+            hasContaminationRan: true,
+            sort: 0,
+            adds: sketchLayer.graphics
+              .toArray()
+              .map((graphic) => convertToSimpleGraphic(graphic)),
+            updates: [],
+            deletes: [],
+            published: [],
+          };
+          // make a copy of the edits context variable
+          editsCopy = {
+            count: editsCopy.count + 1,
+            edits: [...editsCopy.edits, layerContamMap],
+          };
+
+          layersToAdd.push({
+            addedFrom: layerContamMap.addedFrom,
+            editType: layerContamMap.editType,
+            geometryType: 'esriGeometryPolygon',
+            hybridLayer: null,
+            id: layerContamMap.id,
+            label: layerContamMap.label,
+            layerId: layerContamMap.layerId,
+            layerType: layerContamMap.layerType,
+            listMode: layerContamMap.listMode,
+            name: layerContamMap.label,
+            parentLayer: null,
+            pointsId: layerContamMap.pointsId,
+            pointsLayer: null,
+            portalId: layerContamMap.portalId,
+            sketchLayer: sketchLayer,
+            sort: layerContamMap.sort,
+            status: layerContamMap.status,
+            uuid: layerContamMap.layerId,
+            value: layerContamMap.layerId,
+            visible: layerContamMap.visible,
+          });
+        }
+      }
+
+      finalizeLayerAdd({
+        mapLayersToAdd,
+        editsCopy,
+        layersToAdd,
+        linkedLayerIds,
+      });
+    } catch (err) {
+      console.error(err);
+      // setStatus('error');
+    }
+  }
+
+  /**
+   * Adds the AOI characterization layer to the map.
+   */
+  async function addAoiCharacterizationLayer(
+    result: {
+      categories: string[];
+      created: string;
+      description: string;
+      id: string;
+      title: string;
+      url: string;
+    },
+    editsCopyParam: EditsType | null = null,
+    zoomToLayer: boolean = true,
+    portal: __esri.Portal,
+  ) {
+    if (!map) return;
+
+    // setStatus('loading');
+
+    const tempPortal = portal as any;
+    const token = tempPortal.credential.token;
+
+    // function used for finalizing the adding of layers. This function is needed
+    // for displaying a popup mesage if there is an issue with any of the samples
+    function finalizeLayerAdd({
+      mapLayersToAdd,
+      zoomToGraphics,
+      editsCopy,
+      layersToAdd,
+      refLayersToAdd,
+    }: {
+      mapLayersToAdd: __esri.Layer[];
+      zoomToGraphics: __esri.Graphic[];
+      editsCopy: EditsType;
+      layersToAdd: LayerType[];
+      refLayersToAdd: any[];
+    }) {
+      if (!map) return;
+
+      // add all of the layers to the map
+      map.addMany(mapLayersToAdd);
+
+      // zoom to the graphics layer
+      if (zoomToGraphics.length > 0 && zoomToLayer) {
+        if (mapView && displayDimensions === '2d') mapView.goTo(zoomToGraphics);
+        if (sceneView && displayDimensions === '3d')
+          sceneView.goTo(zoomToGraphics);
+      }
+
+      // set the state for session storage
+      if (!editsCopyParam) setEdits(editsCopy);
+      window.totsLayers = [...layers, ...layersToAdd];
+      setLayers((layers) => [...layers, ...layersToAdd]);
+      setReferenceLayers((layers: any) => [...layers, ...refLayersToAdd]);
+
+      // add the portal id to portal layers. This needed so the card on
+      // the search panel shows up as the layer having been added.
+      setPortalLayers((portalLayers) => [
+        ...portalLayers,
+        {
+          categories: result.categories,
+          id: result.id,
+          label: result.title,
+          layerType: 'Feature Service',
+          type: 'tots',
+          url: result.url,
+        },
+      ]);
+
+      // reset the status
+      // setStatus('');
+    }
+
+    try {
+      // get the list of feature layers in this feature server
+      const featureLayersRes: any = await getFeatureLayers(result.url, token);
+
+      // fire off requests to get the details and features for each layer
+      const layerPromises: Promise<any>[] = [];
+
+      const resLayers: any[] = [];
+      featureLayersRes.layers.forEach((layer: any) => {
+        resLayers.push(layer);
+      });
+
+      const resAoiInfo: any[] = [];
+      featureLayersRes.tables.forEach((table: any) => {
+        if (table.name.endsWith('-aoi-info')) {
+          resAoiInfo.push(table);
+        }
+      });
+
+      const resCombined = [...resAoiInfo, ...resLayers];
+
+      resCombined.forEach((layer: any) => {
+        // get the layer details promise
+        const layerCall = getFeatureLayer(result.url, token, layer.id);
+        layerPromises.push(layerCall);
+      });
+
+      // wait for layer detail promises to resolve
+      const layerDetailResponses = await Promise.all(layerPromises);
+
+      // fire off requests for features of each layer using the objectIdField
+      const featurePromises: any[] = [];
+      layerDetailResponses.forEach((layerDetails: any) => {
+        // get the layer features promise
+        const featuresCall = getAllFeatures(
+          portal,
+          result.url + '/' + layerDetails.id,
+          layerDetails.objectIdField,
+        );
+        featurePromises.push(featuresCall);
+      });
+
+      // wait for feature promises to resolve
+      const featureResponses = await Promise.all(featurePromises);
+
+      // define items used for updating states
+      let editsCopy: EditsType = editsCopyParam ?? deepCopyObject(edits);
+      let aoiInfo: any | null = null;
+      let numAois = 0;
+      const mapLayersToAdd: __esri.Layer[] = [];
+      const layersToAdd: LayerType[] = [];
+      const refLayersToAdd: any[] = [];
+      const zoomToGraphics: __esri.Graphic[] = [];
+      const aoiCharLayers: LayerEditsType[] = [];
+
+      let isImageryLayer = false;
+      let isBuildingLayer = false;
+      let isAoiLayer = false;
+      const typesLoop = (type: __esri.FeatureType) => {
+        if (type.id === 'epa-tods-imagery-analysis-layer')
+          isImageryLayer = true;
+        if (type.id === 'epa-tods-building-layer') isBuildingLayer = true;
+        if (type.id === 'epa-tods-aoi-layer') isAoiLayer = true;
+      };
+
+      let fields: __esri.Field[] = [];
+      const fieldsLoop = (field: __esri.Field) => {
+        fields.push(Field.fromJSON(field));
+      };
+
+      const groupLayer = new GroupLayer({
+        id: generateUUID(),
+        title: result.title,
+      });
+
+      // create the layers to be added to the map
+      const planGraphics: PlanGraphics = {};
+      for (let i = 0; i < layerDetailResponses.length; i++) {
+        const layerDetails = layerDetailResponses[i];
+        const layerFeatures = featureResponses[i];
+
+        // figure out if this layer is a sample layer or not
+        isImageryLayer = false;
+        isBuildingLayer = false;
+        isAoiLayer = false;
+        if (layerDetails?.types) {
+          layerDetails.types.forEach(typesLoop);
+        }
+
+        // add sample layers as graphics layers
+        if (
+          layerDetails.type === 'Table' &&
+          layerDetails.name.endsWith('-aoi-info')
+        ) {
+          if (layerFeatures.features.length > 0) {
+            aoiInfo = {
+              ...layerFeatures.features[0].attributes,
+            };
+            if (aoiInfo.AOI_LAYER_ID) groupLayer.id = aoiInfo.AOI_LAYER_ID;
+          }
+        } else if (isAoiLayer || isBuildingLayer || isImageryLayer) {
+          let layerType: LayerTypeName = 'Decon Mask';
+          let symbol: __esri.SimpleFillSymbol = new SimpleFillSymbol({
+            color: [150, 150, 150, 0.2],
+            outline: {
+              color: [50, 50, 50],
+              width: 2,
+            },
+          });
+          let title = '';
+          let value = '';
+          if (isAoiLayer) {
+            layerType = 'Decon Mask';
+            title = 'Area of Interest';
+            value = generateUUID();
+          }
+          if (isBuildingLayer) {
+            layerType = 'AOI Assessed';
+            title = 'AOI Assessment';
+            value = 'aoiAssessed';
+          }
+          if (isImageryLayer) {
+            layerType = 'Image Analysis';
+            title = 'Imagery Analysis Results';
+            value = 'aoiAssessed';
+          }
+
+          // get the graphics from the layer
+          const graphics: __esri.Graphic[] = [];
+          layerFeatures.features.forEach((feature: any) => {
+            const graphic: any = Graphic.fromJSON(feature);
+            graphic.geometry.spatialReference = {
+              wkid: 3857,
+            };
+            graphic.popupTemplate = getPopupTemplate(layerType, false);
+
+            // set the symbol styles based on sample/layer type
+            if (layerType === 'AOI Assessed') {
+              const occCls = graphic.attributes.OCC_CLS;
+              symbol = new SimpleFillSymbol({
+                color: Object.prototype.hasOwnProperty.call(
+                  buildingColors,
+                  occCls,
+                )
+                  ? buildingColors[occCls]
+                  : buildingColors['Other'],
+                outline: {
+                  color: [153, 153, 153, 64],
+                  width: 0.84,
+                },
+              });
+            }
+            if (layerType === 'Image Analysis') {
+              const category = graphic.attributes.category;
+              symbol = Object.prototype.hasOwnProperty.call(
+                imageAnalysisSymbols,
+                category,
+              )
+                ? (imageAnalysisSymbols as any)[category]
+                : backupImagerySymbol;
+            }
+
+            graphic.symbol = symbol;
+            zoomToGraphics.push(graphic);
+            graphics.push(graphic);
+          });
+
+          if (isBuildingLayer) {
+            planGraphics[groupLayer.id] = {
+              graphics,
+              imageGraphics: [],
+              aoiArea: 0,
+              buildingFootprint: 0,
+              summary: {
+                areaByMedia: [],
+                totalAoiSqM: 0,
+                totalBuildingExtSqM: 0,
+                totalBuildingIntSqM: 0,
+                totalBuildingVolumeCubM: 0,
+                totalBuildingVolumeContentsCubM: 0,
+                totalBuildingFootprintSqM: 0,
+                totalBuildingFloorsSqM: 0,
+                totalBuildingSqM: 0,
+                totalBuildingExtWallsSqM: 0,
+                totalBuildingIntWallsSqM: 0,
+                totalBuildingRoofSqM: 0,
+                totalBuildingCeilingsSqM: 0,
+              },
+              aoiPercentages: {
+                numAois: 0,
+                asphalt: 0,
+                asphaltSqM: 0,
+                concrete: 0,
+                concreteSqM: 0,
+                soil: 0,
+                soilSqM: 0,
+              },
+            };
+          }
+
+          const layerUuid = generateUUID();
+          const graphicsLayer = new GraphicsLayer({
+            id: layerUuid,
+            title,
+            listMode: 'show',
+            visible: !isAoiLayer,
+            graphics,
+          });
+
+          const tempLayer: LayerType = {
+            id: layerDetails.id,
+            pointsId: -1,
+            uuid: layerUuid,
+            layerId: layerUuid,
+            portalId: result.id,
+            value,
+            name: title,
+            label: title,
+            layerType,
+            editType: 'add',
+            visible: true,
+            listMode: 'show',
+            sort: 0,
+            geometryType: 'esriGeometryPolygon',
+            addedFrom: 'tots',
+            status: 'published',
+            sketchLayer: graphicsLayer,
+            pointsLayer: null,
+            hybridLayer: null,
+            parentLayer: groupLayer,
+          } as LayerType;
+          layersToAdd.push(tempLayer);
+
+          const editsLayer = createLayerEditTemplate(tempLayer, 'add');
+          editsLayer.adds = graphics.map((graphic) =>
+            convertToSimpleGraphic(graphic),
+          );
+          aoiCharLayers.push(editsLayer);
+          groupLayer.add(graphicsLayer);
+          if (isAoiLayer) numAois = graphics.length;
+        } else {
+          // add non-sample layers as feature layers
+          fields = [];
+          layerDetails.fields.forEach(fieldsLoop);
+
+          const source: __esri.Graphic[] = [];
+          layerFeatures.features.forEach((feature: any) => {
+            const graphic: any = Graphic.fromJSON(feature);
+            if (graphic.geometry) {
+              graphic.geometry.spatialReference = {
+                wkid: 3857,
+              };
+            }
+            source.push(graphic);
+          });
+
+          // use jsonUtils to convert the REST API renderer to an ArcGIS JS renderer
+          const renderer: __esri.Renderer = rendererJsonUtils.fromJSON(
+            layerDetails.drawingInfo.renderer,
+          );
+
+          // create the popup template if popup information was provided
+          let popupTemplate;
+          if (layerDetails.popupInfo) {
+            popupTemplate = {
+              title: layerDetails.popupInfo.title,
+              content: layerDetails.popupInfo.description,
+            };
+          }
+          // if no popup template, then make the template all of the attributes
+          if (!layerDetails.popupInfo && source.length > 0) {
+            popupTemplate = getSimplePopupTemplate(source[0].attributes);
+          }
+
+          // add the feature layer
+          const featureLayerProps: __esri.FeatureLayerProperties = {
+            fields,
+            source,
+            objectIdField: layerFeatures.objectIdFieldName,
+            outFields: ['*'],
+            title: layerDetails.name,
+            renderer,
+            popupTemplate,
+          };
+          const featureLayer = new FeatureLayer(featureLayerProps);
+          mapLayersToAdd.push(featureLayer);
+
+          // add the layer to referenceLayers with the layer id
+          refLayersToAdd.push({
+            ...featureLayerProps,
+            layerId: featureLayer.id,
+            portalId: result.id,
+          });
+        }
+      }
+
+      buildingCalculations(planGraphics);
+
+      const aoiPercentages = {
+        asphalt: aoiInfo?.GROUND_PCT_ASPHALT ?? 0,
+        asphaltSqM: aoiInfo?.GROUND_AREA_ASPHALT ?? 0,
+        concrete: aoiInfo?.GROUND_PCT_CONCRETE ?? 0,
+        concreteSqM: aoiInfo?.GROUND_AREA_CONCRETE ?? 0,
+        numAois,
+        soil: aoiInfo?.GROUND_PCT_SOIL ?? 0,
+        soilSqM: aoiInfo?.GROUND_AREA_SOIL ?? 0,
+      };
+      planGraphics[groupLayer.id].aoiPercentages = aoiPercentages;
+      planGraphics[groupLayer.id].aoiArea = aoiInfo?.AOI_AREA ?? 0;
+      planGraphics[groupLayer.id].summary = {
+        areaByMedia: planGraphics[groupLayer.id].summary.areaByMedia,
+        totalAoiSqM: aoiInfo?.AOI_AREA ?? 0,
+        totalBuildingExtSqM: aoiInfo?.BUILDING_AREA_EXTERIOR ?? 0,
+        totalBuildingIntSqM: aoiInfo?.BUILDING_AREA_INTERIOR ?? 0,
+        totalBuildingVolumeCubM: aoiInfo?.BUILDING_VOLUME ?? 0,
+        totalBuildingVolumeContentsCubM: aoiInfo?.BUILDING_VOLUME_CONTENTS ?? 0,
+        totalBuildingExtWallsSqM: aoiInfo?.BUILDING_AREA_EXTERIOR_WALLS ?? 0,
+        totalBuildingFloorsSqM: aoiInfo?.BUILDING_AREA_FLOORS ?? 0,
+        totalBuildingFootprintSqM: aoiInfo?.BUILDING_AREA_FOOTPRINT ?? 0,
+        totalBuildingIntWallsSqM: aoiInfo?.BUILDING_AREA_INTERIOR_WALLS ?? 0,
+        totalBuildingRoofSqM: aoiInfo?.BUILDING_AREA_ROOFS ?? 0,
+        totalBuildingCeilingsSqM: aoiInfo?.BUILDING_AREA_CEILINGS ?? 0,
+        totalBuildingSqM: aoiInfo?.BUILDING_AREA_TOTAL ?? 0,
+      };
+
+      const newDeconTechSelections = processScenario(
+        groupLayer.id,
+        {
+          status: 'success',
+          planGraphics,
+        },
+        {},
+        {},
+        defaultDeconSelections.map((tech) => {
+          if (!outsideMedia.includes(tech.media)) return tech;
+
+          const pcts: any = aoiPercentages;
+          const prop = (mediaToBeepEnum as any)[tech.media];
+          return {
+            ...tech,
+            pctAoi: pcts[prop],
+            surfaceArea: pcts[`${prop}SqM`],
+            volume: pcts[`${prop}SqM`],
+          };
+        }),
+      );
+
+      mapLayersToAdd.push(groupLayer);
+      const layerAoiAnalysis: LayerAoiAnalysisEditsType = {
+        type: 'layer-aoi-analysis',
+        id: 0,
+        version: aoiInfo?.AOI_VERSION ?? 1,
+        layerId: groupLayer.id,
+        portalId: result.id,
+        name: result.title,
+        description: result.description,
+        label: result.title,
+        value: groupLayer.id,
+        layerType: 'AOI Analysis',
+        addedFrom: 'tots',
+        status: 'published',
+        editType: 'add',
+        visible: true,
+        listMode: 'show',
+        layers: aoiCharLayers,
+        importedAoiLayer: null,
+        aoiLayerMode: 'draw',
+        aoiPercentages,
+        aoiSummary: planGraphics[groupLayer.id].summary,
+        deconTechSelections: newDeconTechSelections.map((tech) => ({
+          ...tech,
+          id: generateUUID(),
+        })),
+        gsgFile: null,
+      };
+      // make a copy of the edits context variable
+      editsCopy = {
+        count: editsCopy.count + 1,
+        edits: [...editsCopy.edits, layerAoiAnalysis],
+      };
+
+      layersToAdd.push({
+        addedFrom: 'tots',
+        editType: 'add',
+        geometryType: 'esriGeometryPolygon',
+        hybridLayer: null,
+        id: 0,
+        label: layerAoiAnalysis.label,
+        layerId: layerAoiAnalysis.layerId,
+        layerType: 'AOI Analysis',
+        listMode: 'show',
+        name: layerAoiAnalysis.label,
+        parentLayer: null,
+        pointsId: -1,
+        pointsLayer: null,
+        portalId: layerAoiAnalysis.portalId,
+        sketchLayer: groupLayer,
+        sort: 0,
+        status: 'published',
+        uuid: layerAoiAnalysis.layerId,
+        value: layerAoiAnalysis.layerId,
+        visible: true,
+      });
+
+      const layerIdsAlreadyAdded = edits.edits
+        .filter((e) => e.type === 'layer-aoi-analysis')
+        .map((e) => e.layerId);
+      if (layerIdsAlreadyAdded.includes(groupLayer.id)) {
+        // already added bail early
+        return;
+      }
+
+      // get the age of the layer in seconds
+      const created: number = new Date(result.created).getTime();
+      const curTime: number = Date.now();
+      const duration = (curTime - created) / 1000;
+
+      if (zoomToGraphics.length > 0) {
+        finalizeLayerAdd({
+          mapLayersToAdd,
+          zoomToGraphics,
+          editsCopy,
+          layersToAdd,
+          refLayersToAdd,
+        });
+      } else if (zoomToGraphics.length === 0 && duration < 300) {
+        // display a message if the layer is empty and the layer is less
+        // than 5 minutes old
+        setOptions({
+          title: 'No Data',
+          ariaLabel: 'No Data',
+          description: `The "${result.title}" layer was recently added and currently does not have any data. This could be due to a delay in processing the new data. Please try again later.`,
+          // onCancel: () => setStatus('no-data'),
+        });
+      } else {
+        finalizeLayerAdd({
+          mapLayersToAdd,
+          zoomToGraphics,
+          editsCopy,
+          layersToAdd,
+          refLayersToAdd,
+        });
+      }
+
+      return {
+        editsCopy,
+        zoomToGraphics,
+      };
+    } catch (err) {
+      console.error(err);
+      // setStatus('error');
+      window.logErrorToGa(err);
+    }
+  }
+
+  /**
+   * Adds layers, published through TODS, such that the sample layer is
+   * editable in TODS. Any non-sample layers will just be added
+   * as reference layers, though this could change in the future.
+   */
+  async function addTodsLayer(result: any, portal: __esri.Portal) {
+    if (!map) return;
+
+    // setStatus('loading');
+
+    const tempPortal = portal as any;
+    const token = tempPortal.credential.token;
+
+    // function used for finalizing the adding of layers. This function is needed
+    // for displaying a popup mesage if there is an issue with any of the samples
+    function finalizeLayerAdd({
+      mapLayersToAdd,
+      zoomToGraphics,
+      editsCopy,
+      layersToAdd,
+      refLayersToAdd,
+      newScenario,
+    }: {
+      mapLayersToAdd: __esri.Layer[];
+      zoomToGraphics: __esri.Graphic[];
+      editsCopy: EditsType;
+      layersToAdd: LayerType[];
+      refLayersToAdd: any[];
+      newScenario: ScenarioDeconEditsType;
+    }) {
+      if (!map) return;
+
+      // add all of the layers to the map
+      map.addMany(mapLayersToAdd);
+
+      // zoom to the graphics layer
+      if (zoomToGraphics.length > 0) {
+        if (mapView && displayDimensions === '2d') mapView.goTo(zoomToGraphics);
+        if (sceneView && displayDimensions === '3d')
+          sceneView.goTo(zoomToGraphics);
+      }
+
+      // set the state for session storage
+      setEdits(editsCopy);
+      window.totsLayers = [...layers, ...layersToAdd];
+      setLayers((layers) => [...layers, ...layersToAdd]);
+      setReferenceLayers((layers: any) => [...layers, ...refLayersToAdd]);
+
+      if (appType === 'decon') {
+        setSelectedScenario((scenario) => {
+          if (scenario) return scenario;
+          else return newScenario;
+        });
+      }
+
+      // set the contamination map if one hasn't already been selected
+      const contamMap = layersToAdd.find(
+        (l) => l.layerType === 'Contamination Map',
+      );
+      if (contamMap && !contaminationMap) setContaminationMap(contamMap);
+
+      // add the portal id to portal layers. This needed so the card on
+      // the search panel shows up as the layer having been added.
+      setPortalLayers((portalLayers) => [
+        ...portalLayers,
+        {
+          categories: result.categories,
+          id: result.id,
+          label: result.title,
+          layerType: 'Feature Service',
+          type: 'tots',
+          url: result.url,
+        },
+      ]);
+
+      // reset the status
+      // setStatus('');
+    }
+
+    try {
+      // get the list of feature layers in this feature server
+      const featureLayersRes: any = await getFeatureLayers(result.url, token);
+
+      // fire off requests to get the details and features for each layer
+      const layerPromises: Promise<any>[] = [];
+
+      // ensure -points layer calls are done last
+      const resLayers: any[] = [];
+      featureLayersRes.layers.forEach((layer: any) => {
+        resLayers.push(layer);
+      });
+
+      const resOperationSettings: any[] = [];
+      const resOperationDetails: any[] = [];
+      const resCalculationResults: any[] = [];
+      // const resDeconTypes: any[] = [];
+      const resRefLayersTypes: any[] = [];
+      featureLayersRes.tables.forEach((table: any) => {
+        if (table.name.endsWith('-operation-settings')) {
+          resOperationSettings.push(table);
+        }
+        if (table.name.endsWith('-operation-details')) {
+          resOperationDetails.push(table);
+        }
+        if (table.name.endsWith('-reference-layers')) {
+          resRefLayersTypes.push(table);
+        }
+        if (table.name.endsWith('-calculation-results')) {
+          resCalculationResults.push(table);
+        }
+      });
+
+      // fire off the calls with the points layers last
+      const resCombined = [
+        ...resRefLayersTypes,
+        ...resOperationSettings,
+        ...resOperationDetails,
+        ...resCalculationResults,
+        // ...resDeconTypes,
+        ...resLayers,
+      ];
+      resCombined.forEach((layer: any) => {
+        // get the layer details promise
+        const layerCall = getFeatureLayer(result.url, token, layer.id);
+        layerPromises.push(layerCall);
+      });
+
+      // wait for layer detail promises to resolve
+      const layerDetailResponses = await Promise.all(layerPromises);
+
+      // fire off requests for features of each layer using the objectIdField
+      const featurePromises: any[] = [];
+      layerDetailResponses.forEach((layerDetails: any) => {
+        // get the layer features promise
+        const featuresCall = getAllFeatures(
+          portal,
+          result.url + '/' + layerDetails.id,
+          layerDetails.objectIdField,
+        );
+        featurePromises.push(featuresCall);
+      });
+
+      // wait for feature promises to resolve
+      const featureResponses = await Promise.all(featurePromises);
+
+      // define items used for updating states
+      let editsCopy: EditsType = deepCopyObject(edits);
+      let operationSettings: any[] | null = null;
+      let operationDetails: any[] | null = null;
+      let calculationResults: any[] | null = null;
+      const mapLayersToAdd: __esri.Layer[] = [];
+      const layersToAdd: LayerType[] = [];
+      const refLayersToAdd: any[] = [];
+      const zoomToGraphics: __esri.Graphic[] = [];
+      const linkedLayerIds: string[] = [];
+      const deconTechRemoved: string[] = [];
+      let referenceLayersTable: ReferenceLayersTableType = {
+        id: -1,
+        referenceLayers: [],
+      };
+
+      let isContamMapLayer = false;
+      const typesLoop = (type: __esri.FeatureType) => {
+        if (type.id === 'epa-tots-contamination-map-layer')
+          isContamMapLayer = true;
+      };
+
+      let fields: __esri.Field[] = [];
+      const fieldsLoop = (field: __esri.Field) => {
+        fields.push(Field.fromJSON(field));
+      };
+
+      // create the layers to be added to the map
+      for (let i = 0; i < layerDetailResponses.length; i++) {
+        const layerDetails = layerDetailResponses[i];
+        const layerFeatures = featureResponses[i];
+
+        // figure out if this layer is a sample layer or not
+        isContamMapLayer = false;
+        if (layerDetails?.types) {
+          layerDetails.types.forEach(typesLoop);
+        }
+
+        // add sample layers as graphics layers
+        if (
+          layerDetails.type === 'Table' &&
+          layerDetails.name.endsWith('-reference-layers')
+        ) {
+          const newUrlLayers: UrlLayerType[] = [];
+          const newPortalLayers: PortalLayerType[] = [];
+          const referenceLayers: ReferenceLayerTableType[] = [];
+          for (const f of layerFeatures.features) {
+            if (f.attributes.TYPE === 'arcgis') {
+              newPortalLayers.push({
+                categories: [],
+                id: f.attributes.LAYERID,
+                label: f.attributes.LABEL,
+                layerType: f.attributes.LAYERTYPE,
+                type: f.attributes.TYPE,
+                url: f.attributes.URL,
+              });
+            }
+            if (f.attributes.TYPE === 'url') {
+              newUrlLayers.push({
+                layerId: f.attributes.LAYERID,
+                label: f.attributes.LABEL,
+                layerType: f.attributes.LAYERTYPE,
+                type: f.attributes.URLTYPE,
+                url: f.attributes.URL,
+              });
+            }
+            if (f.attributes.TYPE === 'tots' && f.attributes.TOTSLAYERID) {
+              const output = await addAoiCharacterizationLayer(
+                {
+                  categories: ['contains-epa-tots-aoi-characterization'],
+                  id: f.attributes.LAYERID,
+                  title: f.attributes.LABEL,
+                  url: f.attributes.URL,
+                  created: '',
+                  description: '',
+                },
+                editsCopy,
+                false,
+                portal,
+              );
+              if (output?.zoomToGraphics)
+                zoomToGraphics.push(...output.zoomToGraphics);
+              if (output?.editsCopy) editsCopy = output.editsCopy;
+            }
+
+            referenceLayers.push({
+              globalId: f.attributes.GLOBALID,
+              layerId: f.attributes.LAYERID,
+              totsLayerId: f.attributes.TOTSLAYERID,
+              label: f.attributes.LABEL,
+              layerType: f.attributes.LAYERTYPE,
+              objectId: f.attributes.OBJECTID,
+              onWebMap: f.attributes.ONWEBMAP,
+              onWebScene: f.attributes.ONWEBSCENE,
+              type: f.attributes.TYPE,
+              url: f.attributes.URL,
+              urlType: f.attributes.URLTYPE,
+            });
+          }
+          referenceLayersTable = {
+            id: layerDetails.id,
+            referenceLayers,
+          };
+
+          if (newPortalLayers.length > 0) setPortalLayers(newPortalLayers);
+          if (newUrlLayers.length > 0) setUrlLayers(newUrlLayers);
+        } else if (
+          layerDetails.type === 'Table' &&
+          layerDetails.name.endsWith('-operation-settings')
+        ) {
+          if (layerFeatures.features.length > 0) {
+            operationSettings = layerFeatures.features.map(
+              (f: any) => f.attributes,
+            );
+          }
+        } else if (
+          layerDetails.type === 'Table' &&
+          layerDetails.name.endsWith('-operation-details')
+        ) {
+          if (layerFeatures.features.length > 0) {
+            operationDetails = layerFeatures.features.map((f: any) => {
+              const hasDeconTech =
+                !f.attributes.DECON_TECH_UUID ||
+                ['multiple', 'none'].includes(f.attributes.DECON_TECH_UUID) ||
+                Object.prototype.hasOwnProperty.call(
+                  technologyTypes.deconAttributes,
+                  f.attributes.DECON_TECH_UUID,
+                );
+              if (!hasDeconTech) deconTechRemoved.push(f.attributes.DECON_TECH);
+              return {
+                ...f.attributes,
+                DECON_TECH_UUID: hasDeconTech
+                  ? f.attributes.DECON_TECH_UUID
+                  : 'none',
+                DECON_TECH: hasDeconTech ? f.attributes.DECON_TECH : 'None',
+              };
+            });
+          }
+        } else if (
+          layerDetails.type === 'Table' &&
+          layerDetails.name.endsWith('-calculation-results')
+        ) {
+          if (layerFeatures.features.length > 0) {
+            calculationResults = layerFeatures.features.map(
+              (f: any) => f.attributes,
+            );
+          }
+        } else if (isContamMapLayer) {
+          const layerType: LayerTypeName = 'Contamination Map';
+          const symbol = SimpleFillSymbol.fromJSON(
+            layerDetails.drawingInfo.renderer.symbol,
+          );
+
+          // get the graphics from the layer
+          const graphics: __esri.Graphic[] = [];
+          layerFeatures.features.forEach((feature: any) => {
+            const graphic: any = Graphic.fromJSON(feature);
+            if (!graphic.geometry) return;
+            graphic.geometry.spatialReference = {
+              wkid: 3857,
+            };
+            graphic.popupTemplate = getPopupTemplate(layerType, false);
+            graphic.symbol = symbol;
+            graphics.push(graphic);
+          });
+
+          const name = layerDetails.name.replace(
+            '-contamination-map',
+            ' Contamination Map',
+          );
+          const sketchLayer = new GraphicsLayer({
+            id: generateUUID(),
+            listMode: 'hide',
+            title: name,
+            visible: false,
+            graphics,
+          });
+          mapLayersToAdd.push(sketchLayer);
+
+          const layerContamMap: LayerEditsType = {
+            type: 'layer',
+            id: layerDetails.id,
+            layerId: sketchLayer.id,
+            portalId: result.id,
+            name,
+            label: name,
+            layerType: 'Contamination Map',
+            addedFrom: 'tots',
+            status: 'published',
+            editType: 'add',
+            visible: sketchLayer.visible,
+            listMode: sketchLayer.listMode,
+            pointsId: -1,
+            uuid: sketchLayer.id,
+            hasContaminationRan: true,
+            sort: 0,
+            adds: sketchLayer.graphics
+              .toArray()
+              .map((graphic) => convertToSimpleGraphic(graphic)),
+            updates: [],
+            deletes: [],
+            published: [],
+          };
+          // make a copy of the edits context variable
+          editsCopy = {
+            count: editsCopy.count + 1,
+            edits: [...editsCopy.edits, layerContamMap],
+          };
+
+          layersToAdd.push({
+            addedFrom: layerContamMap.addedFrom,
+            editType: layerContamMap.editType,
+            geometryType: 'esriGeometryPolygon',
+            hybridLayer: null,
+            id: layerContamMap.id,
+            label: layerContamMap.label,
+            layerId: layerContamMap.layerId,
+            layerType: layerContamMap.layerType,
+            listMode: layerContamMap.listMode,
+            name: layerContamMap.label,
+            parentLayer: null,
+            pointsId: layerContamMap.pointsId,
+            pointsLayer: null,
+            portalId: layerContamMap.portalId,
+            sketchLayer: sketchLayer,
+            sort: layerContamMap.sort,
+            status: layerContamMap.status,
+            uuid: layerContamMap.layerId,
+            value: layerContamMap.layerId,
+            visible: layerContamMap.visible,
+          });
+        } else {
+          // add non-sample layers as feature layers
+          fields = [];
+          layerDetails.fields.forEach(fieldsLoop);
+
+          const source: __esri.Graphic[] = [];
+          layerFeatures.features.forEach((feature: any) => {
+            const graphic: any = Graphic.fromJSON(feature);
+            graphic.geometry.spatialReference = {
+              wkid: 3857,
+            };
+            source.push(graphic);
+          });
+
+          // use jsonUtils to convert the REST API renderer to an ArcGIS JS renderer
+          const renderer: __esri.Renderer = rendererJsonUtils.fromJSON(
+            layerDetails.drawingInfo.renderer,
+          );
+
+          // create the popup template if popup information was provided
+          let popupTemplate;
+          if (layerDetails.popupInfo) {
+            popupTemplate = {
+              title: layerDetails.popupInfo.title,
+              content: layerDetails.popupInfo.description,
+            };
+          }
+          // if no popup template, then make the template all of the attributes
+          if (!layerDetails.popupInfo && source.length > 0) {
+            popupTemplate = getSimplePopupTemplate(source[0].attributes);
+          }
+
+          // add the feature layer
+          const featureLayerProps: __esri.FeatureLayerProperties = {
+            fields,
+            source,
+            objectIdField: layerFeatures.objectIdFieldName,
+            outFields: ['*'],
+            title: layerDetails.name,
+            renderer,
+            popupTemplate,
+          };
+          const featureLayer = new FeatureLayer(featureLayerProps);
+          mapLayersToAdd.push(featureLayer);
+
+          // add the layer to referenceLayers with the layer id
+          refLayersToAdd.push({
+            ...featureLayerProps,
+            layerId: featureLayer.id,
+            portalId: result.id,
+          });
+        }
+      }
+
+      const deconOperations: LayerDeconEditsType[] = [];
+      operationSettings?.forEach((setting: any) => {
+        linkedLayerIds.push(setting.OPERATION_UUID);
+
+        const operationDetailsFiltered =
+          operationDetails?.filter(
+            (detail: any) => detail.OPERATION_UUID === setting.OPERATION_UUID,
+          ) ?? [];
+
+        const calcResultsFiltered =
+          calculationResults?.filter(
+            (detail: any) => detail.OPERATION_UUID === setting.OPERATION_UUID,
+          ) ?? [];
+
+        const opResults = calcResultsFiltered.find(
+          (c) => c.AGGREGATION_LEVEL === 'SUMMARY',
+        );
+
+        const deconTechSelections: any[] = [];
+        operationDetailsFiltered.forEach((tech) => {
+          const newRecord = {
+            aboveDetectionLimit: false,
+            avgCfu: 0,
+            avgFinalContamination: 0,
+            deconTech: tech.DECON_TECH_UUID
+              ? {
+                  isPredefined: true,
+                  label: tech.DECON_TECH,
+                  value: tech.DECON_TECH_UUID,
+                }
+              : null,
+            id: tech.SURFACE_UUID,
+            isHazardous: { label: 'Non-Hazardous', value: 'non-hazardous' },
+            media: tech.PARENT_SURFACE_UUID
+              ? tech.SURFACE_SUB_CATEGORY
+              : tech.SURFACE,
+            numIterativeApplications: tech.NUM_ITERATIVE_APPLICATIONS ?? 1,
+            numTeams: tech.NUM_TEAMS ?? 1,
+            pctAoi: tech.PCT_AOI ?? 0,
+            pctDeconed: tech.PCT_DECONED ?? 0,
+            removeContents: tech.REMOVE_BLDG_CONTENTS === 1 ? true : false,
+            surfaceArea: tech.SURFACE_AREA ?? 0,
+            volume: tech.VOLUME ?? 0,
+            volumeContents: tech.VOLUME_CONTENTS ?? 0,
+          };
+
+          if (tech.PARENT_SURFACE_UUID) {
+            const parentTech = deconTechSelections.find(
+              (parent) => parent.id === tech.PARENT_SURFACE_UUID,
+            );
+            if (parentTech) {
+              if (!Object.prototype.hasOwnProperty.call(parentTech, 'subRows'))
+                parentTech.subRows = [];
+              parentTech.subRows.push(newRecord);
+            }
+          } else {
+            deconTechSelections.push(newRecord);
+          }
+        });
+
+        deconOperations.push({
+          type: 'layer-decon',
+          analysisLayerId: setting.AOI_LAYER_ID,
+          approach: setting.DECON_EST_APPROACH,
+          buildingApproach: setting.DECON_BLDG_EST_APPROACH,
+          deconLayerResults: {
+            cost: opResults.COST,
+            resultsTable: [],
+            time: opResults.TIME,
+            wasteMass: opResults.SOLID_WASTE_MASS,
+            wasteVolume: opResults.SOLID_WASTE_M3,
+          },
+          deconSummaryResults: {},
+          deconTechSelections,
+          editType: 'add',
+          id: 0,
+          label: setting.OPERATION_NAME,
+          layerId: setting.OPERATION_UUID,
+          layerType: 'Decon',
+          listMode: 'show',
+          name: setting.OPERATION_NAME,
+          portalId: result.id,
+          status: 'published',
+          value: setting.OPERATION_UUID,
+          visible: true,
+        });
+        layersToAdd.push({
+          addedFrom: 'tots',
+          editType: 'add',
+          geometryType: 'esriGeometryPolygon',
+          hybridLayer: null,
+          id: 0,
+          label: setting.OPERATION_NAME,
+          layerId: setting.OPERATION_UUID,
+          layerType: 'Decon',
+          listMode: 'show',
+          name: setting.OPERATION_NAME,
+          parentLayer: null,
+          pointsId: -1,
+          pointsLayer: null,
+          portalId: result.id,
+          sketchLayer: null,
+          sort: 0,
+          status: 'published',
+          uuid: setting.OPERATION_UUID,
+          value: setting.OPERATION_UUID,
+          visible: true,
+        });
+      });
+
+      const newScenario: ScenarioDeconEditsType = {
+        type: 'scenario-decon',
+        id: 0,
+        layerId: result.id,
+        portalId: result.id,
+        name: result.title,
+        label: result.title,
+        value: result.id,
+        layerType: 'Decon Scenario',
+        addedFrom: 'tots',
+        status: 'published',
+        editType: 'add',
+        visible: true,
+        listMode: 'show',
+        scenarioName: result.title,
+        scenarioDescription: result.description,
+        linkedLayerIds,
+        table: null,
+        referenceLayersTable,
+      };
+
+      // make a copy of the edits context variable
+      editsCopy = {
+        count: editsCopy.count + 1,
+        edits: [...editsCopy.edits, newScenario, ...deconOperations],
+      };
+
+      // get the age of the layer in seconds
+      const created: number = new Date(result.created).getTime();
+      const curTime: number = Date.now();
+      const duration = (curTime - created) / 1000;
+
+      // aoi version number check
+      const aoisWithMismatch: string[] = [];
+      operationSettings?.forEach((op) => {
+        // find the associated aoi
+        const aoiLayer = editsCopy.edits.find(
+          (edit) =>
+            edit.type === 'layer-aoi-analysis' &&
+            edit.layerId === op.AOI_LAYER_ID,
+        ) as LayerAoiAnalysisEditsType;
+        if (aoiLayer && aoiLayer.version !== op.AOI_VERSION) {
+          aoisWithMismatch.push(aoiLayer.label);
+        }
+      });
+
+      // validate the area and attributes of features of the uploads. If there is an
+      // issue, display a popup asking the user if they would like the samples to be updated.
+      if (zoomToGraphics.length === 0 && duration < 300) {
+        // display a message if the layer is empty and the layer is less
+        // than 5 minutes old
+        setOptions({
+          title: 'No Data',
+          ariaLabel: 'No Data',
+          description: `The "${result.title}" layer was recently added and currently does not have any data. This could be due to a delay in processing the new data. Please try again later.`,
+          // onCancel: () => setStatus('no-data'),
+        });
+      } else if (aoisWithMismatch.length > 0 || deconTechRemoved.length > 0) {
+        const titles: string[] = [];
+        const descriptions: string[] = [];
+        if (aoisWithMismatch.length > 0) {
+          titles.push('AOI Version Mismatch');
+          descriptions.push(
+            `The following AOI Characterization layers have a version mismatch: ${sentenceJoin(aoisWithMismatch)}. The AOI Characterization data may have changed, including AOI location.`,
+          );
+        }
+        if (deconTechRemoved.length > 0) {
+          titles.push('Decon Technology Does Not Exist');
+          descriptions.push(
+            `The following Decon Technologies do not exist: ${sentenceJoin(deconTechRemoved)}. These decon technologies have been replaced with None.`,
+          );
+        }
+
+        const title = sentenceJoin(titles);
+        descriptions.push('Calculations will be re-ran.');
+        setOptions({
+          title,
+          ariaLabel: title,
+          description: descriptions.join(' '),
+          onCancel: () => {
+            editsCopy.count += 1;
+            editsCopy.edits = editsCopy.edits.map((edit) => {
+              if (
+                edit.type === 'layer-decon' &&
+                linkedLayerIds.includes(edit.layerId)
+              ) {
+                // find the aoi layer
+                const aoiChar = editsCopy.edits.find(
+                  (e) => e.layerId === edit.analysisLayerId,
+                ) as LayerAoiAnalysisEditsType | undefined;
+                if (!aoiChar) return edit;
+
+                return {
+                  ...edit,
+                  deconTechSelections: aoiChar.deconTechSelections.map(
+                    (tech) => {
+                      const editTech = edit.deconTechSelections.find(
+                        (e) => e.media === tech.media,
+                      );
+                      return {
+                        ...tech,
+                        deconTech: editTech?.deconTech ?? tech.deconTech,
+                        numIterativeApplications:
+                          editTech?.numIterativeApplications ??
+                          tech.numIterativeApplications,
+                        numTeams: editTech?.numTeams ?? tech.numTeams,
+                        removeContents:
+                          editTech?.removeContents ?? tech.removeContents,
+                        subRows:
+                          editTech?.subRows?.map((subTech: any) => {
+                            const subEditTech = editTech
+                              ? editTech.subRows.find(
+                                  (e: any) => e.media === tech.media,
+                                )
+                              : null;
+
+                            return {
+                              ...subTech,
+                              deconTech:
+                                subEditTech?.deconTech ?? subTech.deconTech,
+                              numIterativeApplications:
+                                subEditTech?.numIterativeApplications ??
+                                subTech.numIterativeApplications,
+                              numTeams:
+                                subEditTech?.numTeams ?? subTech.numTeams,
+                              removeContents:
+                                subEditTech?.removeContents ??
+                                subTech.removeContents,
+                            };
+                          }) ?? tech.subRows,
+                      };
+                    },
+                  ),
+                };
+              }
+
+              return edit;
+            });
+
+            finalizeLayerAdd({
+              mapLayersToAdd,
+              zoomToGraphics,
+              editsCopy,
+              layersToAdd,
+              refLayersToAdd,
+              newScenario,
+            });
+          },
+        });
+      } else {
+        finalizeLayerAdd({
+          mapLayersToAdd,
+          zoomToGraphics,
+          editsCopy,
+          layersToAdd,
+          refLayersToAdd,
+          newScenario,
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      // setStatus('error');
+
+      window.logErrorToGa(err);
+    }
+  }
+
+  async function addTotsLayerAutoSelect(result: any, portal: __esri.Portal) {
+    // determine whether the layer has a tots sample layer or not
+    // and add the layer accordingly
+    const categories = result?.categories;
+    if (categories?.includes('contains-epa-tots-sample-layer')) {
+      if (appType === 'sampling') addTotsLayer(result, portal);
+      if (appType === 'decon') addTotsLayerForTods(result, portal);
+    } else if (
+      categories?.includes('contains-epa-tots-user-defined-sample-types')
+    ) {
+      // addTotsSampleType(result, portal);
+    } else if (categories?.includes('contains-epa-tods-decon-layer')) {
+      addTodsLayer(result, portal);
+    } else if (categories?.includes('contains-epa-tots-aoi-characterization')) {
+      addAoiCharacterizationLayer(
+        {
+          categories: result.categories,
+          created: result.created,
+          description: result.description,
+          id: result.id,
+          title: result.title,
+          url: result.url,
+        },
+        null,
+        true,
+        portal,
+      );
+    } else if (categories?.includes('contains-epa-tots-staging-area')) {
+      // addStagingAreaLayer(result, portal);
+    } else if (
+      categories?.includes('contains-epa-tods-user-defined-decon-tech')
+    ) {
+      // addTodsDeconType(result, portal);
+    } else {
+      // addRefLayer(result, portal);
+    }
+  }
+
+  return {
+    addTotsLayerAutoSelect,
+    addTotsLayer,
+    addTotsLayerForTods,
+    addTodsLayer,
+  };
 }
