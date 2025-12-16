@@ -6600,16 +6600,16 @@ export function useTotsLayerAdder(appType: AppType) {
     // and add the layer accordingly
     const categories = result?.categories;
     if (categories?.includes('contains-epa-tots-sample-layer')) {
-      if (appType === 'sampling') addTotsLayer(result, portal);
-      if (appType === 'decon') addTotsLayerForTods(result, portal);
+      if (appType === 'sampling') await addTotsLayer(result, portal);
+      if (appType === 'decon') await addTotsLayerForTods(result, portal);
     } else if (
       categories?.includes('contains-epa-tots-user-defined-sample-types')
     ) {
       // addTotsSampleType(result, portal);
     } else if (categories?.includes('contains-epa-tods-decon-layer')) {
-      addTodsLayer(result, portal);
+      await addTodsLayer(result, portal);
     } else if (categories?.includes('contains-epa-tots-aoi-characterization')) {
-      addAoiCharacterizationLayer(
+      await addAoiCharacterizationLayer(
         {
           categories: result.categories,
           created: result.created,
@@ -6623,13 +6623,13 @@ export function useTotsLayerAdder(appType: AppType) {
         portal,
       );
     } else if (categories?.includes('contains-epa-tots-staging-area')) {
-      // addStagingAreaLayer(result, portal);
+      // await addStagingAreaLayer(result, portal);
     } else if (
       categories?.includes('contains-epa-tods-user-defined-decon-tech')
     ) {
-      // addTodsDeconType(result, portal);
+      // await addTodsDeconType(result, portal);
     } else {
-      // addRefLayer(result, portal);
+      // await addRefLayer(result, portal);
     }
   }
 

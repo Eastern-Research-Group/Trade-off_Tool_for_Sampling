@@ -16,6 +16,8 @@ import { GoToOptions } from 'types/Navigation';
 let globalTrainingMode = false;
 
 type NavigateType = {
+  appLoading: boolean;
+  setAppLoading: Dispatch<SetStateAction<boolean>>;
   currentPanel: PanelType | null;
   setCurrentPanel: Dispatch<SetStateAction<PanelType | null>>;
   goTo: PanelValueType | '';
@@ -40,6 +42,8 @@ type NavigateType = {
 };
 
 export const NavigationContext = createContext<NavigateType>({
+  appLoading: false,
+  setAppLoading: () => {},
   currentPanel: null,
   setCurrentPanel: () => {},
   goTo: '',
@@ -66,6 +70,7 @@ export const NavigationContext = createContext<NavigateType>({
 type Props = { children: ReactNode };
 
 export function NavigationProvider({ children }: Props) {
+  const [appLoading, setAppLoading] = useState(false);
   const [currentPanel, setCurrentPanel] = useState<PanelType | null>(null);
   const [goTo, setGoTo] = useState<PanelValueType | ''>('');
   const [goToOptions, setGoToOptions] = useState<GoToOptions>(null);
@@ -86,6 +91,8 @@ export function NavigationProvider({ children }: Props) {
   return (
     <NavigationContext.Provider
       value={{
+        appLoading,
+        setAppLoading,
         currentPanel,
         setCurrentPanel,
         goTo,

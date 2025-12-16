@@ -291,6 +291,7 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
   );
   const { setCalculateResultsDecon } = useContext(CalculateContext);
   const { setOptions } = useContext(DialogContext);
+  const { setAppLoading } = useContext(NavigationContext);
   const {
     defaultSymbols,
     edits,
@@ -483,7 +484,7 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
       if (newLayers.length > 0) {
         window.totsLayers = [...layers, ...newLayers];
         setLayers(window.totsLayers);
-        map.addMany(graphicsLayers);
+        if (map) map.addMany(graphicsLayers);
       }
 
       if (planIds.length > 0)
@@ -549,24 +550,30 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
     async function performWork() {
       const tmpPortal = portal ? portal : new Portal();
 
+      setAppLoading(true);
       setUrlIdsToAdd([]);
+
       try {
         const res = await tmpPortal.queryItems({
           query: `id: "${urlIdsToAdd.join('" OR "')}"`,
           num: urlIdsToAdd.length,
         });
 
+        const workers: Promise<void>[] = [];
         res.results.forEach((item) => {
-          addTotsLayerAutoSelect(item, tmpPortal);
+          workers.push(addTotsLayerAutoSelect(item, tmpPortal));
         });
+        await Promise.all(workers);
       } catch (err) {
         // TODO - do something better here
         console.error(err);
+      } finally {
+        setAppLoading(false);
       }
     }
 
     performWork();
-  }, [addTotsLayerAutoSelect, portal, signedIn, urlIdsToAdd]);
+  }, [addTotsLayerAutoSelect, portal, setAppLoading, signedIn, urlIdsToAdd]);
 }
 
 // Uses browser storage for holding the reference layers that have been added.
