@@ -119,7 +119,7 @@ import {
   setZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import { parseSmallFloat, sentenceJoin } from 'utils/utils';
+import { parseSmallFloat, removeUrlParams, sentenceJoin } from 'utils/utils';
 // config
 import { sampleIssuesPopupMessage } from 'config/errorMessages';
 import { isDecon } from 'config/navigation';
@@ -1412,7 +1412,7 @@ export function useStartOver() {
         .toArray() ?? [];
     if (layersToRemove.length > 0) map?.removeMany(layersToRemove);
 
-    // TODO remove any URL parameters, except for devMode or gameMode
+    removeUrlParams(['trainingMode', 'portalId']);
 
     // set the layers to just the defaults
     setLayers([]);
