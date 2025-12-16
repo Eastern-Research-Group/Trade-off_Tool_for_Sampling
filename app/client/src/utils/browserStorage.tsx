@@ -327,9 +327,9 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
 
       const search = window.location.search;
       let planIds: string[] = [];
-      if (search.includes('planId=')) {
+      if (search.includes('portalId=')) {
         const urlParams = new URLSearchParams(search);
-        planIds = urlParams.get('planId')?.split(',') ?? [];
+        planIds = urlParams.get('portalId')?.split(',') ?? [];
       }
 
       const edits: EditsType | null | undefined = await readFromStorage(key);
