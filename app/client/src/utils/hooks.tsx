@@ -71,6 +71,7 @@ import {
   LayerEditsType,
   ReferenceLayersTableType,
   ReferenceLayerTableType,
+  ScenarioDeconEditsType,
   ScenarioEditsType,
 } from 'types/Edits';
 import {
@@ -89,6 +90,7 @@ import {
   getAllFeatures,
   getFeatureLayer,
   getFeatureLayers,
+  getFeatureTables,
 } from 'utils/arcGisRestUtils';
 import { writeToStorage } from 'utils/browserStorage';
 import {
@@ -117,7 +119,7 @@ import {
   setZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-import { parseSmallFloat } from 'utils/utils';
+import { parseSmallFloat, sentenceJoin } from 'utils/utils';
 // config
 import { sampleIssuesPopupMessage } from 'config/errorMessages';
 import { isDecon } from 'config/navigation';
@@ -4069,17 +4071,19 @@ export function useTotsLayerAdder(appType: AppType) {
   const layerProps = useLookupFiles().data.layerProps;
   const technologyTypes = useLookupFiles().data.technologyTypes;
 
-  // TODO - figure out if we need to do anything special with the setStatus items below
-
   /**
    * Adds layers, published through TOTS, such that the sample layer is
    * editable in TOTS. Any non-sample layers will just be added
    * as reference layers, though this could change in the future.
    */
-  async function addTotsLayer(result: any, portal: __esri.Portal) {
-    if (!map) return;
+  async function addTotsLayer(
+    result: any,
+    portal: __esri.Portal | null,
+    setStatus: (status: string) => void,
+  ) {
+    if (!map || !portal) return;
 
-    // setStatus('loading');
+    setStatus('loading');
 
     const tempPortal = portal as any;
     const token = tempPortal.credential.token;
@@ -4211,7 +4215,7 @@ export function useTotsLayerAdder(appType: AppType) {
       ]);
 
       // reset the status
-      // setStatus('');
+      setStatus('');
     }
 
     // Updates the pointIds on the layers and edits objects
@@ -4540,6 +4544,7 @@ export function useTotsLayerAdder(appType: AppType) {
                 editsCopy,
                 false,
                 portal,
+                setStatus,
               );
               if (output?.zoomToGraphics)
                 zoomToGraphics.push(...output.zoomToGraphics);
@@ -4638,7 +4643,7 @@ export function useTotsLayerAdder(appType: AppType) {
           }
 
           // get the graphics from the layer
-          const graphics: PlanGraphics = {};
+          const graphics: LayerGraphics = {};
           layerFeatures.features.forEach((feature: any) => {
             const graphic: any = Graphic.fromJSON(feature);
             graphic.geometry.spatialReference = {
@@ -5028,7 +5033,7 @@ export function useTotsLayerAdder(appType: AppType) {
                 refLayersToAdd,
                 newScenario,
               }),
-            // onCancel: () => setStatus('canceled'),
+            onCancel: () => setStatus('canceled'),
           });
         } else {
           finalizeLayerAdd({
@@ -5049,7 +5054,7 @@ export function useTotsLayerAdder(appType: AppType) {
           title: 'No Data',
           ariaLabel: 'No Data',
           description: `The "${result.title}" layer was recently added and currently does not have any data. This could be due to a delay in processing the new data. Please try again later.`,
-          // onCancel: () => setStatus('no-data'),
+          onCancel: () => setStatus('no-data'),
         });
       } else {
         finalizeLayerAdd({
@@ -5065,16 +5070,243 @@ export function useTotsLayerAdder(appType: AppType) {
       }
     } catch (err) {
       console.error(err);
-      // setStatus('error');
+      setStatus('error');
 
       window.logErrorToGa(err);
     }
   }
 
-  async function addTotsLayerForTods(result: any, portal: __esri.Portal) {
-    if (!map) return;
+  /**
+   * Adds user defined sample types that were published through TOTS.
+   */
+  function addTotsSampleType(
+    result: any,
+    portal: __esri.Portal | null,
+    setStatus: (status: string) => void,
+  ) {
+    if (!portal) return;
 
-    // setStatus('loading');
+    setStatus('loading');
+
+    const tempPortal = portal as any;
+    const token = tempPortal.credential.token;
+
+    // get the list of feature layers in this feature server
+    getFeatureTables(result.url, token)
+      .then((res: any) => {
+        // fire off requests to get the details and features for each layer
+        const layerPromises: Promise<any>[] = [];
+        res.forEach((layer: any) => {
+          // get the layer features promise
+          const featuresCall = getAllFeatures(
+            portal,
+            result.url + '/' + layer.id,
+          );
+          layerPromises.push(featuresCall);
+        });
+
+        // wait for all of the promises to resolve
+        Promise.all(layerPromises)
+          .then((responses) => {
+            // define items used for updating states
+            const newAttributes: Attributes = {};
+            const newUserSampleTypes: SampleSelectType[] = [];
+            const newDefaultSymbols: DefaultSymbolsType = {
+              editCount: defaultSymbols.editCount + 1,
+              symbols: { ...defaultSymbols.symbols },
+            };
+
+            // create the user defined sample types to be added to TOTS
+            responses.forEach((layerFeatures) => {
+              // get the graphics from the layer
+              layerFeatures.features.forEach((feature: any) => {
+                const graphic: any = Graphic.fromJSON(feature);
+
+                // get the type uuid or generate it if necessary
+                const attributes = graphic.attributes;
+                let typeUuid = attributes.TYPEUUID;
+                if (!typeUuid) {
+                  const keysToCheck = [
+                    'TYPE',
+                    'ShapeType',
+                    'TTPK',
+                    'TTC',
+                    'TTA',
+                    'TTPS',
+                    'LOD_P',
+                    'LOD_NON',
+                    'MCPS',
+                    'TCPS',
+                    'WVPS',
+                    'WWPS',
+                    'SA',
+                    'ALC',
+                    'AMC',
+                  ];
+                  // check if the udt has already been added
+                  Object.values(userDefinedAttributes.sampleTypes).forEach(
+                    (udt: any) => {
+                      const tempUdt: any = {};
+                      const tempAtt: any = {};
+                      keysToCheck.forEach((key) => {
+                        tempUdt[key] = udt[key];
+                        tempAtt[key] = attributes[key];
+                      });
+
+                      if (JSON.stringify(tempUdt) === JSON.stringify(tempAtt)) {
+                        typeUuid = udt.TYPEUUID;
+                      }
+                    },
+                  );
+
+                  if (!typeUuid) {
+                    if (
+                      Object.prototype.hasOwnProperty.call(
+                        sampleTypes?.sampleAttributes,
+                        attributes.TYPE,
+                      )
+                    ) {
+                      typeUuid = attributes.TYPE;
+                    } else {
+                      typeUuid = generateUUID();
+                    }
+                  }
+
+                  graphic.attributes['TYPEUUID'] = typeUuid;
+                }
+
+                // Add the user defined type if it does not exist
+                if (
+                  !Object.prototype.hasOwnProperty.call(
+                    sampleAttributes,
+                    graphic.attributes.TYPEUUID,
+                  )
+                ) {
+                  newUserSampleTypes.push({
+                    value: typeUuid,
+                    label: attributes.TYPE,
+                    isPredefined: false,
+                  });
+                  newAttributes[attributes.TYPEUUID] = {
+                    status: newAttributes[attributes.TYPEUUID]?.status
+                      ? newAttributes[attributes.TYPEUUID].status
+                      : 'published-ago',
+                    serviceId: result.id,
+                    attributes: {
+                      OBJECTID: attributes.OBJECTID,
+                      PERMANENT_IDENTIFIER: null,
+                      GLOBALID: attributes.GLOBALID,
+                      TYPEUUID: attributes.TYPEUUID,
+                      TYPE: attributes.TYPE,
+                      ShapeType: attributes.ShapeType,
+                      POINT_STYLE: attributes.POINT_STYLE || 'circle',
+                      TTPK: attributes.TTPK ? Number(attributes.TTPK) : null,
+                      TTC: attributes.TTC ? Number(attributes.TTC) : null,
+                      TTA: attributes.TTA ? Number(attributes.TTA) : null,
+                      TTPS: attributes.TTPS ? Number(attributes.TTPS) : null,
+                      LOD_P: attributes.LOD_P ? Number(attributes.LOD_P) : null,
+                      LOD_NON: attributes.LOD_NON
+                        ? Number(attributes.LOD_NON)
+                        : null,
+                      MCPS: attributes.MCPS ? Number(attributes.MCPS) : null,
+                      TCPS: attributes.TCPS ? Number(attributes.TCPS) : null,
+                      WVPS: attributes.WVPS ? Number(attributes.WVPS) : null,
+                      WWPS: attributes.WWPS ? Number(attributes.WWPS) : null,
+                      SA: attributes.SA ? Number(attributes.SA) : null,
+                      AA: null,
+                      ALC: attributes.ALC ? Number(attributes.ALC) : null,
+                      AMC: attributes.AMC ? Number(attributes.AMC) : null,
+                      Notes: '',
+                      CONTAMTYPE: null,
+                      CONTAMVAL: null,
+                      CONTAMUNIT: null,
+                      CREATEDDATE: null,
+                      UPDATEDDATE: null,
+                      USERNAME: null,
+                      ORGANIZATION: null,
+                      DECISIONUNITUUID: null,
+                      DECISIONUNIT: null,
+                      DECISIONUNITSORT: 0,
+                    },
+                  };
+                }
+
+                // Add the symbol symbology
+                if (
+                  attributes.SYMBOLTYPE &&
+                  attributes.SYMBOLCOLOR &&
+                  attributes.SYMBOLOUTLINE
+                ) {
+                  newDefaultSymbols.symbols[attributes.TYPEUUID] = {
+                    type: attributes.SYMBOLTYPE,
+                    color: JSON.parse(attributes.SYMBOLCOLOR),
+                    outline: JSON.parse(attributes.SYMBOLOUTLINE),
+                  };
+                }
+              });
+            });
+
+            // add custom sample types to browser storage
+            if (newUserSampleTypes.length > 0) {
+              setUserDefinedAttributes((item) => {
+                Object.keys(newAttributes).forEach((key) => {
+                  const attributes = newAttributes[key];
+                  attributes.status = 'published-ago';
+                  sampleAttributes[attributes.attributes.TYPEUUID as any] =
+                    attributes.attributes;
+                  item.sampleTypes[attributes.attributes.TYPEUUID as any] =
+                    attributes;
+                });
+
+                return {
+                  editCount: item.editCount + 1,
+                  sampleTypes: item.sampleTypes,
+                };
+              });
+
+              setUserDefinedOptions((options) => {
+                return [...options, ...newUserSampleTypes];
+              });
+            } else {
+              setUserDefinedAttributes((item) => {
+                Object.keys(item.sampleTypes).forEach((key) => {
+                  const attributes = item.sampleTypes[key];
+                  if (attributes?.serviceId === result.id) {
+                    attributes.status = 'published-ago';
+                  }
+                });
+
+                return {
+                  editCount: item.editCount + 1,
+                  sampleTypes: item.sampleTypes,
+                };
+              });
+            }
+
+            setDefaultSymbols(newDefaultSymbols);
+
+            // reset the status
+            setStatus('');
+          })
+          .catch((err) => {
+            console.error(err);
+            setStatus('error');
+          });
+      })
+      .catch((err) => {
+        console.error(err);
+        setStatus('error');
+      });
+  }
+
+  async function addTotsLayerForTods(
+    result: any,
+    portal: __esri.Portal | null,
+    setStatus: (status: string) => void,
+  ) {
+    if (!map || !portal) return;
+
+    setStatus('loading');
 
     const tempPortal = portal as any;
     const token = tempPortal.credential.token;
@@ -5142,7 +5374,7 @@ export function useTotsLayerAdder(appType: AppType) {
       ]);
 
       // reset the status
-      // setStatus('');
+      setStatus('');
     }
 
     try {
@@ -5254,6 +5486,7 @@ export function useTotsLayerAdder(appType: AppType) {
                 editsCopy,
                 false,
                 portal,
+                setStatus,
               );
               if (output?.editsCopy) editsCopy = output.editsCopy;
             }
@@ -5355,7 +5588,7 @@ export function useTotsLayerAdder(appType: AppType) {
       });
     } catch (err) {
       console.error(err);
-      // setStatus('error');
+      setStatus('error');
     }
   }
 
@@ -5373,11 +5606,12 @@ export function useTotsLayerAdder(appType: AppType) {
     },
     editsCopyParam: EditsType | null = null,
     zoomToLayer: boolean = true,
-    portal: __esri.Portal,
+    portal: __esri.Portal | null,
+    setStatus: (status: string) => void,
   ) {
-    if (!map) return;
+    if (!map || !portal) return;
 
-    // setStatus('loading');
+    setStatus('loading');
 
     const tempPortal = portal as any;
     const token = tempPortal.credential.token;
@@ -5430,7 +5664,7 @@ export function useTotsLayerAdder(appType: AppType) {
       ]);
 
       // reset the status
-      // setStatus('');
+      setStatus('');
     }
 
     try {
@@ -5865,7 +6099,7 @@ export function useTotsLayerAdder(appType: AppType) {
           title: 'No Data',
           ariaLabel: 'No Data',
           description: `The "${result.title}" layer was recently added and currently does not have any data. This could be due to a delay in processing the new data. Please try again later.`,
-          // onCancel: () => setStatus('no-data'),
+          onCancel: () => setStatus('no-data'),
         });
       } else {
         finalizeLayerAdd({
@@ -5883,7 +6117,322 @@ export function useTotsLayerAdder(appType: AppType) {
       };
     } catch (err) {
       console.error(err);
-      // setStatus('error');
+      setStatus('error');
+      window.logErrorToGa(err);
+    }
+  }
+
+  /**
+   * Adds the staging area layer to the map.
+   */
+  async function addStagingAreaLayer(
+    result: any,
+    portal: __esri.Portal | null,
+    setStatus: (status: string) => void,
+  ) {
+    if (!map || !portal) return;
+
+    setStatus('loading');
+
+    const tempPortal = portal as any;
+    const token = tempPortal.credential.token;
+
+    // function used for finalizing the adding of layers. This function is needed
+    // for displaying a popup mesage if there is an issue with any of the samples
+    function finalizeLayerAdd({
+      mapLayersToAdd,
+      zoomToGraphics,
+      editsCopy,
+      layersToAdd,
+      refLayersToAdd,
+    }: {
+      mapLayersToAdd: __esri.Layer[];
+      zoomToGraphics: __esri.Graphic[];
+      editsCopy: EditsType;
+      layersToAdd: LayerType[];
+      refLayersToAdd: any[];
+    }) {
+      if (!map) return;
+
+      // add all of the layers to the map
+      map.addMany(mapLayersToAdd);
+
+      // zoom to the graphics layer
+      if (zoomToGraphics.length > 0) {
+        if (mapView && displayDimensions === '2d') mapView.goTo(zoomToGraphics);
+        if (sceneView && displayDimensions === '3d')
+          sceneView.goTo(zoomToGraphics);
+      }
+
+      // set the state for session storage
+      setEdits(editsCopy);
+      window.totsLayers = [...layers, ...layersToAdd];
+      setLayers((layers) => [...layers, ...layersToAdd]);
+      setReferenceLayers((layers: any) => [...layers, ...refLayersToAdd]);
+
+      // add the portal id to portal layers. This needed so the card on
+      // the search panel shows up as the layer having been added.
+      setPortalLayers((portalLayers) => [
+        ...portalLayers,
+        {
+          categories: result.categories,
+          id: result.id,
+          label: result.title,
+          layerType: 'Feature Service',
+          type: 'tots',
+          url: result.url,
+        },
+      ]);
+
+      // reset the status
+      setStatus('');
+    }
+
+    try {
+      // get the list of feature layers in this feature server
+      const featureLayersRes: any = await getFeatureLayers(result.url, token);
+
+      // fire off requests to get the details and features for each layer
+      const layerPromises: Promise<any>[] = [];
+
+      featureLayersRes.layers.forEach((layer: any) => {
+        // get the layer details promise
+        const layerCall = getFeatureLayer(result.url, token, layer.id);
+        layerPromises.push(layerCall);
+      });
+
+      // wait for layer detail promises to resolve
+      const layerDetailResponses = await Promise.all(layerPromises);
+
+      // fire off requests for features of each layer using the objectIdField
+      const featurePromises: any[] = [];
+      layerDetailResponses.forEach((layerDetails: any) => {
+        // get the layer features promise
+        const featuresCall = getAllFeatures(
+          portal,
+          result.url + '/' + layerDetails.id,
+          layerDetails.objectIdField,
+        );
+        featurePromises.push(featuresCall);
+      });
+
+      // wait for feature promises to resolve
+      const featureResponses = await Promise.all(featurePromises);
+
+      // define items used for updating states
+      let editsCopy: EditsType = deepCopyObject(edits);
+      const mapLayersToAdd: __esri.Layer[] = [];
+      const layersToAdd: LayerType[] = [];
+      const refLayersToAdd: any[] = [];
+      const zoomToGraphics: __esri.Graphic[] = [];
+
+      let isStagingAreaLayer = false;
+      const typesLoop = (type: __esri.FeatureType) => {
+        if (type.id === 'epa-tods-staging-area-layer')
+          isStagingAreaLayer = true;
+      };
+
+      let fields: __esri.Field[] = [];
+      const fieldsLoop = (field: __esri.Field) => {
+        fields.push(Field.fromJSON(field));
+      };
+
+      const sketchLayer = new GraphicsLayer({
+        id: generateUUID(),
+        listMode: 'show',
+        title: result.title,
+      });
+
+      // create the layers to be added to the map
+      for (let i = 0; i < layerDetailResponses.length; i++) {
+        const layerDetails = layerDetailResponses[i];
+        const layerFeatures = featureResponses[i];
+
+        // figure out if this layer is a sample layer or not
+        isStagingAreaLayer = false;
+        if (layerDetails?.types) {
+          layerDetails.types.forEach(typesLoop);
+        }
+
+        // add staging area layers as graphics layers
+        if (isStagingAreaLayer) {
+          const layerType: LayerTypeName = 'Staging Area Mask';
+          const symbol = SimpleFillSymbol.fromJSON(
+            layerDetails.drawingInfo.renderer.symbol,
+          );
+
+          // get the graphics from the layer
+          const graphics: __esri.Graphic[] = [];
+          layerFeatures.features.forEach((feature: any) => {
+            const graphic: any = Graphic.fromJSON(feature);
+            graphic.geometry.spatialReference = {
+              wkid: 3857,
+            };
+            graphic.popupTemplate = getPopupTemplate(layerType, false);
+
+            if (!graphic.attributes.LATITUDE || !graphic.attributes.LONGITUDE) {
+              graphic.attributes.LATITUDE =
+                (graphic.geometry as __esri.Polygon)?.centroid?.latitude ?? 0;
+              graphic.attributes.LONGITUDE =
+                (graphic.geometry as __esri.Polygon)?.centroid?.longitude ?? 0;
+            }
+
+            graphic.symbol = symbol;
+            zoomToGraphics.push(graphic);
+            graphics.push(graphic);
+          });
+
+          sketchLayer.graphics.addMany(graphics);
+        } else {
+          // add non-sample layers as feature layers
+          fields = [];
+          layerDetails.fields.forEach(fieldsLoop);
+
+          const source: __esri.Graphic[] = [];
+          layerFeatures.features.forEach((feature: any) => {
+            const graphic: any = Graphic.fromJSON(feature);
+            if (graphic.geometry) {
+              graphic.geometry.spatialReference = {
+                wkid: 3857,
+              };
+            }
+            source.push(graphic);
+          });
+
+          // use jsonUtils to convert the REST API renderer to an ArcGIS JS renderer
+          const renderer: __esri.Renderer = rendererJsonUtils.fromJSON(
+            layerDetails.drawingInfo.renderer,
+          );
+
+          // create the popup template if popup information was provided
+          let popupTemplate;
+          if (layerDetails.popupInfo) {
+            popupTemplate = {
+              title: layerDetails.popupInfo.title,
+              content: layerDetails.popupInfo.description,
+            };
+          }
+          // if no popup template, then make the template all of the attributes
+          if (!layerDetails.popupInfo && source.length > 0) {
+            popupTemplate = getSimplePopupTemplate(source[0].attributes);
+          }
+
+          // add the feature layer
+          const featureLayerProps: __esri.FeatureLayerProperties = {
+            fields,
+            source,
+            objectIdField: layerFeatures.objectIdFieldName,
+            outFields: ['*'],
+            title: layerDetails.name,
+            renderer,
+            popupTemplate,
+          };
+          const featureLayer = new FeatureLayer(featureLayerProps);
+          mapLayersToAdd.push(featureLayer);
+
+          // add the layer to referenceLayers with the layer id
+          refLayersToAdd.push({
+            ...featureLayerProps,
+            layerId: featureLayer.id,
+            portalId: result.id,
+          });
+        }
+      }
+
+      mapLayersToAdd.push(sketchLayer);
+      const layerStagingArea: LayerEditsType = {
+        type: 'layer',
+        id: 0,
+        layerId: sketchLayer.id,
+        portalId: result.id,
+        name: result.title,
+        description: result.description,
+        label: result.title,
+        layerType: 'Staging Area Mask',
+        addedFrom: 'tots',
+        status: 'published',
+        editType: 'add',
+        visible: true,
+        listMode: 'show',
+        pointsId: -1,
+        uuid: sketchLayer.id,
+        hasContaminationRan: false,
+        sort: 0,
+        adds: sketchLayer.graphics
+          .toArray()
+          .map((graphic) => convertToSimpleGraphic(graphic)),
+        updates: [],
+        deletes: [],
+        published: [],
+      };
+      // make a copy of the edits context variable
+      editsCopy = {
+        count: editsCopy.count + 1,
+        edits: [...editsCopy.edits, layerStagingArea],
+      };
+
+      layersToAdd.push({
+        addedFrom: layerStagingArea.addedFrom,
+        editType: layerStagingArea.editType,
+        geometryType: 'esriGeometryPolygon',
+        hybridLayer: null,
+        id: layerStagingArea.id,
+        label: layerStagingArea.label,
+        layerId: layerStagingArea.layerId,
+        layerType: layerStagingArea.layerType,
+        listMode: layerStagingArea.listMode,
+        name: layerStagingArea.label,
+        parentLayer: null,
+        pointsId: layerStagingArea.pointsId,
+        pointsLayer: null,
+        portalId: layerStagingArea.portalId,
+        sketchLayer: sketchLayer,
+        sort: layerStagingArea.sort,
+        status: layerStagingArea.status,
+        uuid: layerStagingArea.layerId,
+        value: layerStagingArea.layerId,
+        visible: layerStagingArea.visible,
+      });
+
+      // get the age of the layer in seconds
+      const created: number = new Date(result.created).getTime();
+      const curTime: number = Date.now();
+      const duration = (curTime - created) / 1000;
+
+      if (zoomToGraphics.length > 0) {
+        finalizeLayerAdd({
+          mapLayersToAdd,
+          zoomToGraphics,
+          editsCopy,
+          layersToAdd,
+          refLayersToAdd,
+        });
+      } else if (zoomToGraphics.length === 0 && duration < 300) {
+        // display a message if the layer is empty and the layer is less
+        // than 5 minutes old
+        setOptions({
+          title: 'No Data',
+          ariaLabel: 'No Data',
+          description: `The "${result.title}" layer was recently added and currently does not have any data. This could be due to a delay in processing the new data. Please try again later.`,
+          onCancel: () => setStatus('no-data'),
+        });
+      } else {
+        finalizeLayerAdd({
+          mapLayersToAdd,
+          zoomToGraphics,
+          editsCopy,
+          layersToAdd,
+          refLayersToAdd,
+        });
+      }
+
+      return {
+        editsCopy,
+        zoomToGraphics,
+      };
+    } catch (err) {
+      console.error(err);
+      setStatus('error');
       window.logErrorToGa(err);
     }
   }
@@ -5893,10 +6442,14 @@ export function useTotsLayerAdder(appType: AppType) {
    * editable in TODS. Any non-sample layers will just be added
    * as reference layers, though this could change in the future.
    */
-  async function addTodsLayer(result: any, portal: __esri.Portal) {
-    if (!map) return;
+  async function addTodsLayer(
+    result: any,
+    portal: __esri.Portal | null,
+    setStatus: (status: string) => void,
+  ) {
+    if (!map || !portal) return;
 
-    // setStatus('loading');
+    setStatus('loading');
 
     const tempPortal = portal as any;
     const token = tempPortal.credential.token;
@@ -5964,7 +6517,7 @@ export function useTotsLayerAdder(appType: AppType) {
       ]);
 
       // reset the status
-      // setStatus('');
+      setStatus('');
     }
 
     try {
@@ -6112,6 +6665,7 @@ export function useTotsLayerAdder(appType: AppType) {
                 editsCopy,
                 false,
                 portal,
+                setStatus,
               );
               if (output?.zoomToGraphics)
                 zoomToGraphics.push(...output.zoomToGraphics);
@@ -6483,7 +7037,7 @@ export function useTotsLayerAdder(appType: AppType) {
           title: 'No Data',
           ariaLabel: 'No Data',
           description: `The "${result.title}" layer was recently added and currently does not have any data. This could be due to a delay in processing the new data. Please try again later.`,
-          // onCancel: () => setStatus('no-data'),
+          onCancel: () => setStatus('no-data'),
         });
       } else if (aoisWithMismatch.length > 0 || deconTechRemoved.length > 0) {
         const titles: string[] = [];
@@ -6589,25 +7143,320 @@ export function useTotsLayerAdder(appType: AppType) {
       }
     } catch (err) {
       console.error(err);
-      // setStatus('error');
+      setStatus('error');
 
       window.logErrorToGa(err);
     }
   }
 
-  async function addTotsLayerAutoSelect(result: any, portal: __esri.Portal) {
+  /**
+   * Adds user defined sample types that were published through TODS.
+   */
+  function addTodsDeconType(
+    result: any,
+    portal: __esri.Portal | null,
+    setStatus: (status: string) => void,
+  ) {
+    if (!portal) return;
+    // if (sampleTypeContext.status === 'failure') {
+    //   setStatus('error');
+    //   return;
+    // }
+
+    setStatus('loading');
+
+    const tempPortal = portal as any;
+    const token = tempPortal.credential.token;
+
+    // get the list of feature layers in this feature server
+    getFeatureTables(result.url, token)
+      .then((res: any) => {
+        // fire off requests to get the details and features for each layer
+        const layerPromises: Promise<any>[] = [];
+        res.forEach((layer: any) => {
+          // get the layer features promise
+          const featuresCall = getAllFeatures(
+            portal,
+            result.url + '/' + layer.id,
+          );
+          layerPromises.push(featuresCall);
+        });
+
+        // wait for all of the promises to resolve
+        Promise.all(layerPromises)
+          .then((responses) => {
+            // define items used for updating states
+            const newAttributes: Attributes = {};
+            const newUserSampleTypes: SampleSelectType[] = [];
+            const newDefaultSymbols: DefaultSymbolsType = {
+              editCount: defaultSymbols.editCount + 1,
+              symbols: { ...defaultSymbols.symbols },
+            };
+
+            // create the user defined sample types to be added to TOTS
+            responses.forEach((layerFeatures) => {
+              // get the graphics from the layer
+              layerFeatures.features.forEach((feature: any) => {
+                const graphic: any = Graphic.fromJSON(feature);
+
+                // get the type uuid or generate it if necessary
+                const attributes = graphic.attributes;
+                let typeUuid = attributes.TYPEUUID;
+                if (!typeUuid) {
+                  const keysToCheck = [
+                    'TYPE',
+                    'ShapeType',
+                    'TTPK',
+                    'TTC',
+                    'TTA',
+                    'TTPS',
+                    'LOD_P',
+                    'LOD_NON',
+                    'MCPS',
+                    'TCPS',
+                    'WVPS',
+                    'WWPS',
+                    'SA',
+                    'ALC',
+                    'AMC',
+                  ];
+                  // check if the udt has already been added
+                  Object.values(userDefinedAttributes.sampleTypes).forEach(
+                    (udt: any) => {
+                      const tempUdt: any = {};
+                      const tempAtt: any = {};
+                      keysToCheck.forEach((key) => {
+                        tempUdt[key] = udt[key];
+                        tempAtt[key] = attributes[key];
+                      });
+
+                      if (JSON.stringify(tempUdt) === JSON.stringify(tempAtt)) {
+                        typeUuid = udt.TYPEUUID;
+                      }
+                    },
+                  );
+
+                  if (!typeUuid) {
+                    if (
+                      Object.prototype.hasOwnProperty.call(
+                        technologyTypes.deconAttributes,
+                        attributes.TYPE,
+                      )
+                    ) {
+                      typeUuid = attributes.TYPE;
+                    } else {
+                      typeUuid = generateUUID();
+                    }
+                  }
+
+                  graphic.attributes['TYPEUUID'] = typeUuid;
+                }
+
+                // Add the user defined type if it does not exist
+                if (
+                  !Object.prototype.hasOwnProperty.call(
+                    sampleAttributes,
+                    graphic.attributes.TYPEUUID,
+                  )
+                ) {
+                  newUserSampleTypes.push({
+                    value: typeUuid,
+                    label: attributes.TYPE,
+                    isPredefined: false,
+                  });
+                  newAttributes[attributes.TYPEUUID] = {
+                    status: newAttributes[attributes.TYPEUUID]?.status
+                      ? newAttributes[attributes.TYPEUUID].status
+                      : 'published-ago',
+                    serviceId: result.id,
+                    attributes: {
+                      OBJECTID: attributes.OBJECTID,
+                      PERMANENT_IDENTIFIER: null,
+                      GLOBALID: attributes.GLOBALID,
+                      TYPEUUID: attributes.TYPEUUID,
+                      TYPE: attributes.TYPE,
+                      ShapeType: attributes.ShapeType,
+                      POINT_STYLE: attributes.POINT_STYLE || 'circle',
+                      TTPK: attributes.TTPK ? Number(attributes.TTPK) : null,
+                      TTC: attributes.TTC ? Number(attributes.TTC) : null,
+                      TTA: attributes.TTA ? Number(attributes.TTA) : null,
+                      TTPS: attributes.TTPS ? Number(attributes.TTPS) : null,
+                      LOD_P: attributes.LOD_P ? Number(attributes.LOD_P) : null,
+                      LOD_NON: attributes.LOD_NON
+                        ? Number(attributes.LOD_NON)
+                        : null,
+                      MCPS: attributes.MCPS ? Number(attributes.MCPS) : null,
+                      TCPS: attributes.TCPS ? Number(attributes.TCPS) : null,
+                      WVPS: attributes.WVPS ? Number(attributes.WVPS) : null,
+                      WWPS: attributes.WWPS ? Number(attributes.WWPS) : null,
+                      SA: attributes.SA ? Number(attributes.SA) : null,
+                      AA: null,
+                      ALC: attributes.ALC ? Number(attributes.ALC) : null,
+                      AMC: attributes.AMC ? Number(attributes.AMC) : null,
+                      Notes: '',
+                      CONTAMTYPE: null,
+                      CONTAMVAL: null,
+                      CONTAMUNIT: null,
+                      CREATEDDATE: null,
+                      UPDATEDDATE: null,
+                      USERNAME: null,
+                      ORGANIZATION: null,
+                      DECISIONUNITUUID: null,
+                      DECISIONUNIT: null,
+                      DECISIONUNITSORT: 0,
+                    },
+                  };
+                }
+
+                // Add the symbol symbology
+                if (
+                  attributes.SYMBOLTYPE &&
+                  attributes.SYMBOLCOLOR &&
+                  attributes.SYMBOLOUTLINE
+                ) {
+                  newDefaultSymbols.symbols[attributes.TYPEUUID] = {
+                    type: attributes.SYMBOLTYPE,
+                    color: JSON.parse(attributes.SYMBOLCOLOR),
+                    outline: JSON.parse(attributes.SYMBOLOUTLINE),
+                  };
+                }
+              });
+            });
+
+            // add custom sample types to browser storage
+            if (newUserSampleTypes.length > 0) {
+              setUserDefinedAttributes((item) => {
+                Object.keys(newAttributes).forEach((key) => {
+                  const attributes = newAttributes[key];
+                  attributes.status = 'published-ago';
+                  sampleAttributes[attributes.attributes.TYPEUUID as any] =
+                    attributes.attributes;
+                  item.sampleTypes[attributes.attributes.TYPEUUID as any] =
+                    attributes;
+                });
+
+                return {
+                  editCount: item.editCount + 1,
+                  sampleTypes: item.sampleTypes,
+                };
+              });
+
+              setUserDefinedOptions((options) => {
+                return [...options, ...newUserSampleTypes];
+              });
+            } else {
+              setUserDefinedAttributes((item) => {
+                Object.keys(item.sampleTypes).forEach((key) => {
+                  const attributes = item.sampleTypes[key];
+                  if (attributes?.serviceId === result.id) {
+                    attributes.status = 'published-ago';
+                  }
+                });
+
+                return {
+                  editCount: item.editCount + 1,
+                  sampleTypes: item.sampleTypes,
+                };
+              });
+            }
+
+            setDefaultSymbols(newDefaultSymbols);
+
+            // reset the status
+            setStatus('');
+          })
+          .catch((err) => {
+            console.error(err);
+            setStatus('error');
+          });
+      })
+      .catch((err) => {
+        console.error(err);
+        setStatus('error');
+      });
+  }
+
+  /**
+   * Adds non-tots layers as reference portal layers.
+   */
+  function addRefLayer(result: any, setStatus: (status: string) => void) {
+    if (!map) return;
+
+    setStatus('loading');
+
+    Layer.fromPortalItem({
+      portalItem: new PortalItem({
+        id: result.id,
+      }),
+    }).then((layer) => {
+      // setup the watch event to see when the layer finishes loading
+      const watcher = reactiveUtils.watch(
+        () => layer.loadStatus,
+        () => {
+          // set the status based on the load status
+          if (layer.loadStatus === 'loaded') {
+            setPortalLayers((portalLayers) => [
+              ...portalLayers,
+              {
+                categories: [],
+                id: result.id,
+                label: result.title,
+                layerType: result.type,
+                type: 'arcgis',
+                url: result.url,
+              },
+            ]);
+            setStatus('');
+            watcher.remove();
+
+            // set the min/max scale for tile layers
+            if (layer.type === 'tile') {
+              const tileLayer = layer as __esri.TileLayer;
+              tileLayer.minScale = 0;
+              tileLayer.maxScale = 0;
+            }
+
+            layer.visible = true;
+
+            // zoom to the layer if it has an extent
+            if (layer.fullExtent) {
+              if (mapView && displayDimensions === '2d')
+                mapView.goTo(layer.fullExtent);
+              if (sceneView && displayDimensions === '3d')
+                sceneView.goTo(layer.fullExtent);
+            }
+          } else if (layer.loadStatus === 'failed') {
+            setStatus('error');
+            watcher.remove();
+          }
+        },
+      );
+
+      // add the layer to the map
+      map.add(layer);
+    });
+  }
+
+  async function addTotsLayerAutoSelect(
+    result: any,
+    portal: __esri.Portal | null,
+    setStatus: (status: string) => void = () => {},
+  ) {
+    if (!portal) return;
+
     // determine whether the layer has a tots sample layer or not
     // and add the layer accordingly
     const categories = result?.categories;
     if (categories?.includes('contains-epa-tots-sample-layer')) {
-      if (appType === 'sampling') await addTotsLayer(result, portal);
-      if (appType === 'decon') await addTotsLayerForTods(result, portal);
+      if (appType === 'sampling') await addTotsLayer(result, portal, setStatus);
+      if (appType === 'decon')
+        await addTotsLayerForTods(result, portal, setStatus);
     } else if (
       categories?.includes('contains-epa-tots-user-defined-sample-types')
     ) {
-      // addTotsSampleType(result, portal);
+      await addTotsSampleType(result, portal, setStatus);
     } else if (categories?.includes('contains-epa-tods-decon-layer')) {
-      await addTodsLayer(result, portal);
+      await addTodsLayer(result, portal, setStatus);
     } else if (categories?.includes('contains-epa-tots-aoi-characterization')) {
       await addAoiCharacterizationLayer(
         {
@@ -6621,22 +7470,24 @@ export function useTotsLayerAdder(appType: AppType) {
         null,
         true,
         portal,
+        setStatus,
       );
     } else if (categories?.includes('contains-epa-tots-staging-area')) {
-      // await addStagingAreaLayer(result, portal);
+      await addStagingAreaLayer(result, portal, setStatus);
     } else if (
       categories?.includes('contains-epa-tods-user-defined-decon-tech')
     ) {
-      // await addTodsDeconType(result, portal);
+      await addTodsDeconType(result, portal, setStatus);
     } else {
-      // await addRefLayer(result, portal);
+      await addRefLayer(result, setStatus);
     }
   }
 
   return {
     addTotsLayerAutoSelect,
-    addTotsLayer,
-    addTotsLayerForTods,
-    addTodsLayer,
   };
 }
+
+type LayerGraphics = {
+  [key: string]: __esri.Graphic[];
+};
