@@ -10,12 +10,13 @@ import React, {
 import { css } from '@emotion/react';
 import { useWindowSize } from '@reach/window-size';
 // components
+import LoadingSpinner from 'components/LoadingSpinner';
+import Map from 'components/Map';
 import NavBar from 'components/NavBar';
-import Toolbar from 'components/Toolbar';
+import { ReactTable } from 'components/ReactTable';
 import SplashScreen from 'components/SplashScreen';
 import TestingToolbar from 'components/TestingToolbar';
-import Map from 'components/Map';
-import { ReactTable } from 'components/ReactTable';
+import Toolbar from 'components/Toolbar';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 import { DialogContext } from 'contexts/Dialog';
@@ -136,6 +137,19 @@ const floatPanelScrollContainerStyles = css`
   height: 100%;
 `;
 
+const loadingContainerStyles = css`
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  vertical-align: middle;
+
+  background-color: rgba(255, 255, 255, 0.75);
+  z-index: 3;
+`;
+
 const collapsePanelButton = css`
   margin: 0;
   height: ${expandButtonHeight}px;
@@ -196,6 +210,7 @@ type Props = {
 function App({ appType }: Props) {
   const { calculateResults } = useContext(CalculateContext);
   const {
+    appLoading,
     currentPanel,
     panelExpanded,
     resultsExpanded,
@@ -771,6 +786,11 @@ function App({ appType }: Props) {
       <SplashScreen />
       <div css={appStyles(offset)}>
         <div css={containerStyles}>
+          {appLoading && (
+            <div css={loadingContainerStyles}>
+              <LoadingSpinner />
+            </div>
+          )}
           <div ref={toolbarRef}>
             {window.location.search.includes('devMode=true') && (
               <TestingToolbar />
