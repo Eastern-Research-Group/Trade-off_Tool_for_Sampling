@@ -3,6 +3,8 @@
 import React, { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
 import { DialogOverlay, DialogContent } from '@reach/dialog';
+import IconEdit from '~icons/fa7-solid/edit';
+import IconTrashAlt from '~icons/fa7-solid/trash-alt';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import { EditCustomSampleTypesTable } from 'components/EditLayerMetaData';
@@ -586,7 +588,7 @@ function ConfigureOutput({ appType }: Props) {
                                           setEditAttributesOpen(true);
                                         }}
                                       >
-                                        <i className="fas fa-edit" />
+                                        <IconEdit />
                                         <span className="sr-only">
                                           Edit Attribute
                                         </span>
@@ -629,7 +631,7 @@ function ConfigureOutput({ appType }: Props) {
                                           });
                                         }}
                                       >
-                                        <i className="fas fa-trash-alt" />
+                                        <IconTrashAlt />
                                         <span className="sr-only">
                                           Delete Attribute
                                         </span>

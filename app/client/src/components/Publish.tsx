@@ -12,6 +12,8 @@ import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import IdentityManager from '@arcgis/core/identity/IdentityManager';
 import Portal from '@arcgis/core/portal/Portal';
 import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
+import IconCheck from '~icons/fa7-solid/check';
+import IconTimes from '~icons/fa7-solid/times';
 // components
 import {
   EditAoiCharacterization,
@@ -157,6 +159,18 @@ const unCheckedStyles = css`
 `;
 
 const webMapContainerCheckboxStyles = css`
+  display: inline-flex;
+  align-items: center;
+
+  svg {
+    height: 20px;
+    width: 20px;
+    flex-shrink: 0;
+  }
+`;
+
+const webMapInnerContainerCheckboxStyles = css`
+  ${webMapContainerCheckboxStyles}
   margin-left: 20px;
 `;
 
@@ -2630,11 +2644,11 @@ function Publish({ appType }: Props) {
       <div>
         <h3>Publish Summary</h3>
         <div css={totsOutputContainer}>
-          <strong>
+          <strong css={webMapContainerCheckboxStyles}>
             {includePlan ? (
-              <i className="fas fa-check" css={checkedStyles}></i>
+              <IconCheck css={checkedStyles} />
             ) : (
-              <i className="fas fa-times" css={unCheckedStyles}></i>
+              <IconTimes css={unCheckedStyles} />
             )}
             Include Tailored {appName} Output Files:
           </strong>
@@ -2642,18 +2656,18 @@ function Publish({ appType }: Props) {
             <div>
               {appType === 'sampling' && (
                 <div>
-                  <strong css={webMapContainerCheckboxStyles}>
+                  <strong css={webMapInnerContainerCheckboxStyles}>
                     {includePlanWebMap ? (
-                      <i className="fas fa-check" css={checkedStyles}></i>
+                      <IconCheck css={checkedStyles} />
                     ) : (
-                      <i className="fas fa-times" css={unCheckedStyles}></i>
+                      <IconTimes css={unCheckedStyles} />
                     )}
                     Include Web Map:
                   </strong>
                 </div>
               )}
               {webMapReferenceLayerSelections.length > 0 && (
-                <div css={webMapContainerCheckboxStyles}>
+                <div css={webMapInnerContainerCheckboxStyles}>
                   Reference layers to include:
                   <ul>
                     {webMapReferenceLayerSelections
@@ -2668,17 +2682,17 @@ function Publish({ appType }: Props) {
               {appType === 'sampling' && (
                 <Fragment>
                   <div>
-                    <strong css={webMapContainerCheckboxStyles}>
+                    <strong css={webMapInnerContainerCheckboxStyles}>
                       {includePlanWebScene ? (
-                        <i className="fas fa-check" css={checkedStyles}></i>
+                        <IconCheck css={checkedStyles} />
                       ) : (
-                        <i className="fas fa-times" css={unCheckedStyles}></i>
+                        <IconTimes css={unCheckedStyles} />
                       )}
                       Include Web Scene:
                     </strong>
                   </div>
                   {webSceneReferenceLayerSelections.length > 0 && (
-                    <div css={webMapContainerCheckboxStyles}>
+                    <div css={webMapInnerContainerCheckboxStyles}>
                       Reference layers to include:
                       <ul>
                         {webSceneReferenceLayerSelections
@@ -2729,8 +2743,8 @@ function Publish({ appType }: Props) {
 
         {includeAoiCharacterization && (
           <div>
-            <strong>
-              <i className="fas fa-check" css={checkedStyles}></i>
+            <strong css={webMapContainerCheckboxStyles}>
+              <IconCheck css={checkedStyles} />
               Include AOI Characterization Output Files:
             </strong>
             <ul>
@@ -2743,8 +2757,8 @@ function Publish({ appType }: Props) {
 
         {includeStagingAreas && (
           <div>
-            <strong>
-              <i className="fas fa-check" css={checkedStyles}></i>
+            <strong css={webMapContainerCheckboxStyles}>
+              <IconCheck css={checkedStyles} />
               Include Staging Area Output Files:
             </strong>
             <ul>

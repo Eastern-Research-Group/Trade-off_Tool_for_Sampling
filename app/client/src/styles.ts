@@ -41,11 +41,13 @@ const reactSelectStyles = {
 const infoIconStyles = css`
   margin-left: 10px;
   color: #19a3dd;
+  font-size: 17px;
   pointer-events: all;
 `;
 
 const linkButtonStyles = css`
-  display: inline;
+  display: inline-flex;
+  align-items: center;
   margin-bottom: 0;
   margin-left: 0.25rem;
   padding: 0;

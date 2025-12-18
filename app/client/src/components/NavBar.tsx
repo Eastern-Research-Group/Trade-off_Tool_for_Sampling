@@ -10,6 +10,11 @@ import React, {
   useState,
 } from 'react';
 import { css } from '@emotion/react';
+import IconAngleLeft from '~icons/fa7-solid/angle-left';
+import IconAngleRight from '~icons/fa7-solid/angle-right';
+import IconFlask from '~icons/fa7-solid/flask';
+import IconQuestion from '~icons/fa7-solid/question';
+import IconUsers from '~icons/fa7-solid/users';
 // components
 import AddData from 'components/AddData';
 import AdditionalTools from 'components/AdditionalTools';
@@ -85,7 +90,7 @@ const verticalButtonBar = (color: string) => {
 const navIconStyles = (color: string) => {
   return css`
     font-size: 16px;
-    padding: 13px;
+    padding: 9px;
     margin-left: -23px;
     margin-right: 10px;
     border-radius: 50%;
@@ -117,7 +122,7 @@ function NavButton({
   visitedStepIndex,
   onClick,
 }: NavButtonProps) {
-  const { value, label, iconClass } = panel;
+  const { value, label, Icon } = panel;
 
   // check if this button is selected
   const selectedValue = selectedPanel && selectedPanel.value;
@@ -137,7 +142,7 @@ function NavButton({
         onClick={onClick}
         css={navButtonStyles(selected)}
       >
-        <i className={iconClass} css={navIconStyles(color)} />
+        <Icon css={navIconStyles(color)} />
         <span css={navTextStyles}>{label}</span>
       </button>
     </Fragment>
@@ -207,6 +212,9 @@ const resourceTallyContainerStyles = css`
 
 const subTallyStyles = css`
   margin-left: 15px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
 `;
 
 const mainTallyStyles = css`
@@ -604,13 +612,13 @@ function NavBar({ appType, height }: Props) {
                         ).toLocaleString()}
                       </div>
                       <div css={subTallyStyles}>
-                        <i className="fas fa-users fa-fw" /> $
+                        <IconUsers /> $
                         {Math.round(
                           calculateResults.data['TOTAL_SAMPLING_COST'],
                         ).toLocaleString()}
                       </div>
                       <div css={subTallyStyles}>
-                        <i className="fas fa-flask fa-fw" /> $
+                        <IconFlask /> $
                         {Math.round(
                           calculateResults.data['TOTAL_LAB_COST'],
                         ).toLocaleString()}
@@ -622,7 +630,7 @@ function NavBar({ appType, height }: Props) {
                         ).toLocaleString()}
                       </div>
                       <div css={subTallyStyles}>
-                        <i className="fas fa-users fa-fw" />{' '}
+                        <IconUsers />{' '}
                         {(
                           Math.round(
                             calculateResults.data['SAMPLING_TIME'] * 10,
@@ -630,7 +638,7 @@ function NavBar({ appType, height }: Props) {
                         ).toLocaleString()}
                       </div>
                       <div css={subTallyStyles}>
-                        <i className="fas fa-flask fa-fw" />{' '}
+                        <IconFlask />{' '}
                         {(
                           Math.round(
                             calculateResults.data['LAB_ANALYSIS_TIME'] * 10,
@@ -643,14 +651,20 @@ function NavBar({ appType, height }: Props) {
                       <div>
                         <span css={mainTallyStyles}>Limiting Factor</span>
                         <br />
-                        {calculateResults.data['LIMITING_TIME_FACTOR'] ===
-                          'Sampling' && <i className="fas fa-users fa-fw" />}
-                        {calculateResults.data['LIMITING_TIME_FACTOR'] ===
-                          'Analysis' && (
-                          <i className="fas fa-flask fa-fw" />
-                        )}{' '}
-                        <span>
-                          {calculateResults.data['LIMITING_TIME_FACTOR']}
+                        <span
+                          css={css`
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 3px;
+                          `}
+                        >
+                          {calculateResults.data['LIMITING_TIME_FACTOR'] ===
+                            'Sampling' && <IconUsers />}
+                          {calculateResults.data['LIMITING_TIME_FACTOR'] ===
+                            'Analysis' && <IconFlask />}{' '}
+                          <span>
+                            {calculateResults.data['LIMITING_TIME_FACTOR']}
+                          </span>
                         </span>
                       </div>
                     )}
@@ -710,7 +724,7 @@ function NavBar({ appType, height }: Props) {
             onClick={(_ev) => setGettingStartedOpen(!gettingStartedOpen)}
             css={navButtonStyles(false)}
           >
-            <i className="fas fa-question" css={helpIconStyles} />
+            <IconQuestion css={helpIconStyles} />
             Help
           </button>
         </div>
@@ -791,13 +805,7 @@ function NavBar({ appType, height }: Props) {
                     } Panel`}
                     onClick={() => setPanelExpanded(!panelExpanded)}
                   >
-                    <i
-                      className={
-                        panelExpanded
-                          ? 'fas fa-angle-left'
-                          : 'fas fa-angle-right'
-                      }
-                    />
+                    {panelExpanded ? <IconAngleLeft /> : <IconAngleRight />}
                   </button>
                 )}
                 {currentPanel?.value === 'calculate' &&
@@ -809,13 +817,7 @@ function NavBar({ appType, height }: Props) {
                       } Calculate Results Panel`}
                       onClick={() => setResultsExpanded(!resultsExpanded)}
                     >
-                      <i
-                        className={
-                          resultsExpanded
-                            ? 'fas fa-angle-left'
-                            : 'fas fa-angle-right'
-                        }
-                      />
+                      {resultsExpanded ? <IconAngleLeft /> : <IconAngleRight />}
                     </button>
                   )}
               </div>

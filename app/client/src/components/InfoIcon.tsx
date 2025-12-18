@@ -2,6 +2,7 @@
 
 import React, { Fragment } from 'react';
 import { Tooltip } from 'react-tooltip';
+import IconInfoCircle from '~icons/fa7-solid/info-circle';
 
 type Props = {
   id: string;
@@ -20,12 +21,11 @@ function InfoIcon({ id, tooltip, cssStyles, place = 'right' }: Props) {
         style={{ zIndex: 101 }}
         variant="info"
       />
-      <i
-        className="fas fa-info-circle"
+      <IconInfoCircle
         css={cssStyles}
         data-tooltip-id={id}
         data-tooltip-html={tooltip}
-      ></i>
+      />
     </Fragment>
   );
 }

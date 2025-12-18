@@ -3,6 +3,7 @@
 import { useContext } from 'react';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import { css } from '@emotion/react';
+import IconDrawPolygon from '~icons/fa7-solid/draw-polygon';
 // contexts
 import { DialogContext } from 'contexts/Dialog';
 import { SketchContext } from 'contexts/Sketch';
@@ -16,7 +17,7 @@ const sketchAoiTextStyles = css`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  i {
+  svg {
     font-size: 20px;
     margin-right: 5px;
   }
@@ -154,8 +155,7 @@ function AoiSketchButton({
       css={sketchAoiButtonStyles}
     >
       <span css={sketchAoiTextStyles}>
-        <i className="fas fa-draw-polygon" />{' '}
-        <span>Draw Staging Area Boundary</span>
+        <IconDrawPolygon /> <span>Draw Staging Area Boundary</span>
       </span>
     </button>
   );

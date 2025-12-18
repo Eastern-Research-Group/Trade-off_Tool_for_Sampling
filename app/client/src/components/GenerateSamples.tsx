@@ -16,6 +16,8 @@ import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import Polygon from '@arcgis/core/geometry/Polygon';
 import Polyline from '@arcgis/core/geometry/Polyline';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
+import IconDrawPolygon from '~icons/fa7-solid/draw-polygon';
+import IconSpinner from '~icons/fa7-solid/spinner';
 // components
 import InfoIcon from 'components/InfoIcon';
 import MessageBox from 'components/MessageBox';
@@ -114,13 +116,16 @@ const sketchAoiTextStyles = css`
   justify-content: space-between;
   align-items: center;
 
-  i {
+  svg {
     font-size: 20px;
     margin-right: 5px;
   }
 `;
 
 const submitButtonStyles = css`
+  display: flex;
+  align-items: center;
+  gap: 5px;
   margin-top: 10px;
 `;
 
@@ -1082,8 +1087,7 @@ function GenerateSamples({ id, type }: GenerateSamplesProps) {
               css={sketchAoiButtonStyles}
             >
               <span css={sketchAoiTextStyles}>
-                <i className="fas fa-draw-polygon" />{' '}
-                <span>Draw Sampling Mask</span>
+                <IconDrawPolygon /> <span>Draw Sampling Mask</span>
               </span>
             </button>
           )}
@@ -1323,7 +1327,7 @@ function GenerateSamples({ id, type }: GenerateSamplesProps) {
                   {generateRandomResponse.status !== 'fetching' && 'Submit'}
                   {generateRandomResponse.status === 'fetching' && (
                     <Fragment>
-                      <i className="fas fa-spinner fa-pulse" />
+                      <IconSpinner className="spin-style" />
                       &nbsp;&nbsp;Loading...
                     </Fragment>
                   )}

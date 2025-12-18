@@ -6,6 +6,11 @@ import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import ImageryLayer from '@arcgis/core/layers/ImageryLayer.js';
 import TileLayer from '@arcgis/core/layers/TileLayer.js';
 import { css } from '@emotion/react';
+import IconEdit from '~icons/fa7-solid/edit';
+import IconLayerGroup from '~icons/fa7-solid/layer-group';
+import IconPlus from '~icons/fa7-solid/plus';
+import IconTimes from '~icons/fa7-solid/times';
+import IconTrashAlt from '~icons/fa7-solid/trash-alt';
 // components
 import AoiSketchButton from 'components/AoiSketchButton';
 import ColorPicker from 'components/ColorPicker';
@@ -60,7 +65,7 @@ const headingStyles = css`
   gap: 6px;
   margin-top: 1rem;
 
-  i {
+  svg {
     color: #005ea2;
     font-size: 1.5rem;
   }
@@ -84,6 +89,10 @@ const iconButtonStyles = css`
 
   &:hover {
     background-color: white;
+  }
+
+  svg {
+    font-size: 17px;
   }
 `;
 
@@ -381,7 +390,7 @@ function StagingAreas() {
         click Add Data to incorporate additional layers.
       </p>
       <h3 css={headingStyles}>
-        <i className="fas fa-layer-group" />
+        <IconLayerGroup />
         Add Layers
       </h3>
       <label css={layerItemStyles}>
@@ -460,7 +469,7 @@ function StagingAreas() {
                     title="Delete Layer"
                     onClick={() => handleDelete()}
                   >
-                    <i className="fas fa-trash-alt" />
+                    <IconTrashAlt />
                     <span className="sr-only">Delete Layer</span>
                   </button>
 
@@ -473,11 +482,7 @@ function StagingAreas() {
                         setEditScenarioVisible(!editScenarioVisible);
                       }}
                     >
-                      <i
-                        className={
-                          editScenarioVisible ? 'fas fa-times' : 'fas fa-edit'
-                        }
-                      />
+                      {editScenarioVisible ? <IconTimes /> : <IconEdit />}
                       <span className="sr-only">
                         {editScenarioVisible ? 'Cancel' : 'Edit Layer'}
                       </span>
@@ -500,11 +505,7 @@ function StagingAreas() {
                   }
                 }}
               >
-                <i
-                  className={
-                    addScenarioVisible ? 'fas fa-times' : 'fas fa-plus'
-                  }
-                />
+                {addScenarioVisible ? <IconTimes /> : <IconPlus />}
                 <span className="sr-only">
                   {addScenarioVisible ? 'Cancel' : 'Add Layer'}
                 </span>
