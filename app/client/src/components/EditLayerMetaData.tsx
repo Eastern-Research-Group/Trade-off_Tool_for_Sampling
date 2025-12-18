@@ -10,6 +10,8 @@ import React, {
 import { css } from '@emotion/react';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import Portal from '@arcgis/core/portal/Portal';
+import IconCheck from '~icons/fa7-solid/check';
+import IconExclamationTriangle from '~icons/fa7-solid/exclamation-triangle';
 // components
 import LoadingSpinner from 'components/LoadingSpinner';
 import Select from 'components/Select';
@@ -109,6 +111,9 @@ const saveButtonStyles = (status: string) => {
   }
 
   return css`
+    display: flex;
+    align-items: center;
+    gap: 5px;
     margin: 5px 0;
     ${backgroundColor}
 
@@ -600,11 +605,11 @@ export function EditScenario({
           >
             {failedStatuses.includes(saveStatus.status) ? (
               <Fragment>
-                <i className="fas fa-exclamation-triangle" /> Error
+                <IconExclamationTriangle /> Error
               </Fragment>
             ) : saveStatus.status === 'success' ? (
               <Fragment>
-                <i className="fas fa-check" /> Saved
+                <IconCheck /> Saved
               </Fragment>
             ) : (
               buttonText
@@ -880,7 +885,7 @@ export function EditLayer({
           {(saveStatus === 'none' || saveStatus === 'changes') && buttonText}
           {saveStatus === 'success' && (
             <Fragment>
-              <i className="fas fa-check" /> Saved
+              <IconCheck /> Saved
             </Fragment>
           )}
         </button>
@@ -1122,11 +1127,11 @@ export function EditCustomSampleTypesTable({
         >
           {failedStatuses.includes(saveStatus.status) ? (
             <Fragment>
-              <i className="fas fa-exclamation-triangle" /> Error
+              <IconExclamationTriangle /> Error
             </Fragment>
           ) : saveStatus.status === 'success' ? (
             <Fragment>
-              <i className="fas fa-check" /> Saved
+              <IconCheck /> Saved
             </Fragment>
           ) : (
             'Save'
@@ -1321,11 +1326,11 @@ export function EditAoiCharacterization({
         >
           {failedStatuses.includes(saveStatus.status) ? (
             <Fragment>
-              <i className="fas fa-exclamation-triangle" /> Error
+              <IconExclamationTriangle /> Error
             </Fragment>
           ) : saveStatus.status === 'success' ? (
             <Fragment>
-              <i className="fas fa-check" /> Saved
+              <IconCheck /> Saved
             </Fragment>
           ) : (
             'Save'
@@ -1550,7 +1555,7 @@ export function EditStagingAreaCharacterization({
         >
           {failedStatuses.includes(saveStatus.status) ? (
             <Fragment>
-              <i className="fas fa-exclamation-triangle" /> Error
+              <IconExclamationTriangle /> Error
             </Fragment>
           ) : (
             'Save'

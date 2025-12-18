@@ -5,6 +5,16 @@ import { css } from '@emotion/react';
 import Graphic from '@arcgis/core/Graphic';
 import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
+import IconClone from '~icons/fa7-solid/clone';
+import IconDrawPolygon from '~icons/fa7-solid/draw-polygon';
+import IconEdit from '~icons/fa7-solid/edit';
+import IconLink from '~icons/fa7-solid/link';
+import IconPenFancy from '~icons/fa7-solid/pen-fancy';
+import IconPlus from '~icons/fa7-solid/plus';
+import IconRedoAlt from '~icons/fa7-solid/redo-alt';
+import IconTimes from '~icons/fa7-solid/times';
+import IconTrashAlt from '~icons/fa7-solid/trash-alt';
+import IconUnlink from '~icons/fa7-solid/unlink';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import ColorPicker from 'components/ColorPicker';
@@ -129,7 +139,7 @@ const sampleCountStyles = css`
 type SketchButtonProps = {
   value: string;
   label: string;
-  iconClass: string;
+  Icon: typeof IconPenFancy | typeof IconDrawPolygon;
   layers: LayerType[];
   selectedScenario: ScenarioEditsType | null;
   onClick: () => void;
@@ -138,7 +148,7 @@ type SketchButtonProps = {
 function SketchButton({
   value,
   label,
-  iconClass,
+  Icon,
   layers,
   selectedScenario,
   onClick,
@@ -167,7 +177,7 @@ function SketchButton({
     >
       <div css={textContainerStyles}>
         <div css={textStyles}>
-          <i className={iconClass} />
+          <Icon />
           <br />
           {displayLabel}
           {count > 0 && (
@@ -470,7 +480,7 @@ function LocateSamples() {
           <h2 css={headerStyles}>Create Plan</h2>
           <div css={headerContainer}>
             <button css={deleteButtonStyles} onClick={startOver}>
-              <i className="fas fa-redo-alt" />
+              <IconRedoAlt />
               <br />
               Start Over
             </button>
@@ -509,7 +519,7 @@ function LocateSamples() {
                 });
               }}
             >
-              <i className="fas fa-trash-alt" />
+              <IconTrashAlt />
               <br />
               Delete All Samples
             </button>
@@ -603,7 +613,7 @@ function LocateSamples() {
                           map.remove(mapLayer);
                         }}
                       >
-                        <i className="fas fa-trash-alt" />
+                        <IconTrashAlt />
                         <span className="sr-only">Delete Plan</span>
                       </button>
                       <button
@@ -731,7 +741,7 @@ function LocateSamples() {
                           setSelectedScenario(copiedScenario);
                         }}
                       >
-                        <i className="fas fa-clone" />
+                        <IconClone />
                         <span className="sr-only">Clone Scenario</span>
                       </button>
                       {selectedScenario.status !== 'published' && (
@@ -743,13 +753,7 @@ function LocateSamples() {
                             setEditScenarioVisible(!editScenarioVisible);
                           }}
                         >
-                          <i
-                            className={
-                              editScenarioVisible
-                                ? 'fas fa-times'
-                                : 'fas fa-edit'
-                            }
-                          />
+                          {editScenarioVisible ? <IconTimes /> : <IconEdit />}
                           <span className="sr-only">
                             {editScenarioVisible ? 'Cancel' : 'Edit Plan'}
                           </span>
@@ -765,11 +769,7 @@ function LocateSamples() {
                       setAddScenarioVisible(!addScenarioVisible);
                     }}
                   >
-                    <i
-                      className={
-                        addScenarioVisible ? 'fas fa-times' : 'fas fa-plus'
-                      }
-                    />
+                    {addScenarioVisible ? <IconTimes /> : <IconPlus />}
                     <span className="sr-only">
                       {addScenarioVisible ? 'Cancel' : 'Add Plan'}
                     </span>
@@ -997,7 +997,7 @@ function LocateSamples() {
                             });
                           }}
                         >
-                          <i className="fas fa-unlink" />
+                          <IconUnlink />
                           <span className="sr-only">Unlink Layer</span>
                         </button>
                       ) : (
@@ -1090,7 +1090,7 @@ function LocateSamples() {
                               );
                           }}
                         >
-                          <i className="fas fa-link" />
+                          <IconLink />
                           <span className="sr-only">Link Layer</span>
                         </button>
                       )}
@@ -1202,7 +1202,7 @@ function LocateSamples() {
                             parent.remove(sketchLayer.sketchLayer);
                         }}
                       >
-                        <i className="fas fa-trash-alt" />
+                        <IconTrashAlt />
                         <span className="sr-only">Delete Layer</span>
                       </button>
                       <button
@@ -1328,7 +1328,7 @@ function LocateSamples() {
                           });
                         }}
                       >
-                        <i className="fas fa-clone" />
+                        <IconClone />
                         <span className="sr-only">Clone Layer</span>
                       </button>
                       <button
@@ -1339,11 +1339,7 @@ function LocateSamples() {
                           setEditLayerVisible(!editLayerVisible);
                         }}
                       >
-                        <i
-                          className={
-                            editLayerVisible ? 'fas fa-times' : 'fas fa-edit'
-                          }
-                        />
+                        {editLayerVisible ? <IconTimes /> : <IconEdit />}
                         <span className="sr-only">
                           {editLayerVisible ? 'Cancel' : 'Edit Layer'}
                         </span>
@@ -1358,11 +1354,7 @@ function LocateSamples() {
                       setAddLayerVisible(!addLayerVisible);
                     }}
                   >
-                    <i
-                      className={
-                        addLayerVisible ? 'fas fa-times' : 'fas fa-plus'
-                      }
-                    />
+                    {addLayerVisible ? <IconTimes /> : <IconPlus />}
                     <span className="sr-only">
                       {addLayerVisible ? 'Cancel' : 'Add Layer'}
                     </span>
@@ -1464,10 +1456,10 @@ function LocateSamples() {
                                       ? `${sampleType} (edited)`
                                       : sampleType
                                   }
-                                  iconClass={
+                                  Icon={
                                     shapeType === 'point'
-                                      ? 'fas fa-pen-fancy'
-                                      : 'fas fa-draw-polygon'
+                                      ? IconPenFancy
+                                      : IconDrawPolygon
                                   }
                                   onClick={() =>
                                     sketchButtonClick(sampleTypeUuid)
@@ -1517,10 +1509,10 @@ function LocateSamples() {
                                       ? `${sampleType} (edited)`
                                       : sampleType
                                   }
-                                  iconClass={
+                                  Icon={
                                     shapeType === 'point'
-                                      ? 'fas fa-pen-fancy'
-                                      : 'fas fa-draw-polygon'
+                                      ? IconPenFancy
+                                      : IconDrawPolygon
                                   }
                                   onClick={() =>
                                     sketchButtonClick(sampleTypeUuid)
@@ -1551,10 +1543,10 @@ function LocateSamples() {
                                 selectedScenario={
                                   selectedScenario as ScenarioEditsType
                                 }
-                                iconClass={
+                                Icon={
                                   shapeType === 'point'
-                                    ? 'fas fa-pen-fancy'
-                                    : 'fas fa-draw-polygon'
+                                    ? IconPenFancy
+                                    : IconDrawPolygon
                                 }
                                 onClick={() =>
                                   sketchButtonClick(sampleTypeUuid)

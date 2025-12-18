@@ -2,6 +2,9 @@
 
 import React, { Fragment, ReactNode } from 'react';
 import { css } from '@emotion/react';
+import IconExclamationCircle from '~icons/fa7-solid/exclamation-circle';
+import IconExclamationTriangle from '~icons/fa7-solid/exclamation-triangle';
+import IconInfoCircle from '~icons/fa7-solid/info-circle';
 
 // --- components (MessageBox) ---
 const baseContainerStyles = css`
@@ -53,24 +56,24 @@ type Props = {
 
 function MessageBox({ title, message, severity }: Props) {
   let container;
-  let iconClass;
+  let Icon;
   if (severity === 'error') {
     container = errorContainerStyles;
-    iconClass = 'fas fa-exclamation-circle';
+    Icon = IconExclamationCircle;
   }
   if (severity === 'warning') {
     container = warningContainerStyles;
-    iconClass = 'fas fa-exclamation-triangle';
+    Icon = IconExclamationTriangle;
   }
   if (severity === 'info') {
     container = infoContainerStyles;
-    iconClass = 'fas fa-info-circle';
+    Icon = IconInfoCircle;
   }
 
   return (
     <div css={container}>
       <div css={iconContainerStyles}>
-        <i className={iconClass} />
+        <Icon />
       </div>
       <div css={textContainerStyles}>
         {title && (

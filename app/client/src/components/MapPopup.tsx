@@ -9,9 +9,12 @@ import React, {
 } from 'react';
 import { createRoot } from 'react-dom/client';
 import { css } from '@emotion/react';
-import Select from 'components/Select';
+import IconArrowDown from '~icons/fa7-solid/arrow-down';
+import IconArrowUp from '~icons/fa7-solid/arrow-up';
+import IconExclamationTriangle from '~icons/fa7-solid/exclamation-triangle';
 //components
 import MessageBox from 'components/MessageBox';
+import Select from 'components/Select';
 // types
 import { EditsType } from 'types/Edits';
 import { FieldInfos, LayerType } from 'types/Layer';
@@ -68,6 +71,9 @@ const iconStyles = css`
 `;
 
 const saveButtonStyles = (status: SaveStatusType) => css`
+  display: flex;
+  align-items: center;
+  gap: 5px;
   margin: 5px 0;
   ${status === 'failure' ? `background-color: ${colors.red()};` : ''}
 
@@ -303,10 +309,11 @@ function MapPopup({
               css={linkButtonStyles}
               onClick={() => setShowMore(!showMore)}
             >
-              <i
-                css={iconStyles}
-                className={`fas fa-arrow-${showMore ? 'up' : 'down'}`}
-              />
+              {showMore ? (
+                <IconArrowUp css={iconStyles} />
+              ) : (
+                <IconArrowDown css={iconStyles} />
+              )}
               Show {showMore ? 'Less' : 'More'}
             </button>
           )}
@@ -444,7 +451,7 @@ function MapPopup({
               {(saveStatus === 'none' || saveStatus === 'success') && 'Save'}
               {saveStatus === 'failure' && (
                 <Fragment>
-                  <i className="fas fa-exclamation-triangle" /> Error
+                  <IconExclamationTriangle /> Error
                 </Fragment>
               )}
             </button>
@@ -500,10 +507,11 @@ function MapPopupSimple({ feature, fieldInfos }: MapPopupSimpleProps) {
               css={linkButtonStyles}
               onClick={() => setShowMore(!showMore)}
             >
-              <i
-                css={iconStyles}
-                className={`fas fa-arrow-${showMore ? 'up' : 'down'}`}
-              />
+              {showMore ? (
+                <IconArrowUp css={iconStyles} />
+              ) : (
+                <IconArrowDown css={iconStyles} />
+              )}
               Show {showMore ? 'Less' : 'More'}
             </button>
           )}

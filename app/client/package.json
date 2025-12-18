@@ -32,8 +32,11 @@
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
+    "@iconify-json/fa7-solid": "1.2.3",
     "@reach/dialog": "0.18.0",
     "@reach/window-size": "0.18.0",
+    "@svgr/core": "8.1.0",
+    "@svgr/plugin-jsx": "8.1.0",
     "@tanstack/react-table": "8.21.3",
     "@tanstack/react-virtual": "3.13.12",
     "dexie": "4.2.1",
@@ -51,6 +54,7 @@
     "react-tooltip": "5.30.0",
     "regenerator-runtime": "0.14.1",
     "universal-cookie": "8.0.1",
+    "unplugin-icons": "22.5.0",
     "uuid": "13.0.0"
   },
   "devDependencies": {

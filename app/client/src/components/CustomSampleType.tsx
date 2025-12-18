@@ -3,6 +3,12 @@
 import React, { Fragment, JSX, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
 import Collection from '@arcgis/core/core/Collection';
+import IconClone from '~icons/fa7-solid/clone';
+import IconEdit from '~icons/fa7-solid/edit';
+import IconFileAlt from '~icons/fa7-solid/file-alt';
+import IconPlus from '~icons/fa7-solid/plus';
+import IconTimes from '~icons/fa7-solid/times';
+import IconTrashAlt from '~icons/fa7-solid/trash-alt';
 // components
 import ColorPicker from 'components/ColorPicker';
 import Select from 'components/Select';
@@ -524,7 +530,7 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
                     });
                   }}
                 >
-                  <i className="fas fa-trash-alt" />
+                  <IconTrashAlt />
                   <span className="sr-only">Delete Sample Type</span>
                 </button>
               )}
@@ -556,11 +562,7 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
                   setSampleTypeInputs('clone');
                 }}
               >
-                <i
-                  className={
-                    editingStatus === 'clone' ? 'fas fa-times' : 'fas fa-clone'
-                  }
-                />
+                {editingStatus === 'clone' ? <IconTimes /> : <IconClone />}
                 <span className="sr-only">
                   {editingStatus === 'clone' ? 'Cancel' : 'Clone Sample Type'}
                 </span>
@@ -579,13 +581,7 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
                     setSampleTypeInputs('view');
                   }}
                 >
-                  <i
-                    className={
-                      editingStatus === 'view'
-                        ? 'fas fa-times'
-                        : 'fas fa-file-alt'
-                    }
-                  />
+                  {editingStatus === 'view' ? <IconTimes /> : <IconFileAlt />}
                   <span className="sr-only">
                     {editingStatus === 'view' ? 'Hide' : 'View Sample Type'}
                   </span>
@@ -606,11 +602,7 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
                     setSampleTypeInputs('edit');
                   }}
                 >
-                  <i
-                    className={
-                      editingStatus === 'edit' ? 'fas fa-times' : 'fas fa-edit'
-                    }
-                  />
+                  {editingStatus === 'edit' ? <IconTimes /> : <IconEdit />}
                   <span className="sr-only">
                     {editingStatus === 'edit' ? 'Cancel' : 'Edit Sample Type'}
                   </span>
@@ -631,11 +623,7 @@ function CustomSampleType({ appType, id }: CustomSampleTypeProps) {
               setSampleTypeInputs('create');
             }}
           >
-            <i
-              className={
-                editingStatus === 'create' ? 'fas fa-times' : 'fas fa-plus'
-              }
-            />
+            {editingStatus === 'create' ? <IconTimes /> : <IconPlus />}
             <span className="sr-only">
               {editingStatus === 'create' ? 'Cancel' : 'Create Sample Type'}
             </span>

@@ -2,6 +2,8 @@
 
 import React, { ReactNode, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
+import IconAngleDown from '~icons/fa7-solid/angle-down';
+import IconAngleRight from '~icons/fa7-solid/angle-right';
 
 // --- styles (AccordionList) ---
 const accordionListContainer = css`
@@ -34,14 +36,6 @@ const headerStyles = css`
   &:focus {
     background-color: #f0f6f9;
   }
-
-  .fa-angle-down {
-    margin-right: 0.875em;
-  }
-
-  .fa-angle-right {
-    margin-right: 0.875em;
-  }
 `;
 
 const textStyles = css`
@@ -51,8 +45,9 @@ const textStyles = css`
 `;
 
 const arrow = css`
-  font-size: 1.25em;
   color: #526571;
+  font-size: 1.25em;
+  margin-right: 0.875em;
 `;
 
 // --- components (AccordionItem) ---
@@ -97,7 +92,11 @@ function AccordionItem({
           }
         }}
       >
-        <i css={arrow} className={`fa fa-angle-${isOpen ? 'down' : 'right'}`} />
+        {isOpen ? (
+          <IconAngleDown css={arrow} aria-hidden="true" />
+        ) : (
+          <IconAngleRight css={arrow} aria-hidden="true" />
+        )}
         <span css={textStyles}>{title}</span>
       </header>
 
