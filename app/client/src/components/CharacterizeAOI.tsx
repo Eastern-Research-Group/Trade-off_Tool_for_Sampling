@@ -2,6 +2,12 @@
 
 import React, { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
+import IconDrawPolygon from '~icons/fa7-solid/draw-polygon';
+import IconEdit from '~icons/fa7-solid/edit';
+import IconPlus from '~icons/fa7-solid/plus';
+import IconSpinner from '~icons/fa7-solid/spinner';
+import IconTimes from '~icons/fa7-solid/times';
+import IconTrashAlt from '~icons/fa7-solid/trash-alt';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import { SaveResultsType } from 'components/EditLayerMetaData';
@@ -103,6 +109,12 @@ const addButtonStyles = css`
   height: 38px; /* same height as ReactSelect */
 `;
 
+const infoIconContainerStyles = css`
+  display: flex;
+  align-items: center;
+  margin-top: 0.5rem;
+`;
+
 const iconButtonContainerStyles = css`
   display: flex;
   justify-content: space-between;
@@ -118,6 +130,7 @@ const iconButtonStyles = css`
   line-height: 16px;
   text-decoration-line: none;
   font-weight: bold;
+  font-size: 16px;
 
   &:hover {
     background-color: white;
@@ -164,6 +177,8 @@ const radioLabelStyles = css`
 `;
 
 const saveButtonStyles = css`
+  display: flex;
+  align-items: center;
   &: disabled {
     cursor: default;
     opacity: 0.65;
@@ -187,7 +202,7 @@ const sketchAoiTextStyles = css`
   justify-content: space-between;
   align-items: center;
 
-  i {
+  svg {
     font-size: 20px;
     margin-right: 5px;
   }
@@ -1178,7 +1193,7 @@ function CharacterizeAOI({
                     title="Delete Layer"
                     onClick={() => handleDelete()}
                   >
-                    <i className="fas fa-trash-alt" />
+                    <IconTrashAlt />
                     <span className="sr-only">Delete Layer</span>
                   </button>
 
@@ -1190,11 +1205,7 @@ function CharacterizeAOI({
                       setEditScenarioVisible(!editScenarioVisible);
                     }}
                   >
-                    <i
-                      className={
-                        editScenarioVisible ? 'fas fa-times' : 'fas fa-edit'
-                      }
-                    />
+                    {editScenarioVisible ? <IconTimes /> : <IconEdit />}
                     <span className="sr-only">
                       {editScenarioVisible ? 'Cancel' : 'Edit Layer'}
                     </span>
@@ -1218,11 +1229,7 @@ function CharacterizeAOI({
                   }
                 }}
               >
-                <i
-                  className={
-                    addScenarioVisible ? 'fas fa-times' : 'fas fa-plus'
-                  }
-                />
+                {addScenarioVisible ? <IconTimes /> : <IconPlus />}
                 <span className="sr-only">
                   {addScenarioVisible ? 'Cancel' : 'Add Layer'}
                 </span>
@@ -1355,11 +1362,7 @@ function CharacterizeAOI({
         (showOnEdit && (addScenarioVisible || editScenarioVisible))) && (
         <Fragment>
           {showOnEdit && (
-            <div
-              css={css`
-                margin-top: 0.5rem;
-              `}
-            >
+            <div css={infoIconContainerStyles}>
               <strong>Characterize Area of Interest</strong>
               <InfoIcon
                 cssStyles={infoIconStyles}
@@ -1436,8 +1439,7 @@ function CharacterizeAOI({
               css={sketchAoiButtonStyles}
             >
               <span css={sketchAoiTextStyles}>
-                <i className="fas fa-draw-polygon" />{' '}
-                <span>Draw Area of Interest</span>
+                <IconDrawPolygon /> <span>Draw Area of Interest</span>
               </span>
             </button>
           )}
@@ -1580,7 +1582,10 @@ function CharacterizeAOI({
                 to upload an alternative GSG file to support ground surface
                 classification imagery analysis.
               </p>
-              <label htmlFor="gsg-file-select-input">
+              <label
+                htmlFor="gsg-file-select-input"
+                css={infoIconContainerStyles}
+              >
                 GSG File (optional)
                 <InfoIcon
                   id={'gsg-file-info-icon'}
@@ -1651,7 +1656,7 @@ function CharacterizeAOI({
                     'Save and Submit'}
                   {aoiCharacterizationData.status === 'fetching' && (
                     <Fragment>
-                      <i className="fas fa-spinner fa-pulse" />
+                      <IconSpinner className="spin-style" />
                       &nbsp;&nbsp;Loading...
                     </Fragment>
                   )}

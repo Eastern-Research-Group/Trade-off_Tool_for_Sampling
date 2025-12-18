@@ -9,6 +9,9 @@ import React, {
 } from 'react';
 import { css } from '@emotion/react';
 import { useWindowSize } from '@reach/window-size';
+import IconChevronDown from '~icons/fa7-solid/chevron-down';
+import IconChevronUp from '~icons/fa7-solid/chevron-up';
+import IconSearchPlus from '~icons/fa7-solid/search-plus';
 // components
 import LoadingSpinner from 'components/LoadingSpinner';
 import Map from 'components/Map';
@@ -151,6 +154,9 @@ const loadingContainerStyles = css`
 `;
 
 const collapsePanelButton = css`
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin: 0;
   height: ${expandButtonHeight}px;
   width: 64px;
@@ -158,6 +164,7 @@ const collapsePanelButton = css`
   background-color: white;
   color: black;
   pointer-events: all;
+  font-size: 17px;
 `;
 
 const resizerContainerStyles = css`
@@ -199,7 +206,7 @@ const zoomButtonStyles = css`
   color: black;
   margin: 0;
   padding: 0;
-  font-size: 16px;
+  font-size: 17px;
 `;
 
 // --- components (NavBar) ---
@@ -837,13 +844,7 @@ function App({ appType }: Props) {
                 } Table Panel`}
                 onClick={() => setTablePanelExpanded(!tablePanelExpanded)}
               >
-                <i
-                  className={
-                    tablePanelExpanded
-                      ? 'fas fa-chevron-down'
-                      : 'fas fa-chevron-up'
-                  }
-                />
+                {tablePanelExpanded ? <IconChevronDown /> : <IconChevronUp />}
               </button>
             </div>
           )}
@@ -1068,7 +1069,7 @@ function App({ appType }: Props) {
                                     }
                                   }}
                                 >
-                                  <i className="fas fa-search-plus" />
+                                  <IconSearchPlus />
                                   <span className="sr-only">
                                     Zoom to sample
                                   </span>

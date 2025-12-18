@@ -5,6 +5,12 @@ import { css } from '@emotion/react';
 import Collection from '@arcgis/core/core/Collection';
 import Portal from '@arcgis/core/portal/Portal';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
+import IconAngleDoubleLeft from '~icons/fa7-solid/angle-double-left';
+import IconAngleLeft from '~icons/fa7-solid/angle-left';
+import IconAngleRight from '~icons/fa7-solid/angle-right';
+import IconLongArrowAltDown from '~icons/fa7-solid/long-arrow-alt-down';
+import IconLongArrowAltUp from '~icons/fa7-solid/long-arrow-alt-up';
+import IconSearch from '~icons/fa7-solid/search';
 // components
 import LoadingSpinner from 'components/LoadingSpinner';
 import Select from 'components/Select';
@@ -125,6 +131,8 @@ const multiSelectStyles = css`
 `;
 
 const pageControlStyles = css`
+  display: flex;
+  align-items: center;
   color: black;
   background-color: white;
   padding: 0;
@@ -133,6 +141,11 @@ const pageControlStyles = css`
   &:disabled {
     opacity: 0.35;
     cursor: default;
+  }
+
+  svg {
+    font-size: 17px;
+    margin-top: 2px;
   }
 `;
 
@@ -530,7 +543,7 @@ function SearchPanel({ appType }: Props) {
           type="submit"
           onClick={(_ev) => setSearch(searchText)}
         >
-          <i className="fas fa-search"></i>
+          <IconSearch />
           <span className="sr-only" css={highContrastSpan}>
             Search
           </span>
@@ -564,11 +577,11 @@ function SearchPanel({ appType }: Props) {
             css={sortOrderStyles}
             onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
           >
-            <i
-              className={`fas fa-long-arrow-alt-${
-                sortOrder === 'desc' ? 'up' : 'down'
-              }`}
-            ></i>
+            {sortOrder === 'desc' ? (
+              <IconLongArrowAltUp />
+            ) : (
+              <IconLongArrowAltDown />
+            )}
             <span className="sr-only">
               {sortOrder === 'desc' ? 'Sort Ascending' : 'Sort Descending'}
             </span>
@@ -612,36 +625,34 @@ function SearchPanel({ appType }: Props) {
             )}
             {searchResults.data && (
               <div css={footerBar}>
-                <div>
-                  <button
-                    css={pageControlStyles}
-                    disabled={pageNumber === 1}
-                    onClick={() => setPageNumber(1)}
-                  >
-                    <i className="fas fa-angle-double-left"></i>
-                    <span className="sr-only">Go to first page</span>
-                  </button>
-                  <button
-                    css={pageControlStyles}
-                    disabled={pageNumber === 1}
-                    onClick={() => setPageNumber(pageNumber - 1)}
-                  >
-                    <i className="fas fa-angle-left"></i>
-                    <span className="sr-only">Previous</span>
-                  </button>
-                  <span>{pageNumber}</span>
-                  <button
-                    css={pageControlStyles}
-                    disabled={searchResults.data.nextQueryParams.start === -1}
-                    onClick={() => setPageNumber(pageNumber + 1)}
-                  >
-                    <i className="fas fa-angle-right"></i>
-                    <span className="sr-only">Next</span>
-                  </button>
-                  <span css={totalStyles}>
-                    {searchResults.data.total.toLocaleString()} Items
-                  </span>
-                </div>
+                <button
+                  css={pageControlStyles}
+                  disabled={pageNumber === 1}
+                  onClick={() => setPageNumber(1)}
+                >
+                  <IconAngleDoubleLeft />
+                  <span className="sr-only">Go to first page</span>
+                </button>
+                <button
+                  css={pageControlStyles}
+                  disabled={pageNumber === 1}
+                  onClick={() => setPageNumber(pageNumber - 1)}
+                >
+                  <IconAngleLeft />
+                  <span className="sr-only">Previous</span>
+                </button>
+                <span>{pageNumber}</span>
+                <button
+                  css={pageControlStyles}
+                  disabled={searchResults.data.nextQueryParams.start === -1}
+                  onClick={() => setPageNumber(pageNumber + 1)}
+                >
+                  <IconAngleRight />
+                  <span className="sr-only">Next</span>
+                </button>
+                <span css={totalStyles}>
+                  {searchResults.data.total.toLocaleString()} Items
+                </span>
               </div>
             )}
           </Fragment>

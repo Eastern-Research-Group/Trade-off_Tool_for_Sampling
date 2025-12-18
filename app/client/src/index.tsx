@@ -108,6 +108,18 @@ const globalStyles = css`
     }
   }
 
+  .spin-style {
+    animation: loading-spin 1s infinite steps(8);
+    @keyframes loading-spin {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  }
+
   .sr-only {
     position: absolute;
     left: -10000px;

@@ -19,6 +19,7 @@ import Graphic from '@arcgis/core/Graphic';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import PopupTemplate from '@arcgis/core/PopupTemplate';
 import * as rendererJsonUtils from '@arcgis/core/renderers/support/jsonUtils';
+import IconFile from '~icons/fa7-solid/file';
 // components
 import ColorPicker from 'components/ColorPicker';
 import MessageBox from 'components/MessageBox';
@@ -129,37 +130,55 @@ function fileVerification(type: LayerTypeName, attributes: any) {
 }
 
 // --- styles (FileIcon) ---
-const fileIconOuterContainer = css`
-  width: 2em;
-  line-height: 1;
-  margin: 5px;
-`;
-
+const fileIconSize = '75px';
 const fileIconContainer = css`
+  position: relative;
   display: flex;
   align-items: center;
-  width: 100%;
-  height: 100%;
-  vertical-align: middle;
+  height: ${fileIconSize};
+  width: ${fileIconSize};
+  line-height: 1;
 `;
 
 const fileIcon = css`
   color: #e6e8ed;
-  width: 100%;
+  height: ${fileIconSize};
+  width: ${fileIconSize};
 `;
 
 const fileIconTextColor = css`
   color: #545454;
 `;
 
-const fileIconText = css`
+const fileIconTextColorDiv = css`
   ${fileIconTextColor}
+  display: flex;
+  flex-flow: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
   font-size: 16px;
   margin-top: 16px;
-  width: 100%;
+`;
+
+const fileIconGrid = css`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+`;
+
+const fileIconText = css`
+  ${fileIconTextColor}
+  position: absolute;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 70px;
+  margin-top: 20px;
+  margin-left: 3px;
+  font-size: 16px;
+  inset: 0;
 `;
 
 const checkBoxStyles = css`
@@ -182,13 +201,9 @@ type FileIconProps = {
 
 function FileIcon({ label }: FileIconProps) {
   return (
-    <span className="fa-stack fa-2x" css={fileIconOuterContainer}>
-      <span css={fileIconContainer}>
-        <i className="fas fa-file fa-stack-2x" css={fileIcon}></i>
-        <span className="fa-stack-text fa-stack-1x" css={fileIconText}>
-          {label}
-        </span>
-      </span>
+    <span css={fileIconContainer}>
+      <IconFile css={fileIcon} />
+      <span css={fileIconText}>{label}</span>
     </span>
   );
 }
@@ -1758,13 +1773,13 @@ function FilePanel({ appType }: Props) {
                     {isDragActive ? (
                       <p>Drop the files here ...</p>
                     ) : (
-                      <div css={fileIconTextColor}>
+                      <div css={fileIconTextColorDiv}>
                         {layerType.value === 'GSG' ? (
-                          <div>
+                          <div css={fileIconGrid}>
                             <FileIcon label="GSG" />
                           </div>
                         ) : (
-                          <div>
+                          <div css={fileIconGrid}>
                             <FileIcon label="Shape File" />
                             <FileIcon label="CSV" />
                             <FileIcon label="KML" />
@@ -1773,10 +1788,12 @@ function FilePanel({ appType }: Props) {
                             <FileIcon label="Geo JSON" />
                           </div>
                         )}
-                        <br />
-                        <label htmlFor="tots-dropzone">Drop or Browse</label>
-                        <br />
-                        <button onClick={open}>Browse</button>
+                        <div>
+                          <br />
+                          <label htmlFor="tots-dropzone">Drop or Browse</label>
+                          <br />
+                          <button onClick={open}>Browse</button>
+                        </div>
                       </div>
                     )}
                   </div>

@@ -27,6 +27,10 @@ import {
   VirtualItem,
   Virtualizer,
 } from '@tanstack/react-virtual';
+import IconArrowDown from '~icons/fa7-solid/arrow-down';
+import IconArrowUp from '~icons/fa7-solid/arrow-up';
+import IconMinus from '~icons/fa7-solid/minus';
+import IconPlus from '~icons/fa7-solid/plus';
 // components
 import Select from 'components/Select';
 // styles
@@ -316,8 +320,8 @@ export function ReactTable({
                     </span>
                     <span>
                       {{
-                        asc: <i className="fas fa-arrow-up" />,
-                        desc: <i className="fas fa-arrow-down" />,
+                        asc: <IconArrowUp />,
+                        desc: <IconArrowDown />,
                       }[header.column.getIsSorted() as string] ?? null}
                     </span>
                   </div>
@@ -579,9 +583,7 @@ export function ReactTableEditable({
                           justifyContent: 'space-around',
                         }}
                       >
-                        <i
-                          className={`fas fa-${row.getIsExpanded() ? 'minus' : 'plus'}`}
-                        />
+                        {row.getIsExpanded() ? <IconMinus /> : <IconPlus />}
                       </div>
                     </td>
                   )}

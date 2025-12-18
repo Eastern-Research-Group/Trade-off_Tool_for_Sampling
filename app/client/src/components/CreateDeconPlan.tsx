@@ -4,6 +4,15 @@ import React, { Fragment, useContext, useEffect, useState } from 'react';
 import { css } from '@emotion/react';
 import { DialogContent, DialogOverlay } from '@reach/dialog';
 import { CellContext } from '@tanstack/react-table';
+import IconCheck from '~icons/fa7-solid/check';
+import IconClone from '~icons/fa7-solid/clone';
+import IconEdit from '~icons/fa7-solid/edit';
+import IconLink from '~icons/fa7-solid/link';
+import IconPlus from '~icons/fa7-solid/plus';
+import IconRedoAlt from '~icons/fa7-solid/redo-alt';
+import IconTimes from '~icons/fa7-solid/times';
+import IconTrashAlt from '~icons/fa7-solid/trash-alt';
+import IconUnlink from '~icons/fa7-solid/unlink';
 // components
 import CharacterizeAOI from 'components/CharacterizeAOI';
 import { EditScenario } from 'components/EditLayerMetaData';
@@ -174,6 +183,10 @@ const deleteButtonStyles = css`
   text-decoration-line: none;
   font-weight: bold;
 
+  svg {
+    font-size: 17px;
+  }
+
   &:hover {
     background-color: white;
   }
@@ -232,6 +245,9 @@ const saveButtonStyles = (status: string) => {
   }
 
   return css`
+    display: flex;
+    align-items: center;
+    gap: 5px;
     margin: 5px 0;
     ${backgroundColor}
 
@@ -422,7 +438,7 @@ function CreateDeconPlan() {
           <h2 css={headerStyles}>Create Decon Plan</h2>
           <div css={headerContainer}>
             <button css={deleteButtonStyles} onClick={startOver}>
-              <i className="fas fa-redo-alt" />
+              <IconRedoAlt />
               <br />
               Start Over
             </button>
@@ -511,7 +527,7 @@ function CreateDeconPlan() {
                           map.remove(mapLayer);
                         }}
                       >
-                        <i className="fas fa-trash-alt" />
+                        <IconTrashAlt />
                         <span className="sr-only">Delete Plan</span>
                       </button>
                       <button
@@ -600,7 +616,7 @@ function CreateDeconPlan() {
                           setSelectedScenario(copiedScenario);
                         }}
                       >
-                        <i className="fas fa-clone" />
+                        <IconClone />
                         <span className="sr-only">Clone Plan</span>
                       </button>
                       {selectedScenario.status !== 'published' && (
@@ -611,11 +627,7 @@ function CreateDeconPlan() {
                             setEditPlanVisible(!editPlanVisible);
                           }}
                         >
-                          <i
-                            className={
-                              editPlanVisible ? 'fas fa-times' : 'fas fa-edit'
-                            }
-                          />
+                          {editPlanVisible ? <IconTimes /> : <IconEdit />}
                           <span className="sr-only">
                             {editPlanVisible ? 'Cancel' : 'Edit Plan'}
                           </span>
@@ -631,11 +643,7 @@ function CreateDeconPlan() {
                       setAddPlanVisible(!addPlanVisible);
                     }}
                   >
-                    <i
-                      className={
-                        addPlanVisible ? 'fas fa-times' : 'fas fa-plus'
-                      }
-                    />
+                    {addPlanVisible ? <IconTimes /> : <IconPlus />}
                     <span className="sr-only">
                       {addPlanVisible ? 'Cancel' : 'Add Plan'}
                     </span>
@@ -796,7 +804,7 @@ function CreateDeconPlan() {
                                 });
                               }}
                             >
-                              <i className="fas fa-unlink" />
+                              <IconUnlink />
                               <span className="sr-only">Unlink Operation</span>
                             </button>
                           ) : (
@@ -843,7 +851,7 @@ function CreateDeconPlan() {
                                 });
                               }}
                             >
-                              <i className="fas fa-link" />
+                              <IconLink />
                               <span className="sr-only">Link Operation</span>
                             </button>
                           )}
@@ -906,7 +914,7 @@ function CreateDeconPlan() {
                               );
                             }}
                           >
-                            <i className="fas fa-trash-alt" />
+                            <IconTrashAlt />
                             <span className="sr-only">Delete Operation</span>
                           </button>
 
@@ -1006,7 +1014,7 @@ function CreateDeconPlan() {
                               setDeconOperation(copiedLayer);
                             }}
                           >
-                            <i className="fas fa-clone" />
+                            <IconClone />
                             <span className="sr-only">Clone Operation</span>
                           </button>
 
@@ -1025,13 +1033,11 @@ function CreateDeconPlan() {
                                   setNewDeconOperationName(deconOperation.name);
                               }}
                             >
-                              <i
-                                className={
-                                  editOperationVisible
-                                    ? 'fas fa-times'
-                                    : 'fas fa-edit'
-                                }
-                              />
+                              {editOperationVisible ? (
+                                <IconTimes />
+                              ) : (
+                                <IconEdit />
+                              )}
                               <span className="sr-only">
                                 {editOperationVisible
                                   ? 'Cancel'
@@ -1051,11 +1057,7 @@ function CreateDeconPlan() {
                           setAddOperationVisible(!addOperationVisible);
                         }}
                       >
-                        <i
-                          className={
-                            addOperationVisible ? 'fas fa-times' : 'fas fa-plus'
-                          }
-                        />
+                        {addOperationVisible ? <IconTimes /> : <IconPlus />}
                         <span className="sr-only">
                           {addOperationVisible ? 'Cancel' : 'Add Operation'}
                         </span>
@@ -1253,7 +1255,7 @@ function CreateDeconPlan() {
                         'Save'}
                       {saveStatus === 'success' && (
                         <Fragment>
-                          <i className="fas fa-check" /> Saved
+                          <IconCheck /> Saved
                         </Fragment>
                       )}
                     </button>

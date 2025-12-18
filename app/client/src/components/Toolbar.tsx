@@ -13,6 +13,8 @@ import Portal from '@arcgis/core/portal/Portal';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 import Slider from '@arcgis/core/widgets/Slider';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
+import IconSignInAlt from '~icons/fa7-solid/sign-in-alt';
+import IconSignOutAlt from '~icons/fa7-solid/sign-out-alt';
 // components
 import InfoIcon from 'components/InfoIcon';
 import Switch from 'components/Switch';
@@ -423,6 +425,8 @@ const toolBarButtonsStyles = css`
 
 const toolBarButtonStyles = (width?: string) => {
   return css`
+    display: flex;
+    align-items: center;
     height: ${toolBarHeight};
     margin-bottom: 0;
     padding: 0.75em 1em;
@@ -446,6 +450,13 @@ const toolBarButtonStyles = (width?: string) => {
     &.tots-button-selected {
       background-color: ${appTheme.headerButtonSelectedColor};
       border-top: 2px solid #8491a1;
+    }
+
+    svg {
+      font-size: 17px;
+      margin-top: 2px;
+      margin-right: 5px;
+      width: unset;
     }
   `;
 };
@@ -1224,7 +1235,7 @@ function Toolbar({ appType }: Props) {
         </div>
         {oAuthInfo && (
           <button
-            css={toolBarButtonStyles('105px')}
+            css={toolBarButtonStyles('110px')}
             onClick={(_ev) => {
               if (signedIn) {
                 IdentityManager.destroyCredentials();
@@ -1254,10 +1265,11 @@ function Toolbar({ appType }: Props) {
               }
             }}
           >
-            <i
-              className={`fas fa-sign-${signedIn ? 'out' : 'in'}-alt`}
-              css={navIconStyles}
-            />
+            {signedIn ? (
+              <IconSignOutAlt css={navIconStyles} />
+            ) : (
+              <IconSignInAlt css={navIconStyles} />
+            )}
             {signedIn ? 'Logout' : 'Login'}
           </button>
         )}

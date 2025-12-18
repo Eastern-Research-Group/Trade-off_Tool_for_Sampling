@@ -1,3 +1,10 @@
+import IconCalculator from '~icons/fa7-solid/calculator';
+import IconCog from '~icons/fa7-solid/cog';
+import IconLayerGroup from '~icons/fa7-solid/layer-group';
+import IconThumbtack from '~icons/fa7-solid/thumbtack';
+import IconUpload from '~icons/fa7-solid/upload';
+import IconWrench from '~icons/fa7-solid/wrench';
+// types
 import { LayerTypeOption } from 'types/Navigation';
 
 export const isDecon = () => window.location.pathname === '/decon';
@@ -6,32 +13,32 @@ export const samplingPanels: PanelType[] = [
   {
     value: 'addData',
     label: 'Add Data',
-    iconClass: 'fas fa-layer-group',
+    Icon: IconLayerGroup,
   },
   {
     value: 'additionalTools',
     label: 'Additional Tools',
-    iconClass: 'fas fa-wrench',
+    Icon: IconWrench,
   },
   {
     value: 'locateSamples',
     label: 'Create Plan',
-    iconClass: 'fas fa-thumbtack',
+    Icon: IconThumbtack,
   },
   {
     value: 'calculate',
     label: 'Calculate Resources',
-    iconClass: 'fas fa-calculator',
+    Icon: IconCalculator,
   },
   {
     value: 'configureOutput',
     label: 'Configure Output',
-    iconClass: 'fas fa-cog',
+    Icon: IconCog,
   },
   {
     value: 'publish',
     label: 'Publish Output',
-    iconClass: 'fas fa-upload',
+    Icon: IconUpload,
   },
 ];
 
@@ -39,32 +46,32 @@ export const deconPanels: PanelType[] = [
   {
     value: 'addData',
     label: 'Add Data',
-    iconClass: 'fas fa-layer-group',
+    Icon: IconLayerGroup,
   },
   {
     value: 'additionalTools',
     label: 'Additional Tools',
-    iconClass: 'fas fa-wrench',
+    Icon: IconWrench,
   },
   {
     value: 'decon',
     label: 'Create Decon Plan',
-    iconClass: 'fas fa-thumbtack',
+    Icon: IconThumbtack,
   },
   {
     value: 'calculate',
     label: 'Calculate Resources',
-    iconClass: 'fas fa-calculator',
+    Icon: IconCalculator,
   },
   {
     value: 'configureOutput',
     label: 'Configure Output',
-    iconClass: 'fas fa-cog',
+    Icon: IconCog,
   },
   {
     value: 'publish',
     label: 'Publish Output',
-    iconClass: 'fas fa-upload',
+    Icon: IconUpload,
   },
 ];
 
@@ -154,5 +161,5 @@ export type PanelValueType =
 export type PanelType = {
   value: PanelValueType;
   label: string;
-  iconClass: string;
+  Icon: typeof IconCalculator;
 };
