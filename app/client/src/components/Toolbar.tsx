@@ -1034,7 +1034,7 @@ function Toolbar({ appType }: Props) {
             <i className="esri-icon-settings2" css={navIconStyles} />
             Settings{' '}
           </button>
-          <div css={floatContainerStyles(settingsVisible, '242px')}>
+          <div css={floatContainerStyles(settingsVisible, '248px')}>
             <fieldset css={fieldsetStyles}>
               <legend>
                 Dimension
@@ -1203,7 +1203,7 @@ function Toolbar({ appType }: Props) {
             <i className="esri-icon-basemap" css={navIconStyles} />
             Basemap{' '}
           </button>
-          <div css={floatContainerStyles(basemapVisible, '131px')}>
+          <div css={floatContainerStyles(basemapVisible, '137px')}>
             <div
               id="basemap-container-2d"
               style={{ display: displayDimensions === '2d' ? 'block' : 'none' }}
@@ -1227,7 +1227,7 @@ function Toolbar({ appType }: Props) {
             <i className="esri-icon-legend" css={navIconStyles} />
             Legend{' '}
           </button>
-          <div css={legendStyles(legendVisible, '13px')} id="legend-container">
+          <div css={legendStyles(legendVisible, '19px')} id="legend-container">
             <div className="esri-layer-list__no-items">
               There are currently no items to display.
             </div>
