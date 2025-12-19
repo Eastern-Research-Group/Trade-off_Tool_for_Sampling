@@ -568,8 +568,6 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
         });
         await Promise.all(workers);
       } catch (err) {
-        // TODO - do something better here; maybe an error a popup
-        //        error or an error in the toolbar
         console.error(err);
       } finally {
         setAppLoading(false);
