@@ -1329,10 +1329,17 @@ function useBasemapStorage2d(dbInitialized: boolean) {
 
     setReadInitialized(true);
     readFromStorage(key).then((portalId: string | null | undefined) => {
-      if (!portalId) {
+      const params = getUrlParamsLowerCase();
+      const basemapParam = params['basemap2d'];
+
+      if (!portalId && !basemapParam) {
         // early return since this field isn't in storage
         setReadDone(true);
         return;
+      }
+
+      if (basemapParam) {
+        portalId = basemapParam;
       }
 
       // create the watch handler for finding the selected basemap
@@ -1356,6 +1363,7 @@ function useBasemapStorage2d(dbInitialized: boolean) {
         },
       );
 
+      removeUrlParams(['basemap2d']);
       setWatchHandler(newWatchHandle);
     });
   }, [basemapWidget, dbInitialized, readInitialized, watchHandler]);
@@ -1407,10 +1415,17 @@ function useBasemapStorage3d(dbInitialized: boolean) {
 
     setReadInitialized(true);
     readFromStorage(key).then((portalId: string | null | undefined) => {
-      if (!portalId) {
+      const params = getUrlParamsLowerCase();
+      const basemapParam = params['basemap3d'];
+
+      if (!portalId && !basemapParam) {
         // early return since this field isn't in storage
         setReadDone(true);
         return;
+      }
+
+      if (basemapParam) {
+        portalId = basemapParam;
       }
 
       // create the watch handler for finding the selected basemap
@@ -1434,6 +1449,7 @@ function useBasemapStorage3d(dbInitialized: boolean) {
         },
       );
 
+      removeUrlParams(['basemap3d']);
       setWatchHandler(newWatchHandle);
     });
   }, [basemapWidget, dbInitialized, readInitialized, watchHandler]);
