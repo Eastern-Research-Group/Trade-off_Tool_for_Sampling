@@ -56,7 +56,12 @@ import {
   createLayer,
   generateUUID,
 } from 'utils/sketchUtils';
-import { getEnvironment, removeUrlParams } from 'utils/utils';
+import {
+  getEnvironment,
+  getUrlParamsLowerCase,
+  parseBooleanUrlParam,
+  removeUrlParams,
+} from 'utils/utils';
 
 let appKey = isDecon() ? 'tods' : 'tots';
 
@@ -264,11 +269,11 @@ function useTrainingModeStorage(dbInitialized: boolean) {
 
     setReadInitialized(true);
     readFromStorage(key).then((trainingMode) => {
-      if (window.location.search.includes('trainingMode=true')) {
-        setTrainingMode(true);
-      } else {
-        setTrainingMode(Boolean(trainingMode));
-      }
+      const params = getUrlParamsLowerCase();
+      const trainingModeParam = parseBooleanUrlParam(params['trainingmode']);
+
+      if (trainingModeParam !== null) setTrainingMode(trainingModeParam);
+      else setTrainingMode(Boolean(trainingMode));
 
       removeUrlParams('trainingMode');
 
@@ -325,12 +330,10 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
     async function performRead() {
       setReadInitialized(true);
 
-      const search = window.location.search;
-      let planIds: string[] = [];
-      if (search.includes('portalId=')) {
-        const urlParams = new URLSearchParams(search);
-        planIds = urlParams.get('portalId')?.split(',') ?? [];
-      }
+      const params = getUrlParamsLowerCase();
+      const planIds: string[] = params['portalid']
+        ? (params['portalid']?.split(',') ?? [])
+        : [];
 
       const edits: EditsType | null | undefined = await readFromStorage(key);
       if (!edits) {
@@ -565,8 +568,6 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
         });
         await Promise.all(workers);
       } catch (err) {
-        // TODO - do something better here; maybe an error a popup
-        //        error or an error in the toolbar
         console.error(err);
       } finally {
         setAppLoading(false);
@@ -1326,10 +1327,17 @@ function useBasemapStorage2d(dbInitialized: boolean) {
 
     setReadInitialized(true);
     readFromStorage(key).then((portalId: string | null | undefined) => {
-      if (!portalId) {
+      const params = getUrlParamsLowerCase();
+      const basemapParam = params['basemap2d'];
+
+      if (!portalId && !basemapParam) {
         // early return since this field isn't in storage
         setReadDone(true);
         return;
+      }
+
+      if (basemapParam) {
+        portalId = basemapParam;
       }
 
       // create the watch handler for finding the selected basemap
@@ -1353,6 +1361,7 @@ function useBasemapStorage2d(dbInitialized: boolean) {
         },
       );
 
+      removeUrlParams(['basemap2d']);
       setWatchHandler(newWatchHandle);
     });
   }, [basemapWidget, dbInitialized, readInitialized, watchHandler]);
@@ -1404,10 +1413,17 @@ function useBasemapStorage3d(dbInitialized: boolean) {
 
     setReadInitialized(true);
     readFromStorage(key).then((portalId: string | null | undefined) => {
-      if (!portalId) {
+      const params = getUrlParamsLowerCase();
+      const basemapParam = params['basemap3d'];
+
+      if (!portalId && !basemapParam) {
         // early return since this field isn't in storage
         setReadDone(true);
         return;
+      }
+
+      if (basemapParam) {
+        portalId = basemapParam;
       }
 
       // create the watch handler for finding the selected basemap
@@ -1431,6 +1447,7 @@ function useBasemapStorage3d(dbInitialized: boolean) {
         },
       );
 
+      removeUrlParams(['basemap3d']);
       setWatchHandler(newWatchHandle);
     });
   }, [basemapWidget, dbInitialized, readInitialized, watchHandler]);
@@ -1761,6 +1778,8 @@ function useDisplayModeStorage(dbInitialized: boolean) {
 
   const { setOptions } = useContext(DialogContext);
   const {
+    autoZoom,
+    setAutoZoom,
     displayDimensions,
     setDisplayDimensions,
     displayGeometryType,
@@ -1783,24 +1802,80 @@ function useDisplayModeStorage(dbInitialized: boolean) {
     readFromStorage(key).then((displayMode) => {
       setReadDone(true);
 
-      if (!displayMode) {
-        setDisplayDimensions('2d');
-        setDisplayGeometryType('points');
-        setTerrain3dUseElevation(true);
-        setTerrain3dVisible(true);
-        setViewUnderground3d(false);
-        return;
+      let autoZoom = false;
+      let displayDimensions: '2d' | '3d' = '2d';
+      let displayGeometryType: 'points' | 'polygons' | 'hybrid' = 'points';
+      let terrain3dUseElevation = true;
+      let terrain3dVisible = true;
+      let viewUnderground3d = false;
+
+      if (displayMode) {
+        autoZoom = displayMode.autoZoom;
+        displayDimensions = displayMode.dimensions;
+        displayGeometryType = displayMode.geometryType;
+        terrain3dUseElevation = displayMode.terrain3dUseElevation;
+        terrain3dVisible = displayMode.terrain3dVisible;
+        viewUnderground3d = displayMode.viewUnderground3d;
       }
 
-      setDisplayDimensions(displayMode.dimensions);
-      setDisplayGeometryType(displayMode.geometryType);
-      setTerrain3dUseElevation(displayMode.terrain3dUseElevation);
-      setTerrain3dVisible(displayMode.terrain3dVisible);
-      setViewUnderground3d(displayMode.viewUnderground3d);
+      const params = getUrlParamsLowerCase();
+
+      const autoZoomParam = parseBooleanUrlParam(params['autozoom']);
+      if (autoZoomParam !== null) autoZoom = autoZoomParam;
+
+      const dimensionsParam = params['dimensions'];
+      if (dimensionsParam && ['2d', '3d'].includes(dimensionsParam))
+        displayDimensions = dimensionsParam as '2d' | '3d';
+
+      const geometryTypeParam = params['geometrytype'];
+      if (
+        geometryTypeParam &&
+        ['points', 'polygons', 'hybrid'].includes(geometryTypeParam)
+      ) {
+        displayGeometryType = geometryTypeParam as
+          | 'points'
+          | 'polygons'
+          | 'hybrid';
+      }
+
+      const terrain3dUseElevationParam = parseBooleanUrlParam(
+        params['terrain3duseelevation'],
+      );
+      if (terrain3dUseElevationParam !== null)
+        terrain3dUseElevation = terrain3dUseElevationParam;
+
+      const terrain3dVisibleParam = parseBooleanUrlParam(
+        params['terrain3dvisible'],
+      );
+      if (terrain3dVisibleParam !== null)
+        terrain3dVisible = terrain3dVisibleParam;
+
+      const viewUnderground3dParam = parseBooleanUrlParam(
+        params['viewunderground3d'],
+      );
+      if (viewUnderground3dParam !== null)
+        viewUnderground3d = viewUnderground3dParam;
+
+      removeUrlParams([
+        'autoZoom',
+        'dimensions',
+        'geometryType',
+        'terrain3dUseElevation',
+        'terrain3dVisible',
+        'viewUnderground3d',
+      ]);
+
+      setAutoZoom(autoZoom);
+      setDisplayDimensions(displayDimensions);
+      setDisplayGeometryType(displayGeometryType);
+      setTerrain3dUseElevation(terrain3dUseElevation);
+      setTerrain3dVisible(terrain3dVisible);
+      setViewUnderground3d(viewUnderground3d);
     });
   }, [
     dbInitialized,
     readInitialized,
+    setAutoZoom,
     setDisplayDimensions,
     setDisplayGeometryType,
     setTerrain3dUseElevation,
@@ -1812,6 +1887,7 @@ function useDisplayModeStorage(dbInitialized: boolean) {
     if (!readDone) return;
 
     const displayMode: object = {
+      autoZoom,
       dimensions: displayDimensions,
       geometryType: displayGeometryType,
       terrain3dUseElevation,
@@ -1820,6 +1896,7 @@ function useDisplayModeStorage(dbInitialized: boolean) {
     };
     writeToStorage(key, displayMode, setOptions);
   }, [
+    autoZoom,
     displayDimensions,
     displayGeometryType,
     readDone,

@@ -223,6 +223,23 @@ export function getScenarioName(edits: EditsType, desiredName: string) {
 }
 
 /**
+ * Makes all url parameter keys and values lowercase.
+ *
+ * @returns url parameters in lowercase
+ */
+export function getUrlParamsLowerCase() {
+  const search = window.location.search;
+  const urlParams = new URLSearchParams(search);
+  const params = Object.fromEntries(
+    Array.from(urlParams.entries()).map(([k, v]) => [
+      k.toLowerCase(),
+      v.toLowerCase(),
+    ]),
+  );
+  return params;
+}
+
+/**
  * Checks if the provided error is an abort error.
  *
  * @param error
@@ -231,6 +248,22 @@ export function getScenarioName(edits: EditsType, desiredName: string) {
 export function isAbort(error: unknown) {
   if (!error || typeof error !== 'object' || !('name' in error)) return false;
   return (error as Error).name === 'AbortError';
+}
+
+/**
+ * Parses a url parameter to a boolean value. If it cannot be parsed
+ * null is returned.
+ *
+ * @param value url parameter value
+ * @returns boolean value or null if parsing fails
+ */
+export function parseBooleanUrlParam(value: string | undefined) {
+  if (value === undefined) return null;
+  return ['true', 't', '1'].includes(value)
+    ? true
+    : ['false', 'f', '0'].includes(value)
+      ? false
+      : null;
 }
 
 export function parseSmallFloat(number: number, precision: number = 15) {
@@ -248,13 +281,21 @@ export function removeUrlParams(paramsToDelete: string | string[]) {
   const url = new URL(window.location.href);
   const params = url.searchParams;
 
-  (Array.isArray(paramsToDelete) ? paramsToDelete : [paramsToDelete]).forEach(
-    (param) => {
-      params.delete(param);
-    },
-  );
+  const targets = (
+    Array.isArray(paramsToDelete) ? paramsToDelete : [paramsToDelete]
+  ).map((p) => p.toLowerCase());
 
-  // Update the URL in the browser's address bar without reloading the page
+  const keysFound: string[] = [];
+
+  params.forEach((_, key) => {
+    if (targets.includes(key.toLowerCase())) {
+      keysFound.push(key);
+    }
+  });
+
+  keysFound.forEach((key) => params.delete(key));
+
+  // Update the URL in the browser's address bar
   window.history.replaceState({}, document.title, url.pathname + url.search);
 }
 

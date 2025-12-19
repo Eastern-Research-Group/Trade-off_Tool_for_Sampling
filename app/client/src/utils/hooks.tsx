@@ -1412,7 +1412,18 @@ export function useStartOver() {
         .toArray() ?? [];
     if (layersToRemove.length > 0) map?.removeMany(layersToRemove);
 
-    removeUrlParams(['trainingMode', 'portalId']);
+    removeUrlParams([
+      'autoZoom',
+      'basemap2d',
+      'basemap3d',
+      'dimensions',
+      'geometryType',
+      'portalId',
+      'terrain3dUseElevation',
+      'terrain3dVisible',
+      'viewUnderground3d',
+      'trainingMode',
+    ]);
 
     // set the layers to just the defaults
     setLayers([]);

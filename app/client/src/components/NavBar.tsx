@@ -229,7 +229,7 @@ const resourceTallySeparator = css`
 
 const helpIconStyles = css`
   font-size: 18px;
-  padding: 7px;
+  padding: 5px;
   margin-left: 8px;
   margin-right: 10px;
   border-radius: 50%;
@@ -312,28 +312,27 @@ const floatPanelTableCellContainer = css`
   display: table-cell;
 `;
 
-const collapsePanelButton = css`
-  margin: 10px 0 !important;
+const collapseButtonShared = css`
   display: flex;
   justify-content: center;
   width: ${panelCollapseButtonWidth};
-  padding: 1.5em 1em;
+  padding: 1.3em 0.4em;
   border-radius: 0;
-  background-color: white;
-  color: black;
   pointer-events: all;
 `;
 
+const collapsePanelButton = css`
+  ${collapseButtonShared}
+  margin: 10px 0 !important;
+  background-color: white;
+  color: black;
+`;
+
 const resultsCollapsePanelButton = css`
-  display: flex;
-  justify-content: center;
-  width: ${panelCollapseButtonWidth};
-  padding: 1.5em 1em;
+  ${collapseButtonShared}
   margin: 0;
-  border-radius: 0;
   background-color: ${colors.darkblue()};
   color: white;
-  pointer-events: all;
 `;
 
 // --- components (NavBar) ---
