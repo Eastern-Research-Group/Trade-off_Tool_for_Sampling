@@ -229,7 +229,7 @@ const resourceTallySeparator = css`
 
 const helpIconStyles = css`
   font-size: 18px;
-  padding: 7px;
+  padding: 5px;
   margin-left: 8px;
   margin-right: 10px;
   border-radius: 50%;
