@@ -1783,20 +1783,73 @@ function useDisplayModeStorage(dbInitialized: boolean) {
     readFromStorage(key).then((displayMode) => {
       setReadDone(true);
 
-      if (!displayMode) {
-        setDisplayDimensions('2d');
-        setDisplayGeometryType('points');
-        setTerrain3dUseElevation(true);
-        setTerrain3dVisible(true);
-        setViewUnderground3d(false);
-        return;
+      let displayDimensions: '2d' | '3d' = '2d';
+      let displayGeometryType: 'points' | 'polygons' | 'hybrid' = 'points';
+      let terrain3dUseElevation = true;
+      let terrain3dVisible = true;
+      let viewUnderground3d = false;
+
+      if (displayMode) {
+        displayDimensions = displayMode.dimensions;
+        displayGeometryType = displayMode.geometryType;
+        terrain3dUseElevation = displayMode.terrain3dUseElevation;
+        terrain3dVisible = displayMode.terrain3dVisible;
+        viewUnderground3d = displayMode.viewUnderground3d;
       }
 
-      setDisplayDimensions(displayMode.dimensions);
-      setDisplayGeometryType(displayMode.geometryType);
-      setTerrain3dUseElevation(displayMode.terrain3dUseElevation);
-      setTerrain3dVisible(displayMode.terrain3dVisible);
-      setViewUnderground3d(displayMode.viewUnderground3d);
+      const search = window.location.search;
+      const urlParams = new URLSearchParams(search);
+
+      const dimensionsParam = urlParams.get('dimensions');
+      if (dimensionsParam && ['2d', '3d'].includes(dimensionsParam)) {
+        displayDimensions = dimensionsParam as '2d' | '3d';
+      }
+
+      const geometryTypeParam = urlParams.get('geometryType');
+      if (
+        geometryTypeParam &&
+        ['points', 'polygons', 'hybrid'].includes(geometryTypeParam)
+      ) {
+        displayGeometryType = geometryTypeParam as
+          | 'points'
+          | 'polygons'
+          | 'hybrid';
+      }
+
+      const terrain3dUseElevationParam = urlParams.get('terrain3dUseElevation');
+      if (terrain3dUseElevationParam === 'true') {
+        terrain3dUseElevation = true;
+      } else if (terrain3dUseElevationParam === 'false') {
+        terrain3dUseElevation = false;
+      }
+
+      const terrain3dVisibleParam = urlParams.get('terrain3dVisible');
+      if (terrain3dVisibleParam === 'true') {
+        terrain3dVisible = true;
+      } else if (terrain3dVisibleParam === 'false') {
+        terrain3dVisible = false;
+      }
+
+      const viewUnderground3dParam = urlParams.get('viewUnderground3d');
+      if (viewUnderground3dParam === 'true') {
+        viewUnderground3d = true;
+      } else if (viewUnderground3dParam === 'false') {
+        viewUnderground3d = false;
+      }
+
+      removeUrlParams([
+        'dimensions',
+        'geometryType',
+        'terrain3dUseElevation',
+        'terrain3dVisible',
+        'viewUnderground3d',
+      ]);
+
+      setDisplayDimensions(displayDimensions);
+      setDisplayGeometryType(displayGeometryType);
+      setTerrain3dUseElevation(terrain3dUseElevation);
+      setTerrain3dVisible(terrain3dVisible);
+      setViewUnderground3d(viewUnderground3d);
     });
   }, [
     dbInitialized,
