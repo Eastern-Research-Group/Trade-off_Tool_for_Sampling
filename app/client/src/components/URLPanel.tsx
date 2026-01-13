@@ -190,7 +190,8 @@ function URLPanel() {
       </p>
       <p css={layerInfo}>
         <strong>WFS OGC web service</strong> - Feature service that follows the
-        OGC Web Feature Service specification.
+        OGC Web Feature Service specification. The WFS service must support WFS
+        2.0.0 and have GeoJSON output format enabled.
       </p>
       <p css={layerInfo}>
         <strong>WMS OGC web service</strong> - Feature service that follows the
