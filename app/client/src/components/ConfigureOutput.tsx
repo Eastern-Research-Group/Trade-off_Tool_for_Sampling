@@ -437,7 +437,7 @@ function ConfigureOutput({ appType }: Props) {
                       }}
                       title={
                         <label css={subLabelStyles}>
-                          <span>
+                          <span css={subLabelStyles}>
                             Include Web Map
                             {webMapIcon('partial-web-map-icon')}
                           </span>
@@ -485,7 +485,7 @@ function ConfigureOutput({ appType }: Props) {
                       }}
                       title={
                         <label css={subLabelStyles}>
-                          <span>
+                          <span css={subLabelStyles}>
                             Include Web Scene
                             {webSceneIcon('partial-web-scene-icon', appName)}
                           </span>

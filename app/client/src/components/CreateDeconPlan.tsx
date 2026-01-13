@@ -1373,6 +1373,11 @@ const headingStyles = css`
   text-align: center;
 `;
 
+const infoIconContainerStyles = css`
+  display: flex;
+  align-items: center;
+`;
+
 const infoIconStylesModified = css`
   ${infoIconStyles}
   margin-right: 1rem;
@@ -1977,7 +1982,7 @@ function DeconSelectionPopup({
               },
               {
                 header: () => (
-                  <div>
+                  <div css={infoIconContainerStyles}>
                     Surface Area
                     <InfoIcon
                       id="basic-surface-area-info-icon"
@@ -2124,7 +2129,7 @@ function DeconSelectionPopup({
                     },
                     {
                       header: () => (
-                        <div>
+                        <div css={infoIconContainerStyles}>
                           Surface Area
                           <InfoIcon
                             id="advanced-structural-surface-area-info-icon"
@@ -2315,7 +2320,7 @@ function DeconSelectionPopup({
                     },
                     {
                       header: () => (
-                        <div>
+                        <div css={infoIconContainerStyles}>
                           Surface Area
                           <InfoIcon
                             id="advanced-material-surface-area-info-icon"

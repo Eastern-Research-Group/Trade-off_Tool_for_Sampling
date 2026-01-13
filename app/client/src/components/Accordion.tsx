@@ -47,7 +47,7 @@ const textStyles = css`
 const arrow = css`
   color: #526571;
   font-size: 1.25em;
-  margin-right: 0.875em;
+  margin-right: 0.625em;
 `;
 
 // --- components (AccordionItem) ---

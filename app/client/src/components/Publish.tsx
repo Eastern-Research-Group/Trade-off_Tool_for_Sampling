@@ -136,8 +136,16 @@ const publishButtonStyles = css`
   }
 `;
 
+const referenceLayerListStyles = (appType: 'decon' | 'sampling') => css`
+  margin-left: ${appType === 'sampling' ? 40 : 20}px;
+`;
+
 const sectionContainer = css`
   margin-bottom: 10px;
+`;
+
+const subListStyles = css`
+  margin-left: 0.5rem;
 `;
 
 const layerInfo = css`
@@ -2667,7 +2675,7 @@ function Publish({ appType }: Props) {
                 </div>
               )}
               {webMapReferenceLayerSelections.length > 0 && (
-                <div css={webMapInnerContainerCheckboxStyles}>
+                <div css={referenceLayerListStyles(appType)}>
                   Reference layers to include:
                   <ul>
                     {webMapReferenceLayerSelections
@@ -2692,7 +2700,7 @@ function Publish({ appType }: Props) {
                     </strong>
                   </div>
                   {webSceneReferenceLayerSelections.length > 0 && (
-                    <div css={webMapInnerContainerCheckboxStyles}>
+                    <div css={referenceLayerListStyles(appType)}>
                       Reference layers to include:
                       <ul>
                         {webSceneReferenceLayerSelections
@@ -2747,7 +2755,7 @@ function Publish({ appType }: Props) {
               <IconCheck css={checkedStyles} />
               Include AOI Characterization Output Files:
             </strong>
-            <ul>
+            <ul css={subListStyles}>
               {selectedAoiCharacterizations.map((item, index) => {
                 return <li key={index}>{item.label}</li>;
               })}
@@ -2761,7 +2769,7 @@ function Publish({ appType }: Props) {
               <IconCheck css={checkedStyles} />
               Include Staging Area Output Files:
             </strong>
-            <ul>
+            <ul css={subListStyles}>
               {selectedStagingAreas.map((item, index) => {
                 return <li key={index}>{item.label}</li>;
               })}
