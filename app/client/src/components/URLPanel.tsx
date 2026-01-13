@@ -13,6 +13,7 @@ import GeoRSSLayer from '@arcgis/core/layers/GeoRSSLayer';
 import KMLLayer from '@arcgis/core/layers/KMLLayer';
 import Layer from '@arcgis/core/layers/Layer';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
+import WFSLayer from '@arcgis/core/layers/WFSLayer';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
 // components
 import LoadingSpinner from 'components/LoadingSpinner';
@@ -47,8 +48,8 @@ const layerInfo = css`
 // --- components (URLPanel) ---
 type UrlType =
   | { value: 'ArcGIS'; label: 'An ArcGIS Server Web Service' }
-  | { value: 'WMS'; label: 'A WMS OGC Web Service' }
   | { value: 'WFS'; label: 'A WFS OGC Web Service' }
+  | { value: 'WMS'; label: 'A WMS OGC Web Service' }
   | { value: 'KML'; label: 'A KML File' }
   | { value: 'GeoRSS'; label: 'A GeoRSS File' }
   | { value: 'CSV'; label: 'A CSV File' };
@@ -61,6 +62,7 @@ type UrlStatusType =
   | 'already-added';
 type SupportedUrlLayerTypes =
   | __esri.Layer
+  | __esri.WFSLayer
   | __esri.WMSLayer
   | __esri.KMLLayer
   | __esri.GeoRSSLayer
@@ -151,13 +153,12 @@ function URLPanel() {
         });
       return;
     }
+    if (type === 'WFS') {
+      layer = new WFSLayer({ url });
+    }
     if (type === 'WMS') {
       layer = new WMSLayer({ url });
     }
-    /* // not supported in 4.x js api
-    if(type === 'WFS') {
-      layer = new WFSLayer({ url });
-    } */
     if (type === 'KML') {
       layer = new KMLLayer({ url });
     }
@@ -188,8 +189,12 @@ function URLPanel() {
         resource that is located on an ArcGIS Server site.
       </p>
       <p css={layerInfo}>
-        <strong>WMS OGC web service</strong> - Feature service that follows the
+        <strong>WFS OGC web service</strong> - Feature service that follows the
         OGC Web Feature Service specification.
+      </p>
+      <p css={layerInfo}>
+        <strong>WMS OGC web service</strong> - Feature service that follows the
+        OGC Web Map Service specification.
       </p>
       <p css={layerInfo}>
         <strong>KML file</strong> - File containing a set of geographic
@@ -214,8 +219,8 @@ function URLPanel() {
         }}
         options={[
           { value: 'ArcGIS', label: 'An ArcGIS Server Web Service' },
+          { value: 'WFS', label: 'A WFS OGC Web Service' },
           { value: 'WMS', label: 'A WMS OGC Web Service' },
-          // {value: 'WFS', label: 'A WFS OGC Web Service'}, // not supported in 4.x yet
           { value: 'KML', label: 'A KML File' },
           { value: 'GeoRSS', label: 'A GeoRSS File' },
           { value: 'CSV', label: 'A CSV File' },
@@ -261,6 +266,13 @@ function URLPanel() {
               </p>
             </div>
           )}
+          {urlType.value === 'WFS' && (
+            <div>
+              <p>
+                https://dservices.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/services/JapanPrefectures2018/WFSServer
+              </p>
+            </div>
+          )}
           {urlType.value === 'WMS' && (
             <div>
               <p>
@@ -268,13 +280,6 @@ function URLPanel() {
               </p>
             </div>
           )}
-          {/* Not supported in 4.x JS API
-          {urlType.value === 'WFS' && (
-            <div>
-              <p>https://dservices.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/services/JapanPrefectures2018/WFSServer</p>
-            </div>
-          )} 
-          */}
           {urlType.value === 'KML' && (
             <div>
               <p>
