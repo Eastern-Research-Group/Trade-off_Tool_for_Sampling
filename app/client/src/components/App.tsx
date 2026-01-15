@@ -240,6 +240,8 @@ function App({ appType }: Props) {
     setTablePanelExpanded,
     tablePanelHeight,
     setTablePanelHeight,
+    tablePanelSelectedTab,
+    setTablePanelSelectedTab,
     trainingMode,
   } = useContext(NavigationContext);
   const {
@@ -250,7 +252,6 @@ function App({ appType }: Props) {
     sceneView,
     selectedSampleIds,
     setSelectedSampleIds,
-    selectedScenario,
   } = useContext(SketchContext);
 
   useSessionStorage(appType);
@@ -330,27 +331,24 @@ function App({ appType }: Props) {
     if (offset !== offsetTop) setOffset(offsetTop);
   }, [contentHeight, height, offset, totsDiv, width]);
 
-  // TODO move to context and add to indexeddb
-  const [selectedTab, setSelectedTab] = useState<
-    'buildings' | 'samples' | null
-  >(null);
-
-  // changes selectedTab in the case of a tab being removed
+  // changes tablePanelSelectedTab in the case of a tab being removed
   useEffect(() => {
-    let newSelectedTab = selectedTab;
+    if (edits.count === 0 || layers.length === 0) return;
+
+    let newSelectedTab = tablePanelSelectedTab;
 
     // determine if there is data for the selected tab
     const buildingData = getBuildingRecords(edits, layers);
     const sampleData = getSampleRecords(layers);
 
     if (
-      selectedTab === 'buildings' &&
+      tablePanelSelectedTab === 'buildings' &&
       buildingData.length === 0 &&
       sampleData.length > 0
     )
       newSelectedTab = 'samples';
     else if (
-      selectedTab === 'samples' &&
+      tablePanelSelectedTab === 'samples' &&
       sampleData.length === 0 &&
       buildingData.length > 0
     )
@@ -358,8 +356,9 @@ function App({ appType }: Props) {
     else if (sampleData.length === 0 && buildingData.length === 0)
       newSelectedTab = null;
 
-    if (newSelectedTab !== selectedTab) setSelectedTab(newSelectedTab);
-  }, [edits, layers, selectedTab]);
+    if (newSelectedTab !== tablePanelSelectedTab)
+      setTablePanelSelectedTab(newSelectedTab);
+  }, [edits, layers, tablePanelSelectedTab, setTablePanelSelectedTab]);
 
   // count the number of samples
   const tableData: BuildingTableDataType[] = [];
@@ -396,7 +395,9 @@ function App({ appType }: Props) {
     tablePanelWidth += 500;
   }
 
-  const tabIndex = tableData.findIndex((table) => table.key === selectedTab);
+  const tabIndex = tableData.findIndex(
+    (table) => table.key === tablePanelSelectedTab,
+  );
   const layoutKey = tableData.map((t) => t.key).join('-');
 
   return (
@@ -554,7 +555,7 @@ function App({ appType }: Props) {
                     key={layoutKey}
                     index={tabIndex >= 0 ? tabIndex : 0}
                     onChange={(index) => {
-                      setSelectedTab(tableData[index]?.key ?? null);
+                      setTablePanelSelectedTab(tableData[index]?.key ?? null);
                     }}
                   >
                     <div css={tablePanelHeaderStyles}>
@@ -562,10 +563,10 @@ function App({ appType }: Props) {
                         {tableData.map((table, index) => (
                           <Tab
                             key={table.key}
-                            onClick={() => setSelectedTab(table.key)}
+                            onClick={() => setTablePanelSelectedTab(table.key)}
                             css={sampleTableHeaderStyles(
-                              selectedTab === table.key ||
-                                (!selectedTab && index === 0),
+                              tablePanelSelectedTab === table.key ||
+                                (!tablePanelSelectedTab && index === 0),
                             )}
                           >
                             {table.label} (Count: {table.data.length})

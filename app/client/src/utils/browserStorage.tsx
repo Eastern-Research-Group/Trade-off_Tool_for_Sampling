@@ -1602,6 +1602,8 @@ function useTablePanelStorage(dbInitialized: boolean) {
     setTablePanelExpanded,
     tablePanelHeight,
     setTablePanelHeight,
+    tablePanelSelectedTab,
+    setTablePanelSelectedTab,
   } = useContext(NavigationContext);
 
   // Retreives table info data from browser storage when the app loads
@@ -1618,18 +1620,21 @@ function useTablePanelStorage(dbInitialized: boolean) {
         // if no key in browser storage, leave as default and say initialized
         setTablePanelExpanded(false);
         setTablePanelHeight(200);
+        setTablePanelSelectedTab(null);
         return;
       }
 
       // save table panel info
       setTablePanelExpanded(tablePanel.expanded);
       setTablePanelHeight(tablePanel.height);
+      setTablePanelSelectedTab(tablePanel.selectedTab || null);
     });
   }, [
     dbInitialized,
     readInitialized,
     setTablePanelExpanded,
     setTablePanelHeight,
+    setTablePanelSelectedTab,
   ]);
 
   useEffect(() => {
@@ -1638,9 +1643,16 @@ function useTablePanelStorage(dbInitialized: boolean) {
     const tablePanel: object = {
       expanded: tablePanelExpanded,
       height: tablePanelHeight,
+      selectedTab: tablePanelSelectedTab,
     };
     writeToStorage(key, tablePanel, setOptions);
-  }, [readDone, setOptions, tablePanelExpanded, tablePanelHeight]);
+  }, [
+    readDone,
+    setOptions,
+    tablePanelExpanded,
+    tablePanelHeight,
+    tablePanelSelectedTab,
+  ]);
 }
 
 type SampleMetaDataType = {

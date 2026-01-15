@@ -23,3 +23,5 @@ type Options = {
 };
 
 export type GoToOptions = null | Options;
+
+export type TablePanelTabType = 'buildings' | 'samples' | null;
