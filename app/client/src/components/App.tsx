@@ -8,6 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { css } from '@emotion/react';
+import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@reach/tabs';
 import { useWindowSize } from '@reach/window-size';
 import IconChevronDown from '~icons/fa7-solid/chevron-down';
 import IconChevronUp from '~icons/fa7-solid/chevron-up';
@@ -34,10 +35,16 @@ import {
 import { parseSmallFloat } from 'utils/utils';
 // config
 import { navPanelWidth } from 'config/appConfig';
-import { isDecon } from 'config/navigation';
 // types
-import { LayerAoiAnalysisEditsType, LayerDeconEditsType } from 'types/Edits';
+import {
+  EditsType,
+  LayerAoiAnalysisEditsType,
+  LayerDeconEditsType,
+} from 'types/Edits';
+import { LayerType } from 'types/Layer';
 import { AppType } from 'types/Navigation';
+// styles
+import '@reach/tabs/styles.css';
 
 const resizerHeight = 10;
 const esrifooterheight = 16;
@@ -138,6 +145,10 @@ const floatPanelContentStyles = (includeOverflow: boolean = true) => {
 
 const floatPanelScrollContainerStyles = css`
   height: 100%;
+
+  [data-reach-tab-list] {
+    background: none;
+  }
 `;
 
 const loadingContainerStyles = css`
@@ -184,17 +195,21 @@ const resizerButtonStyles = css`
 `;
 
 const tablePanelHeaderStyles = css`
-  height: 30px;
+  height: 32px;
   width: 100%;
-  color: #444;
-  background-color: #efefef;
-  border: 1px solid #afafaf;
+  border-top: 1px solid #afafaf;
+  border-bottom: 1px solid #afafaf;
   padding: 0;
 `;
 
-const sampleTableHeaderStyles = css`
-  margin: 0 10px;
+const sampleTableHeaderStyles = (active: boolean) => css`
+  height: 30px;
+  margin: 0;
+  padding: 0.2em 1.1765em;
+  background-color: white;
+  color: black;
   font-weight: bold;
+  border-bottom: 3px solid ${active ? '#01213b' : 'transparent'} !important;
 `;
 
 const zoomButtonContainerStyles = css`
@@ -315,19 +330,480 @@ function App({ appType }: Props) {
     if (offset !== offsetTop) setOffset(offsetTop);
   }, [contentHeight, height, offset, totsDiv, width]);
 
+  // TODO move to context and add to indexeddb
+  const [selectedTab, setSelectedTab] = useState<
+    'buildings' | 'samples' | null
+  >(null);
+
+  // changes selectedTab in the case of a tab being removed
+  useEffect(() => {
+    let newSelectedTab = selectedTab;
+
+    // determine if there is data for the selected tab
+    const buildingData = getBuildingRecords(edits, layers);
+    const sampleData = getSampleRecords(layers);
+
+    if (
+      selectedTab === 'buildings' &&
+      buildingData.length === 0 &&
+      sampleData.length > 0
+    )
+      newSelectedTab = 'samples';
+    else if (
+      selectedTab === 'samples' &&
+      sampleData.length === 0 &&
+      buildingData.length > 0
+    )
+      newSelectedTab = 'buildings';
+    else if (sampleData.length === 0 && buildingData.length === 0)
+      newSelectedTab = null;
+
+    if (newSelectedTab !== selectedTab) setSelectedTab(newSelectedTab);
+  }, [edits, layers, selectedTab]);
+
   // count the number of samples
-  const tableData: any[] = [];
-  if (isDecon()) {
-    if (selectedScenario && selectedScenario.type === 'scenario-decon') {
+  const tableData: BuildingTableDataType[] = [];
+  type BuildingTableDataType = {
+    key: 'buildings' | 'samples';
+    data: any[];
+    label: string;
+  };
+
+  const sampleData = getSampleRecords(layers);
+  if (sampleData.length > 0)
+    tableData.push({
+      key: 'samples',
+      data: sampleData,
+      label: 'Samples',
+    });
+
+  const buildingData = getBuildingRecords(edits, layers);
+  if (buildingData.length > 0)
+    tableData.push({
+      key: 'buildings',
+      data: buildingData,
+      label: 'Buildings',
+    });
+
+  // calculate the width of the table
+  let tablePanelWidth = 150;
+  if (currentPanel && panelExpanded) tablePanelWidth += 325;
+  if (
+    resultsExpanded &&
+    currentPanel?.value === 'calculate' &&
+    calculateResults.panelOpen === true
+  ) {
+    tablePanelWidth += 500;
+  }
+
+  const tabIndex = tableData.findIndex((table) => table.key === selectedTab);
+  const layoutKey = tableData.map((t) => t.key).join('-');
+
+  return (
+    <div className="tots" ref={totsRef}>
+      <SplashScreen />
+      <div css={appStyles(offset)}>
+        <div css={containerStyles}>
+          {appLoading && (
+            <div css={loadingContainerStyles}>
+              <LoadingSpinner />
+            </div>
+          )}
+          <div ref={toolbarRef}>
+            {window.location.search.includes('devMode=true') && (
+              <TestingToolbar />
+            )}
+            <Toolbar appType={appType} />
+          </div>
+          <NavBar height={contentHeight - toolbarHeight} appType={appType} />
+          <div
+            css={mapPanelStyles(
+              toolbarHeight + (tablePanelExpanded ? tablePanelHeight : 0),
+            )}
+            ref={mapRef}
+          >
+            <div id="tots-map-div" css={mapHeightStyles}>
+              {toolbarHeight ? (
+                <Map
+                  appType={appType}
+                  height={
+                    contentHeight -
+                    (tablePanelExpanded ? tablePanelHeight : 0) -
+                    toolbarHeight
+                  }
+                />
+              ) : (
+                ''
+              )}
+            </div>
+          </div>
+          {tableData.length > 0 && (
+            <div
+              id="tots-table-button-div"
+              css={floatButtonPanelStyles({
+                width: tablePanelWidth,
+                height: tablePanelHeight,
+                left: `${tablePanelWidth}px`,
+                expanded: tablePanelExpanded,
+                zIndex: 1,
+              })}
+            >
+              <button
+                css={collapsePanelButton}
+                aria-label={`${
+                  tablePanelExpanded ? 'Collapse' : 'Expand'
+                } Table Panel`}
+                onClick={() => setTablePanelExpanded(!tablePanelExpanded)}
+              >
+                {tablePanelExpanded ? <IconChevronDown /> : <IconChevronUp />}
+              </button>
+            </div>
+          )}
+          {tablePanelExpanded && (
+            <div
+              id="tots-table-div"
+              css={floatPanelStyles({
+                width: tablePanelWidth,
+                height: tablePanelHeight,
+                left: `${tablePanelWidth}px`,
+                expanded: true,
+                zIndex: 2,
+              })}
+            >
+              <div css={floatPanelContentStyles(false)}>
+                <div
+                  css={resizerContainerStyles}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    startY = e.clientY;
+
+                    const mapDiv = document.getElementById('tots-map-div'); // adjust height
+                    const tableDiv = document.getElementById('tots-table-div'); // adjust height
+                    const reactTableElm =
+                      document.getElementById('tots-samples-table');
+                    const buttonDiv = document.getElementById(
+                      'tots-table-button-div',
+                    ); // move top
+
+                    let mapHeight = 0;
+                    let tableHeight = 0;
+                    if (!mapDiv || !tableDiv || !buttonDiv) return;
+
+                    mapHeight = mapDiv.clientHeight;
+                    tableHeight = tableDiv.clientHeight;
+
+                    document.onmouseup = () => {
+                      /* stop moving when mouse button is released:*/
+                      document.onmouseup = null;
+                      document.onmousemove = null;
+
+                      // clear the styles set
+                      tableDiv.style.height = '';
+                      mapDiv.style.height = '';
+                      buttonDiv.style.bottom = '';
+                    };
+                    // call a function whenever the cursor moves:
+                    document.onmousemove = (e: MouseEvent) => {
+                      e.preventDefault();
+
+                      if (!mapDiv || !tableDiv || !buttonDiv) return;
+
+                      // get size info
+                      const panelHeight = contentHeight - toolbarHeight;
+                      const mouseOffset = startY - e.clientY;
+                      let newMapHeight = mapHeight - mouseOffset;
+                      let newTableHeight = tableHeight + mouseOffset;
+                      const maxTableHeight = panelHeight - minMapHeight;
+
+                      // prevent map being taller then content box
+                      if (newMapHeight + resizerHeight >= contentHeight) {
+                        newMapHeight = contentHeight - resizerHeight;
+                        newTableHeight = resizerHeight;
+                      }
+
+                      // prevent table being taller then content box
+                      if (newTableHeight >= maxTableHeight) {
+                        newMapHeight = contentHeight - maxTableHeight;
+                        newTableHeight = maxTableHeight;
+                      }
+
+                      // set the height directly for faster performance
+                      mapDiv.style.height = `${newMapHeight}px`;
+                      tableDiv.style.height = `${newTableHeight}px`;
+                      buttonDiv.style.bottom = `${
+                        newTableHeight + esrifooterheight
+                      }px`;
+
+                      if (reactTableElm) {
+                        reactTableElm.style.height = `${
+                          newTableHeight - resizerHeight - 30
+                        }px`;
+                      }
+
+                      setTablePanelHeight(tableDiv.clientHeight);
+                    };
+                  }}
+                >
+                  <div css={resizerButtonStyles}></div>
+                </div>
+                <div
+                  id="tots-attributes-panel-scroll-container"
+                  css={floatPanelScrollContainerStyles}
+                >
+                  <Tabs
+                    key={layoutKey}
+                    index={tabIndex >= 0 ? tabIndex : 0}
+                    onChange={(index) => {
+                      setSelectedTab(tableData[index]?.key ?? null);
+                    }}
+                  >
+                    <div css={tablePanelHeaderStyles}>
+                      <TabList>
+                        {tableData.map((table, index) => (
+                          <Tab
+                            key={table.key}
+                            onClick={() => setSelectedTab(table.key)}
+                            css={sampleTableHeaderStyles(
+                              selectedTab === table.key ||
+                                (!selectedTab && index === 0),
+                            )}
+                          >
+                            {table.label} (Count: {table.data.length})
+                          </Tab>
+                        ))}
+                      </TabList>
+                    </div>
+
+                    <TabPanels>
+                      {tableData.map((table) => (
+                        <TabPanel key={table.key}>
+                          <ReactTable
+                            id="tots-samples-table"
+                            data={table.data}
+                            striped={true}
+                            height={tablePanelHeight - resizerHeight - 30}
+                            initialSelectedRowIds={selectedSampleIds}
+                            onSelectionChange={(row: any) => {
+                              const PERMANENT_IDENTIFIER =
+                                row.original.PERMANENT_IDENTIFIER;
+                              const DECISIONUNITUUID =
+                                row.original.DECISIONUNITUUID;
+                              setSelectedSampleIds((selectedSampleIds) => {
+                                if (
+                                  selectedSampleIds.findIndex(
+                                    (item) =>
+                                      item.PERMANENT_IDENTIFIER ===
+                                      PERMANENT_IDENTIFIER,
+                                  ) !== -1
+                                ) {
+                                  const samples = selectedSampleIds.filter(
+                                    (item) =>
+                                      item.PERMANENT_IDENTIFIER !==
+                                      PERMANENT_IDENTIFIER,
+                                  );
+
+                                  return samples.map((sample) => {
+                                    return {
+                                      PERMANENT_IDENTIFIER,
+                                      DECISIONUNITUUID,
+                                      selection_method: 'row-click',
+                                      graphic: sample.graphic,
+                                    };
+                                  });
+                                }
+
+                                return [
+                                  // ...selectedSampleIds, // Uncomment this line to allow multiple selections
+                                  {
+                                    PERMANENT_IDENTIFIER,
+                                    DECISIONUNITUUID,
+                                    selection_method: 'row-click',
+                                    graphic: row.original.graphic,
+                                  },
+                                ];
+                              });
+                            }}
+                            sortBy={
+                              table.key === 'buildings'
+                                ? [
+                                    {
+                                      id: 'scenarioName',
+                                      desc: false,
+                                    },
+                                    {
+                                      id: 'layerName',
+                                      desc: false,
+                                    },
+                                    {
+                                      id: 'OCC_CLS',
+                                      desc: false,
+                                    },
+                                    {
+                                      id: 'PRIM_OCC',
+                                      desc: false,
+                                    },
+                                  ]
+                                : [
+                                    {
+                                      id: 'scenarioName',
+                                      desc: false,
+                                    },
+                                    {
+                                      id: 'DECISIONUNIT',
+                                      desc: false,
+                                    },
+                                    {
+                                      id: 'TYPE',
+                                      desc: false,
+                                    },
+                                  ]
+                            }
+                            getColumns={(tableWidth: any) => {
+                              const tableColumns =
+                                table.key === 'buildings'
+                                  ? getBuildingTableColumns({
+                                      tableWidth,
+                                      trainingMode,
+                                    })
+                                  : getSampleTableColumns({
+                                      tableWidth,
+                                      includeContaminationFields: trainingMode,
+                                    });
+
+                              return [
+                                {
+                                  header: () => (
+                                    <span className="sr-only">Zoom</span>
+                                  ),
+                                  id: 'zoom-button',
+                                  size: 30,
+                                  cell: ({ row }: { row: any }) => (
+                                    <div css={zoomButtonContainerStyles}>
+                                      <button
+                                        css={zoomButtonStyles}
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+
+                                          // select the sample
+                                          setSelectedSampleIds([
+                                            {
+                                              PERMANENT_IDENTIFIER:
+                                                row.original
+                                                  .PERMANENT_IDENTIFIER,
+                                              DECISIONUNITUUID:
+                                                row.original.DECISIONUNITUUID,
+                                              selection_method: 'row-click',
+                                              graphic: row.original.grpahic,
+                                            },
+                                          ]);
+
+                                          // zoom to the graphic
+                                          if (
+                                            displayDimensions === '2d' &&
+                                            mapView
+                                          ) {
+                                            mapView.goTo(row.original.graphic);
+                                            mapView.zoom =
+                                              appType === 'decon'
+                                                ? 16
+                                                : mapView.zoom - 1;
+                                          } else if (
+                                            displayDimensions === '3d' &&
+                                            sceneView
+                                          ) {
+                                            sceneView.goTo(
+                                              row.original.graphic,
+                                            );
+                                          }
+                                        }}
+                                      >
+                                        <IconSearchPlus />
+                                        <span className="sr-only">
+                                          Zoom to sample
+                                        </span>
+                                      </button>
+                                    </div>
+                                  ),
+                                },
+                                ...tableColumns,
+                              ];
+                            }}
+                          />
+                        </TabPanel>
+                      ))}
+                    </TabPanels>
+                  </Tabs>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getSampleRecords(layers: LayerType[]) {
+  const tempData: any[] = [];
+  layers.forEach((layer) => {
+    if (!layer.sketchLayer || layer.sketchLayer.type !== 'graphics') return;
+    if (layer.layerType === 'Samples' || layer.layerType === 'VSP') {
+      const graphics = layer.sketchLayer.graphics.toArray();
+      graphics.sort((a, b) =>
+        a.attributes.PERMANENT_IDENTIFIER.localeCompare(
+          b.attributes.PERMANENT_IDENTIFIER,
+        ),
+      );
+      graphics.forEach((sample) => {
+        tempData.push({
+          graphic: sample,
+          ...sample.attributes,
+          scenarioName: layer.parentLayer?.title ?? '',
+        });
+      });
+    }
+  });
+
+  return tempData;
+}
+
+function getBuildingRecords(edits: EditsType, layers: LayerType[]) {
+  const tempData: any[] = [];
+  const aoiIdsAdded: string[] = [];
+  edits.edits
+    .filter((e) => e.type === 'layer-decon' || e.type === 'scenario-decon')
+    .sort((a, b) => {
+      if (a.type === 'scenario-decon' && b.type === 'layer-decon') return -1;
+      if (a.type === 'layer-decon' && b.type === 'scenario-decon') return 1;
+      return 0;
+    })
+    .forEach((edit) => {
       const aoiLayersProcessed: string[] = [];
-      selectedScenario.linkedLayerIds.forEach((layerId) => {
-        const deconLayer = edits.edits.find(
-          (l) => l.type === 'layer-decon' && l.layerId === layerId,
-        ) as LayerDeconEditsType | undefined;
+      const aoiLayers: LayerDeconEditsType[] = [];
+
+      let scenarioName = '';
+      if (edit.type === 'layer-decon') {
+        aoiLayers.push(edit as LayerDeconEditsType);
+      }
+      if (edit.type === 'scenario-decon') {
+        scenarioName = edit.scenarioName;
+        edit.linkedLayerIds.forEach((layerId) => {
+          const deconLayer = edits.edits.find(
+            (l) => l.type === 'layer-decon' && l.layerId === layerId,
+          ) as LayerDeconEditsType | undefined;
+          if (deconLayer) aoiLayers.push(deconLayer);
+        });
+      }
+
+      // process each AOI decon layer
+      aoiLayers.forEach((deconLayer) => {
+        if (aoiIdsAdded.includes(deconLayer.layerId)) return;
+
+        aoiIdsAdded.push(deconLayer.layerId);
         const layer = edits.edits.find(
           (l) =>
             l.type === 'layer-aoi-analysis' &&
-            l.layerId === deconLayer?.analysisLayerId,
+            l.layerId === deconLayer.analysisLayerId,
         ) as LayerAoiAnalysisEditsType | undefined;
         if (!layer) return;
 
@@ -345,9 +821,10 @@ function App({ appType }: Props) {
         aoiLayersProcessed.push(aoiAssessedLayer.layerId);
         (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
           (building) => {
-            tableData.push({
+            tempData.push({
               graphic: building,
               ...building.attributes,
+              scenarioName,
               layerName:
                 aoiAssessedLayer.parentLayer?.title ?? aoiAssessedLayer.label,
               H_ADJ_ELEV:
@@ -755,341 +1232,9 @@ function App({ appType }: Props) {
           },
         );
       });
-    }
-  } else {
-    layers.forEach((layer) => {
-      if (!layer.sketchLayer || layer.sketchLayer.type !== 'graphics') return;
-      if (layer?.parentLayer?.id !== selectedScenario?.layerId) return;
-      if (layer.layerType === 'Samples' || layer.layerType === 'VSP') {
-        const graphics = layer.sketchLayer.graphics.toArray();
-        graphics.sort((a, b) =>
-          a.attributes.PERMANENT_IDENTIFIER.localeCompare(
-            b.attributes.PERMANENT_IDENTIFIER,
-          ),
-        );
-        graphics.forEach((sample) => {
-          tableData.push({
-            graphic: sample,
-            ...sample.attributes,
-          });
-        });
-      }
     });
-  }
 
-  // calculate the width of the table
-  let tablePanelWidth = 150;
-  if (currentPanel && panelExpanded) tablePanelWidth += 325;
-  if (
-    resultsExpanded &&
-    currentPanel?.value === 'calculate' &&
-    calculateResults.panelOpen === true
-  ) {
-    tablePanelWidth += 500;
-  }
-
-  return (
-    <div className="tots" ref={totsRef}>
-      <SplashScreen />
-      <div css={appStyles(offset)}>
-        <div css={containerStyles}>
-          {appLoading && (
-            <div css={loadingContainerStyles}>
-              <LoadingSpinner />
-            </div>
-          )}
-          <div ref={toolbarRef}>
-            {window.location.search.includes('devMode=true') && (
-              <TestingToolbar />
-            )}
-            <Toolbar appType={appType} />
-          </div>
-          <NavBar height={contentHeight - toolbarHeight} appType={appType} />
-          <div
-            css={mapPanelStyles(
-              toolbarHeight + (tablePanelExpanded ? tablePanelHeight : 0),
-            )}
-            ref={mapRef}
-          >
-            <div id="tots-map-div" css={mapHeightStyles}>
-              {toolbarHeight ? (
-                <Map
-                  appType={appType}
-                  height={
-                    contentHeight -
-                    (tablePanelExpanded ? tablePanelHeight : 0) -
-                    toolbarHeight
-                  }
-                />
-              ) : (
-                ''
-              )}
-            </div>
-          </div>
-          {tableData.length > 0 && (
-            <div
-              id="tots-table-button-div"
-              css={floatButtonPanelStyles({
-                width: tablePanelWidth,
-                height: tablePanelHeight,
-                left: `${tablePanelWidth}px`,
-                expanded: tablePanelExpanded,
-                zIndex: 1,
-              })}
-            >
-              <button
-                css={collapsePanelButton}
-                aria-label={`${
-                  tablePanelExpanded ? 'Collapse' : 'Expand'
-                } Table Panel`}
-                onClick={() => setTablePanelExpanded(!tablePanelExpanded)}
-              >
-                {tablePanelExpanded ? <IconChevronDown /> : <IconChevronUp />}
-              </button>
-            </div>
-          )}
-          {tablePanelExpanded && (
-            <div
-              id="tots-table-div"
-              css={floatPanelStyles({
-                width: tablePanelWidth,
-                height: tablePanelHeight,
-                left: `${tablePanelWidth}px`,
-                expanded: true,
-                zIndex: 2,
-              })}
-            >
-              <div css={floatPanelContentStyles(false)}>
-                <div
-                  css={resizerContainerStyles}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    startY = e.clientY;
-
-                    const mapDiv = document.getElementById('tots-map-div'); // adjust height
-                    const tableDiv = document.getElementById('tots-table-div'); // adjust height
-                    const reactTableElm =
-                      document.getElementById('tots-samples-table');
-                    const buttonDiv = document.getElementById(
-                      'tots-table-button-div',
-                    ); // move top
-
-                    let mapHeight = 0;
-                    let tableHeight = 0;
-                    if (!mapDiv || !tableDiv || !buttonDiv) return;
-
-                    mapHeight = mapDiv.clientHeight;
-                    tableHeight = tableDiv.clientHeight;
-
-                    document.onmouseup = () => {
-                      /* stop moving when mouse button is released:*/
-                      document.onmouseup = null;
-                      document.onmousemove = null;
-
-                      // clear the styles set
-                      tableDiv.style.height = '';
-                      mapDiv.style.height = '';
-                      buttonDiv.style.bottom = '';
-                    };
-                    // call a function whenever the cursor moves:
-                    document.onmousemove = (e: MouseEvent) => {
-                      e.preventDefault();
-
-                      if (!mapDiv || !tableDiv || !buttonDiv) return;
-
-                      // get size info
-                      const panelHeight = contentHeight - toolbarHeight;
-                      const mouseOffset = startY - e.clientY;
-                      let newMapHeight = mapHeight - mouseOffset;
-                      let newTableHeight = tableHeight + mouseOffset;
-                      const maxTableHeight = panelHeight - minMapHeight;
-
-                      // prevent map being taller then content box
-                      if (newMapHeight + resizerHeight >= contentHeight) {
-                        newMapHeight = contentHeight - resizerHeight;
-                        newTableHeight = resizerHeight;
-                      }
-
-                      // prevent table being taller then content box
-                      if (newTableHeight >= maxTableHeight) {
-                        newMapHeight = contentHeight - maxTableHeight;
-                        newTableHeight = maxTableHeight;
-                      }
-
-                      // set the height directly for faster performance
-                      mapDiv.style.height = `${newMapHeight}px`;
-                      tableDiv.style.height = `${newTableHeight}px`;
-                      buttonDiv.style.bottom = `${
-                        newTableHeight + esrifooterheight
-                      }px`;
-
-                      if (reactTableElm) {
-                        reactTableElm.style.height = `${
-                          newTableHeight - resizerHeight - 30
-                        }px`;
-                      }
-
-                      setTablePanelHeight(tableDiv.clientHeight);
-                    };
-                  }}
-                >
-                  <div css={resizerButtonStyles}></div>
-                </div>
-                <div
-                  id="tots-attributes-panel-scroll-container"
-                  css={floatPanelScrollContainerStyles}
-                >
-                  <div css={tablePanelHeaderStyles}>
-                    <span css={sampleTableHeaderStyles}>
-                      {appType === 'decon' ? 'Buildings' : 'Samples'} (Count:{' '}
-                      {tableData.length})
-                    </span>
-                  </div>
-                  <div>
-                    <ReactTable
-                      id="tots-samples-table"
-                      data={tableData}
-                      striped={true}
-                      height={tablePanelHeight - resizerHeight - 30}
-                      initialSelectedRowIds={selectedSampleIds}
-                      onSelectionChange={(row: any) => {
-                        const PERMANENT_IDENTIFIER =
-                          row.original.PERMANENT_IDENTIFIER;
-                        const DECISIONUNITUUID = row.original.DECISIONUNITUUID;
-                        setSelectedSampleIds((selectedSampleIds) => {
-                          if (
-                            selectedSampleIds.findIndex(
-                              (item) =>
-                                item.PERMANENT_IDENTIFIER ===
-                                PERMANENT_IDENTIFIER,
-                            ) !== -1
-                          ) {
-                            const samples = selectedSampleIds.filter(
-                              (item) =>
-                                item.PERMANENT_IDENTIFIER !==
-                                PERMANENT_IDENTIFIER,
-                            );
-
-                            return samples.map((sample) => {
-                              return {
-                                PERMANENT_IDENTIFIER,
-                                DECISIONUNITUUID,
-                                selection_method: 'row-click',
-                                graphic: sample.graphic,
-                              };
-                            });
-                          }
-
-                          return [
-                            // ...selectedSampleIds, // Uncomment this line to allow multiple selections
-                            {
-                              PERMANENT_IDENTIFIER,
-                              DECISIONUNITUUID,
-                              selection_method: 'row-click',
-                              graphic: row.original.graphic,
-                            },
-                          ];
-                        });
-                      }}
-                      sortBy={
-                        appType === 'decon'
-                          ? [
-                              {
-                                id: 'layerName',
-                                desc: false,
-                              },
-                              {
-                                id: 'OCC_CLS',
-                                desc: false,
-                              },
-                              {
-                                id: 'PRIM_OCC',
-                                desc: false,
-                              },
-                            ]
-                          : [
-                              {
-                                id: 'DECISIONUNIT',
-                                desc: false,
-                              },
-                              {
-                                id: 'TYPE',
-                                desc: false,
-                              },
-                            ]
-                      }
-                      getColumns={(tableWidth: any) => {
-                        const tableColumns =
-                          appType === 'decon'
-                            ? getBuildingTableColumns({
-                                tableWidth,
-                                trainingMode,
-                              })
-                            : getSampleTableColumns({
-                                tableWidth,
-                                includeContaminationFields: trainingMode,
-                              });
-
-                        return [
-                          {
-                            header: () => <span className="sr-only">Zoom</span>,
-                            id: 'zoom-button',
-                            size: 30,
-                            cell: ({ row }: { row: any }) => (
-                              <div css={zoomButtonContainerStyles}>
-                                <button
-                                  css={zoomButtonStyles}
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-
-                                    // select the sample
-                                    setSelectedSampleIds([
-                                      {
-                                        PERMANENT_IDENTIFIER:
-                                          row.original.PERMANENT_IDENTIFIER,
-                                        DECISIONUNITUUID:
-                                          row.original.DECISIONUNITUUID,
-                                        selection_method: 'row-click',
-                                        graphic: row.original.grpahic,
-                                      },
-                                    ]);
-
-                                    // zoom to the graphic
-                                    if (displayDimensions === '2d' && mapView) {
-                                      mapView.goTo(row.original.graphic);
-                                      mapView.zoom =
-                                        appType === 'decon'
-                                          ? 16
-                                          : mapView.zoom - 1;
-                                    } else if (
-                                      displayDimensions === '3d' &&
-                                      sceneView
-                                    ) {
-                                      sceneView.goTo(row.original.graphic);
-                                    }
-                                  }}
-                                >
-                                  <IconSearchPlus />
-                                  <span className="sr-only">
-                                    Zoom to sample
-                                  </span>
-                                </button>
-                              </div>
-                            ),
-                          },
-                          ...tableColumns,
-                        ];
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  return tempData;
 }
 
 export default App;

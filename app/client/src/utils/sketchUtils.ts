@@ -993,6 +993,12 @@ export function getSampleTableColumns({
       show: false,
     },
     {
+      header: 'Scenario',
+      accessorKey: 'scenarioName',
+      size: largeColumnWidth,
+      sortUndefined: 'last',
+    },
+    {
       header: 'Layer',
       accessorKey: 'DECISIONUNIT',
       size: largeColumnWidth,
@@ -1162,6 +1168,11 @@ export function getBuildingTableColumns({
       accessorKey: 'UUID',
       size: 0,
       show: false,
+    },
+    {
+      header: 'Scenario',
+      accessorKey: 'scenarioName',
+      size: baseColumnWidth,
     },
     {
       header: 'Layer',

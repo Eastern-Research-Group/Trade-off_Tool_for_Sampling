@@ -34,6 +34,7 @@
     "@emotion/styled": "11.14.1",
     "@iconify-json/fa7-solid": "1.2.3",
     "@reach/dialog": "0.18.0",
+    "@reach/tabs": "0.18.0",
     "@reach/window-size": "0.18.0",
     "@svgr/core": "8.1.0",
     "@svgr/plugin-jsx": "8.1.0",
