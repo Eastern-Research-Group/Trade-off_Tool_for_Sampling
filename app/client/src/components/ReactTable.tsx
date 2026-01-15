@@ -264,7 +264,7 @@ export function ReactTable({
       setRowSelection(newSelections);
       setRowSelectionType(newSelectionsType);
     }
-  }, [initialSelectedRowIds, rowSelection, table]);
+  }, [initialSelectedRowIds, onSelectionChange, rowSelection, table]);
 
   const measuredTableRef = useRef<HTMLDivElement>(null);
 
