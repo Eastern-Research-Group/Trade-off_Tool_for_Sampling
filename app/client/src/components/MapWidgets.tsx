@@ -320,7 +320,8 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
 
     const samples: any = {};
     selectedSampleIds.forEach((sample) => {
-      const key = isDecon() ? 'aoi-assessed' : sample.DECISIONUNITUUID;
+      const key =
+        sample.DECISIONUNITUUID ?? sample.graphic?.layer?.id ?? 'aoi-assessed';
       if (!Object.prototype.hasOwnProperty.call(samples, key)) {
         samples[key] = [sample.PERMANENT_IDENTIFIER];
       } else {

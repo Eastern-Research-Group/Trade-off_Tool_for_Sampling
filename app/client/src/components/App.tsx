@@ -694,7 +694,7 @@ function App({ appType }: Props) {
                                               DECISIONUNITUUID:
                                                 row.original.DECISIONUNITUUID,
                                               selection_method: 'row-click',
-                                              graphic: row.original.grpahic,
+                                              graphic: row.original.graphic,
                                             },
                                           ]);
 

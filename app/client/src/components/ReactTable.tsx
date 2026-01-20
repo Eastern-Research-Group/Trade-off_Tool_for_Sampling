@@ -248,11 +248,12 @@ export function ReactTable({
     const newSelections: any = {};
     const newSelectionsType: any = {};
     initialSelectedRowIds.forEach((item: any) => {
-      const index = rows.findIndex(
+      const row = rows.find(
         (r) =>
           r.original.DECISIONUNITUUID === item.DECISIONUNITUUID &&
           r.original.PERMANENT_IDENTIFIER === item.PERMANENT_IDENTIFIER,
       );
+      const index = row ? row.index : -1;
 
       if (index !== -1) {
         newSelections[index] = true;
