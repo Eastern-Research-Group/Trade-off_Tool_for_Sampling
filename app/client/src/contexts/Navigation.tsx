@@ -36,6 +36,8 @@ type NavigateType = {
   setTablePanelHeight: Dispatch<SetStateAction<number>>;
   tablePanelSelectedTab: TablePanelTabType;
   setTablePanelSelectedTab: Dispatch<SetStateAction<TablePanelTabType>>;
+  tableShowSelectedScenarioOnly: boolean;
+  setTableShowSelectedScenarioOnly: Dispatch<SetStateAction<boolean>>;
   trainingMode: boolean;
   setTrainingMode: Dispatch<SetStateAction<boolean>>;
   getTrainingMode: Function;
@@ -64,6 +66,8 @@ export const NavigationContext = createContext<NavigateType>({
   setTablePanelHeight: () => {},
   tablePanelSelectedTab: null,
   setTablePanelSelectedTab: () => {},
+  tableShowSelectedScenarioOnly: true,
+  setTableShowSelectedScenarioOnly: () => {},
   trainingMode: false,
   setTrainingMode: () => {},
   getTrainingMode: () => {},
@@ -85,6 +89,8 @@ export function NavigationProvider({ children }: Props) {
   const [tablePanelHeight, setTablePanelHeight] = useState(200);
   const [tablePanelSelectedTab, setTablePanelSelectedTab] =
     useState<TablePanelTabType>(null);
+  const [tableShowSelectedScenarioOnly, setTableShowSelectedScenarioOnly] =
+    useState(true);
   const [trainingMode, setTrainingMode] = useState(false);
   const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
 
@@ -117,6 +123,8 @@ export function NavigationProvider({ children }: Props) {
         setTablePanelHeight,
         tablePanelSelectedTab,
         setTablePanelSelectedTab,
+        tableShowSelectedScenarioOnly,
+        setTableShowSelectedScenarioOnly,
         trainingMode,
         setTrainingMode,
         getTrainingMode: () => {

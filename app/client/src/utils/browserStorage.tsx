@@ -1604,6 +1604,8 @@ function useTablePanelStorage(dbInitialized: boolean) {
     setTablePanelHeight,
     tablePanelSelectedTab,
     setTablePanelSelectedTab,
+    tableShowSelectedScenarioOnly,
+    setTableShowSelectedScenarioOnly,
   } = useContext(NavigationContext);
 
   // Retreives table info data from browser storage when the app loads
@@ -1621,6 +1623,7 @@ function useTablePanelStorage(dbInitialized: boolean) {
         setTablePanelExpanded(false);
         setTablePanelHeight(200);
         setTablePanelSelectedTab(null);
+        setTableShowSelectedScenarioOnly(true);
         return;
       }
 
@@ -1628,6 +1631,9 @@ function useTablePanelStorage(dbInitialized: boolean) {
       setTablePanelExpanded(tablePanel.expanded);
       setTablePanelHeight(tablePanel.height);
       setTablePanelSelectedTab(tablePanel.selectedTab || null);
+      setTableShowSelectedScenarioOnly(
+        tablePanel.showSelectedScenarioOnly ?? true,
+      );
     });
   }, [
     dbInitialized,
@@ -1635,6 +1641,7 @@ function useTablePanelStorage(dbInitialized: boolean) {
     setTablePanelExpanded,
     setTablePanelHeight,
     setTablePanelSelectedTab,
+    setTableShowSelectedScenarioOnly,
   ]);
 
   useEffect(() => {
@@ -1644,6 +1651,7 @@ function useTablePanelStorage(dbInitialized: boolean) {
       expanded: tablePanelExpanded,
       height: tablePanelHeight,
       selectedTab: tablePanelSelectedTab,
+      showSelectedScenarioOnly: tableShowSelectedScenarioOnly,
     };
     writeToStorage(key, tablePanel, setOptions);
   }, [
@@ -1652,6 +1660,7 @@ function useTablePanelStorage(dbInitialized: boolean) {
     tablePanelExpanded,
     tablePanelHeight,
     tablePanelSelectedTab,
+    tableShowSelectedScenarioOnly,
   ]);
 }
 
