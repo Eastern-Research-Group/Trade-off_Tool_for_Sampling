@@ -10,10 +10,12 @@ import React, {
 import { css } from '@emotion/react';
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@reach/tabs';
 import { useWindowSize } from '@reach/window-size';
+import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 import IconChevronDown from '~icons/fa7-solid/chevron-down';
 import IconChevronUp from '~icons/fa7-solid/chevron-up';
 import IconSearchPlus from '~icons/fa7-solid/search-plus';
 // components
+import ErrorIcon from 'components/ErrorIcon';
 import LoadingSpinner from 'components/LoadingSpinner';
 import Map from 'components/Map';
 import NavBar from 'components/NavBar';
@@ -46,6 +48,7 @@ const resizerHeight = 10;
 const esrifooterheight = 16;
 const expandButtonHeight = 32;
 const minMapHeight = 180;
+const tableFilterHeight = 34;
 let startY = 0;
 
 const appStyles = (offset: number) => css`
@@ -246,7 +249,9 @@ function App({ appType }: Props) {
     displayDimensions,
     edits,
     layers,
+    map,
     mapView,
+    portalLayers,
     sceneView,
     selectedSampleIds,
     selectedScenario,
@@ -359,6 +364,124 @@ function App({ appType }: Props) {
       setTablePanelSelectedTab(newSelectedTab);
   }, [edits, layers, tablePanelSelectedTab, setTablePanelSelectedTab]);
 
+  // ONLY NEEDED FOR TODS. Tracks layers added to map to make syncing
+  // table with tots sample layers in tods more reliable.
+  const [numMapLayers, setNumMapLayers] = useState(0);
+  const [watcherInitialized, setWatcherInitialized] = useState(false);
+  useEffect(() => {
+    if (!map || appType !== 'decon' || watcherInitialized) return;
+
+    setWatcherInitialized(true);
+    reactiveUtils.watch(
+      () => map.layers.length,
+      () => setNumMapLayers(map.layers.length),
+    );
+  }, [appType, map, watcherInitialized]);
+
+  // ONLY NEEDED FOR TODS. Syncs the table with tots sample layers.
+  // This is needed because TOTS sample layers are pulled into TODS
+  // from AGO as a feature layer and not as graphics layers like
+  // everything else.
+  const [tableError, setTableError] = useState('');
+  const [totsIdsLoaded, setTotsIdsLoaded] = useState<string[]>([]);
+  const [portalGraphics, setPortalGraphics] = useState<__esri.Graphic[]>([]);
+  useEffect(() => {
+    if (!map || appType !== 'decon') return;
+
+    setTableError('');
+
+    // find ids that are no longer in portalLayers
+    const currentPortalIds = portalLayers.map((p) => p.id);
+    const idsToRemove = totsIdsLoaded.filter(
+      (id) => !currentPortalIds.includes(id),
+    );
+
+    // remove any items that have been removed from portalLayers
+    if (idsToRemove.length > 0) {
+      setTotsIdsLoaded((prev) =>
+        prev.filter((id) => !idsToRemove.includes(id)),
+      );
+      setPortalGraphics((prev) =>
+        prev.filter((g) => !idsToRemove.includes(g.attributes['scenarioId'])),
+      );
+    }
+
+    if (portalLayers.length === 0) return;
+
+    const loadAndQueryLayers = async () => {
+      const requests: Promise<__esri.FeatureSet>[] = [];
+      const processedIds: string[] = [];
+      const layerInfo: { id: string; title: string | nullish }[] = [];
+
+      for (const pLayer of portalLayers) {
+        if (
+          pLayer.type !== 'tots' ||
+          !pLayer.categories.includes('contains-epa-tots-sample-layer') ||
+          totsIdsLoaded.includes(pLayer.id)
+        )
+          continue;
+
+        const layer = map.layers.find(
+          (l) => (l as any).portalItem?.id === pLayer.id,
+        ) as __esri.GroupLayer;
+
+        if (!layer) continue;
+
+        try {
+          await layer.loadAll();
+
+          const sampleLayer = layer.layers.find(
+            (l) => l.title?.endsWith('-points') ?? false,
+          ) as __esri.FeatureLayer;
+
+          if (sampleLayer) {
+            // execute query and save scenario level metadata
+            requests.push(
+              sampleLayer.queryFeatures({
+                where: '1=1',
+                returnGeometry: true,
+                outFields: ['*'],
+              }),
+            );
+            layerInfo.push({ id: pLayer.id, title: layer.title });
+            processedIds.push(pLayer.id);
+          }
+        } catch (err) {
+          console.error(`table layer load failed ${pLayer.id}:`, err);
+          setTableError(
+            `Failed to load TOTS Sample data for ${pLayer.label}. Please check developer console for more information.`,
+          );
+        }
+      }
+
+      if (requests.length > 0) {
+        try {
+          const responses = await Promise.all(requests);
+
+          setPortalGraphics((prev) => [
+            ...prev,
+            ...responses.flatMap((r, index) => {
+              return r.features.map((f) => {
+                // apply scenario level metadata to each feature
+                f.attributes['scenarioId'] = layerInfo[index].id;
+                f.attributes['scenarioName'] = layerInfo[index].title;
+                return f;
+              });
+            }),
+          ]);
+          setTotsIdsLoaded((prev) => [...prev, ...processedIds]);
+        } catch (error) {
+          console.error('table query failed:', error);
+          setTableError(
+            `Failed to load TOTS Sample data for. Please check developer console for more information.`,
+          );
+        }
+      }
+    };
+
+    loadAndQueryLayers();
+  }, [appType, map, numMapLayers, portalLayers, totsIdsLoaded]);
+
   // count the number of samples
   const tableData: BuildingTableDataType[] = [];
   type BuildingTableDataType = {
@@ -369,7 +492,7 @@ function App({ appType }: Props) {
     scenarioData: any[];
   };
 
-  const sampleData = getSampleRecords(layers);
+  const sampleData = getSampleRecords(layers, portalGraphics);
   if (sampleData.length > 0)
     tableData.push({
       key: 'samples',
@@ -589,194 +712,221 @@ function App({ appType }: Props) {
                             )
                           </Tab>
                         ))}
+                        {tableError && (
+                          <div
+                            css={css`
+                              position: absolute;
+                              right: 10px;
+                              top: 16px;
+                            `}
+                          >
+                            <ErrorIcon
+                              id="error"
+                              text="ERROR"
+                              tooltip={tableError}
+                            />
+                          </div>
+                        )}
                       </TabList>
                     </div>
 
                     <TabPanels>
-                      {tableData.map((table) => (
-                        <TabPanel key={table.key}>
-                          {((appType === 'sampling' &&
-                            table.key === 'samples') ||
-                            (appType === 'decon' &&
-                              table.key === 'buildings')) && (
-                            <label
-                              css={css`
-                                display: flex;
-                                align-items: center;
-                                gap: 4px;
-                                margin: 5px 0 5px 10px;
-                              `}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={tableShowSelectedScenarioOnly}
-                                onChange={(e) =>
-                                  setTableShowSelectedScenarioOnly(
-                                    e.target.checked,
-                                  )
-                                }
-                              />
-                              <span>Show Selected Scenario Only</span>
-                            </label>
-                          )}
-                          <ReactTable
-                            id="tots-samples-table"
-                            data={
-                              table.primary && tableShowSelectedScenarioOnly
-                                ? table.scenarioData
-                                : table.data
-                            }
-                            striped={true}
-                            height={tablePanelHeight - resizerHeight - 30}
-                            initialSelectedRowIds={selectedSampleIds}
-                            onSelectionChange={(row: any) => {
-                              const PERMANENT_IDENTIFIER =
-                                row.original.PERMANENT_IDENTIFIER;
-                              const DECISIONUNITUUID =
-                                row.original.DECISIONUNITUUID;
-                              setSelectedSampleIds((selectedSampleIds) => {
-                                if (
-                                  selectedSampleIds.findIndex(
-                                    (item) =>
-                                      item.PERMANENT_IDENTIFIER ===
-                                      PERMANENT_IDENTIFIER,
-                                  ) !== -1
-                                ) {
-                                  const samples = selectedSampleIds.filter(
-                                    (item) =>
-                                      item.PERMANENT_IDENTIFIER !==
-                                      PERMANENT_IDENTIFIER,
-                                  );
+                      {tableData.map((table) => {
+                        const filterVisible =
+                          (appType === 'sampling' && table.key === 'samples') ||
+                          (appType === 'decon' && table.key === 'buildings');
+                        return (
+                          <TabPanel key={table.key}>
+                            {filterVisible && (
+                              <label
+                                css={css`
+                                  height: ${tableFilterHeight}px;
+                                  display: flex;
+                                  align-items: center;
+                                  gap: 4px;
+                                  padding: 5px 0 5px 10px;
+                                `}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={tableShowSelectedScenarioOnly}
+                                  onChange={(e) =>
+                                    setTableShowSelectedScenarioOnly(
+                                      e.target.checked,
+                                    )
+                                  }
+                                />
+                                <span>Show Selected Scenario Only</span>
+                              </label>
+                            )}
+                            <ReactTable
+                              id="tots-samples-table"
+                              data={
+                                table.primary && tableShowSelectedScenarioOnly
+                                  ? table.scenarioData
+                                  : table.data
+                              }
+                              striped={true}
+                              height={
+                                tablePanelHeight -
+                                resizerHeight -
+                                (filterVisible ? tableFilterHeight : 0) -
+                                30
+                              }
+                              initialSelectedRowIds={selectedSampleIds}
+                              onSelectionChange={(row: any) => {
+                                const PERMANENT_IDENTIFIER =
+                                  row.original.PERMANENT_IDENTIFIER;
+                                const DECISIONUNITUUID =
+                                  row.original.DECISIONUNITUUID;
+                                setSelectedSampleIds((selectedSampleIds) => {
+                                  if (
+                                    selectedSampleIds.findIndex(
+                                      (item) =>
+                                        item.PERMANENT_IDENTIFIER ===
+                                        PERMANENT_IDENTIFIER,
+                                    ) !== -1
+                                  ) {
+                                    const samples = selectedSampleIds.filter(
+                                      (item) =>
+                                        item.PERMANENT_IDENTIFIER !==
+                                        PERMANENT_IDENTIFIER,
+                                    );
 
-                                  return samples.map((sample) => {
-                                    return {
+                                    return samples.map((sample) => {
+                                      return {
+                                        PERMANENT_IDENTIFIER,
+                                        DECISIONUNITUUID,
+                                        selection_method: 'row-click',
+                                        graphic: sample.graphic,
+                                      };
+                                    });
+                                  }
+
+                                  return [
+                                    // ...selectedSampleIds, // Uncomment this line to allow multiple selections
+                                    {
                                       PERMANENT_IDENTIFIER,
                                       DECISIONUNITUUID,
                                       selection_method: 'row-click',
-                                      graphic: sample.graphic,
-                                    };
-                                  });
-                                }
+                                      graphic: row.original.graphic,
+                                    },
+                                  ];
+                                });
+                              }}
+                              sortBy={
+                                table.key === 'buildings'
+                                  ? [
+                                      {
+                                        id: 'scenarioName',
+                                        desc: false,
+                                      },
+                                      {
+                                        id: 'layerName',
+                                        desc: false,
+                                      },
+                                      {
+                                        id: 'OCC_CLS',
+                                        desc: false,
+                                      },
+                                      {
+                                        id: 'PRIM_OCC',
+                                        desc: false,
+                                      },
+                                    ]
+                                  : [
+                                      {
+                                        id: 'scenarioName',
+                                        desc: false,
+                                      },
+                                      {
+                                        id: 'DECISIONUNIT',
+                                        desc: false,
+                                      },
+                                      {
+                                        id: 'TYPE',
+                                        desc: false,
+                                      },
+                                    ]
+                              }
+                              getColumns={(tableWidth: any) => {
+                                const tableColumns =
+                                  table.key === 'buildings'
+                                    ? getBuildingTableColumns({
+                                        tableWidth,
+                                        trainingMode,
+                                      })
+                                    : getSampleTableColumns({
+                                        appType,
+                                        tableWidth,
+                                        includeContaminationFields:
+                                          trainingMode,
+                                      });
 
                                 return [
-                                  // ...selectedSampleIds, // Uncomment this line to allow multiple selections
                                   {
-                                    PERMANENT_IDENTIFIER,
-                                    DECISIONUNITUUID,
-                                    selection_method: 'row-click',
-                                    graphic: row.original.graphic,
+                                    header: () => (
+                                      <span className="sr-only">Zoom</span>
+                                    ),
+                                    id: 'zoom-button',
+                                    size: 30,
+                                    cell: ({ row }: { row: any }) => (
+                                      <div css={zoomButtonContainerStyles}>
+                                        <button
+                                          css={zoomButtonStyles}
+                                          onClick={(event) => {
+                                            event.stopPropagation();
+
+                                            // select the sample
+                                            setSelectedSampleIds([
+                                              {
+                                                PERMANENT_IDENTIFIER:
+                                                  row.original
+                                                    .PERMANENT_IDENTIFIER,
+                                                DECISIONUNITUUID:
+                                                  row.original.DECISIONUNITUUID,
+                                                selection_method: 'row-click',
+                                                graphic: row.original.graphic,
+                                              },
+                                            ]);
+
+                                            // zoom to the graphic
+                                            if (
+                                              displayDimensions === '2d' &&
+                                              mapView
+                                            ) {
+                                              mapView.goTo(
+                                                row.original.graphic,
+                                              );
+                                              mapView.zoom =
+                                                appType === 'decon'
+                                                  ? 16
+                                                  : mapView.zoom - 1;
+                                            } else if (
+                                              displayDimensions === '3d' &&
+                                              sceneView
+                                            ) {
+                                              sceneView.goTo(
+                                                row.original.graphic,
+                                              );
+                                            }
+                                          }}
+                                        >
+                                          <IconSearchPlus />
+                                          <span className="sr-only">
+                                            Zoom to sample
+                                          </span>
+                                        </button>
+                                      </div>
+                                    ),
                                   },
+                                  ...tableColumns,
                                 ];
-                              });
-                            }}
-                            sortBy={
-                              table.key === 'buildings'
-                                ? [
-                                    {
-                                      id: 'scenarioName',
-                                      desc: false,
-                                    },
-                                    {
-                                      id: 'layerName',
-                                      desc: false,
-                                    },
-                                    {
-                                      id: 'OCC_CLS',
-                                      desc: false,
-                                    },
-                                    {
-                                      id: 'PRIM_OCC',
-                                      desc: false,
-                                    },
-                                  ]
-                                : [
-                                    {
-                                      id: 'scenarioName',
-                                      desc: false,
-                                    },
-                                    {
-                                      id: 'DECISIONUNIT',
-                                      desc: false,
-                                    },
-                                    {
-                                      id: 'TYPE',
-                                      desc: false,
-                                    },
-                                  ]
-                            }
-                            getColumns={(tableWidth: any) => {
-                              const tableColumns =
-                                table.key === 'buildings'
-                                  ? getBuildingTableColumns({
-                                      tableWidth,
-                                      trainingMode,
-                                    })
-                                  : getSampleTableColumns({
-                                      tableWidth,
-                                      includeContaminationFields: trainingMode,
-                                    });
-
-                              return [
-                                {
-                                  header: () => (
-                                    <span className="sr-only">Zoom</span>
-                                  ),
-                                  id: 'zoom-button',
-                                  size: 30,
-                                  cell: ({ row }: { row: any }) => (
-                                    <div css={zoomButtonContainerStyles}>
-                                      <button
-                                        css={zoomButtonStyles}
-                                        onClick={(event) => {
-                                          event.stopPropagation();
-
-                                          // select the sample
-                                          setSelectedSampleIds([
-                                            {
-                                              PERMANENT_IDENTIFIER:
-                                                row.original
-                                                  .PERMANENT_IDENTIFIER,
-                                              DECISIONUNITUUID:
-                                                row.original.DECISIONUNITUUID,
-                                              selection_method: 'row-click',
-                                              graphic: row.original.graphic,
-                                            },
-                                          ]);
-
-                                          // zoom to the graphic
-                                          if (
-                                            displayDimensions === '2d' &&
-                                            mapView
-                                          ) {
-                                            mapView.goTo(row.original.graphic);
-                                            mapView.zoom =
-                                              appType === 'decon'
-                                                ? 16
-                                                : mapView.zoom - 1;
-                                          } else if (
-                                            displayDimensions === '3d' &&
-                                            sceneView
-                                          ) {
-                                            sceneView.goTo(
-                                              row.original.graphic,
-                                            );
-                                          }
-                                        }}
-                                      >
-                                        <IconSearchPlus />
-                                        <span className="sr-only">
-                                          Zoom to sample
-                                        </span>
-                                      </button>
-                                    </div>
-                                  ),
-                                },
-                                ...tableColumns,
-                              ];
-                            }}
-                          />
-                        </TabPanel>
-                      ))}
+                              }}
+                            />
+                          </TabPanel>
+                        );
+                      })}
                     </TabPanels>
                   </Tabs>
                 </div>
@@ -789,7 +939,10 @@ function App({ appType }: Props) {
   );
 }
 
-function getSampleRecords(layers: LayerType[]) {
+function getSampleRecords(
+  layers: LayerType[],
+  portalGraphics: __esri.Graphic[] = [],
+) {
   const tempData: any[] = [];
   layers.forEach((layer) => {
     if (!layer.sketchLayer || layer.sketchLayer.type !== 'graphics') return;
@@ -809,6 +962,13 @@ function getSampleRecords(layers: LayerType[]) {
         });
       });
     }
+  });
+
+  portalGraphics.forEach((sample) => {
+    tempData.push({
+      graphic: sample,
+      ...sample.attributes,
+    });
   });
 
   return tempData;
