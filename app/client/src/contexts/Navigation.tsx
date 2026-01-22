@@ -11,7 +11,7 @@ import React, {
 // config
 import { PanelType, PanelValueType } from 'config/navigation';
 // types
-import { GoToOptions } from 'types/Navigation';
+import { GoToOptions, TablePanelTabType } from 'types/Navigation';
 
 let globalTrainingMode = false;
 
@@ -34,6 +34,10 @@ type NavigateType = {
   setTablePanelExpanded: Dispatch<SetStateAction<boolean>>;
   tablePanelHeight: number;
   setTablePanelHeight: Dispatch<SetStateAction<number>>;
+  tablePanelSelectedTab: TablePanelTabType;
+  setTablePanelSelectedTab: Dispatch<SetStateAction<TablePanelTabType>>;
+  tableShowSelectedScenarioOnly: boolean;
+  setTableShowSelectedScenarioOnly: Dispatch<SetStateAction<boolean>>;
   trainingMode: boolean;
   setTrainingMode: Dispatch<SetStateAction<boolean>>;
   getTrainingMode: Function;
@@ -60,6 +64,10 @@ export const NavigationContext = createContext<NavigateType>({
   setTablePanelExpanded: () => {},
   tablePanelHeight: 200,
   setTablePanelHeight: () => {},
+  tablePanelSelectedTab: null,
+  setTablePanelSelectedTab: () => {},
+  tableShowSelectedScenarioOnly: true,
+  setTableShowSelectedScenarioOnly: () => {},
   trainingMode: false,
   setTrainingMode: () => {},
   getTrainingMode: () => {},
@@ -79,6 +87,10 @@ export function NavigationProvider({ children }: Props) {
   const [resultsExpanded, setResultsExpanded] = useState(false);
   const [tablePanelExpanded, setTablePanelExpanded] = useState(false);
   const [tablePanelHeight, setTablePanelHeight] = useState(200);
+  const [tablePanelSelectedTab, setTablePanelSelectedTab] =
+    useState<TablePanelTabType>(null);
+  const [tableShowSelectedScenarioOnly, setTableShowSelectedScenarioOnly] =
+    useState(true);
   const [trainingMode, setTrainingMode] = useState(false);
   const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
 
@@ -109,6 +121,10 @@ export function NavigationProvider({ children }: Props) {
         setTablePanelExpanded,
         tablePanelHeight,
         setTablePanelHeight,
+        tablePanelSelectedTab,
+        setTablePanelSelectedTab,
+        tableShowSelectedScenarioOnly,
+        setTableShowSelectedScenarioOnly,
         trainingMode,
         setTrainingMode,
         getTrainingMode: () => {

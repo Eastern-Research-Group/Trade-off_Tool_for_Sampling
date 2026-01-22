@@ -789,6 +789,14 @@ function usePortalLayerStorage(dbInitialized: boolean) {
         portalItem: new PortalItem({ id }),
       }).then((layer) => {
         layer.load().then(() => {
+          if (layer.type === 'group') {
+            (layer as __esri.GroupLayer).allLayers.forEach((layer) => {
+              if (layer.type === 'feature') {
+                (layer as __esri.FeatureLayer).outFields = ['*'];
+              }
+            });
+          }
+
           map.add(layer);
           if (isTotsLayerForTods && portalLayer.type === 'tots')
             applyRendererForTotsLayer(layer, technologyTypes);
@@ -1602,6 +1610,10 @@ function useTablePanelStorage(dbInitialized: boolean) {
     setTablePanelExpanded,
     tablePanelHeight,
     setTablePanelHeight,
+    tablePanelSelectedTab,
+    setTablePanelSelectedTab,
+    tableShowSelectedScenarioOnly,
+    setTableShowSelectedScenarioOnly,
   } = useContext(NavigationContext);
 
   // Retreives table info data from browser storage when the app loads
@@ -1618,18 +1630,26 @@ function useTablePanelStorage(dbInitialized: boolean) {
         // if no key in browser storage, leave as default and say initialized
         setTablePanelExpanded(false);
         setTablePanelHeight(200);
+        setTablePanelSelectedTab(null);
+        setTableShowSelectedScenarioOnly(true);
         return;
       }
 
       // save table panel info
       setTablePanelExpanded(tablePanel.expanded);
       setTablePanelHeight(tablePanel.height);
+      setTablePanelSelectedTab(tablePanel.selectedTab || null);
+      setTableShowSelectedScenarioOnly(
+        tablePanel.showSelectedScenarioOnly ?? true,
+      );
     });
   }, [
     dbInitialized,
     readInitialized,
     setTablePanelExpanded,
     setTablePanelHeight,
+    setTablePanelSelectedTab,
+    setTableShowSelectedScenarioOnly,
   ]);
 
   useEffect(() => {
@@ -1638,9 +1658,18 @@ function useTablePanelStorage(dbInitialized: boolean) {
     const tablePanel: object = {
       expanded: tablePanelExpanded,
       height: tablePanelHeight,
+      selectedTab: tablePanelSelectedTab,
+      showSelectedScenarioOnly: tableShowSelectedScenarioOnly,
     };
     writeToStorage(key, tablePanel, setOptions);
-  }, [readDone, setOptions, tablePanelExpanded, tablePanelHeight]);
+  }, [
+    readDone,
+    setOptions,
+    tablePanelExpanded,
+    tablePanelHeight,
+    tablePanelSelectedTab,
+    tableShowSelectedScenarioOnly,
+  ]);
 }
 
 type SampleMetaDataType = {

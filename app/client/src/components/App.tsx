@@ -8,11 +8,14 @@ import React, {
   useState,
 } from 'react';
 import { css } from '@emotion/react';
+import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@reach/tabs';
 import { useWindowSize } from '@reach/window-size';
+import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 import IconChevronDown from '~icons/fa7-solid/chevron-down';
 import IconChevronUp from '~icons/fa7-solid/chevron-up';
 import IconSearchPlus from '~icons/fa7-solid/search-plus';
 // components
+import ErrorIcon from 'components/ErrorIcon';
 import LoadingSpinner from 'components/LoadingSpinner';
 import Map from 'components/Map';
 import NavBar from 'components/NavBar';
@@ -34,15 +37,18 @@ import {
 import { parseSmallFloat } from 'utils/utils';
 // config
 import { navPanelWidth } from 'config/appConfig';
-import { isDecon } from 'config/navigation';
 // types
-import { LayerAoiAnalysisEditsType, LayerDeconEditsType } from 'types/Edits';
+import { EditsType, LayerDeconEditsType } from 'types/Edits';
+import { LayerType } from 'types/Layer';
 import { AppType } from 'types/Navigation';
+// styles
+import '@reach/tabs/styles.css';
 
 const resizerHeight = 10;
 const esrifooterheight = 16;
 const expandButtonHeight = 32;
 const minMapHeight = 180;
+const tableFilterHeight = 34;
 let startY = 0;
 
 const appStyles = (offset: number) => css`
@@ -138,6 +144,10 @@ const floatPanelContentStyles = (includeOverflow: boolean = true) => {
 
 const floatPanelScrollContainerStyles = css`
   height: 100%;
+
+  [data-reach-tab-list] {
+    background: none;
+  }
 `;
 
 const loadingContainerStyles = css`
@@ -184,17 +194,21 @@ const resizerButtonStyles = css`
 `;
 
 const tablePanelHeaderStyles = css`
-  height: 30px;
+  height: 32px;
   width: 100%;
-  color: #444;
-  background-color: #efefef;
-  border: 1px solid #afafaf;
+  border-top: 1px solid #afafaf;
+  border-bottom: 1px solid #afafaf;
   padding: 0;
 `;
 
-const sampleTableHeaderStyles = css`
-  margin: 0 10px;
+const sampleTableHeaderStyles = (active: boolean) => css`
+  height: 30px;
+  margin: 0;
+  padding: 0.2em 1.1765em;
+  background-color: white;
+  color: black;
   font-weight: bold;
+  border-bottom: 3px solid ${active ? '#01213b' : 'transparent'} !important;
 `;
 
 const zoomButtonContainerStyles = css`
@@ -225,17 +239,23 @@ function App({ appType }: Props) {
     setTablePanelExpanded,
     tablePanelHeight,
     setTablePanelHeight,
+    tablePanelSelectedTab,
+    setTablePanelSelectedTab,
+    tableShowSelectedScenarioOnly,
+    setTableShowSelectedScenarioOnly,
     trainingMode,
   } = useContext(NavigationContext);
   const {
     displayDimensions,
     edits,
     layers,
+    map,
     mapView,
+    portalLayers,
     sceneView,
     selectedSampleIds,
-    setSelectedSampleIds,
     selectedScenario,
+    setSelectedSampleIds,
   } = useContext(SketchContext);
 
   useSessionStorage(appType);
@@ -315,467 +335,196 @@ function App({ appType }: Props) {
     if (offset !== offsetTop) setOffset(offsetTop);
   }, [contentHeight, height, offset, totsDiv, width]);
 
-  // count the number of samples
-  const tableData: any[] = [];
-  if (isDecon()) {
-    if (selectedScenario && selectedScenario.type === 'scenario-decon') {
-      const aoiLayersProcessed: string[] = [];
-      selectedScenario.linkedLayerIds.forEach((layerId) => {
-        const deconLayer = edits.edits.find(
-          (l) => l.type === 'layer-decon' && l.layerId === layerId,
-        ) as LayerDeconEditsType | undefined;
-        const layer = edits.edits.find(
-          (l) =>
-            l.type === 'layer-aoi-analysis' &&
-            l.layerId === deconLayer?.analysisLayerId,
-        ) as LayerAoiAnalysisEditsType | undefined;
-        if (!layer) return;
+  // ONLY NEEDED FOR TODS. Tracks layers added to map to make syncing
+  // table with tots sample layers in tods more reliable.
+  const [numMapLayers, setNumMapLayers] = useState(0);
+  const [watcherInitialized, setWatcherInitialized] = useState(false);
+  useEffect(() => {
+    if (!map || appType !== 'decon' || watcherInitialized) return;
 
-        const aoiAssessed = layer.layers.find(
-          (l) => l.layerType === 'AOI Assessed',
-        );
-        const aoiAssessedLayer = layers.find(
-          (l) =>
-            l.layerType === 'AOI Assessed' &&
-            l.layerId === aoiAssessed?.layerId,
-        );
-        if (!aoiAssessedLayer) return;
-        if (aoiLayersProcessed.includes(aoiAssessedLayer.layerId)) return;
+    setWatcherInitialized(true);
+    reactiveUtils.watch(
+      () => map.layers.length,
+      () => setNumMapLayers(map.layers.length),
+    );
+  }, [appType, map, watcherInitialized]);
 
-        aoiLayersProcessed.push(aoiAssessedLayer.layerId);
-        (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
-          (building) => {
-            tableData.push({
-              graphic: building,
-              ...building.attributes,
-              layerName:
-                aoiAssessedLayer.parentLayer?.title ?? aoiAssessedLayer.label,
-              H_ADJ_ELEV:
-                parseSmallFloat(
-                  building.attributes.H_ADJ_ELEV,
-                  2,
-                )?.toLocaleString() ?? '',
-              L_ADJ_ELEV:
-                parseSmallFloat(
-                  building.attributes.L_ADJ_ELEV,
-                  2,
-                )?.toLocaleString() ?? '',
-              HEIGHT:
-                parseSmallFloat(
-                  building.attributes.HEIGHT,
-                  2,
-                )?.toLocaleString() ?? '',
-              SQMETERS:
-                parseSmallFloat(
-                  building.attributes.SQMETERS,
-                  2,
-                )?.toLocaleString() ?? '',
-              footprintSqM:
-                parseSmallFloat(
-                  building.attributes.footprintSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              floorsSqM:
-                parseSmallFloat(
-                  building.attributes.floorsSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              totalSqM:
-                parseSmallFloat(
-                  building.attributes.totalSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              extWallsSqM:
-                parseSmallFloat(
-                  building.attributes.extWallsSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intWallsSqM:
-                parseSmallFloat(
-                  building.attributes.intWallsSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              extSqM:
-                parseSmallFloat(
-                  building.attributes.extSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intSqM:
-                parseSmallFloat(
-                  building.attributes.intSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              roofSqM:
-                parseSmallFloat(
-                  building.attributes.roofSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              ceilingsSqM:
-                parseSmallFloat(
-                  building.attributes.ceilingsSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              extVolumeCubM:
-                parseSmallFloat(
-                  building.attributes.extVolumeCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeCubM:
-                parseSmallFloat(
-                  building.attributes.intVolumeCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeContentsCubM:
-                parseSmallFloat(
-                  building.attributes.intVolumeContentsCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              footprintSqFt:
-                parseSmallFloat(
-                  building.attributes.footprintSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              SQFEET:
-                parseSmallFloat(
-                  building.attributes.SQFEET,
-                  2,
-                )?.toLocaleString() ?? '',
-              heightFt:
-                parseSmallFloat(
-                  building.attributes.heightFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              floorsSqFt:
-                parseSmallFloat(
-                  building.attributes.floorsSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              totalSqFt:
-                parseSmallFloat(
-                  building.attributes.totalSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              extWallsSqFt:
-                parseSmallFloat(
-                  building.attributes.extWallsSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intWallsSqFt:
-                parseSmallFloat(
-                  building.attributes.intWallsSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              extSqFt:
-                parseSmallFloat(
-                  building.attributes.extSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intSqFt:
-                parseSmallFloat(
-                  building.attributes.intSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              roofSqFt:
-                parseSmallFloat(
-                  building.attributes.roofSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              ceilingsSqFt:
-                parseSmallFloat(
-                  building.attributes.ceilingsSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              extVolumeCubFt:
-                parseSmallFloat(
-                  building.attributes.extVolumeCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeCubFt:
-                parseSmallFloat(
-                  building.attributes.intVolumeCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeContentsCubFt:
-                parseSmallFloat(
-                  building.attributes.intVolumeContentsCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intBrickSqM:
-                parseSmallFloat(
-                  building.attributes.intBrickSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              extBrickSqM:
-                parseSmallFloat(
-                  building.attributes.extBrickSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              extVolumeBrickCubM:
-                parseSmallFloat(
-                  building.attributes.extVolumeBrickCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeBrickCubM:
-                parseSmallFloat(
-                  building.attributes.intVolumeBrickCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeBrickContentsCubM:
-                parseSmallFloat(
-                  building.attributes.intVolumeBrickContentsCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intConcreteSqM:
-                parseSmallFloat(
-                  building.attributes.intConcreteSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              extConcreteSqM:
-                parseSmallFloat(
-                  building.attributes.extConcreteSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              extVolumeConcreteCubM:
-                parseSmallFloat(
-                  building.attributes.extVolumeConcreteCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeConcreteCubM:
-                parseSmallFloat(
-                  building.attributes.intVolumeConcreteCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeConcreteContentsCubM:
-                parseSmallFloat(
-                  building.attributes.intVolumeConcreteContentsCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intSteelSqM:
-                parseSmallFloat(
-                  building.attributes.intSteelSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              extSteelSqM:
-                parseSmallFloat(
-                  building.attributes.extSteelSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              extVolumeSteelCubM:
-                parseSmallFloat(
-                  building.attributes.extVolumeSteelCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeSteelCubM:
-                parseSmallFloat(
-                  building.attributes.intVolumeSteelCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeSteelContentsCubM:
-                parseSmallFloat(
-                  building.attributes.intVolumeSteelContentsCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intWoodSqM:
-                parseSmallFloat(
-                  building.attributes.intWoodSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              extWoodSqM:
-                parseSmallFloat(
-                  building.attributes.extWoodSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              extVolumeWoodCubM:
-                parseSmallFloat(
-                  building.attributes.extVolumeWoodCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeWoodCubM:
-                parseSmallFloat(
-                  building.attributes.intVolumeWoodCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeWoodContentsCubM:
-                parseSmallFloat(
-                  building.attributes.intVolumeWoodContentsCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intOtherSqM:
-                parseSmallFloat(
-                  building.attributes.intOtherSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              extOtherSqM:
-                parseSmallFloat(
-                  building.attributes.extOtherSqM,
-                  2,
-                )?.toLocaleString() ?? '',
-              extVolumeOtherCubM:
-                parseSmallFloat(
-                  building.attributes.extVolumeOtherCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeOtherCubM:
-                parseSmallFloat(
-                  building.attributes.intVolumeOtherCubM,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeOtherContentsCubM:
-                parseSmallFloat(
-                  building.attributes.intVolumeOtherContentsCubM,
-                  2,
-                )?.toLocaleString() ?? '',
+  // ONLY NEEDED FOR TODS. Syncs the table with tots sample layers.
+  // This is needed because TOTS sample layers are pulled into TODS
+  // from AGO as a feature layer and not as graphics layers like
+  // everything else.
+  const [tableError, setTableError] = useState('');
+  const [totsIdsLoaded, setTotsIdsLoaded] = useState<string[]>([]);
+  const [portalGraphics, setPortalGraphics] = useState<__esri.Graphic[]>([]);
+  useEffect(() => {
+    if (!map || appType !== 'decon') return;
 
-              intBrickSqFt:
-                parseSmallFloat(
-                  building.attributes.intBrickSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              extBrickSqFt:
-                parseSmallFloat(
-                  building.attributes.extBrickSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              extVolumeBrickCubFt:
-                parseSmallFloat(
-                  building.attributes.extVolumeBrickCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeBrickCubFt:
-                parseSmallFloat(
-                  building.attributes.intVolumeBrickCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeBrickContentsCubFt:
-                parseSmallFloat(
-                  building.attributes.intVolumeBrickContentsCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intConcreteSqFt:
-                parseSmallFloat(
-                  building.attributes.intConcreteSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              extConcreteSqFt:
-                parseSmallFloat(
-                  building.attributes.extConcreteSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              extVolumeConcreteCubFt:
-                parseSmallFloat(
-                  building.attributes.extVolumeConcreteCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeConcreteCubFt:
-                parseSmallFloat(
-                  building.attributes.intVolumeConcreteCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeConcreteContentsCubFt:
-                parseSmallFloat(
-                  building.attributes.intVolumeConcreteContentsCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intSteelSqFt:
-                parseSmallFloat(
-                  building.attributes.intSteelSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              extSteelSqFt:
-                parseSmallFloat(
-                  building.attributes.extSteelSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              extVolumeSteelCubFt:
-                parseSmallFloat(
-                  building.attributes.extVolumeSteelCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeSteelCubFt:
-                parseSmallFloat(
-                  building.attributes.intVolumeSteelCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeSteelContentsCubFt:
-                parseSmallFloat(
-                  building.attributes.intVolumeSteelContentsCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intWoodSqFt:
-                parseSmallFloat(
-                  building.attributes.intWoodSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              extWoodSqFt:
-                parseSmallFloat(
-                  building.attributes.extWoodSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              extVolumeWoodCubFt:
-                parseSmallFloat(
-                  building.attributes.extVolumeWoodCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeWoodCubFt:
-                parseSmallFloat(
-                  building.attributes.intVolumeWoodCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeWoodContentsCubFt:
-                parseSmallFloat(
-                  building.attributes.intVolumeWoodContentsCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intOtherSqFt:
-                parseSmallFloat(
-                  building.attributes.intOtherSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              extOtherSqFt:
-                parseSmallFloat(
-                  building.attributes.extOtherSqFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              extVolumeOtherCubFt:
-                parseSmallFloat(
-                  building.attributes.extVolumeOtherCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeOtherCubFt:
-                parseSmallFloat(
-                  building.attributes.intVolumeOtherCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-              intVolumeOtherContentsCubFt:
-                parseSmallFloat(
-                  building.attributes.intVolumeOtherContentsCubFt,
-                  2,
-                )?.toLocaleString() ?? '',
-            });
-          },
-        );
-      });
+    setTableError('');
+
+    // find ids that are no longer in portalLayers
+    const currentPortalIds = portalLayers.map((p) => p.id);
+    const idsToRemove = totsIdsLoaded.filter(
+      (id) => !currentPortalIds.includes(id),
+    );
+
+    // remove any items that have been removed from portalLayers
+    if (idsToRemove.length > 0) {
+      setTotsIdsLoaded((prev) =>
+        prev.filter((id) => !idsToRemove.includes(id)),
+      );
+      setPortalGraphics((prev) =>
+        prev.filter((g) => !idsToRemove.includes(g.attributes['scenarioId'])),
+      );
     }
-  } else {
-    layers.forEach((layer) => {
-      if (!layer.sketchLayer || layer.sketchLayer.type !== 'graphics') return;
-      if (layer?.parentLayer?.id !== selectedScenario?.layerId) return;
-      if (layer.layerType === 'Samples' || layer.layerType === 'VSP') {
-        const graphics = layer.sketchLayer.graphics.toArray();
-        graphics.sort((a, b) =>
-          a.attributes.PERMANENT_IDENTIFIER.localeCompare(
-            b.attributes.PERMANENT_IDENTIFIER,
-          ),
-        );
-        graphics.forEach((sample) => {
-          tableData.push({
-            graphic: sample,
-            ...sample.attributes,
-          });
-        });
+
+    if (portalLayers.length === 0) return;
+
+    const loadAndQueryLayers = async () => {
+      const requests: Promise<__esri.FeatureSet>[] = [];
+      const processedIds: string[] = [];
+      const layerInfo: { id: string; title: string | nullish }[] = [];
+
+      for (const pLayer of portalLayers) {
+        if (
+          pLayer.type !== 'tots' ||
+          !pLayer.categories.includes('contains-epa-tots-sample-layer') ||
+          totsIdsLoaded.includes(pLayer.id)
+        )
+          continue;
+
+        const layer = map.layers.find(
+          (l) => (l as any).portalItem?.id === pLayer.id,
+        ) as __esri.GroupLayer;
+
+        if (!layer) continue;
+
+        try {
+          await layer.loadAll();
+
+          const sampleLayer = layer.layers.find(
+            (l) => l.title?.endsWith('-points') ?? false,
+          ) as __esri.FeatureLayer;
+
+          if (sampleLayer) {
+            // execute query and save scenario level metadata
+            requests.push(
+              sampleLayer.queryFeatures({
+                where: '1=1',
+                returnGeometry: true,
+                outFields: ['*'],
+              }),
+            );
+            layerInfo.push({ id: pLayer.id, title: layer.title });
+            processedIds.push(pLayer.id);
+          }
+        } catch (err) {
+          console.error(`table layer load failed ${pLayer.id}:`, err);
+          setTableError(
+            `Failed to load TOTS Sample data for ${pLayer.label}. Please check developer console for more information.`,
+          );
+        }
       }
+
+      if (requests.length > 0) {
+        try {
+          const responses = await Promise.all(requests);
+
+          setPortalGraphics((prev) => [
+            ...prev,
+            ...responses.flatMap((r, index) => {
+              return r.features.map((f) => {
+                // apply scenario level metadata to each feature
+                f.attributes['scenarioId'] = layerInfo[index].id;
+                f.attributes['scenarioName'] = layerInfo[index].title;
+                return f;
+              });
+            }),
+          ]);
+          setTotsIdsLoaded((prev) => [...prev, ...processedIds]);
+        } catch (error) {
+          console.error('table query failed:', error);
+          setTableError(
+            `Failed to load TOTS Sample data for. Please check developer console for more information.`,
+          );
+        }
+      }
+    };
+
+    loadAndQueryLayers();
+  }, [appType, map, numMapLayers, portalLayers, totsIdsLoaded]);
+
+  // changes tablePanelSelectedTab in the case of a tab being removed
+  useEffect(() => {
+    if (edits.count === 0 || layers.length === 0) return;
+
+    let newSelectedTab = tablePanelSelectedTab;
+
+    // determine if there is data for the selected tab
+    const buildingData = getBuildingRecords(edits, layers);
+    const sampleData = getSampleRecords(layers, portalGraphics);
+
+    if (
+      tablePanelSelectedTab === 'buildings' &&
+      buildingData.length === 0 &&
+      sampleData.length > 0
+    )
+      newSelectedTab = 'samples';
+    else if (
+      tablePanelSelectedTab === 'samples' &&
+      sampleData.length === 0 &&
+      buildingData.length > 0
+    )
+      newSelectedTab = 'buildings';
+    else if (sampleData.length === 0 && buildingData.length === 0)
+      newSelectedTab = null;
+
+    if (newSelectedTab !== tablePanelSelectedTab)
+      setTablePanelSelectedTab(newSelectedTab);
+  }, [
+    edits,
+    layers,
+    portalGraphics,
+    tablePanelSelectedTab,
+    setTablePanelSelectedTab,
+  ]);
+
+  // count the number of samples
+  const tableData: BuildingTableDataType[] = [];
+  type BuildingTableDataType = {
+    data: any[];
+    key: 'buildings' | 'samples';
+    label: string;
+    primary: boolean;
+    scenarioData: any[];
+  };
+
+  const sampleData = getSampleRecords(layers, portalGraphics);
+  if (sampleData.length > 0)
+    tableData.push({
+      key: 'samples',
+      label: 'Samples',
+      primary: appType === 'sampling',
+      data: sampleData,
+      scenarioData:
+        appType === 'sampling'
+          ? sampleData.filter((s) => s.scenarioId === selectedScenario?.layerId)
+          : [],
     });
-  }
+
+  const buildingData = getBuildingRecords(edits, layers);
+  if (buildingData.length > 0)
+    tableData.push({
+      key: 'buildings',
+      label: 'Buildings',
+      primary: appType === 'decon',
+      data: buildingData,
+      scenarioData:
+        appType === 'decon'
+          ? buildingData.filter((b) =>
+              b.scenarioIds.includes(selectedScenario?.value),
+            )
+          : [],
+    });
 
   // calculate the width of the table
   let tablePanelWidth = 150;
@@ -787,6 +536,11 @@ function App({ appType }: Props) {
   ) {
     tablePanelWidth += 500;
   }
+
+  const tabIndex = tableData.findIndex(
+    (table) => table.key === tablePanelSelectedTab,
+  );
+  const layoutKey = tableData.map((t) => t.key).join('-');
 
   return (
     <div className="tots" ref={totsRef}>
@@ -939,149 +693,248 @@ function App({ appType }: Props) {
                   id="tots-attributes-panel-scroll-container"
                   css={floatPanelScrollContainerStyles}
                 >
-                  <div css={tablePanelHeaderStyles}>
-                    <span css={sampleTableHeaderStyles}>
-                      {appType === 'decon' ? 'Buildings' : 'Samples'} (Count:{' '}
-                      {tableData.length})
-                    </span>
-                  </div>
-                  <div>
-                    <ReactTable
-                      id="tots-samples-table"
-                      data={tableData}
-                      striped={true}
-                      height={tablePanelHeight - resizerHeight - 30}
-                      initialSelectedRowIds={selectedSampleIds}
-                      onSelectionChange={(row: any) => {
-                        const PERMANENT_IDENTIFIER =
-                          row.original.PERMANENT_IDENTIFIER;
-                        const DECISIONUNITUUID = row.original.DECISIONUNITUUID;
-                        setSelectedSampleIds((selectedSampleIds) => {
-                          if (
-                            selectedSampleIds.findIndex(
-                              (item) =>
-                                item.PERMANENT_IDENTIFIER ===
-                                PERMANENT_IDENTIFIER,
-                            ) !== -1
-                          ) {
-                            const samples = selectedSampleIds.filter(
-                              (item) =>
-                                item.PERMANENT_IDENTIFIER !==
-                                PERMANENT_IDENTIFIER,
-                            );
+                  <Tabs
+                    key={layoutKey}
+                    index={tabIndex >= 0 ? tabIndex : 0}
+                    onChange={(index) => {
+                      setTablePanelSelectedTab(tableData[index]?.key ?? null);
+                    }}
+                  >
+                    <div css={tablePanelHeaderStyles}>
+                      <TabList>
+                        {tableData.map((table, index) => (
+                          <Tab
+                            key={table.key}
+                            onClick={() => setTablePanelSelectedTab(table.key)}
+                            css={sampleTableHeaderStyles(
+                              tablePanelSelectedTab === table.key ||
+                                (!tablePanelSelectedTab && index === 0),
+                            )}
+                          >
+                            {table.label} (Count:{' '}
+                            {table.primary && tableShowSelectedScenarioOnly
+                              ? table.scenarioData.length
+                              : table.data.length}
+                            )
+                          </Tab>
+                        ))}
+                        {tableError && (
+                          <div
+                            css={css`
+                              position: absolute;
+                              right: 10px;
+                              top: 16px;
+                            `}
+                          >
+                            <ErrorIcon
+                              id="error"
+                              text="ERROR"
+                              tooltip={tableError}
+                            />
+                          </div>
+                        )}
+                      </TabList>
+                    </div>
 
-                            return samples.map((sample) => {
-                              return {
-                                PERMANENT_IDENTIFIER,
-                                DECISIONUNITUUID,
-                                selection_method: 'row-click',
-                                graphic: sample.graphic,
-                              };
-                            });
-                          }
+                    <TabPanels>
+                      {tableData.map((table) => {
+                        const filterVisible =
+                          (appType === 'sampling' && table.key === 'samples') ||
+                          (appType === 'decon' && table.key === 'buildings');
+                        return (
+                          <TabPanel key={table.key}>
+                            {filterVisible && (
+                              <label
+                                css={css`
+                                  height: ${tableFilterHeight}px;
+                                  display: flex;
+                                  align-items: center;
+                                  gap: 4px;
+                                  padding: 5px 0 5px 10px;
+                                `}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={tableShowSelectedScenarioOnly}
+                                  onChange={(e) =>
+                                    setTableShowSelectedScenarioOnly(
+                                      e.target.checked,
+                                    )
+                                  }
+                                />
+                                <span>Show Selected Scenario Only</span>
+                              </label>
+                            )}
+                            <ReactTable
+                              id="tots-samples-table"
+                              data={
+                                table.primary && tableShowSelectedScenarioOnly
+                                  ? table.scenarioData
+                                  : table.data
+                              }
+                              striped={true}
+                              height={
+                                tablePanelHeight -
+                                resizerHeight -
+                                (filterVisible ? tableFilterHeight : 0) -
+                                30
+                              }
+                              initialSelectedRowIds={selectedSampleIds}
+                              onSelectionChange={(row: any) => {
+                                const PERMANENT_IDENTIFIER =
+                                  row.original.PERMANENT_IDENTIFIER;
+                                const DECISIONUNITUUID =
+                                  row.original.DECISIONUNITUUID;
+                                setSelectedSampleIds((selectedSampleIds) => {
+                                  if (
+                                    selectedSampleIds.findIndex(
+                                      (item) =>
+                                        item.PERMANENT_IDENTIFIER ===
+                                        PERMANENT_IDENTIFIER,
+                                    ) !== -1
+                                  ) {
+                                    const samples = selectedSampleIds.filter(
+                                      (item) =>
+                                        item.PERMANENT_IDENTIFIER !==
+                                        PERMANENT_IDENTIFIER,
+                                    );
 
-                          return [
-                            // ...selectedSampleIds, // Uncomment this line to allow multiple selections
-                            {
-                              PERMANENT_IDENTIFIER,
-                              DECISIONUNITUUID,
-                              selection_method: 'row-click',
-                              graphic: row.original.graphic,
-                            },
-                          ];
-                        });
-                      }}
-                      sortBy={
-                        appType === 'decon'
-                          ? [
-                              {
-                                id: 'layerName',
-                                desc: false,
-                              },
-                              {
-                                id: 'OCC_CLS',
-                                desc: false,
-                              },
-                              {
-                                id: 'PRIM_OCC',
-                                desc: false,
-                              },
-                            ]
-                          : [
-                              {
-                                id: 'DECISIONUNIT',
-                                desc: false,
-                              },
-                              {
-                                id: 'TYPE',
-                                desc: false,
-                              },
-                            ]
-                      }
-                      getColumns={(tableWidth: any) => {
-                        const tableColumns =
-                          appType === 'decon'
-                            ? getBuildingTableColumns({
-                                tableWidth,
-                                trainingMode,
-                              })
-                            : getSampleTableColumns({
-                                tableWidth,
-                                includeContaminationFields: trainingMode,
-                              });
-
-                        return [
-                          {
-                            header: () => <span className="sr-only">Zoom</span>,
-                            id: 'zoom-button',
-                            size: 30,
-                            cell: ({ row }: { row: any }) => (
-                              <div css={zoomButtonContainerStyles}>
-                                <button
-                                  css={zoomButtonStyles}
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-
-                                    // select the sample
-                                    setSelectedSampleIds([
-                                      {
-                                        PERMANENT_IDENTIFIER:
-                                          row.original.PERMANENT_IDENTIFIER,
-                                        DECISIONUNITUUID:
-                                          row.original.DECISIONUNITUUID,
+                                    return samples.map((sample) => {
+                                      return {
+                                        PERMANENT_IDENTIFIER,
+                                        DECISIONUNITUUID,
                                         selection_method: 'row-click',
-                                        graphic: row.original.grpahic,
-                                      },
-                                    ]);
+                                        graphic: sample.graphic,
+                                      };
+                                    });
+                                  }
 
-                                    // zoom to the graphic
-                                    if (displayDimensions === '2d' && mapView) {
-                                      mapView.goTo(row.original.graphic);
-                                      mapView.zoom =
-                                        appType === 'decon'
-                                          ? 16
-                                          : mapView.zoom - 1;
-                                    } else if (
-                                      displayDimensions === '3d' &&
-                                      sceneView
-                                    ) {
-                                      sceneView.goTo(row.original.graphic);
-                                    }
-                                  }}
-                                >
-                                  <IconSearchPlus />
-                                  <span className="sr-only">
-                                    Zoom to sample
-                                  </span>
-                                </button>
-                              </div>
-                            ),
-                          },
-                          ...tableColumns,
-                        ];
-                      }}
-                    />
-                  </div>
+                                  return [
+                                    // ...selectedSampleIds, // Uncomment this line to allow multiple selections
+                                    {
+                                      PERMANENT_IDENTIFIER,
+                                      DECISIONUNITUUID,
+                                      selection_method: 'row-click',
+                                      graphic: row.original.graphic,
+                                    },
+                                  ];
+                                });
+                              }}
+                              sortBy={
+                                table.key === 'buildings'
+                                  ? [
+                                      {
+                                        id: 'scenarioName',
+                                        desc: false,
+                                      },
+                                      {
+                                        id: 'layerName',
+                                        desc: false,
+                                      },
+                                      {
+                                        id: 'OCC_CLS',
+                                        desc: false,
+                                      },
+                                      {
+                                        id: 'PRIM_OCC',
+                                        desc: false,
+                                      },
+                                    ]
+                                  : [
+                                      {
+                                        id: 'scenarioName',
+                                        desc: false,
+                                      },
+                                      {
+                                        id: 'DECISIONUNIT',
+                                        desc: false,
+                                      },
+                                      {
+                                        id: 'TYPE',
+                                        desc: false,
+                                      },
+                                    ]
+                              }
+                              getColumns={(tableWidth: any) => {
+                                const tableColumns =
+                                  table.key === 'buildings'
+                                    ? getBuildingTableColumns({
+                                        tableWidth,
+                                        trainingMode,
+                                      })
+                                    : getSampleTableColumns({
+                                        appType,
+                                        tableWidth,
+                                        includeContaminationFields:
+                                          trainingMode,
+                                      });
+
+                                return [
+                                  {
+                                    header: () => (
+                                      <span className="sr-only">Zoom</span>
+                                    ),
+                                    id: 'zoom-button',
+                                    size: 30,
+                                    cell: ({ row }: { row: any }) => (
+                                      <div css={zoomButtonContainerStyles}>
+                                        <button
+                                          css={zoomButtonStyles}
+                                          onClick={(event) => {
+                                            event.stopPropagation();
+
+                                            // select the sample
+                                            setSelectedSampleIds([
+                                              {
+                                                PERMANENT_IDENTIFIER:
+                                                  row.original
+                                                    .PERMANENT_IDENTIFIER,
+                                                DECISIONUNITUUID:
+                                                  row.original.DECISIONUNITUUID,
+                                                selection_method: 'row-click',
+                                                graphic: row.original.graphic,
+                                              },
+                                            ]);
+
+                                            // zoom to the graphic
+                                            if (
+                                              displayDimensions === '2d' &&
+                                              mapView
+                                            ) {
+                                              mapView.goTo(
+                                                row.original.graphic,
+                                              );
+                                              mapView.zoom =
+                                                appType === 'decon'
+                                                  ? 16
+                                                  : mapView.zoom - 1;
+                                            } else if (
+                                              displayDimensions === '3d' &&
+                                              sceneView
+                                            ) {
+                                              sceneView.goTo(
+                                                row.original.graphic,
+                                              );
+                                            }
+                                          }}
+                                        >
+                                          <IconSearchPlus />
+                                          <span className="sr-only">
+                                            Zoom to sample
+                                          </span>
+                                        </button>
+                                      </div>
+                                    ),
+                                  },
+                                  ...tableColumns,
+                                ];
+                              }}
+                            />
+                          </TabPanel>
+                        );
+                      })}
+                    </TabPanels>
+                  </Tabs>
                 </div>
               </div>
             </div>
@@ -1090,6 +943,501 @@ function App({ appType }: Props) {
       </div>
     </div>
   );
+}
+
+function getSampleRecords(
+  layers: LayerType[],
+  portalGraphics: __esri.Graphic[] = [],
+) {
+  const tempData: any[] = [];
+  layers.forEach((layer) => {
+    if (!layer.sketchLayer || layer.sketchLayer.type !== 'graphics') return;
+    if (layer.layerType === 'Samples' || layer.layerType === 'VSP') {
+      const graphics = layer.sketchLayer.graphics.toArray();
+      graphics.sort((a, b) =>
+        a.attributes.PERMANENT_IDENTIFIER.localeCompare(
+          b.attributes.PERMANENT_IDENTIFIER,
+        ),
+      );
+      graphics.forEach((sample) => {
+        tempData.push({
+          graphic: sample,
+          ...sample.attributes,
+          scenarioId: layer.parentLayer?.id ?? '',
+          scenarioName: layer.parentLayer?.title ?? '',
+        });
+      });
+    }
+  });
+
+  portalGraphics.forEach((sample) => {
+    tempData.push({
+      graphic: sample,
+      ...sample.attributes,
+    });
+  });
+
+  return tempData;
+}
+
+function getBuildingRecords(edits: EditsType, layers: LayerType[]) {
+  const tempData: any[] = [];
+  edits.edits
+    .filter((e) => e.type === 'layer-aoi-analysis')
+    .forEach((edit) => {
+      const aoiLayersProcessed: string[] = [];
+
+      // find decon layers linked to this AOI analysis layer
+      const deconLayerIds = edits.edits
+        .filter(
+          (e) => e.type === 'layer-decon' && e.analysisLayerId === edit.value,
+        )
+        .map((d) => (d as LayerDeconEditsType).value);
+
+      const scenarioIds: string[] = [];
+      const scenarioNames: string[] = [];
+      edits.edits.forEach((s) => {
+        if (s.type !== 'scenario-decon') return;
+
+        let scenarioLinked = false;
+        s.linkedLayerIds.forEach((linkedLayerId) => {
+          if (!deconLayerIds.includes(linkedLayerId)) return;
+          scenarioLinked = true;
+        });
+        if (!scenarioLinked) return;
+
+        scenarioIds.push(s.value);
+        scenarioNames.push(s.scenarioName);
+      });
+
+      const aoiAssessed = edit.layers.find(
+        (l) => l.layerType === 'AOI Assessed',
+      );
+      const aoiAssessedLayer = layers.find(
+        (l) =>
+          l.layerType === 'AOI Assessed' && l.layerId === aoiAssessed?.layerId,
+      );
+      if (!aoiAssessedLayer) return;
+      if (aoiLayersProcessed.includes(aoiAssessedLayer.layerId)) return;
+
+      aoiLayersProcessed.push(aoiAssessedLayer.layerId);
+      (aoiAssessedLayer.sketchLayer as __esri.GraphicsLayer).graphics.forEach(
+        (building) => {
+          tempData.push({
+            graphic: building,
+            ...building.attributes,
+            scenarioIds,
+            scenarioNames,
+            scenarioName: scenarioNames.sort().join(', '),
+            layerName:
+              aoiAssessedLayer.parentLayer?.title ?? aoiAssessedLayer.label,
+            H_ADJ_ELEV:
+              parseSmallFloat(
+                building.attributes.H_ADJ_ELEV,
+                2,
+              )?.toLocaleString() ?? '',
+            L_ADJ_ELEV:
+              parseSmallFloat(
+                building.attributes.L_ADJ_ELEV,
+                2,
+              )?.toLocaleString() ?? '',
+            HEIGHT:
+              parseSmallFloat(
+                building.attributes.HEIGHT,
+                2,
+              )?.toLocaleString() ?? '',
+            SQMETERS:
+              parseSmallFloat(
+                building.attributes.SQMETERS,
+                2,
+              )?.toLocaleString() ?? '',
+            footprintSqM:
+              parseSmallFloat(
+                building.attributes.footprintSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            floorsSqM:
+              parseSmallFloat(
+                building.attributes.floorsSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            totalSqM:
+              parseSmallFloat(
+                building.attributes.totalSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            extWallsSqM:
+              parseSmallFloat(
+                building.attributes.extWallsSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            intWallsSqM:
+              parseSmallFloat(
+                building.attributes.intWallsSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            extSqM:
+              parseSmallFloat(
+                building.attributes.extSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            intSqM:
+              parseSmallFloat(
+                building.attributes.intSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            roofSqM:
+              parseSmallFloat(
+                building.attributes.roofSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            ceilingsSqM:
+              parseSmallFloat(
+                building.attributes.ceilingsSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            extVolumeCubM:
+              parseSmallFloat(
+                building.attributes.extVolumeCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeCubM:
+              parseSmallFloat(
+                building.attributes.intVolumeCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeContentsCubM:
+              parseSmallFloat(
+                building.attributes.intVolumeContentsCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            footprintSqFt:
+              parseSmallFloat(
+                building.attributes.footprintSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            SQFEET:
+              parseSmallFloat(
+                building.attributes.SQFEET,
+                2,
+              )?.toLocaleString() ?? '',
+            heightFt:
+              parseSmallFloat(
+                building.attributes.heightFt,
+                2,
+              )?.toLocaleString() ?? '',
+            floorsSqFt:
+              parseSmallFloat(
+                building.attributes.floorsSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            totalSqFt:
+              parseSmallFloat(
+                building.attributes.totalSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            extWallsSqFt:
+              parseSmallFloat(
+                building.attributes.extWallsSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intWallsSqFt:
+              parseSmallFloat(
+                building.attributes.intWallsSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            extSqFt:
+              parseSmallFloat(
+                building.attributes.extSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intSqFt:
+              parseSmallFloat(
+                building.attributes.intSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            roofSqFt:
+              parseSmallFloat(
+                building.attributes.roofSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            ceilingsSqFt:
+              parseSmallFloat(
+                building.attributes.ceilingsSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            extVolumeCubFt:
+              parseSmallFloat(
+                building.attributes.extVolumeCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeCubFt:
+              parseSmallFloat(
+                building.attributes.intVolumeCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeContentsCubFt:
+              parseSmallFloat(
+                building.attributes.intVolumeContentsCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intBrickSqM:
+              parseSmallFloat(
+                building.attributes.intBrickSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            extBrickSqM:
+              parseSmallFloat(
+                building.attributes.extBrickSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            extVolumeBrickCubM:
+              parseSmallFloat(
+                building.attributes.extVolumeBrickCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeBrickCubM:
+              parseSmallFloat(
+                building.attributes.intVolumeBrickCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeBrickContentsCubM:
+              parseSmallFloat(
+                building.attributes.intVolumeBrickContentsCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            intConcreteSqM:
+              parseSmallFloat(
+                building.attributes.intConcreteSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            extConcreteSqM:
+              parseSmallFloat(
+                building.attributes.extConcreteSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            extVolumeConcreteCubM:
+              parseSmallFloat(
+                building.attributes.extVolumeConcreteCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeConcreteCubM:
+              parseSmallFloat(
+                building.attributes.intVolumeConcreteCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeConcreteContentsCubM:
+              parseSmallFloat(
+                building.attributes.intVolumeConcreteContentsCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            intSteelSqM:
+              parseSmallFloat(
+                building.attributes.intSteelSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            extSteelSqM:
+              parseSmallFloat(
+                building.attributes.extSteelSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            extVolumeSteelCubM:
+              parseSmallFloat(
+                building.attributes.extVolumeSteelCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeSteelCubM:
+              parseSmallFloat(
+                building.attributes.intVolumeSteelCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeSteelContentsCubM:
+              parseSmallFloat(
+                building.attributes.intVolumeSteelContentsCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            intWoodSqM:
+              parseSmallFloat(
+                building.attributes.intWoodSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            extWoodSqM:
+              parseSmallFloat(
+                building.attributes.extWoodSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            extVolumeWoodCubM:
+              parseSmallFloat(
+                building.attributes.extVolumeWoodCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeWoodCubM:
+              parseSmallFloat(
+                building.attributes.intVolumeWoodCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeWoodContentsCubM:
+              parseSmallFloat(
+                building.attributes.intVolumeWoodContentsCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            intOtherSqM:
+              parseSmallFloat(
+                building.attributes.intOtherSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            extOtherSqM:
+              parseSmallFloat(
+                building.attributes.extOtherSqM,
+                2,
+              )?.toLocaleString() ?? '',
+            extVolumeOtherCubM:
+              parseSmallFloat(
+                building.attributes.extVolumeOtherCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeOtherCubM:
+              parseSmallFloat(
+                building.attributes.intVolumeOtherCubM,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeOtherContentsCubM:
+              parseSmallFloat(
+                building.attributes.intVolumeOtherContentsCubM,
+                2,
+              )?.toLocaleString() ?? '',
+
+            intBrickSqFt:
+              parseSmallFloat(
+                building.attributes.intBrickSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            extBrickSqFt:
+              parseSmallFloat(
+                building.attributes.extBrickSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            extVolumeBrickCubFt:
+              parseSmallFloat(
+                building.attributes.extVolumeBrickCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeBrickCubFt:
+              parseSmallFloat(
+                building.attributes.intVolumeBrickCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeBrickContentsCubFt:
+              parseSmallFloat(
+                building.attributes.intVolumeBrickContentsCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intConcreteSqFt:
+              parseSmallFloat(
+                building.attributes.intConcreteSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            extConcreteSqFt:
+              parseSmallFloat(
+                building.attributes.extConcreteSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            extVolumeConcreteCubFt:
+              parseSmallFloat(
+                building.attributes.extVolumeConcreteCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeConcreteCubFt:
+              parseSmallFloat(
+                building.attributes.intVolumeConcreteCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeConcreteContentsCubFt:
+              parseSmallFloat(
+                building.attributes.intVolumeConcreteContentsCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intSteelSqFt:
+              parseSmallFloat(
+                building.attributes.intSteelSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            extSteelSqFt:
+              parseSmallFloat(
+                building.attributes.extSteelSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            extVolumeSteelCubFt:
+              parseSmallFloat(
+                building.attributes.extVolumeSteelCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeSteelCubFt:
+              parseSmallFloat(
+                building.attributes.intVolumeSteelCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeSteelContentsCubFt:
+              parseSmallFloat(
+                building.attributes.intVolumeSteelContentsCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intWoodSqFt:
+              parseSmallFloat(
+                building.attributes.intWoodSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            extWoodSqFt:
+              parseSmallFloat(
+                building.attributes.extWoodSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            extVolumeWoodCubFt:
+              parseSmallFloat(
+                building.attributes.extVolumeWoodCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeWoodCubFt:
+              parseSmallFloat(
+                building.attributes.intVolumeWoodCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeWoodContentsCubFt:
+              parseSmallFloat(
+                building.attributes.intVolumeWoodContentsCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intOtherSqFt:
+              parseSmallFloat(
+                building.attributes.intOtherSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            extOtherSqFt:
+              parseSmallFloat(
+                building.attributes.extOtherSqFt,
+                2,
+              )?.toLocaleString() ?? '',
+            extVolumeOtherCubFt:
+              parseSmallFloat(
+                building.attributes.extVolumeOtherCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeOtherCubFt:
+              parseSmallFloat(
+                building.attributes.intVolumeOtherCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+            intVolumeOtherContentsCubFt:
+              parseSmallFloat(
+                building.attributes.intVolumeOtherContentsCubFt,
+                2,
+              )?.toLocaleString() ?? '',
+          });
+        },
+      );
+    });
+
+  return tempData;
 }
 
 export default App;

@@ -966,10 +966,12 @@ function getPointSymbol3d(
  * @param useEqualWidth Forces the table to use equal width columns.
  */
 export function getSampleTableColumns({
+  appType,
   tableWidth,
   includeContaminationFields,
   useEqualWidth = false,
 }: {
+  appType: AppType;
   tableWidth: number;
   includeContaminationFields: boolean;
   useEqualWidth?: boolean;
@@ -993,6 +995,12 @@ export function getSampleTableColumns({
       show: false,
     },
     {
+      header: 'Scenario',
+      accessorKey: 'scenarioName',
+      size: largeColumnWidth,
+      sortUndefined: 'last',
+    },
+    {
       header: 'Layer',
       accessorKey: 'DECISIONUNIT',
       size: largeColumnWidth,
@@ -1002,90 +1010,110 @@ export function getSampleTableColumns({
       accessorKey: 'TYPE',
       size: mediumColumnWidth,
     },
-    {
-      header: 'Reference Surface Area (sq inch)',
-      accessorKey: 'SA',
-      size: baseColumnWidth,
-    },
-    {
-      header: 'Actual Surface Area (sq inch)',
-      accessorKey: 'AA',
-      size: baseColumnWidth,
-    },
-    {
-      header: 'Equivalent TOTS Samples',
-      accessorKey: 'AC',
-      size: baseColumnWidth,
-    },
-    // {
-    //   header: 'Total Cost Per Sample (Labor + Material + Waste)',
-    //   accessorKey: 'TCPS',
-    //   size: baseColumnWidth,
-    // },
-    {
-      header: 'Notes',
-      accessorKey: 'Notes',
-      size: largeColumnWidth,
-    },
-    {
-      header: 'Analysis Labor Cost ($)',
-      accessorKey: 'ALC',
-      size: baseColumnWidth,
-    },
-    {
-      header: 'Analysis Material Cost ($)',
-      accessorKey: 'AMC',
-      size: baseColumnWidth,
-    },
-    {
-      header: 'Sampling Material Cost ($/sample)',
-      accessorKey: 'MCPS',
-      size: baseColumnWidth,
-    },
-    {
-      header: 'Time to Prepare Kits (person hrs/sample)',
-      accessorKey: 'TTPK',
-      size: baseColumnWidth,
-    },
-    {
-      header: 'Time to Collect (person hrs/sample)',
-      accessorKey: 'TTC',
-      size: baseColumnWidth,
-    },
-    {
-      header: 'Time to Analyze (person hrs/sample)',
-      accessorKey: 'TTA',
-      size: baseColumnWidth,
-    },
-    // {
-    //   header: 'Total Time per Sample (person hrs/sample)',
-    //   accessorKey: 'TTPS',
-    //   size: baseColumnWidth,
-    // },
-    {
-      header: 'Limit of Detection (CFU) Porous',
-      accessorKey: 'LOD_P',
-      size: baseColumnWidth,
-    },
-    {
-      header: 'Limit of Detection (CFU) Nonporous',
-      accessorKey: 'LOD_NON',
-      size: baseColumnWidth,
-    },
-    {
-      header: 'Waste Volume (L/sample)',
-      accessorKey: 'WVPS',
-      size: baseColumnWidth,
-    },
-    {
-      header: 'Waste Weight (lbs/sample)',
-      accessorKey: 'WWPS',
-      size: baseColumnWidth,
-    },
   ];
 
+  if (appType === 'sampling') {
+    columns = [
+      ...columns,
+      {
+        header: 'Reference Surface Area (sq inch)',
+        accessorKey: 'SA',
+        size: baseColumnWidth,
+      },
+      {
+        header: 'Actual Surface Area (sq inch)',
+        accessorKey: 'AA',
+        size: baseColumnWidth,
+      },
+      {
+        header: 'Equivalent TOTS Samples',
+        accessorKey: 'AC',
+        size: baseColumnWidth,
+      },
+      // {
+      //   header: 'Total Cost Per Sample (Labor + Material + Waste)',
+      //   accessorKey: 'TCPS',
+      //   size: baseColumnWidth,
+      // },
+      {
+        header: 'Notes',
+        accessorKey: 'Notes',
+        size: largeColumnWidth,
+      },
+      {
+        header: 'Analysis Labor Cost ($)',
+        accessorKey: 'ALC',
+        size: baseColumnWidth,
+      },
+      {
+        header: 'Analysis Material Cost ($)',
+        accessorKey: 'AMC',
+        size: baseColumnWidth,
+      },
+      {
+        header: 'Sampling Material Cost ($/sample)',
+        accessorKey: 'MCPS',
+        size: baseColumnWidth,
+      },
+      {
+        header: 'Time to Prepare Kits (person hrs/sample)',
+        accessorKey: 'TTPK',
+        size: baseColumnWidth,
+      },
+      {
+        header: 'Time to Collect (person hrs/sample)',
+        accessorKey: 'TTC',
+        size: baseColumnWidth,
+      },
+      {
+        header: 'Time to Analyze (person hrs/sample)',
+        accessorKey: 'TTA',
+        size: baseColumnWidth,
+      },
+      // {
+      //   header: 'Total Time per Sample (person hrs/sample)',
+      //   accessorKey: 'TTPS',
+      //   size: baseColumnWidth,
+      // },
+      {
+        header: 'Limit of Detection (CFU) Porous',
+        accessorKey: 'LOD_P',
+        size: baseColumnWidth,
+      },
+      {
+        header: 'Limit of Detection (CFU) Nonporous',
+        accessorKey: 'LOD_NON',
+        size: baseColumnWidth,
+      },
+      {
+        header: 'Waste Volume (L/sample)',
+        accessorKey: 'WVPS',
+        size: baseColumnWidth,
+      },
+      {
+        header: 'Waste Weight (lbs/sample)',
+        accessorKey: 'WWPS',
+        size: baseColumnWidth,
+      },
+    ];
+  } else {
+    columns = [
+      ...columns,
+      {
+        header: 'Equivalent TOTS Samples',
+        accessorKey: 'AC',
+        size: baseColumnWidth,
+      },
+      {
+        header: 'Notes',
+        accessorKey: 'Notes',
+        size: largeColumnWidth,
+      },
+    ];
+  }
+
   // add the contamination hits columns, if necessary
-  if (includeContaminationFields) {
+  if (includeContaminationFields || appType === 'decon') {
     columns = [
       ...columns,
       {
@@ -1162,6 +1190,11 @@ export function getBuildingTableColumns({
       accessorKey: 'UUID',
       size: 0,
       show: false,
+    },
+    {
+      header: 'Scenario',
+      accessorKey: 'scenarioName',
+      size: baseColumnWidth,
     },
     {
       header: 'Layer',
@@ -3078,6 +3111,8 @@ function setRenderer(
   isPoints: boolean = false,
 ) {
   const type = isPoints ? 'simple-marker' : 'simple-fill';
+  layer.popupEnabled = true;
+  layer.popupTemplate = layer.createPopupTemplate();
   layer.renderer = {
     ...technologyTypes.todsSampleRenderer,
     defaultSymbol: {

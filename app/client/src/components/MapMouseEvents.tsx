@@ -2,14 +2,13 @@ import { useCallback, useContext, useEffect, useState } from 'react';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 import Popup from '@arcgis/core/widgets/Popup';
 // contexts
+import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext, SketchViewModelType } from 'contexts/Sketch';
 // utils
 import { use3dSketch } from 'utils/hooks';
 import { deactivateButtons } from 'utils/sketchUtils';
 // types
 import { AppType } from 'types/Navigation';
-// config
-import { isDecon } from 'config/navigation';
 
 let ctrl = false;
 let shift = false;
@@ -21,15 +20,16 @@ let updateGraphics: __esri.Graphic[] = [];
 function getGraphicFromResponse(res: any) {
   if (!res.results || res.results.length === 0) return null;
 
-  const match = res.results.filter((result: any) => {
+  const matches = res.results.filter((result: any) => {
     const { attributes: attr } = result.graphic;
-    if (!attr?.PERMANENT_IDENTIFIER || (!attr?.DECISIONUNITUUID && !isDecon()))
-      return null;
+    if (!attr?.PERMANENT_IDENTIFIER) return null;
 
     return result;
   });
 
-  return match[0] ? match[0].graphic : null;
+  const match = matches.length > 0 ? matches[0] : null;
+
+  return match ? match.graphic : null;
 }
 
 // --- components ---
@@ -40,6 +40,7 @@ type Props = {
 };
 
 function MapMouseEvents({ appType, mapView, sceneView }: Props) {
+  const { setTablePanelSelectedTab } = useContext(NavigationContext);
   const {
     displayDimensions,
     sampleAttributes,
@@ -83,6 +84,13 @@ function MapMouseEvents({ appType, mapView, sceneView }: Props) {
               },
             ];
           });
+
+          // switch table panel tabs
+          if (graphic) {
+            if (graphic.attributes.DECISIONUNITUUID)
+              setTablePanelSelectedTab('samples');
+            else setTablePanelSelectedTab('buildings');
+          }
 
           // get all of the graphics within the click except for those associated
           // with the sketch tools
@@ -165,7 +173,7 @@ function MapMouseEvents({ appType, mapView, sceneView }: Props) {
           window.logErrorToGa(err);
         });
     },
-    [setSelectedSampleIds],
+    [setSelectedSampleIds, setTablePanelSelectedTab],
   );
 
   // Sets up the map mouse events when the component initializes

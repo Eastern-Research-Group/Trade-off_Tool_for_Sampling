@@ -318,9 +318,29 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
         .catch((err) => console.error(err));
     }
 
+    // this is for highlighting a tots sample in the decon app
+    if (
+      selectedSampleIds.length === 1 &&
+      selectedSampleIds[0]?.graphic?.layer?.type === 'feature'
+    ) {
+      const graphic = selectedSampleIds[0].graphic;
+      const tempLayer = graphic.layer as __esri.FeatureLayer;
+      const itemsToHighlight: __esri.Graphic[] = [graphic];
+      const view = displayDimensions === '3d' ? sceneView : mapView;
+      view
+        .whenLayerView(tempLayer)
+        .then((layerView) => {
+          const handle = layerView.highlight(itemsToHighlight);
+          handles.add(handle, group);
+        })
+        .catch((err) => console.error(err));
+      return;
+    }
+
     const samples: any = {};
     selectedSampleIds.forEach((sample) => {
-      const key = isDecon() ? 'aoi-assessed' : sample.DECISIONUNITUUID;
+      const key =
+        sample.DECISIONUNITUUID ?? sample.graphic?.layer?.id ?? 'aoi-assessed';
       if (!Object.prototype.hasOwnProperty.call(samples, key)) {
         samples[key] = [sample.PERMANENT_IDENTIFIER];
       } else {
