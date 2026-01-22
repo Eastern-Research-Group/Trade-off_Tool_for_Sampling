@@ -3111,6 +3111,8 @@ function setRenderer(
   isPoints: boolean = false,
 ) {
   const type = isPoints ? 'simple-marker' : 'simple-fill';
+  layer.popupEnabled = true;
+  layer.popupTemplate = layer.createPopupTemplate();
   layer.renderer = {
     ...technologyTypes.todsSampleRenderer,
     defaultSymbol: {

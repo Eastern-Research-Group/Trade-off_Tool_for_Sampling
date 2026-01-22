@@ -789,6 +789,14 @@ function usePortalLayerStorage(dbInitialized: boolean) {
         portalItem: new PortalItem({ id }),
       }).then((layer) => {
         layer.load().then(() => {
+          if (layer.type === 'group') {
+            (layer as __esri.GroupLayer).allLayers.forEach((layer) => {
+              if (layer.type === 'feature') {
+                (layer as __esri.FeatureLayer).outFields = ['*'];
+              }
+            });
+          }
+
           map.add(layer);
           if (isTotsLayerForTods && portalLayer.type === 'tots')
             applyRendererForTotsLayer(layer, technologyTypes);

@@ -335,35 +335,6 @@ function App({ appType }: Props) {
     if (offset !== offsetTop) setOffset(offsetTop);
   }, [contentHeight, height, offset, totsDiv, width]);
 
-  // changes tablePanelSelectedTab in the case of a tab being removed
-  useEffect(() => {
-    if (edits.count === 0 || layers.length === 0) return;
-
-    let newSelectedTab = tablePanelSelectedTab;
-
-    // determine if there is data for the selected tab
-    const buildingData = getBuildingRecords(edits, layers);
-    const sampleData = getSampleRecords(layers);
-
-    if (
-      tablePanelSelectedTab === 'buildings' &&
-      buildingData.length === 0 &&
-      sampleData.length > 0
-    )
-      newSelectedTab = 'samples';
-    else if (
-      tablePanelSelectedTab === 'samples' &&
-      sampleData.length === 0 &&
-      buildingData.length > 0
-    )
-      newSelectedTab = 'buildings';
-    else if (sampleData.length === 0 && buildingData.length === 0)
-      newSelectedTab = null;
-
-    if (newSelectedTab !== tablePanelSelectedTab)
-      setTablePanelSelectedTab(newSelectedTab);
-  }, [edits, layers, tablePanelSelectedTab, setTablePanelSelectedTab]);
-
   // ONLY NEEDED FOR TODS. Tracks layers added to map to make syncing
   // table with tots sample layers in tods more reliable.
   const [numMapLayers, setNumMapLayers] = useState(0);
@@ -481,6 +452,41 @@ function App({ appType }: Props) {
 
     loadAndQueryLayers();
   }, [appType, map, numMapLayers, portalLayers, totsIdsLoaded]);
+
+  // changes tablePanelSelectedTab in the case of a tab being removed
+  useEffect(() => {
+    if (edits.count === 0 || layers.length === 0) return;
+
+    let newSelectedTab = tablePanelSelectedTab;
+
+    // determine if there is data for the selected tab
+    const buildingData = getBuildingRecords(edits, layers);
+    const sampleData = getSampleRecords(layers, portalGraphics);
+
+    if (
+      tablePanelSelectedTab === 'buildings' &&
+      buildingData.length === 0 &&
+      sampleData.length > 0
+    )
+      newSelectedTab = 'samples';
+    else if (
+      tablePanelSelectedTab === 'samples' &&
+      sampleData.length === 0 &&
+      buildingData.length > 0
+    )
+      newSelectedTab = 'buildings';
+    else if (sampleData.length === 0 && buildingData.length === 0)
+      newSelectedTab = null;
+
+    if (newSelectedTab !== tablePanelSelectedTab)
+      setTablePanelSelectedTab(newSelectedTab);
+  }, [
+    edits,
+    layers,
+    portalGraphics,
+    tablePanelSelectedTab,
+    setTablePanelSelectedTab,
+  ]);
 
   // count the number of samples
   const tableData: BuildingTableDataType[] = [];
