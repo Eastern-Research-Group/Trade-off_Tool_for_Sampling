@@ -177,12 +177,17 @@ function useDisclaimerBanner() {
   }, []);
 }
 
-const router = createBrowserRouter([
-  { path: '/', element: <Sampling /> },
-  { path: '/sampling', element: <Sampling /> },
-  { path: '/decon', element: <Decon /> },
-  { path: '*', element: <ErrorPage /> },
-]);
+const { VITE_SERVER_URL } = import.meta.env;
+
+const router = createBrowserRouter(
+  [
+    { path: '/', element: <Sampling /> },
+    { path: '/sampling', element: <Sampling /> },
+    { path: '/decon', element: <Decon /> },
+    { path: '*', element: <ErrorPage /> },
+  ],
+  { basename: VITE_SERVER_URL ?? '/' },
+);
 
 function App() {
   const lookupFiles = useLookupFiles();

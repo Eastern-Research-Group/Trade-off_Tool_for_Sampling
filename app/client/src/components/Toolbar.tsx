@@ -576,11 +576,14 @@ function Toolbar({ appType }: Props) {
   useEffect(() => {
     if (oAuthInfo) return;
 
+    const { VITE_SERVER_URL } = import.meta.env;
+    const baseUrl = VITE_SERVER_URL ?? window.location.origin;
+
     const info = new OAuthInfo({
       appId: import.meta.env.VITE_ARCGIS_CLIENT_ID,
       popup: true,
       flowType: 'authorization-code',
-      popupCallbackUrl: `${window.location.origin}/oauth-callback.html`,
+      popupCallbackUrl: `${baseUrl}/oauth-callback.html`,
     });
     IdentityManager.registerOAuthInfos([info]);
 
