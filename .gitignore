@@ -41,4 +41,6 @@ other_resources/**/ImportLog
 other_resources/**/~*.xlsx
 
 # cached content
+/app/server/app/public
+!/app/server/app/public/data
 /app/server/app/public/data/cache
