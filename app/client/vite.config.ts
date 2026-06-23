@@ -38,8 +38,9 @@ export default ({ mode }) => {
         output: {
           entryFileNames: `static/js/[name]-[hash].${version}.js`,
           chunkFileNames: `static/js/[name]-[hash].${version}.js`,
-          assetFileNames: ({ name }) => {
-            const css = /\.(css)$/.test(name ?? '');
+          assetFileNames: ({ names }) => {
+            const name = names?.[0] || '';
+            const css = /\.(css)$/.test(name);
             const font = /\.(woff|woff2|eot|ttf|otf)$/.test(name ?? '');
             const media = /\.(png|jpe?g|gif|svg|webp|webm|mp3)$/.test(name ?? ""); // prettier-ignore
             const type = css ? 'css/' : font ? 'fonts/' : media ? 'media/' : '';
@@ -57,9 +58,6 @@ export default ({ mode }) => {
     plugins: [
       react({
         jsxImportSource: '@emotion/react',
-        babel: {
-          plugins: ['@emotion/babel-plugin'],
-        },
       }),
       Icons({
         compiler: 'jsx',
