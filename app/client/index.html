@@ -731,6 +731,24 @@
   </head>
 
   <body class="" id="#top">
+    <!-- Hide header and footer elements if coming from iframe -->
+    <script>
+      const queryString = window.location.search;
+      const urlParams = new URLSearchParams(queryString);
+      if (urlParams.get('iframe') === 'true') {
+        document.querySelector('body').classList.add('iframe');
+      }
+    </script>
+    <style>
+      .iframe > section,
+      .iframe > aside,
+      .iframe > header,
+      .iframe > footer {
+        display: none;
+      }
+    </style>
+    <!-- End hide header and footer elements if coming from iframe -->
+
     <!-- Google Tag Manager -->
     <noscript>
       <iframe
@@ -1136,7 +1154,7 @@
         </nav>
       </div>
     </header>
-    <!-- 
+    <!--
       The `tabindex="-1"` was removed from the <section> element below
       because that was causing the Esri search box on the locate tab
       to not work.
@@ -1524,6 +1542,16 @@
       }
     </script>
     <!-- End EPA template script overrides-->
+
+    <!-- Hide header and footer elements if coming from iframe -->
+<!--    <script>-->
+<!--      const queryString = window.location.search;-->
+<!--      const urlParams = new URLSearchParams(queryString);-->
+<!--      if (urlParams.get('iframe')) {-->
+<!--        document.querySelector('body').classList.add('iframe');-->
+<!--      }-->
+<!--    </script>-->
+    <!-- End hide header and footer elements if coming from iframe -->
 
     <style>
       .menu--main .menu__link,
