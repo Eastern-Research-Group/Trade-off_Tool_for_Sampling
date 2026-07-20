@@ -22,6 +22,7 @@ app.use(
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: false,
+    frameguard: { action: 'sameorigin' },
   }),
 );
 app.use(
