@@ -22,12 +22,10 @@ app.use(
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: false,
-    frameguard: { action: 'sameorigin' },
-  }),
-);
-app.use(
-  helmet.hsts({
-    maxAge: 31536000,
+    hsts: {
+      maxAge: 31536000,
+    },
+    xFrameOptions: { action: 'sameorigin' },
   }),
 );
 
