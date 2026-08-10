@@ -14,6 +14,7 @@ import { saveAs } from 'file-saver';
 import ShowLessMore from 'components/ShowLessMore';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
+import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // utils
 import { getGraphicsArray } from 'utils/sketchUtils';
@@ -93,6 +94,7 @@ function CalculateResults() {
     calculateResults,
     contaminationMap, //
   } = useContext(CalculateContext);
+  const { trainingMode } = useContext(NavigationContext);
   const {
     aoiSketchLayer,
     displayDimensions,
@@ -101,7 +103,12 @@ function CalculateResults() {
     mapView,
     sceneView,
     selectedScenario,
+    siteAssessmentPlanLayer,
   } = useContext(SketchContext);
+  const showSamplingEfficacy =
+    trainingMode &&
+    siteAssessmentPlanLayer?.sketchLayer?.type === 'graphics' &&
+    siteAssessmentPlanLayer?.sketchLayer?.graphics?.length > 0;
 
   const [
     downloadStatus,
@@ -301,6 +308,7 @@ function CalculateResults() {
       size: 12,
     };
     const currencyNumberFormat = '$#,##0.00; ($#,##.00); -';
+    const numberFormat = '#,##0.000';
 
     // create the sheets
     addSummarySheet();
@@ -551,7 +559,7 @@ function CalculateResults() {
 
       // setup column widths
       resultsSheet.columns = [
-        { width: 40.86 },
+        { width: 60.86 },
         { width: valueColumnWidth },
         { width: 41.43 },
         { width: valueColumnWidth },
@@ -567,7 +575,8 @@ function CalculateResults() {
       resultsSheet.mergeCells(3, 1, 3, 2);
       resultsSheet.getCell(3, 1).alignment = columnTitleAlignment;
       resultsSheet.getCell(3, 1).font = columnTitleFont;
-      resultsSheet.getCell(3, 1).value = 'Spatial Information';
+      resultsSheet.getCell(3, 1).value =
+        'Spatial Information / Sampling Efficacy';
 
       resultsSheet.getCell(4, 1).value = {
         richText: [
@@ -599,9 +608,102 @@ function CalculateResults() {
       resultsSheet.getCell(6, 1).font = labelFont;
       resultsSheet.getCell(6, 1).value = 'Percent of Area Sampled';
       const percentAreaSampled = calculateResults.data['PCT_AREA_SAMPLED'];
-      if (percentAreaSampled) {
+      if (percentAreaSampled !== null) {
         resultsSheet.getCell(6, 2).font = defaultFont;
         resultsSheet.getCell(6, 2).value = percentAreaSampled;
+      }
+
+      if (showSamplingEfficacy) {
+        resultsSheet.getCell(7, 1).font = labelFont;
+        resultsSheet.getCell(7, 1).value =
+          'Percent Plume Covered by Site Conceptual Model (%)';
+        const percentPlumeCovered =
+          calculateResults.data['PCT_PLUME_COVERED_BY_SITE_ASSESSMENT_PLAN'];
+        if (percentPlumeCovered !== null) {
+          resultsSheet.getCell(7, 2).font = defaultFont;
+          resultsSheet.getCell(7, 2).value = percentPlumeCovered;
+        }
+
+        resultsSheet.getCell(8, 1).font = labelFont;
+        resultsSheet.getCell(8, 1).value =
+          'Percent of Site Conceptual Model Not Covering Any Plumes (%)';
+        const percentPlanOutsidePlume =
+          calculateResults.data['PCT_SITE_ASSESSMENT_PLAN_NOT_COVERING_PLUME'];
+        if (percentPlanOutsidePlume !== null) {
+          resultsSheet.getCell(8, 2).font = defaultFont;
+          resultsSheet.getCell(8, 2).value = percentPlanOutsidePlume;
+        }
+
+        resultsSheet.getCell(9, 1).font = labelFont;
+        resultsSheet.getCell(9, 1).value = {
+          richText: [
+            {
+              font: labelFont,
+              text: 'Area of All Plumes (ft',
+            },
+            { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
+            { font: labelFont, text: ')' },
+          ],
+        };
+        const allPlumeArea = calculateResults.data['AREA_PLUMES'];
+        if (allPlumeArea !== null) {
+          resultsSheet.getCell(9, 2).font = defaultFont;
+          resultsSheet.getCell(9, 2).value = allPlumeArea;
+        }
+
+        resultsSheet.getCell(10, 1).font = labelFont;
+        resultsSheet.getCell(10, 1).value = {
+          richText: [
+            {
+              font: labelFont,
+              text: 'Area of Site Conceptual Model (ft',
+            },
+            { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
+            { font: labelFont, text: ')' },
+          ],
+        };
+        const siteAssessmentPlanArea =
+          calculateResults.data['AREA_SITE_ASSESSMENT_PLAN'];
+        if (siteAssessmentPlanArea !== null) {
+          resultsSheet.getCell(10, 2).font = defaultFont;
+          resultsSheet.getCell(10, 2).value = siteAssessmentPlanArea;
+        }
+
+        resultsSheet.getCell(11, 1).font = labelFont;
+        resultsSheet.getCell(11, 1).value = {
+          richText: [
+            {
+              font: labelFont,
+              text: 'Area of Plume Covered by Site Conceptual Model (ft',
+            },
+            { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
+            { font: labelFont, text: ')' },
+          ],
+        };
+        const plumeAreaCovered =
+          calculateResults.data['AREA_PLUME_COVERED_BY_SITE_ASSESSMENT_PLAN'];
+        if (plumeAreaCovered !== null) {
+          resultsSheet.getCell(11, 2).font = defaultFont;
+          resultsSheet.getCell(11, 2).value = plumeAreaCovered;
+        }
+
+        resultsSheet.getCell(12, 1).font = labelFont;
+        resultsSheet.getCell(12, 1).value = {
+          richText: [
+            {
+              font: labelFont,
+              text: 'Area of Site Conceptual Model Not Covering Any Plumes (ft',
+            },
+            { font: { ...labelFont, vertAlign: 'superscript' }, text: '2' },
+            { font: labelFont, text: ')' },
+          ],
+        };
+        const planAreaOutsidePlume =
+          calculateResults.data['AREA_SITE_ASSESSMENT_PLAN_NOT_COVERING_PLUME'];
+        if (planAreaOutsidePlume !== null) {
+          resultsSheet.getCell(12, 2).font = defaultFont;
+          resultsSheet.getCell(12, 2).value = planAreaOutsidePlume;
+        }
       }
 
       // col 3 & 4
@@ -814,6 +916,7 @@ function CalculateResults() {
     downloadStatus,
     map,
     selectedScenario,
+    showSamplingEfficacy,
   ]);
 
   return (
@@ -876,6 +979,16 @@ function CalculateResults() {
               label="Limiting Time Factor"
               value={calculateResults.data['LIMITING_TIME_FACTOR']}
             />
+            {showSamplingEfficacy && (
+              <LabelValue
+                label="Percent Plume Covered by Site Conceptual Model (%)"
+                value={
+                  calculateResults.data[
+                    'PCT_PLUME_COVERED_BY_SITE_ASSESSMENT_PLAN'
+                  ]
+                }
+              />
+            )}
             <hr css={resourceTallySeparator} />
 
             <h4>Sampling Operation</h4>
@@ -942,6 +1055,73 @@ function CalculateResults() {
               label="Percent of Area Sampled"
               value={calculateResults.data['PCT_AREA_SAMPLED']}
             />
+            {showSamplingEfficacy && (
+              <Fragment>
+                <h4>Sampling Efficacy</h4>
+
+                <LabelValue
+                  label="Percent Plume Covered by Site Conceptual Model (%)"
+                  value={
+                    calculateResults.data[
+                      'PCT_PLUME_COVERED_BY_SITE_ASSESSMENT_PLAN'
+                    ]
+                  }
+                />
+                <LabelValue
+                  label="Percent of Site Conceptual Model Not Covering Any Plumes (%)"
+                  value={
+                    calculateResults.data[
+                      'PCT_SITE_ASSESSMENT_PLAN_NOT_COVERING_PLUME'
+                    ]
+                  }
+                />
+
+                <LabelValue
+                  label={
+                    <Fragment>
+                      Area of All Plumes (ft
+                      <sup>2</sup>)
+                    </Fragment>
+                  }
+                  value={calculateResults.data['AREA_PLUMES']}
+                />
+                <LabelValue
+                  label={
+                    <Fragment>
+                      Area of Site Conceptual Model (ft
+                      <sup>2</sup>)
+                    </Fragment>
+                  }
+                  value={calculateResults.data['AREA_SITE_ASSESSMENT_PLAN']}
+                />
+                <LabelValue
+                  label={
+                    <Fragment>
+                      Area of Plume Covered by Site Conceptual Model (ft
+                      <sup>2</sup>)
+                    </Fragment>
+                  }
+                  value={
+                    calculateResults.data[
+                      'AREA_PLUME_COVERED_BY_SITE_ASSESSMENT_PLAN'
+                    ]
+                  }
+                />
+                <LabelValue
+                  label={
+                    <Fragment>
+                      Area of Site Conceptual Model Not Covering Any Plumes (ft
+                      <sup>2</sup>)
+                    </Fragment>
+                  }
+                  value={
+                    calculateResults.data[
+                      'AREA_SITE_ASSESSMENT_PLAN_NOT_COVERING_PLUME'
+                    ]
+                  }
+                />
+              </Fragment>
+            )}
             <hr css={resourceTallySeparator} />
 
             <h4>Sampling</h4>
