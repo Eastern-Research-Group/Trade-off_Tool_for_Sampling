@@ -1341,7 +1341,7 @@ export function EditAoiCharacterization({
   );
 }
 
-// --- components (EditCustomSampleTypesTable) ---
+// --- components (EditStagingAreaCharacterization) ---
 type EditStagingAreaProps = {
   aoiLayer: LayerEditsType;
   children?: ReactNode;
@@ -1473,6 +1473,233 @@ export function EditStagingAreaCharacterization({
             css={inputStyles}
             maxLength={2048}
             placeholder="Enter Staging Area Description (2048 characters)"
+            value={aoiCharDescription}
+            onChange={(ev) => setAoiCharDescription(ev.target.value)}
+          />
+        </Fragment>
+      )}
+
+      {children}
+
+      {saveStatus.status === 'fetching' && <LoadingSpinner />}
+      {saveStatus.status === 'failure' &&
+        webServiceErrorMessage(saveStatus.error)}
+      {saveStatus.status === 'name-not-available' &&
+        scenarioNameTakenMessage(saveStatus.name)}
+      {saveStatus.status === 'invalid-characters' &&
+        scenarioNameInvalidMessage(saveStatus.name)}
+      <div css={saveButtonContainerStyles}>
+        <button
+          css={saveButtonStyles(
+            saveStatus.status === 'success' ? 'none' : saveStatus.status,
+          )}
+          onClick={() => {
+            setSaveStatus({
+              status: 'fetching',
+              name: aoiCharName,
+            });
+
+            // if the user is signed in, go ahead and check if the
+            // service (scenario) name is availble before continuing
+            isServiceNameAvailable(portal, signedIn, aoiCharName)
+              .then((res: any) => {
+                if (res.error) {
+                  const saveStatus: SaveResultsType = {
+                    status: 'failure',
+                    name: aoiCharName,
+                    error: {
+                      error: createErrorObject(res),
+                      message: res.error.message,
+                    },
+                  };
+                  setSaveStatus(saveStatus);
+                  if (onSave) onSave(saveStatus);
+                  return;
+                }
+
+                if (!res.available) {
+                  const saveStatus: SaveResultsType = {
+                    status: res.problem ?? 'name-not-available',
+                    name: aoiCharName,
+                  };
+                  setSaveStatus(saveStatus);
+                  if (onSave) onSave(saveStatus);
+                  return;
+                }
+
+                handleSave();
+              })
+              .catch((err: any) => {
+                console.error('isServiceNameAvailable error', err);
+                const saveStatus: SaveResultsType = {
+                  status: 'failure',
+                  name: aoiCharName,
+                  error: {
+                    error: createErrorObject(err),
+                    message: err.message,
+                  },
+                };
+                setSaveStatus(saveStatus);
+                if (onSave) onSave(saveStatus);
+
+                window.logErrorToGa(err);
+              });
+          }}
+          disabled={
+            disabled ||
+            (Boolean(children) && !aoiCharName) ||
+            (!Boolean(children) &&
+              aoiLayer.name === aoiCharName &&
+              aoiLayer.description === aoiCharDescription)
+          }
+        >
+          {failedStatuses.includes(saveStatus.status) ? (
+            <Fragment>
+              <IconExclamationTriangle /> Error
+            </Fragment>
+          ) : (
+            'Save'
+          )}
+        </button>
+      </div>
+    </Fragment>
+  );
+}
+
+// --- components (EditSiteAssessmentPlan) ---
+type EditSiteAssessmentPlanProps = {
+  aoiLayer: LayerEditsType;
+  children?: ReactNode;
+  disabled?: boolean;
+  editVisible?: boolean;
+  initialStatus?: SaveStatusType;
+  onSave?: (saveResults?: SaveResultsType) => void;
+};
+
+export function EditSiteAssessmentPlan({
+  aoiLayer,
+  children,
+  disabled = false,
+  editVisible,
+  initialStatus = 'none',
+  onSave,
+}: EditSiteAssessmentPlanProps) {
+  const {
+    portal,
+    signedIn, //
+  } = useContext(AuthenticationContext);
+  const { setEdits, setLayers } = useContext(SketchContext);
+  const { setManualConfigureOutput } = useContext(PublishContext);
+
+  const [aoiCharName, setAoiCharName] = useState('');
+  const [aoiCharDescription, setAoiCharDescription] = useState('');
+
+  const [
+    saveStatus,
+    setSaveStatus, //
+  ] = useState<SaveResultsType>({
+    status: initialStatus,
+    name: '',
+  });
+
+  useEffect(() => {
+    setSaveStatus({
+      status: initialStatus,
+      name: aoiLayer.name,
+    });
+  }, [aoiLayer, initialStatus]);
+
+  const [lastAoiLayer, setLastAoiLayer] = useState<LayerEditsType | null>(null);
+  useEffect(() => {
+    if (aoiLayer.layerId === lastAoiLayer?.layerId) return;
+    setAoiCharName(aoiLayer.name);
+    setAoiCharDescription(aoiLayer.description ?? '');
+    setLastAoiLayer(aoiLayer);
+  }, [aoiLayer, lastAoiLayer]);
+
+  useEffect(() => {
+    setSaveStatus({
+      status: initialStatus,
+      name: aoiLayer.name,
+    });
+  }, [aoiCharName, aoiCharDescription, aoiLayer, initialStatus]);
+
+  const handleSave = () => {
+    // set edits
+    setEdits((edits) => {
+      const aoiLayerEdit = edits.edits.find(
+        (edit) =>
+          edit.layerId === aoiLayer.layerId &&
+          edit.type === 'layer' &&
+          edit.layerType === 'Site Conceptual Model Mask',
+      ) as LayerEditsType | undefined;
+      if (!aoiLayerEdit) return edits;
+
+      aoiLayerEdit.name = aoiCharName;
+      aoiLayerEdit.label = aoiCharName;
+      aoiLayerEdit.description = aoiCharDescription;
+
+      return {
+        count: edits.count + 1,
+        edits: edits.edits,
+      };
+    });
+
+    // set layers
+    setLayers((layers) => {
+      const aoiLayerEdit = layers.find(
+        (layer) => layer.layerId === aoiLayer.layerId,
+      );
+      if (!aoiLayerEdit) return layers;
+
+      aoiLayerEdit.label = aoiCharName;
+      aoiLayerEdit.name = aoiCharName;
+      if (aoiLayerEdit.sketchLayer)
+        aoiLayerEdit.sketchLayer.title = aoiCharName;
+
+      return layers;
+    });
+
+    // set selected aoi chars
+    setManualConfigureOutput((output) => {
+      const aoiChar = output?.selectedSiteAssessmentPlans?.find(
+        (char) => char.value === aoiLayer.layerId,
+      );
+      if (aoiChar) aoiChar.label = aoiCharName;
+      return output;
+    });
+
+    const saveStatus: SaveResultsType = {
+      status: 'success',
+      name: aoiCharName,
+    };
+    setSaveStatus(saveStatus);
+    if (onSave) onSave(saveStatus);
+  };
+
+  return (
+    <Fragment>
+      {(editVisible === undefined || editVisible) && (
+        <Fragment>
+          <label htmlFor="site-assessment-plan-name-input">
+            Site Conceptual Model Name
+          </label>
+          <input
+            id="site-assessment-plan-name-input"
+            css={inputStyles}
+            maxLength={90}
+            placeholder="Enter Site Conceptual Model Name"
+            value={aoiCharName}
+            onChange={(ev) => setAoiCharName(ev.target.value)}
+          />
+          <label htmlFor="site-assessment-plan-description-input">
+            Site Conceptual Model Description
+          </label>
+          <input
+            id="site-assessment-plan-description-input"
+            css={inputStyles}
+            maxLength={2048}
+            placeholder="Enter Site Conceptual Model Description (2048 characters)"
             value={aoiCharDescription}
             onChange={(ev) => setAoiCharDescription(ev.target.value)}
           />

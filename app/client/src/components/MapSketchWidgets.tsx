@@ -531,7 +531,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
     if (!aoiSketchVM) return;
 
     if (
-      ['additionalTools', 'decon', 'locateSamples'].includes(
+      ['additionalTools', 'decon', 'locateSamples', 'calculate'].includes(
         currentPanel?.value ?? '',
       ) &&
       aoiSketchLayer?.sketchLayer?.type === 'graphics'
@@ -870,47 +870,49 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
       // is now an option.
       const tempSketchVM = sketchViewModel as any;
       tempSketchVM.on('delete', (event: any) => {
-        // find the points version of the layer
-        event.graphics.forEach((graphic: any) => {
-          const layerId = tempSketchVM.layer?.id;
-          const pointLayer: __esri.GraphicsLayer = (
-            tempSketchVM.layer as any
-          ).parent.layers.find(
-            (layer: __esri.GraphicsLayer) => `${layerId}-points` === layer.id,
-          );
-          if (pointLayer) {
-            // Find the original point graphic and remove it
-            const graphicsToRemove: __esri.Graphic[] = [];
-            pointLayer.graphics.forEach((pointVersion) => {
-              if (
-                graphic.attributes.PERMANENT_IDENTIFIER ===
-                pointVersion.attributes.PERMANENT_IDENTIFIER
-              ) {
-                graphicsToRemove.push(pointVersion);
-              }
-            });
-            pointLayer.removeMany(graphicsToRemove);
-          }
+        // For sample layers, keep the derived points/hybrid layers in sync.
+        // AOI/Site Conceptual Model masks are standalone and have no parent.
+        const layerId = tempSketchVM.layer?.id;
+        const parentGroup = (tempSketchVM.layer as any)?.parent;
+        if (layerId && parentGroup?.layers) {
+          event.graphics.forEach((graphic: any) => {
+            const pointLayer: __esri.GraphicsLayer | undefined =
+              parentGroup.layers.find(
+                (layer: __esri.GraphicsLayer) =>
+                  `${layerId}-points` === layer.id,
+              );
+            if (pointLayer) {
+              const graphicsToRemove: __esri.Graphic[] = [];
+              pointLayer.graphics.forEach((pointVersion) => {
+                if (
+                  graphic.attributes.PERMANENT_IDENTIFIER ===
+                  pointVersion.attributes.PERMANENT_IDENTIFIER
+                ) {
+                  graphicsToRemove.push(pointVersion);
+                }
+              });
+              pointLayer.removeMany(graphicsToRemove);
+            }
 
-          const hybridLayer: __esri.GraphicsLayer = (
-            tempSketchVM.layer as any
-          ).parent.layers.find(
-            (layer: __esri.GraphicsLayer) => `${layerId}-hybrid` === layer.id,
-          );
-          if (hybridLayer) {
-            // Find the original point graphic and remove it
-            const graphicsToRemove: __esri.Graphic[] = [];
-            hybridLayer.graphics.forEach((hybridVersion) => {
-              if (
-                graphic.attributes.PERMANENT_IDENTIFIER ===
-                hybridVersion.attributes.PERMANENT_IDENTIFIER
-              ) {
-                graphicsToRemove.push(hybridVersion);
-              }
-            });
-            hybridLayer.removeMany(graphicsToRemove);
-          }
-        });
+            const hybridLayer: __esri.GraphicsLayer | undefined =
+              parentGroup.layers.find(
+                (layer: __esri.GraphicsLayer) =>
+                  `${layerId}-hybrid` === layer.id,
+              );
+            if (hybridLayer) {
+              const graphicsToRemove: __esri.Graphic[] = [];
+              hybridLayer.graphics.forEach((hybridVersion) => {
+                if (
+                  graphic.attributes.PERMANENT_IDENTIFIER ===
+                  hybridVersion.attributes.PERMANENT_IDENTIFIER
+                ) {
+                  graphicsToRemove.push(hybridVersion);
+                }
+              });
+              hybridLayer.removeMany(graphicsToRemove);
+            }
+          });
+        }
 
         sketchEventSetter(event);
       });

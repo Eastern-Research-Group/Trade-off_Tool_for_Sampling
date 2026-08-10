@@ -9,6 +9,12 @@ export type CalculateResultsDataType = {
   LIMITING_TIME_FACTOR: 'Sampling' | 'Analysis' | '';
   TOTAL_SAMPLED_AREA: number;
   PCT_AREA_SAMPLED: number | null;
+  PCT_PLUME_COVERED_BY_SITE_ASSESSMENT_PLAN: number | null;
+  AREA_PLUME_COVERED_BY_SITE_ASSESSMENT_PLAN: number | null;
+  AREA_SITE_ASSESSMENT_PLAN_NOT_COVERING_PLUME: number | null;
+  PCT_SITE_ASSESSMENT_PLAN_NOT_COVERING_PLUME: number | null;
+  AREA_PLUMES: number | null;
+  AREA_SITE_ASSESSMENT_PLAN: number | null;
   TOTAL_SAMPLING_TIME: number;
   SAMPLING_HOURS: number;
   NUM_SAMPLING_HOURS: number;
