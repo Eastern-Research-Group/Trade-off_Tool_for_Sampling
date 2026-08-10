@@ -14,6 +14,7 @@ export type LayerTypeName =
   | 'Reference Layer'
   | 'Samples'
   | 'Sampling Mask'
+  | 'Site Conceptual Model Mask'
   | 'Staging Area Mask'
   | 'VSP';
 
@@ -25,6 +26,7 @@ export type LayerTypeLabel =
   | 'Reference Layer'
   | 'Samples'
   | 'Sampling Mask'
+  | 'Site Conceptual Model Mask'
   | 'VSP';
 
 export type LayerSelectType = {

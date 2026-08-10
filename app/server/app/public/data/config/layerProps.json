@@ -1471,8 +1471,14 @@
         "type": "codedValue",
         "name": "RemoveContentsDomain",
         "codedValues": [
-          { "code": 0, "name": "No" },
-          { "code": 1, "name": "Yes" }
+          {
+            "code": 0,
+            "name": "No"
+          },
+          {
+            "code": 1,
+            "name": "Yes"
+          }
         ]
       },
       "defaultValue": null
@@ -3870,8 +3876,14 @@
         "type": "codedValue",
         "name": "ContamHitDomain",
         "codedValues": [
-          { "code": 0, "name": "No" },
-          { "code": 1, "name": "Yes" }
+          {
+            "code": 0,
+            "name": "No"
+          },
+          {
+            "code": 1,
+            "name": "Yes"
+          }
         ]
       },
       "defaultValue": 0
@@ -3888,8 +3900,14 @@
         "type": "codedValue",
         "name": "ContamHitDomain",
         "codedValues": [
-          { "code": 0, "name": "No" },
-          { "code": 1, "name": "Yes" }
+          {
+            "code": 0,
+            "name": "No"
+          },
+          {
+            "code": 1,
+            "name": "Yes"
+          }
         ]
       },
       "defaultValue": 0
@@ -3906,8 +3924,14 @@
         "type": "codedValue",
         "name": "ContamHitDomain",
         "codedValues": [
-          { "code": 0, "name": "No" },
-          { "code": 1, "name": "Yes" }
+          {
+            "code": 0,
+            "name": "No"
+          },
+          {
+            "code": 1,
+            "name": "Yes"
+          }
         ]
       },
       "defaultValue": 0
@@ -4019,6 +4043,85 @@
       "actualType": "nvarchar",
       "sqlType": "sqlTypeNVarchar",
       "length": 10,
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "CREATEDDATE",
+      "alias": "CREATEDDATE",
+      "type": "esriFieldTypeDate",
+      "sqlType": "sqlTypeOther",
+      "nullable": true,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "USERNAME",
+      "alias": "USERNAME",
+      "type": "esriFieldTypeString",
+      "sqlType": "sqlTypeOther",
+      "length": 255,
+      "nullable": true,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "UPDATEDDATE",
+      "alias": "UPDATEDDATE",
+      "type": "esriFieldTypeDate",
+      "sqlType": "sqlTypeOther",
+      "nullable": true,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    }
+  ],
+  "defaultSiteConceptualModelMaskLayerFields": [
+    {
+      "name": "OBJECTID",
+      "alias": "OBJECTID",
+      "type": "esriFieldTypeOID",
+      "actualType": "int",
+      "sqlType": "sqlTypeInteger",
+      "length": 4,
+      "nullable": false,
+      "editable": false,
+      "domain": null,
+      "defaultValue": null
+    },
+    {
+      "name": "GLOBALID",
+      "alias": "GlobalID",
+      "type": "esriFieldTypeGlobalID",
+      "sqlType": "sqlTypeOther",
+      "length": 38,
+      "nullable": false,
+      "editable": false,
+      "domain": null,
+      "defaultValue": "NEWID() WITH VALUES"
+    },
+    {
+      "name": "PERMANENT_IDENTIFIER",
+      "alias": "PERMANENT_IDENTIFIER",
+      "type": "esriFieldTypeGUID",
+      "sqlType": "sqlTypeOther",
+      "length": 38,
+      "nullable": true,
+      "editable": true,
+      "domain": null,
+      "defaultValue": ""
+    },
+    {
+      "name": "TYPE",
+      "alias": "TYPE",
+      "type": "esriFieldTypeString",
+      "actualType": "nvarchar",
+      "sqlType": "sqlTypeNVarchar",
+      "length": 255,
       "nullable": true,
       "editable": true,
       "domain": null,

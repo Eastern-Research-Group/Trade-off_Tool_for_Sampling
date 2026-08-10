@@ -21,6 +21,7 @@ import NavigationButton from 'components/NavigationButton';
 import { ReactTableEditable } from 'components/ReactTable';
 import Select from 'components/Select';
 import ShowLessMore from 'components/ShowLessMore';
+import SiteAssessmentPlans from 'components/SiteAssessmentPlans';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 import { useLookupFiles } from 'contexts/LookupFiles';
@@ -161,8 +162,8 @@ function getOperationSummary(
       liquidWasteVolumeM3: formatNumber(totalOpLiquidWasteVolume, 0),
       decontaminationCost: formatNumber(totalOpDeconCost, 0),
       decontaminationTimeDays: formatNumber(totalOpDeconTime, 0),
-      averageInitialContamination: formatNumber(totalOpInitialContamination, 0),
-      averageFinalContamination: formatNumber(totalOpFinalContamination, 0),
+      averageInitialContamination: formatNumber(totalOpInitialContamination, 4),
+      averageFinalContamination: formatNumber(totalOpFinalContamination, 4),
       aboveDetectionLimit: '',
     });
   });
@@ -172,8 +173,8 @@ function getOperationSummary(
     liquidWasteVolumeM3: formatNumber(totalLiquidWasteVolume, 0),
     decontaminationCost: formatNumber(totalDeconCost, 0),
     decontaminationTimeDays: formatNumber(totalDeconTime, 0),
-    averageInitialContamination: formatNumber(totalInitialContamination, 0),
-    averageFinalContamination: formatNumber(totalFinalContamination, 0),
+    averageInitialContamination: formatNumber(totalInitialContamination, 4),
+    averageFinalContamination: formatNumber(totalFinalContamination, 4),
     aboveDetectionLimit: '',
   });
 
@@ -251,6 +252,7 @@ function Calculate({ appType }: Props) {
     map,
     resultsOpen,
     setResultsOpen,
+    siteAssessmentPlanLayer,
     sketchLayer,
     selectedScenario,
   } = useContext(SketchContext);
@@ -419,8 +421,21 @@ function Calculate({ appType }: Props) {
 
     // if the inputs are the same as context
     // fake a loading spinner and open the panel
+    const showSamplingEfficacy =
+      trainingMode &&
+      siteAssessmentPlanLayer?.sketchLayer?.type === 'graphics' &&
+      siteAssessmentPlanLayer?.sketchLayer?.graphics?.length > 0;
+    const hasSamplingEfficacyValues =
+      appType !== 'sampling' ||
+      !showSamplingEfficacy ||
+      (!!calculateResults.data &&
+        calculateResults.data['PCT_PLUME_COVERED_BY_SITE_ASSESSMENT_PLAN'] !==
+          null &&
+        calculateResults.data['PCT_SITE_ASSESSMENT_PLAN_NOT_COVERING_PLUME'] !==
+          null);
     if (
       results.status === 'success' &&
+      hasSamplingEfficacyValues &&
       numLabs === inputNumLabs &&
       numLabHours === inputNumLabHours &&
       numSamplingHours === inputNumSamplingHours &&
@@ -1021,6 +1036,13 @@ function Calculate({ appType }: Props) {
           </Fragment>
         )}
       </div>
+
+      <AccordionItem title="Create Site Conceptual Model(s)">
+        <div css={sectionContainer}>
+          <SiteAssessmentPlans />
+        </div>
+      </AccordionItem>
+
       <div css={sectionContainer}>
         <NavigationButton currentPanel="calculate" />
       </div>
@@ -2533,11 +2555,11 @@ function CalculateResultsPopup({
                 ),
                 averageInitialContamination: formatNumber(
                   d.averageInitialContamination,
-                  0,
+                  4,
                 ),
                 averageFinalContamination: formatNumber(
                   d.averageFinalContamination,
-                  0,
+                  4,
                 ),
                 aboveDetectionLimit: d.aboveDetectionLimit ? 'Above' : 'Below',
               };
@@ -2553,9 +2575,9 @@ function CalculateResultsPopup({
             decontaminationTimeDays: formatNumber(totalDeconTime, 0),
             averageInitialContamination: formatNumber(
               totalInitialContamination,
-              0,
+              4,
             ),
-            averageFinalContamination: formatNumber(totalFinalContamination, 0),
+            averageFinalContamination: formatNumber(totalFinalContamination, 4),
             aboveDetectionLimit: '',
             numIterativeApplications: 0,
             numTeams: 0,

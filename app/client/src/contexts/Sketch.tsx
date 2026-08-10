@@ -185,6 +185,8 @@ type SketchType = {
   setDeconOperation: Dispatch<SetStateAction<LayerType | null>>;
   stagingAreaLayer: LayerType | null;
   setStagingAreaLayer: Dispatch<SetStateAction<LayerType | null>>;
+  siteAssessmentPlanLayer: LayerType | null;
+  setSiteAssessmentPlanLayer: Dispatch<SetStateAction<LayerType | null>>;
 
   map: __esri.Map | null;
   setMap: Dispatch<SetStateAction<__esri.Map | null>>;
@@ -304,6 +306,8 @@ export const SketchContext = createContext<SketchType>({
   setDeconOperation: () => {},
   stagingAreaLayer: null,
   setStagingAreaLayer: () => {},
+  siteAssessmentPlanLayer: null,
+  setSiteAssessmentPlanLayer: () => {},
 
   map: null,
   setMap: () => {},
@@ -381,6 +385,14 @@ export function SketchProvider({ children }: Props) {
           } as PolygonSymbol)
         : defaultSymbol,
       Samples: defaultSymbol,
+      'Site Conceptual Model Mask': {
+        type: 'simple-fill',
+        color: [120, 177, 238, 0.2],
+        outline: {
+          color: [2, 20, 107],
+          width: 2,
+        },
+      } as PolygonSymbol,
       'Staging Area Mask': {
         type: 'simple-fill',
         color: [150, 150, 150, 0.2],
@@ -438,6 +450,8 @@ export function SketchProvider({ children }: Props) {
   const [stagingAreaLayer, setStagingAreaLayer] = useState<LayerType | null>(
     null,
   );
+  const [siteAssessmentPlanLayer, setSiteAssessmentPlanLayer] =
+    useState<LayerType | null>(null);
   const [homeWidget, setHomeWidget] = useState<HomeWidgetType | null>(null);
   const [symbolsInitialized, setSymbolsInitialized] = useState(false);
   const [map, setMap] = useState<__esri.Map | null>(null);
@@ -749,6 +763,8 @@ export function SketchProvider({ children }: Props) {
         setDeconOperation,
         stagingAreaLayer,
         setStagingAreaLayer,
+        siteAssessmentPlanLayer,
+        setSiteAssessmentPlanLayer,
 
         map,
         setMap,
