@@ -75,9 +75,25 @@ const db = new Dexie(
 
 export async function clearDB() {
   // Remove the session from indexeddb and session storage
-  await db.table('tots-data').where('key').startsWith(sessionId).delete();
+  await db.table(dataTableName).where('key').startsWith(sessionId).delete();
   await db.table(metadataTableName).delete(sessionId);
   sessionStorage.clear();
+}
+
+export async function exportDB() {
+  const fileSaver = await import('file-saver');
+
+  const data = (
+    await db.table(dataTableName).where('key').startsWith(sessionId).toArray()
+  ).map((item) => ({
+    ...item,
+    key: item.key.replace(`${sessionId}-`, '<SESSION-ID>-'),
+  }));
+
+  fileSaver.saveAs(
+    new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
+    `${appKey}-export-${new Date().toISOString()}.json`,
+  );
 }
 
 async function initializeDB() {
