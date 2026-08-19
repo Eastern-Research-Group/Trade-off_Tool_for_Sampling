@@ -5,7 +5,7 @@ import { css } from '@emotion/react';
 // contexts
 import { SketchContext } from 'contexts/Sketch';
 // utils
-import { clearDB } from 'utils/browserStorage';
+import { clearDB, exportDB } from 'utils/browserStorage';
 
 const toolbarStyles = css`
   padding: 8px;
@@ -68,6 +68,9 @@ function TestingToolbar() {
         }}
       >
         Log SketchVMs
+      </button>
+      <button css={buttonStyles} onClick={exportDB}>
+        Export IndexedDB Data
       </button>
       <button css={buttonStyles} onClick={clearDB}>
         Clear IndexedDB Data
