@@ -1373,6 +1373,7 @@ export function useStartOver() {
     setPortalLayers,
     setReferenceLayers,
     setSelectedScenario,
+    setSiteAssessmentPlanLayer,
     setSketchLayer,
     setStagingAreaLayer,
     setTerrain3dUseElevation,
@@ -1400,6 +1401,7 @@ export function useStartOver() {
     setAoiSketchLayer(null);
     setDeconSketchLayer(null);
     setSelectedScenario(null);
+    setSiteAssessmentPlanLayer(null);
     setSketchLayer(null);
     setStagingAreaLayer(null);
 
@@ -1527,6 +1529,7 @@ export function useCalculatePlan(appType: AppType) {
     layers,
     sceneViewForArea,
     selectedScenario,
+    siteAssessmentPlanLayer,
     setEdits,
     setSelectedScenario,
   } = useContext(SketchContext);
@@ -1540,6 +1543,7 @@ export function useCalculatePlan(appType: AppType) {
     inputNumSamplingTeams,
     inputSamplingLaborCost,
     inputSurfaceArea,
+    contaminationMap,
     setCalculateResults,
     setUpdateContextValues,
     updateContextValues,
@@ -1780,7 +1784,7 @@ export function useCalculatePlan(appType: AppType) {
     processFeatures();
   }, [appType, edits, layers, sceneViewForArea, selectedScenario]);
 
-  // perform non-geospatial calculations
+  // perform remaining calculations and contamination map intersects
   useEffect(() => {
     if (appType !== 'sampling') return;
 
@@ -1808,6 +1812,120 @@ export function useCalculatePlan(appType: AppType) {
     if (surfaceArea > 0) {
       userSpecifiedAOI = surfaceArea;
       percentAreaSampled = (totalArea / surfaceArea) * 100;
+    }
+    let percentPlumeCoveredBySiteAssessmentPlan: number | null = null;
+    let areaPlumeCoveredBySiteAssessmentPlan: number | null = null;
+    let areaSiteAssessmentPlanNotCoveringPlume: number | null = null;
+    let percentSiteAssessmentPlanNotCoveringPlume: number | null = null;
+    let areaPlumes: number | null = null;
+    let areaSiteAssessmentPlan: number | null = null;
+
+    function calculateGeometryAreaSqFt(
+      geometry: __esri.GeometryUnion,
+    ): number | null {
+      const polygonGeometry = geometry as __esri.Polygon;
+      const areaSqFt = geometryEngine.geodesicArea(
+        polygonGeometry,
+        'square-feet',
+      );
+      if (typeof areaSqFt !== 'number' || Number.isNaN(areaSqFt)) return null;
+
+      return Math.abs(areaSqFt);
+    }
+
+    if (contaminationMap?.sketchLayer?.type === 'graphics') {
+      const siteAssessmentPlanGraphicsLayers: __esri.GraphicsLayer[] = [];
+
+      if (siteAssessmentPlanLayer?.sketchLayer?.type === 'graphics') {
+        siteAssessmentPlanGraphicsLayers.push(
+          siteAssessmentPlanLayer.sketchLayer,
+        );
+      }
+
+      if (siteAssessmentPlanGraphicsLayers.length > 0) {
+        const plumeGeometries: __esri.GeometryUnion[] = [];
+        contaminationMap.sketchLayer.graphics.toArray().forEach((graphic) => {
+          if (graphic.geometry)
+            plumeGeometries.push(graphic.geometry as __esri.GeometryUnion);
+        });
+
+        const siteAssessmentPlanGeometries: __esri.GeometryUnion[] = [];
+        siteAssessmentPlanGraphicsLayers.forEach((graphicsLayer) => {
+          graphicsLayer.graphics.toArray().forEach((graphic) => {
+            if (graphic.geometry)
+              siteAssessmentPlanGeometries.push(
+                graphic.geometry as __esri.GeometryUnion,
+              );
+          });
+        });
+
+        if (plumeGeometries.length > 0 && siteAssessmentPlanGeometries.length) {
+          const plumeGeometry: __esri.GeometryUnion | null =
+            plumeGeometries.length > 1
+              ? (geometryEngine.union(
+                  plumeGeometries as __esri.GeometryUnion[],
+                ) as __esri.GeometryUnion)
+              : (plumeGeometries[0] ?? null);
+          const siteAssessmentPlanGeometry: __esri.GeometryUnion | null =
+            siteAssessmentPlanGeometries.length > 1
+              ? (geometryEngine.union(
+                  siteAssessmentPlanGeometries as __esri.GeometryUnion[],
+                ) as __esri.GeometryUnion)
+              : (siteAssessmentPlanGeometries[0] ?? null);
+
+          if (plumeGeometry) {
+            areaPlumes = calculateGeometryAreaSqFt(plumeGeometry);
+          }
+
+          if (siteAssessmentPlanGeometry) {
+            areaSiteAssessmentPlan = calculateGeometryAreaSqFt(
+              siteAssessmentPlanGeometry,
+            );
+          }
+
+          if (plumeGeometry && siteAssessmentPlanGeometry) {
+            const intersectionGeometry = geometryEngine.intersect(
+              plumeGeometry,
+              siteAssessmentPlanGeometry,
+            ) as __esri.GeometryUnion | null;
+            const siteAssessmentPlanOutsidePlumeGeometry =
+              geometryEngine.difference(
+                siteAssessmentPlanGeometry,
+                plumeGeometry,
+              ) as __esri.GeometryUnion | null;
+
+            const plumeAreaSqFt = calculateGeometryAreaSqFt(plumeGeometry);
+            const coveredPlumeAreaSqFt = intersectionGeometry
+              ? calculateGeometryAreaSqFt(intersectionGeometry)
+              : 0;
+            const planAreaSqFt = calculateGeometryAreaSqFt(
+              siteAssessmentPlanGeometry,
+            );
+            const outsidePlumeAreaSqFt = siteAssessmentPlanOutsidePlumeGeometry
+              ? calculateGeometryAreaSqFt(
+                  siteAssessmentPlanOutsidePlumeGeometry,
+                )
+              : 0;
+
+            areaPlumeCoveredBySiteAssessmentPlan = coveredPlumeAreaSqFt;
+            areaSiteAssessmentPlanNotCoveringPlume = outsidePlumeAreaSqFt;
+
+            if (plumeAreaSqFt !== null && coveredPlumeAreaSqFt !== null) {
+              percentPlumeCoveredBySiteAssessmentPlan =
+                plumeAreaSqFt > 0
+                  ? (coveredPlumeAreaSqFt / plumeAreaSqFt) * 100
+                  : 0;
+            }
+
+            if (planAreaSqFt !== null && outsidePlumeAreaSqFt !== null) {
+              percentSiteAssessmentPlanNotCoveringPlume =
+                planAreaSqFt > 0
+                  ? (outsidePlumeAreaSqFt / planAreaSqFt) * 100
+                  : 0;
+            }
+          }
+        }
+      }
     }
 
     // calculate the sampling items
@@ -1882,6 +2000,16 @@ export function useCalculatePlan(appType: AppType) {
       // spatial items
       'User Specified Total AOI': userSpecifiedAOI,
       PCT_AREA_SAMPLED: percentAreaSampled,
+      PCT_PLUME_COVERED_BY_SITE_ASSESSMENT_PLAN:
+        percentPlumeCoveredBySiteAssessmentPlan,
+      AREA_PLUME_COVERED_BY_SITE_ASSESSMENT_PLAN:
+        areaPlumeCoveredBySiteAssessmentPlan,
+      AREA_SITE_ASSESSMENT_PLAN_NOT_COVERING_PLUME:
+        areaSiteAssessmentPlanNotCoveringPlume,
+      PCT_SITE_ASSESSMENT_PLAN_NOT_COVERING_PLUME:
+        percentSiteAssessmentPlanNotCoveringPlume,
+      AREA_PLUMES: areaPlumes,
+      AREA_SITE_ASSESSMENT_PLAN: areaSiteAssessmentPlan,
 
       // sampling
       TOTAL_SAMPLING_TIME: samplingTimeHours,
@@ -1913,10 +2041,13 @@ export function useCalculatePlan(appType: AppType) {
   }, [
     appType,
     calcGraphics,
+    contaminationMap,
+    layers,
     selectedScenario,
     setCalculateResults,
     totals,
     totalArea,
+    siteAssessmentPlanLayer,
   ]);
 
   // Updates the calculation context values with the inputs.
@@ -2221,9 +2352,9 @@ export function useCalculateDeconPlan() {
         // loop through aoi mask layers
         const aoiContamIntersectGraphics: __esri.Graphic[] = [];
         for (const characterization of linkedAoiCharacterizations) {
-          const aoiEdits = characterization.layers.find(
-            (l) => l.layerType === 'AOI Assessed',
-          );
+          const aoiEdits =
+            characterization.layers.find((l) => l.layerType === 'Decon Mask') ??
+            characterization.layers.find((l) => l.layerType === 'AOI Assessed');
           const aoiLayer = layers.find((l) => l.layerId === aoiEdits?.layerId);
           if (!aoiLayer || aoiLayer.sketchLayer?.type !== 'graphics') return;
 
@@ -2347,6 +2478,40 @@ export function useCalculateDeconPlan() {
           deconOp.deconTechSelections && deconOp.deconTechSelections?.length > 0
             ? deconOp.deconTechSelections
             : defaultDeconSelections;
+
+        const linkedCharacterization = linkedAoiCharacterizations.find(
+          (c) => c.layerId === deconOp.analysisLayerId,
+        );
+        if (linkedCharacterization) {
+          const totalAoiSqM = linkedCharacterization.aoiSummary.totalAoiSqM;
+          const contaminationByCfu =
+            contaminationPercentages[linkedCharacterization.layerId] ?? {};
+
+          curDeconTechSelections.forEach((sel) => {
+            if (sel.media.includes('Building')) return;
+
+            const pctAoi =
+              (linkedCharacterization.aoiPercentages as any)[
+                (mediaToBeepEnum as any)[sel.media]
+              ] ?? 0;
+            const surfaceArea = totalAoiSqM * (pctAoi * 0.01);
+
+            let totalArea = 0;
+            let totalCfu = 0;
+            Object.keys(contaminationByCfu).forEach((key: any) => {
+              const pctCfu = contaminationByCfu[key];
+              const surfaceAreaSfCfu = pctCfu * surfaceArea;
+              totalArea += surfaceAreaSfCfu;
+              totalCfu += surfaceAreaSfCfu * Number(key);
+            });
+
+            sel.pctAoi = pctAoi;
+            sel.surfaceArea = surfaceArea;
+            sel.volume = surfaceArea;
+            sel.avgCfu = !totalCfu && !totalArea ? 0 : totalCfu / totalArea;
+          });
+        }
+
         curDeconTechSelections.forEach((sel) => {
           // find decon settings
           const deconTech = sel.deconTech?.value;
@@ -2482,6 +2647,10 @@ export function useCalculateDeconPlan() {
             tech[deconTech].liquidWasteVolumeM3 += item.liquidWasteVolumeM3;
             tech[deconTech].solidWasteMassKg += item.solidWasteMassKg;
             tech[deconTech].liquidWasteMassKg += item.liquidWasteMassKg;
+            tech[deconTech].averageInitialContamination +=
+              item.averageInitialContamination;
+            tech[deconTech].averageFinalContamination +=
+              item.averageFinalContamination;
           } else {
             tech[deconTech] = {
               ...item,
@@ -4467,6 +4636,7 @@ export function useTotsLayerAdder(appType: AppType) {
       let isPointsSampleLayer = false;
       let isVspPointsSampleLayer = false;
       let isContamMapLayer = false;
+      let isSiteModelLayer = false;
       const typesLoop = (type: __esri.FeatureType) => {
         if (type.id === 'epa-tots-vsp-layer') isVspLayer = true;
         if (type.id === 'epa-tots-sample-layer') isSampleLayer = true;
@@ -4476,6 +4646,8 @@ export function useTotsLayerAdder(appType: AppType) {
           isVspPointsSampleLayer = true;
         if (type.id === 'epa-tots-contamination-map-layer')
           isContamMapLayer = true;
+        if (type.id === 'epa-tots-site-conceptual-model-mask-layer')
+          isSiteModelLayer = true;
       };
 
       let fields: __esri.Field[] = [];
@@ -4497,6 +4669,7 @@ export function useTotsLayerAdder(appType: AppType) {
         isSampleLayer = false;
         isVspLayer = false;
         isContamMapLayer = false;
+        isSiteModelLayer = false;
         if (layerDetails?.types) {
           layerDetails.types.forEach(typesLoop);
         }
@@ -4947,6 +5120,89 @@ export function useTotsLayerAdder(appType: AppType) {
             uuid: layerContamMap.layerId,
             value: layerContamMap.layerId,
             visible: layerContamMap.visible,
+          });
+        } else if (isSiteModelLayer) {
+          const layerType: LayerTypeName = 'Site Conceptual Model Mask';
+          const symbol = SimpleFillSymbol.fromJSON(
+            layerDetails.drawingInfo.renderer.symbol,
+          );
+
+          // get the graphics from the layer
+          const graphics: __esri.Graphic[] = [];
+          layerFeatures.features.forEach((feature: any) => {
+            const graphic: any = Graphic.fromJSON(feature);
+            graphic.geometry.spatialReference = {
+              wkid: 3857,
+            };
+            graphic.popupTemplate = getPopupTemplate(layerType, false);
+            graphic.symbol = symbol;
+            graphics.push(graphic);
+          });
+
+          const name = layerDetails.name.replace(
+            '-site-conceptual-model-mask',
+            ' Site Conceptual Model Mask',
+          );
+          const sketchLayer = new GraphicsLayer({
+            id: generateUUID(),
+            listMode: 'hide',
+            title: name,
+            visible: false,
+            graphics,
+          });
+          mapLayersToAdd.push(sketchLayer);
+
+          const layerSiteModel: LayerEditsType = {
+            type: 'layer',
+            id: layerDetails.id,
+            layerId: sketchLayer.id,
+            portalId: result.id,
+            name,
+            label: name,
+            layerType: 'Site Conceptual Model Mask',
+            addedFrom: 'tots',
+            status: 'published',
+            editType: 'add',
+            visible: sketchLayer.visible,
+            listMode: sketchLayer.listMode,
+            pointsId: -1,
+            uuid: sketchLayer.id,
+            hasContaminationRan: true,
+            sort: 0,
+            adds: sketchLayer.graphics
+              .toArray()
+              .map((graphic) => convertToSimpleGraphic(graphic)),
+            updates: [],
+            deletes: [],
+            published: [],
+          };
+          // make a copy of the edits context variable
+          editsCopy = {
+            count: editsCopy.count + 1,
+            edits: [...editsCopy.edits, layerSiteModel],
+          };
+
+          layersToAdd.push({
+            addedFrom: layerSiteModel.addedFrom,
+            editType: layerSiteModel.editType,
+            geometryType: 'esriGeometryPolygon',
+            hybridLayer: null,
+            id: layerSiteModel.id,
+            label: layerSiteModel.label,
+            layerId: layerSiteModel.layerId,
+            layerType: layerSiteModel.layerType,
+            listMode: layerSiteModel.listMode,
+            name: layerSiteModel.label,
+            parentLayer: null,
+            pointsId: layerSiteModel.pointsId,
+            pointsLayer: null,
+            portalId: layerSiteModel.portalId,
+            sketchLayer: sketchLayer,
+            sort: layerSiteModel.sort,
+            status: layerSiteModel.status,
+            uuid: layerSiteModel.layerId,
+            value: layerSiteModel.layerId,
+            visible: layerSiteModel.visible,
           });
         } else {
           // add non-sample layers as feature layers

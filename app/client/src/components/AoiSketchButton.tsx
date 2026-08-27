@@ -4,13 +4,15 @@ import { useContext } from 'react';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
 import { css } from '@emotion/react';
 import IconDrawPolygon from '~icons/fa7-solid/draw-polygon';
+// config
+import { isDecon } from 'config/navigation';
 // contexts
 import { DialogContext } from 'contexts/Dialog';
 import { SketchContext } from 'contexts/Sketch';
 // types
-import { LayerEditsType } from 'types/Edits';
+import { AppType } from 'types/Navigation';
 // utils
-import { activateSketchButton } from 'utils/sketchUtils';
+import { activateSketchButton, updateLayerEdits } from 'utils/sketchUtils';
 
 // --- styles (Calculate) ---
 const sketchAoiTextStyles = css`
@@ -40,6 +42,7 @@ const BUTTON_ID = 'staging-aoi';
 
 type Props = {
   className?: string;
+  label?: string;
   onContinue?: () => void;
   replaceGraphics?: boolean;
   sketchLayer?:
@@ -51,6 +54,7 @@ type Props = {
 
 function AoiSketchButton({
   className,
+  label = 'Draw Staging Area Boundary',
   onContinue,
   replaceGraphics = false,
   sketchLayer,
@@ -73,6 +77,7 @@ function AoiSketchButton({
   // selected AOI and triggers a React useEffect to allow the user to sketch on the map.
   const sketchAoiButtonClick = () => {
     if (!map || !aoiSketchVM || !sceneView || !mapView) return;
+    const appType: AppType = isDecon() ? 'decon' : 'sampling';
 
     function startSketch() {
       if (!aoiSketchVM) return;
@@ -109,22 +114,25 @@ function AoiSketchButton({
           'This operation will delete any graphics on the Staging Area Boundary. ' +
           'If you want to keep the graphic, click Cancel and add a new Staging Area Boundary Layer.',
         onContinue: () => {
+          const deletedGraphics: __esri.Graphic[] =
+            aoiSketchLayer?.sketchLayer?.type === 'graphics'
+              ? aoiSketchLayer.sketchLayer.graphics.toArray()
+              : [];
+
           if (aoiSketchLayer?.sketchLayer?.type === 'graphics')
             aoiSketchLayer.sketchLayer.graphics.removeAll();
 
-          setEdits((edits) => {
-            const editLayer = edits.edits.find(
-              (edit) =>
-                edit.type === 'layer' &&
-                edit.layerId === aoiSketchLayer.layerId,
-            ) as LayerEditsType | undefined;
-            if (editLayer) editLayer.adds = [];
-
-            return {
-              count: edits.count + 1,
-              edits: edits.edits,
-            };
-          });
+          if (aoiSketchLayer && deletedGraphics.length > 0) {
+            setEdits((edits) =>
+              updateLayerEdits({
+                appType,
+                edits,
+                layer: aoiSketchLayer,
+                type: 'delete',
+                changes: deletedGraphics,
+              }),
+            );
+          }
 
           startSketch();
 
@@ -149,13 +157,13 @@ function AoiSketchButton({
   return (
     <button
       id={BUTTON_ID}
-      title="Draw Staging Area Boundary"
+      title={label}
       className={`sketch-button ${className}`}
       onClick={sketchAoiButtonClick}
       css={sketchAoiButtonStyles}
     >
       <span css={sketchAoiTextStyles}>
-        <IconDrawPolygon /> <span>Draw Staging Area Boundary</span>
+        <IconDrawPolygon /> <span>{label}</span>
       </span>
     </button>
   );

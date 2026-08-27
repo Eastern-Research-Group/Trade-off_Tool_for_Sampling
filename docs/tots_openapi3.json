@@ -43,7 +43,9 @@
   "paths": {
     "/api/health": {
       "get": {
-        "tags": ["Trade-off Tool for Sampling (TOTS)"],
+        "tags": [
+          "Trade-off Tool for Sampling (TOTS)"
+        ],
         "description": "Check the status of the web server.",
         "summary": "Web server health check",
         "responses": {
@@ -55,7 +57,9 @@
     },
     "/api/lookupFiles": {
       "get": {
-        "tags": ["Trade-off Tool for Sampling (TOTS)"],
+        "tags": [
+          "Trade-off Tool for Sampling (TOTS)"
+        ],
         "description": "Get configuration items for TOTS.",
         "summary": "Fetch TOTS UI content",
         "responses": {
@@ -70,7 +74,9 @@
     },
     "/api/supportedBrowsers": {
       "get": {
-        "tags": ["Trade-off Tool for Sampling (TOTS)"],
+        "tags": [
+          "Trade-off Tool for Sampling (TOTS)"
+        ],
         "description": "Get a list of browsers supported by the TOTS.",
         "summary": "Fetch supported browsers",
         "responses": {
@@ -85,7 +91,9 @@
     },
     "/api/tots/userGuide": {
       "get": {
-        "tags": ["Trade-off Tool for Sampling (TOTS)"],
+        "tags": [
+          "Trade-off Tool for Sampling (TOTS)"
+        ],
         "description": "Get the user guide for TOTS.",
         "summary": "Fetch user guide",
         "responses": {
@@ -97,7 +105,9 @@
     },
     "/api/tods/userGuide": {
       "get": {
-        "tags": ["Trade-off Tool for Decontamination Strategies (TODS)"],
+        "tags": [
+          "Trade-off Tool for Decontamination Strategies (TODS)"
+        ],
         "description": "Get the user guide for TODS.",
         "summary": "Fetch user guide",
         "responses": {
@@ -122,7 +132,9 @@
                   "example": "UP"
                 }
               },
-              "required": ["status"]
+              "required": [
+                "status"
+              ]
             }
           }
         }
@@ -206,6 +218,9 @@
                     "defaultContaminationMapLayerFields": {
                       "type": "object"
                     },
+                    "defaultSiteConceptualModelMaskLayerFields": {
+                      "type": "object"
+                    },
                     "defaultFields": {
                       "type": "object"
                     },
@@ -250,7 +265,9 @@
                   "type": "object"
                 }
               },
-              "required": ["status"]
+              "required": [
+                "status"
+              ]
             }
           }
         }
@@ -289,7 +306,12 @@
                   "example": 16
                 }
               },
-              "required": ["chrome", "edge", "firefox", "safari"]
+              "required": [
+                "chrome",
+                "edge",
+                "firefox",
+                "safari"
+              ]
             }
           }
         }

@@ -221,6 +221,7 @@ function Publish({ appType }: Props) {
     setSelectedScenario,
     setStagingAreaLayer,
     setUserDefinedAttributes,
+    siteAssessmentPlanLayer,
     sketchLayer,
     userDefinedAttributes,
   } = useContext(SketchContext);
@@ -926,6 +927,67 @@ function Publish({ appType }: Props) {
                     {
                       id: 'epa-tots-contamination-map-layer',
                       name: 'epa-tots-contamination-map-layer',
+                    },
+                  ],
+                },
+                adds: graphics.map((graphic) =>
+                  convertToSimpleGraphic(graphic),
+                ),
+                updates: [],
+                deletes: [],
+                published: [],
+              });
+            }
+
+            let siteModelToPublish: LayerType | null = null;
+            if (trainingMode) siteModelToPublish = siteAssessmentPlanLayer;
+            if (!trainingMode && selectedScenario.portalId) {
+              const editLayer = edits.edits.find(
+                (e) =>
+                  e.type === 'layer' &&
+                  e.layerType === 'Site Conceptual Model Mask' &&
+                  e.portalId === selectedScenario.portalId,
+              );
+              const layer = layers.find(
+                (l) => l.layerId === editLayer?.layerId,
+              );
+              if (layer) siteModelToPublish = layer;
+            }
+
+            if (siteModelToPublish?.sketchLayer?.type === 'graphics') {
+              const graphics =
+                siteModelToPublish.sketchLayer.graphics.toArray();
+              const unionGeometry =
+                graphics.length > 0
+                  ? geometryEngine.union(graphics.map((g) => g.geometry))
+                  : undefined;
+
+              const symbol = new SimpleFillSymbol(
+                defaultSymbols.symbols['Site Conceptual Model Mask'],
+              );
+
+              layersToPublish.push({
+                id: siteModelToPublish.id,
+                layerId: siteModelToPublish.layerId,
+                layerDefinitionProps: {
+                  ...layerProps.defaultLayerProps,
+                  fields: layerProps.defaultSiteConceptualModelMaskLayerFields,
+                  geometryType: 'esriGeometryPolygon',
+                  name:
+                    selectedScenario.scenarioName +
+                    '-site-conceptual-model-mask',
+                  description: '',
+                  extent: unionGeometry?.extent,
+                  drawingInfo: {
+                    renderer: {
+                      type: 'simple',
+                      symbol: symbol.toJSON(),
+                    },
+                  },
+                  types: [
+                    {
+                      id: 'epa-tots-site-conceptual-model-mask-layer',
+                      name: 'epa-tots-site-conceptual-model-mask-layer',
                     },
                   ],
                 },
@@ -2448,6 +2510,7 @@ function Publish({ appType }: Props) {
     setSelectedService,
     setStagingAreaLayer,
     setUserDefinedAttributes,
+    siteAssessmentPlanLayer,
     trainingMode,
     userDefinedAttributes,
   ]);

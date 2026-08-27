@@ -31,6 +31,7 @@ export type DefaultConfigureOutput = {
   includePlanWebScene: boolean;
   includeStagingAreas: boolean;
   selectedAoiCharacterizations: Selections;
+  selectedSiteAssessmentPlans: Selections;
   selectedStagingAreas: Selections;
   webMapReferenceLayerSelections: ReferenceLayerSelections[];
   webSceneReferenceLayerSelections: ReferenceLayerSelections[];
@@ -44,6 +45,7 @@ const defaultConfigureOutputValue: DefaultConfigureOutput = {
   includePlanWebScene: isDecon() ? false : true,
   includeStagingAreas: false,
   selectedAoiCharacterizations: [],
+  selectedSiteAssessmentPlans: [],
   selectedStagingAreas: [],
   webMapReferenceLayerSelections: [],
   webSceneReferenceLayerSelections: [],
