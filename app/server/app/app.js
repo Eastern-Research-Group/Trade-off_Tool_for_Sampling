@@ -17,17 +17,6 @@ if (global.__coverage__) {
   require('@cypress/code-coverage/middleware/express')(app);
 }
 
-// app.use(
-//   helmet({
-//     contentSecurityPolicy: false,
-//     crossOriginEmbedderPolicy: false,
-//     crossOriginOpenerPolicy: false,
-//     hsts: {
-//       maxAge: 31536000,
-//     },
-//     xFrameOptions: { action: 'sameorigin' },
-//   }),
-// );
 app.use(
   helmet({
     contentSecurityPolicy: false,
