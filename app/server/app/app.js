@@ -28,6 +28,18 @@ if (global.__coverage__) {
 //     xFrameOptions: { action: 'sameorigin' },
 //   }),
 // );
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+  }),
+);
+app.use(
+  helmet.hsts({
+    maxAge: 31536000,
+  }),
+);
 
 /****************************************************************
  Instruct web browsers to disable caching
@@ -112,7 +124,6 @@ if (isLocal || isTest) {
   app.use(function (req, res, next) {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-    res.header('X-Frame-Options', 'SAMEORIGIN');
     next();
   });
 }
