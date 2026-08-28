@@ -1,5 +1,19 @@
 import { EditsType } from 'types/Edits';
 
+export function getFullBaseUrl() {
+  const { VITE_SERVER_URL, VITE_SUBPATH } = import.meta.env;
+  if (!VITE_SERVER_URL && !VITE_SUBPATH) {
+    return window.location.origin;
+  }
+  if (VITE_SERVER_URL && !VITE_SUBPATH) {
+    return VITE_SERVER_URL;
+  }
+  if (!VITE_SERVER_URL && VITE_SUBPATH) {
+    return `${window.location.origin}${VITE_SUBPATH}`;
+  }
+  return `${VITE_SERVER_URL}${VITE_SUBPATH}`;
+}
+
 export function activateSketchButton(id: string) {
   const sketchSelectedClass = 'sketch-button-selected';
   let wasSet = false;

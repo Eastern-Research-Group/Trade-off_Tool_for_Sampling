@@ -10,6 +10,7 @@ import { fetchCheck } from 'utils/fetchUtils';
 import { LayerProps } from 'types/Misc';
 // config
 import { isDecon } from 'config/navigation';
+import { getFullBaseUrl } from '../utils/utils';
 
 type State = {
   lookupFiles: LookupFiles;
@@ -82,8 +83,7 @@ function useLookupFiles() {
     };
 
     const getData = async () => {
-      const { VITE_SERVER_URL } = import.meta.env;
-      const baseUrl = VITE_SERVER_URL || window.location.origin;
+      const baseUrl = getFullBaseUrl();
       try {
         const data = (await fetchCheck(
           `${baseUrl}/api/lookupFiles`,

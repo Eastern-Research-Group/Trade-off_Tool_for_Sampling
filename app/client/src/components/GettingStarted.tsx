@@ -7,6 +7,7 @@ import { DialogOverlay, DialogContent } from '@reach/dialog';
 import { useLookupFiles } from 'contexts/LookupFiles';
 // styles
 import { colors, isDecon } from 'styles';
+import { getFullBaseUrl } from '../utils/utils';
 
 // --- styles (GettingStarted) ---
 const linkStyles = css`
@@ -58,8 +59,7 @@ type Props = {
 };
 
 function GettingStarted({ isOpen, children }: Props) {
-  const { VITE_SERVER_URL } = import.meta.env;
-  const baseUrl = VITE_SERVER_URL || window.location.origin;
+  const baseUrl = getFullBaseUrl();
   const services = useLookupFiles().data.services;
 
   const app = isDecon() ? 'tods' : 'tots';

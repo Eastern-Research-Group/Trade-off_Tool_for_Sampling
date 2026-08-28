@@ -177,7 +177,7 @@ function useDisclaimerBanner() {
   }, []);
 }
 
-const { VITE_SERVER_URL } = import.meta.env;
+const { VITE_SUBPATH } = import.meta.env;
 
 const router = createBrowserRouter(
   [
@@ -186,7 +186,7 @@ const router = createBrowserRouter(
     { path: '/decon', element: <Decon /> },
     { path: '*', element: <ErrorPage /> },
   ],
-  { basename: VITE_SERVER_URL ?? '/' },
+  { basename: VITE_SUBPATH ?? '/' },
 );
 
 function App() {

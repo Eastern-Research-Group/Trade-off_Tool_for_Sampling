@@ -9,7 +9,7 @@ import { version } from './package.json';
 // https://vitejs.dev/config/
 export default ({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
-  const { VITE_SERVER_URL } = process.env;
+  const { VITE_SUBPATH } = process.env;
 
   const productionOnlyPlugins = [];
   if (mode === 'production') {
@@ -29,7 +29,7 @@ export default ({ mode }) => {
   }
 
   return defineConfig({
-    base: VITE_SERVER_URL ? `${VITE_SERVER_URL}/` : '/',
+    base: VITE_SUBPATH ? `${VITE_SUBPATH}/` : '/',
     build: {
       outDir: '../server/app/public',
       emptyOutDir: false,

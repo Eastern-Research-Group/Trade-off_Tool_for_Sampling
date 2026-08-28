@@ -48,6 +48,7 @@ import {
   PolygonSymbol,
   SampleSelectType,
 } from 'config/sampleAttributes';
+import { getFullBaseUrl } from '../utils/utils';
 
 const toolBarHeight = '40px';
 
@@ -576,8 +577,7 @@ function Toolbar({ appType }: Props) {
   useEffect(() => {
     if (oAuthInfo) return;
 
-    const { VITE_SERVER_URL } = import.meta.env;
-    const baseUrl = VITE_SERVER_URL ?? window.location.origin;
+    const baseUrl = getFullBaseUrl();
 
     const info = new OAuthInfo({
       appId: import.meta.env.VITE_ARCGIS_CLIENT_ID,

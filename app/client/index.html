@@ -418,8 +418,8 @@
        */
       const appId = window.location.pathname === '/decon' ? 'tods' : 'tots';
 
-      const viteServerUrl = "%VITE_SERVER_URL%";
-      const baseUrl = viteServerUrl ?? window.location.origin;
+      const viteSubpath = "%VITE_SUBPATH%";
+      const baseUrl = window.location.origin + (viteSubpath !== "%VITE_SUBPATH%" ? viteSubpath : '');
       function unsupportedBrowserMessage() {
         const unsupportedMessage = document.getElementById(
           `unsupported-browser-message-${appId}`,
