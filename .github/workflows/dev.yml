@@ -94,9 +94,6 @@ jobs:
           PUBLIC_URL="$SERVER_URL" \
             VITE_ARCGIS_CLIENT_ID="$VITE_ARCGIS_CLIENT_ID" \
             npm run build
-          cd build
-          cp -r * ../../server/app/public
-          rm -rf *
         working-directory: app/client
 
       # Run CloudFoundry/Cloud.gov deployment
