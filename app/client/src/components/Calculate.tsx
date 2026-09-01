@@ -17,6 +17,7 @@ import PopupTemplate from '@arcgis/core/PopupTemplate';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import LoadingSpinner from 'components/LoadingSpinner';
+import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 import { ReactTableEditable } from 'components/ReactTable';
 import Select from 'components/Select';
@@ -216,6 +217,10 @@ const sectionContainer = css`
   padding: 0 20px;
 `;
 
+const sectionContainerMessageWidthOnly = css`
+  padding: 0 10px;
+`;
+
 const layerInfo = css`
   padding-bottom: 0.5em;
 `;
@@ -242,7 +247,7 @@ type Props = {
 };
 
 function Calculate({ appType }: Props) {
-  const { setGoTo, setGoToOptions, trainingMode } =
+  const { setGoTo, setGoToOptions, simulationMode, trainingMode } =
     useContext(NavigationContext);
   const {
     edits,
@@ -255,6 +260,8 @@ function Calculate({ appType }: Props) {
     siteAssessmentPlanLayer,
     sketchLayer,
     selectedScenario,
+    viewResultsClicked,
+    setViewResultsClicked,
   } = useContext(SketchContext);
   const {
     calculateResults,
@@ -949,7 +956,10 @@ function Calculate({ appType }: Props) {
             <button
               css={submitButtonStyles}
               onClick={() => {
-                if (appType === 'sampling') runCalculation();
+                if (appType === 'sampling') {
+                  runCalculation();
+                  setViewResultsClicked(true);
+                }
                 if (appType === 'decon') setResultsOpen(true);
               }}
             >
@@ -1037,11 +1047,23 @@ function Calculate({ appType }: Props) {
         )}
       </div>
 
-      <AccordionItem title="Create Site Conceptual Model(s)">
-        <div css={sectionContainer}>
-          <SiteAssessmentPlans />
+      {appType === 'sampling' && (
+        <AccordionItem title="Create Site Conceptual Model(s)">
+          <div css={sectionContainer}>
+            <SiteAssessmentPlans />
+          </div>
+        </AccordionItem>
+      )}
+
+      {simulationMode && viewResultsClicked && (
+        <div css={sectionContainerMessageWidthOnly}>
+          <MessageBox
+            title="Training Tip"
+            message="Consider why this area matters. Boundaries should reflect likely contamination pathways, operational priorities, and decision needs."
+            severity="training"
+          />
         </div>
-      </AccordionItem>
+      )}
 
       <div css={sectionContainer}>
         <NavigationButton currentPanel="calculate" />
@@ -1133,7 +1155,7 @@ function CalculateResultsPopup({
 }: CalculateResultsPopupProps) {
   const { calculateResultsDecon, contaminationMap } =
     useContext(CalculateContext);
-  const { trainingMode } = useContext(NavigationContext);
+  const { simulationMode, trainingMode } = useContext(NavigationContext);
   const {
     aoiSketchLayer,
     displayDimensions,
@@ -2462,6 +2484,14 @@ function CalculateResultsPopup({
             </div>
           )}
         <br />
+
+        {simulationMode && (
+          <MessageBox
+            title="Training Tip"
+            message="Response strategies must balance clearance objectives against available personnel, funding, equipment, and schedule constraints."
+            severity="training"
+          />
+        )}
 
         <h2>{selectedScenario?.scenarioName} Overall Summary</h2>
         <ReactTableEditable

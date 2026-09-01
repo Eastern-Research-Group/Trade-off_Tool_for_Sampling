@@ -24,7 +24,9 @@ import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
 import Select from 'components/Select';
 // contexts
+import { CalculateContext } from 'contexts/Calculate';
 import { LookupFilesContext } from 'contexts/LookupFiles';
+import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // types
 import { LayerType } from 'types/Layer';
@@ -75,6 +77,10 @@ const panelContainer = css`
 
 const sectionContainer = css`
   padding: 20px;
+`;
+
+const sectionContainerMessageWidthOnly = css`
+  padding: 0 10px;
 `;
 
 const sectionContainerWidthOnly = css`
@@ -258,7 +264,9 @@ const verticalCenterTextStyles = css`
 
 // --- components (LocateSamples) ---
 function LocateSamples() {
+  const { calculateResults } = useContext(CalculateContext);
   const { sampleTypes } = useContext(LookupFilesContext);
+  const { simulationMode } = useContext(NavigationContext);
   const {
     defaultSymbols,
     setDefaultSymbolSingle,
@@ -1403,6 +1411,17 @@ function LocateSamples() {
                 }}
               />
             </div>
+
+            {simulationMode && (
+              <div css={sectionContainerMessageWidthOnly}>
+                <MessageBox
+                  title="Training Tip"
+                  message="Different sampling approaches answer different questions. Targeted sampling focuses on suspected contamination areas, while statistical approaches improve confidence about broader conditions."
+                  severity="training"
+                />
+              </div>
+            )}
+
             <AccordionList>
               <AccordionItem
                 title={'Add Targeted Samples'}
@@ -1418,6 +1437,16 @@ function LocateSamples() {
                     a time.
                   </p>
                   <div css={sketchGroupingStyles}>
+                    {simulationMode &&
+                      calculateResults?.data?.['NUM_SAMPLES'] &&
+                      calculateResults.data['NUM_SAMPLES'] >= 10 && (
+                        <MessageBox
+                          title="Training Tip"
+                          message="Every additional sample improves information, but also increases time, labor, analysis requirements, and cost. Balance information needs against available resources."
+                          severity="training"
+                        />
+                      )}
+
                     {establishedSampleTypes.length > 0 && (
                       <div>
                         <h3>Established Sample Types</h3>

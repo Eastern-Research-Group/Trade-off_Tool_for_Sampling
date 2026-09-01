@@ -527,7 +527,8 @@ type Props = {
 
 function Toolbar({ appType }: Props) {
   const { setContaminationMap } = useContext(CalculateContext);
-  const { trainingMode, setTrainingMode } = useContext(NavigationContext);
+  const { simulationMode, trainingMode, setTrainingMode } =
+    useContext(NavigationContext);
   const {
     autoZoom,
     setAutoZoom,
@@ -1021,7 +1022,11 @@ function Toolbar({ appType }: Props) {
         {appType === 'decon'
           ? 'Decontamination Strategies (TODS)'
           : 'Sampling (TOTS)'}{' '}
-        {trainingMode && ' - TRAINING MODE'}
+        {simulationMode
+          ? '- SIMULATION MODE'
+          : trainingMode
+            ? ' - TRAINING MODE'
+            : ''}
       </h1>
       <div css={toolBarButtonsStyles}>
         <div>
@@ -1160,26 +1165,28 @@ function Toolbar({ appType }: Props) {
               </Fragment>
             )}
 
-            <label css={switchLabelContainer}>
-              <span css={switchLabel}>Training Mode</span>
-              <Switch
-                checked={trainingMode}
-                onChange={(checked) => setTrainingMode(checked)}
-                ariaLabel="Training Mode"
-                onColor="#90ee90"
-                onHandleColor="#129c12"
-              />
-              <InfoIcon
-                cssStyles={infoIconStyles}
-                id="training-mode-switch"
-                tooltip={
-                  appType === 'decon'
-                    ? 'When Training Mode is enabled, the tool will simulate decontamination<br/>by creating a new contamination map reflecting decreased contamination<br/>based on the efficacy of selected decontamination technologies using<br/>the original contamination map values that are associated with a sampling plan.<br/>This allows users to test the effectiveness of a decon plan in a training setting.'
-                    : 'When Training Mode is enabled, the “Contamination Map”<br/>layer type option is enabled on the “Add Layer from File”<br/>of the “Add Data” tab and the “Include Contamination Map”<br/>option is enabled on the “Calculate Resources” tab. When<br/>Training Mode is enabled, the tool will simulate receiving<br/>analytical results by intersecting the contamination map<br/>layer values with sample points to allow users to test the<br/>effectiveness of a sampling plan in a training setting.'
-                }
-                place="bottom"
-              />
-            </label>
+            {!simulationMode && (
+              <label css={switchLabelContainer}>
+                <span css={switchLabel}>Training Mode</span>
+                <Switch
+                  checked={trainingMode}
+                  onChange={(checked) => setTrainingMode(checked)}
+                  ariaLabel="Training Mode"
+                  onColor="#90ee90"
+                  onHandleColor="#129c12"
+                />
+                <InfoIcon
+                  cssStyles={infoIconStyles}
+                  id="training-mode-switch"
+                  tooltip={
+                    appType === 'decon'
+                      ? 'When Training Mode is enabled, the tool will simulate decontamination<br/>by creating a new contamination map reflecting decreased contamination<br/>based on the efficacy of selected decontamination technologies using<br/>the original contamination map values that are associated with a sampling plan.<br/>This allows users to test the effectiveness of a decon plan in a training setting.'
+                      : 'When Training Mode is enabled, the “Contamination Map”<br/>layer type option is enabled on the “Add Layer from File”<br/>of the “Add Data” tab and the “Include Contamination Map”<br/>option is enabled on the “Calculate Resources” tab. When<br/>Training Mode is enabled, the tool will simulate receiving<br/>analytical results by intersecting the contamination map<br/>layer values with sample points to allow users to test the<br/>effectiveness of a sampling plan in a training setting.'
+                  }
+                  place="bottom"
+                />
+              </label>
+            )}
 
             <label css={switchLabelContainer}>
               <span css={switchLabel}>Auto Zoom</span>

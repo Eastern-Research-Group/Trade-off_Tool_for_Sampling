@@ -145,7 +145,7 @@ type GenerateSamplesProps = {
 function GenerateSamples({ id, type }: GenerateSamplesProps) {
   const { userInfo } = useContext(AuthenticationContext);
   const { sampleTypes } = useContext(LookupFilesContext);
-  const { setGoTo, setGoToOptions, trainingMode } =
+  const { setGoTo, setGoToOptions, simulationMode, trainingMode } =
     useContext(NavigationContext);
   const {
     allSampleOptions,
@@ -1053,6 +1053,14 @@ function GenerateSamples({ id, type }: GenerateSamplesProps) {
               from the menu and specify the "Percent Confidence and "Percent
               Area Clear/Complient". Click Submit to add samples.
             </p>
+          )}
+
+          {simulationMode && generateRandomMode === 'draw' && (
+            <MessageBox
+              title="Training Tip"
+              message="Consider why this area matters. Boundaries should reflect likely contamination pathways, operational priorities, and decision needs."
+              severity="training"
+            />
           )}
 
           <div>
