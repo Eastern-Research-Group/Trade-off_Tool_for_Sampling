@@ -449,7 +449,9 @@ export const scenarioNameInvalidMessage = (scenarioName?: string) => (
 
 // tots not availble messages
 export const totsNotAvailableMessage = () => {
-  const appName = window.location.pathname === '/decon' ? 'TODS' : 'TOTS';
+  const appName = window.location.pathname.startsWith('/decon')
+    ? 'TODS'
+    : 'TOTS';
   return (
     <MessageBox
       severity="error"

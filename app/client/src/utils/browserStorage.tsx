@@ -225,6 +225,7 @@ export function useSessionStorage(appType: AppType) {
   usePublishStorage(dbInitialized);
   useDisplayModeStorage(dbInitialized);
   useGsgFileStorage(dbInitialized);
+  useSimulationModeStorage(dbInitialized);
   useTrainingModeStorage(dbInitialized);
 }
 
@@ -270,12 +271,49 @@ function useGraphicColor(dbInitialized: boolean) {
   }, [defaultSymbols, readDone, setOptions]);
 }
 
+// Uses browser storage for holding the simulation mode selection.
+function useSimulationModeStorage(dbInitialized: boolean) {
+  const key = 'simulation_mode';
+
+  const { setOptions } = useContext(DialogContext);
+  const { simulationMode, setSimulationMode } = useContext(NavigationContext);
+
+  // Retreives simulation mode data from browser storage when the app loads
+  const [readInitialized, setReadInitialized] = useState(false);
+  const [readDone, setReadDone] = useState(false);
+  useEffect(() => {
+    if (!dbInitialized || readInitialized) return;
+
+    setReadInitialized(true);
+    readFromStorage(key).then((simulationMode) => {
+      const params = getUrlParamsLowerCase();
+      const simulationModeParam = parseBooleanUrlParam(
+        params['simulationmode'],
+      );
+
+      if (simulationModeParam !== null) setSimulationMode(simulationModeParam);
+      else setSimulationMode(Boolean(simulationMode));
+
+      removeUrlParams('simulationMode');
+
+      setReadDone(true);
+    });
+  }, [dbInitialized, readInitialized, setSimulationMode]);
+
+  useEffect(() => {
+    if (!readDone) return;
+
+    writeToStorage(key, simulationMode, setOptions);
+  }, [readDone, setOptions, simulationMode]);
+}
+
 // Uses browser storage for holding the training mode selection.
 function useTrainingModeStorage(dbInitialized: boolean) {
   const key = 'training_mode';
 
   const { setOptions } = useContext(DialogContext);
-  const { trainingMode, setTrainingMode } = useContext(NavigationContext);
+  const { simulationMode, trainingMode, setTrainingMode } =
+    useContext(NavigationContext);
 
   // Retreives training mode data from browser storage when the app loads
   const [readInitialized, setReadInitialized] = useState(false);
@@ -302,6 +340,10 @@ function useTrainingModeStorage(dbInitialized: boolean) {
 
     writeToStorage(key, trainingMode, setOptions);
   }, [readDone, setOptions, trainingMode]);
+
+  useEffect(() => {
+    if (simulationMode) setTrainingMode(true);
+  }, [simulationMode, setTrainingMode, trainingMode]);
 }
 
 // Uses browser storage for holding any editable layers.

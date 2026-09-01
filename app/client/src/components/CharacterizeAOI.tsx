@@ -238,7 +238,8 @@ function CharacterizeAOI({
   const { calculateResultsDecon, setCalculateResultsDecon } =
     useContext(CalculateContext);
   const { setOptions } = useContext(DialogContext);
-  const { setGoTo, setGoToOptions } = useContext(NavigationContext);
+  const { setGoTo, setGoToOptions, simulationMode } =
+    useContext(NavigationContext);
   const {
     aoiCharacterizationData,
     aoiSketchLayer,
@@ -1676,6 +1677,14 @@ function CharacterizeAOI({
                   }
                 />
               )}
+              {simulationMode &&
+                aoiCharacterizationData.status === 'success' && (
+                  <MessageBox
+                    title="Training Tip"
+                    message="Effective decontamination requires understanding what is contaminated. Buildings, vegetation/soil, asphalt, and concrete may respond differently to remediation technologies."
+                    severity="training"
+                  />
+                )}
             </Fragment>
           )}
 
