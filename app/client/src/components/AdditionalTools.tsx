@@ -5,6 +5,7 @@ import { css } from '@emotion/react';
 // components
 import { AccordionList, AccordionItem } from 'components/Accordion';
 import CharacterizeAOI from 'components/CharacterizeAOI';
+import CreateContaminationMap from 'components/CreateContaminationMap';
 import CustomSampleType from 'components/CustomSampleType';
 import MessageBox from 'components/MessageBox';
 import NavigationButton from 'components/NavigationButton';
@@ -51,7 +52,8 @@ function AdditionalTools({ appType }: Props) {
     <div css={panelContainer}>
       <div>
         <div css={sectionContainer}>
-          <h2>Additional Tools</h2>
+          <h2>{appType === 'admin' ? '' : 'Additional'} Tools</h2>
+          {appType === 'admin' && <p>Placeholder...</p>}
           {appType === 'sampling' && (
             <p>
               Additional tools are available to support planning efforts. TOTS
@@ -87,28 +89,34 @@ function AdditionalTools({ appType }: Props) {
           />
         </div>
 
-        <AccordionList>
-          <AccordionItem title={'Characterize Area of Interest'}>
-            <div css={sectionContainer}>
-              <CharacterizeAOI />
-            </div>
-          </AccordionItem>
-          <AccordionItem title="Identify Staging Areas">
-            <div css={sectionContainer}>
-              <StagingAreas />
-            </div>
-          </AccordionItem>
-          {appType === 'sampling' && (
-            <AccordionItem title="Create Custom Sample Types">
+        {appType === 'admin' ? (
+          <div css={sectionContainer}>
+            <CreateContaminationMap />
+          </div>
+        ) : (
+          <AccordionList>
+            <AccordionItem title={'Characterize Area of Interest'}>
               <div css={sectionContainer}>
-                <CustomSampleType
-                  appType="sampling"
-                  id="plan-custom-sample-types"
-                />
+                <CharacterizeAOI />
               </div>
             </AccordionItem>
-          )}
-        </AccordionList>
+            <AccordionItem title="Identify Staging Areas">
+              <div css={sectionContainer}>
+                <StagingAreas />
+              </div>
+            </AccordionItem>
+            {appType === 'sampling' && (
+              <AccordionItem title="Create Custom Sample Types">
+                <div css={sectionContainer}>
+                  <CustomSampleType
+                    appType="sampling"
+                    id="plan-custom-sample-types"
+                  />
+                </div>
+              </AccordionItem>
+            )}
+          </AccordionList>
+        )}
       </div>
 
       <div css={sectionContainer}>

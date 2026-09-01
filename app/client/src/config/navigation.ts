@@ -7,6 +7,7 @@ import IconWrench from '~icons/fa7-solid/wrench';
 // types
 import { LayerTypeOption } from 'types/Navigation';
 
+export const isAdmin = () => window.location.pathname === '/admin';
 export const isDecon = () => window.location.pathname === '/decon';
 
 export const samplingPanels: PanelType[] = [
@@ -62,6 +63,29 @@ export const deconPanels: PanelType[] = [
     value: 'calculate',
     label: 'Calculate Resources',
     Icon: IconCalculator,
+  },
+  {
+    value: 'configureOutput',
+    label: 'Configure Output',
+    Icon: IconCog,
+  },
+  {
+    value: 'publish',
+    label: 'Publish Output',
+    Icon: IconUpload,
+  },
+];
+
+export const adminPanels: PanelType[] = [
+  {
+    value: 'addData',
+    label: 'Add Data',
+    Icon: IconLayerGroup,
+  },
+  {
+    value: 'additionalTools',
+    label: 'Contam Map',
+    Icon: IconWrench,
   },
   {
     value: 'configureOutput',

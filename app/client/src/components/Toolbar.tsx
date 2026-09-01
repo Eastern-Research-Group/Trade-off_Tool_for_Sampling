@@ -1014,10 +1014,13 @@ function Toolbar({ appType }: Props) {
   return (
     <div css={toolBarStyles} data-testid="tots-toolbar">
       <h1 css={toolBarTitle}>
-        Trade-off Tool for{' '}
-        {appType === 'decon'
-          ? 'Decontamination Strategies (TODS)'
-          : 'Sampling (TOTS)'}{' '}
+        {appType === 'admin' && 'TOTS Admin '}
+        {appType !== 'admin' && 'Trade-off Tool for '}
+        {appType === 'admin'
+          ? ''
+          : appType === 'decon'
+            ? 'Decontamination Strategies (TODS)'
+            : 'Sampling (TOTS)'}{' '}
         {trainingMode && ' - TRAINING MODE'}
       </h1>
       <div css={toolBarButtonsStyles}>

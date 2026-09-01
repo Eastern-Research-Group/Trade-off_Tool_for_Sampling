@@ -40,6 +40,7 @@ import {
 // config
 import { navPanelWidth } from 'config/appConfig';
 import {
+  adminPanels,
   deconPanels,
   isDecon,
   PanelType,
@@ -377,7 +378,13 @@ function NavBar({ appType, height }: Props) {
 
   useAutoConfigureOutput();
 
-  const [panels] = useState(appType === 'decon' ? deconPanels : samplingPanels);
+  const [panels] = useState(
+    appType === 'admin'
+      ? adminPanels
+      : appType === 'decon'
+        ? deconPanels
+        : samplingPanels,
+  );
 
   const toggleExpand = useCallback(
     (panel: PanelType, panelIndex: number) => {

@@ -44,7 +44,7 @@ import { LayerType, PortalLayerType, UrlLayerType } from 'types/Layer';
 import { AppType, GoToOptions } from 'types/Navigation';
 import { SampleTypeOptions } from 'types/Publish';
 // config
-import { isDecon, PanelValueType } from 'config/navigation';
+import { isAdmin, isDecon, PanelValueType } from 'config/navigation';
 import {
   SampleSelectType,
   UserDefinedAttributes,
@@ -63,7 +63,7 @@ import {
   removeUrlParams,
 } from 'utils/utils';
 
-let appKey = isDecon() ? 'tods' : 'tots';
+let appKey = isAdmin() ? 'admin' : isDecon() ? 'tods' : 'tots';
 
 const environment = getEnvironment();
 const dataTableName = 'tots-data';
@@ -198,7 +198,12 @@ function getLayerById(layers: LayerType[], id: string) {
 
 // Saves/Retrieves data to browser storage
 export function useSessionStorage(appType: AppType) {
-  appKey = appType === 'decon' ? 'tods' : 'tots';
+  const keys = {
+    admin: 'admin',
+    decon: 'tods',
+    sampling: 'tots',
+  };
+  appKey = keys[appType];
 
   const [dbInitialized, setDbInitialized] = useState(false);
   useEffect(() => {

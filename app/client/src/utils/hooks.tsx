@@ -3290,20 +3290,48 @@ export function useDynamicPopup(appType: AppType) {
       };
     }
     if (type === 'Contamination Map') {
-      return {
-        title: '',
-        content: [
-          {
-            type: 'fields',
-            fieldInfos: [
-              { fieldName: 'TYPE', label: 'Type' },
-              { fieldName: 'CONTAMTYPE', label: 'Contamination Type' },
-              { fieldName: 'CONTAMVAL', label: 'Activity' },
-              { fieldName: 'CONTAMUNIT', label: 'Unit of Measure' },
-            ],
-          },
-        ],
-      };
+      if (appType === 'admin') {
+        const actions = new Collection<any>();
+        if (includeControls) {
+          actions.addMany([
+            {
+              title: 'Delete Feature',
+              id: 'delete',
+              className: 'esri-icon-trash',
+            },
+          ]);
+        }
+
+        return {
+          title: '',
+          content: (feature: any) =>
+            getSampleTemplate(
+              feature,
+              [
+                { fieldName: 'TYPE', label: 'Type' },
+                { fieldName: 'CONTAMTYPE', label: 'Contamination Type' },
+                { fieldName: 'CONTAMUNIT', label: 'Unit of Measure' },
+              ],
+              includeControls,
+            ),
+          actions,
+        };
+      } else {
+        return {
+          title: '',
+          content: [
+            {
+              type: 'fields',
+              fieldInfos: [
+                { fieldName: 'TYPE', label: 'Type' },
+                { fieldName: 'CONTAMTYPE', label: 'Contamination Type' },
+                { fieldName: 'CONTAMVAL', label: 'Activity' },
+                { fieldName: 'CONTAMUNIT', label: 'Unit of Measure' },
+              ],
+            },
+          ],
+        };
+      }
     }
     if ((type === 'Samples' || type === 'VSP') && !isDecon()) {
       const fieldInfos = [
