@@ -25,11 +25,6 @@
     },
     {
       "urlLookup": "totsGPServer",
-      "wildcardUrl": "{urlLookup}/Contamination%20Results*",
-      "name": "GP Server - Contamination Results"
-    },
-    {
-      "urlLookup": "totsGPServer",
       "wildcardUrl": "{urlLookup}/Export%20ShapeFile*",
       "name": "GP Server - Export ShapeFile"
     },

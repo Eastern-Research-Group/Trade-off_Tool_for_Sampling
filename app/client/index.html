@@ -422,7 +422,9 @@
        * div, when available it then checks the browser version and
        * displays the message if necessary.
        */
-      const appId = window.location.pathname === '/decon' ? 'tods' : 'tots';
+      const appId = window.location.pathname.startsWith('/decon')
+        ? 'tods'
+        : 'tots';
 
       function unsupportedBrowserMessage() {
         const unsupportedMessage = document.getElementById(

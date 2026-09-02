@@ -5,6 +5,7 @@ import { css } from '@emotion/react';
 import IconExclamationCircle from '~icons/fa7-solid/exclamation-circle';
 import IconExclamationTriangle from '~icons/fa7-solid/exclamation-triangle';
 import IconInfoCircle from '~icons/fa7-solid/info-circle';
+import IconLightbulb from '~icons/fa7-solid/lightbulb';
 
 // --- components (MessageBox) ---
 const baseContainerStyles = css`
@@ -51,7 +52,7 @@ const messageTextStyles = css`
 type Props = {
   title: string;
   message: string | ReactNode;
-  severity: 'error' | 'warning' | 'info';
+  severity: 'error' | 'warning' | 'info' | 'training';
 };
 
 function MessageBox({ title, message, severity }: Props) {
@@ -68,6 +69,10 @@ function MessageBox({ title, message, severity }: Props) {
   if (severity === 'info') {
     container = infoContainerStyles;
     Icon = IconInfoCircle;
+  }
+  if (severity === 'training') {
+    container = infoContainerStyles;
+    Icon = IconLightbulb;
   }
 
   return (

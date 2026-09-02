@@ -527,7 +527,8 @@ type Props = {
 
 function Toolbar({ appType }: Props) {
   const { setContaminationMap } = useContext(CalculateContext);
-  const { trainingMode, setTrainingMode } = useContext(NavigationContext);
+  const { simulationMode, trainingMode, setTrainingMode } =
+    useContext(NavigationContext);
   const {
     autoZoom,
     setAutoZoom,
@@ -1022,7 +1023,11 @@ function Toolbar({ appType }: Props) {
           : appType === 'decon'
             ? 'Decontamination Strategies (TODS)'
             : 'Sampling (TOTS)'}{' '}
-        {trainingMode && ' - TRAINING MODE'}
+        {simulationMode
+          ? '- SIMULATION MODE'
+          : trainingMode
+            ? ' - TRAINING MODE'
+            : ''}
       </h1>
       <div css={toolBarButtonsStyles}>
         <div>
@@ -1161,7 +1166,7 @@ function Toolbar({ appType }: Props) {
               </Fragment>
             )}
 
-            {!isAdmin() && (
+            {!isAdmin() && !simulationMode && (
               <label css={switchLabelContainer}>
                 <span css={switchLabel}>Training Mode</span>
                 <Switch

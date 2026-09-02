@@ -106,6 +106,10 @@ const sectionContainer = css`
   padding: 20px;
 `;
 
+const sectionContainerMessageWidthOnly = css`
+  padding: 0 10px;
+`;
+
 const layerSelectStyles = css`
   margin-bottom: 10px;
 `;
@@ -262,7 +266,7 @@ const saveButtonStyles = (status: string) => {
 function CreateDeconPlan() {
   const { contaminationMap, setCalculateResultsDecon, setContaminationMap } =
     useContext(CalculateContext);
-  const { setGoTo, setGoToOptions, trainingMode } =
+  const { setGoTo, setGoToOptions, simulationMode, trainingMode } =
     useContext(NavigationContext);
   const {
     deconOperation,
@@ -738,6 +742,17 @@ function CreateDeconPlan() {
                 Use the available controls to link, add, edit, and/or delete
                 selections to include in your decon plan.
               </p>
+
+              {simulationMode && (
+                <div css={sectionContainerMessageWidthOnly}>
+                  <MessageBox
+                    title="Training Tip"
+                    message="Areas of interest represent decision units. Different areas may require different treatment strategies because they contain different surfaces, infrastructure, or contamination conditions."
+                    severity="training"
+                  />
+                </div>
+              )}
+
               <div>
                 <div css={iconButtonContainerStyles}>
                   <div css={infoIconOperationsStyles}>
@@ -1469,7 +1484,7 @@ function DeconSelectionPopup({
 }: DeconSelectionPopupProps) {
   const { calculateResultsDecon, setCalculateResultsDecon } =
     useContext(CalculateContext);
-  const { trainingMode } = useContext(NavigationContext);
+  const { simulationMode, trainingMode } = useContext(NavigationContext);
   const { deconOperation, edits, setEdits } = useContext(SketchContext);
   const technologyTypes = useLookupFiles().data.technologyTypes;
 
@@ -1874,6 +1889,22 @@ function DeconSelectionPopup({
             </li>
           </ol>
         </div>
+
+        {simulationMode && (
+          <MessageBox
+            title="Training Tip"
+            message="Buildings contain multiple materials and surfaces. A strategy appropriate for one surface may not be ideal for another."
+            severity="training"
+          />
+        )}
+
+        {simulationMode && (
+          <MessageBox
+            title="Training Tip"
+            message="Additional decontamination rounds may improve confidence but also increase time, cost, and waste generation."
+            severity="training"
+          />
+        )}
 
         <strong>Select estimation approach:</strong>
 

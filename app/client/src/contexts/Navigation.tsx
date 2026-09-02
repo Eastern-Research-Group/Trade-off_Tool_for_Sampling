@@ -38,6 +38,8 @@ type NavigateType = {
   setTablePanelSelectedTab: Dispatch<SetStateAction<TablePanelTabType>>;
   tableShowSelectedScenarioOnly: boolean;
   setTableShowSelectedScenarioOnly: Dispatch<SetStateAction<boolean>>;
+  simulationMode: boolean;
+  setSimulationMode: Dispatch<SetStateAction<boolean>>;
   trainingMode: boolean;
   setTrainingMode: Dispatch<SetStateAction<boolean>>;
   getTrainingMode: Function;
@@ -68,6 +70,8 @@ export const NavigationContext = createContext<NavigateType>({
   setTablePanelSelectedTab: () => {},
   tableShowSelectedScenarioOnly: true,
   setTableShowSelectedScenarioOnly: () => {},
+  simulationMode: false,
+  setSimulationMode: () => {},
   trainingMode: false,
   setTrainingMode: () => {},
   getTrainingMode: () => {},
@@ -91,6 +95,7 @@ export function NavigationProvider({ children }: Props) {
     useState<TablePanelTabType>(null);
   const [tableShowSelectedScenarioOnly, setTableShowSelectedScenarioOnly] =
     useState(true);
+  const [simulationMode, setSimulationMode] = useState(false);
   const [trainingMode, setTrainingMode] = useState(false);
   const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
 
@@ -116,6 +121,8 @@ export function NavigationProvider({ children }: Props) {
         panelExpanded,
         setPanelExpanded,
         resultsExpanded,
+        simulationMode,
+        setSimulationMode,
         setResultsExpanded,
         tablePanelExpanded,
         setTablePanelExpanded,
