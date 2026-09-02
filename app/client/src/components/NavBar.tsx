@@ -22,10 +22,11 @@ import Calculate from 'components/Calculate';
 import CalculateResults from 'components/CalculateResults';
 import ConfigureOutput from 'components/ConfigureOutput';
 import CreateDeconPlan from 'components/CreateDeconPlan';
+import GettingStarted from 'components/GettingStarted';
 import LoadingSpinner from 'components/LoadingSpinner';
 import LocateSamples from 'components/LocateSamples';
 import Publish from 'components/Publish';
-import GettingStarted from 'components/GettingStarted';
+import Save from 'components/Save';
 // contexts
 import { CalculateContext } from 'contexts/Calculate';
 import { NavigationContext } from 'contexts/Navigation';
@@ -726,13 +727,15 @@ function NavBar({ appType, height }: Props) {
             </Fragment>
           )}
 
-          <button
-            onClick={(_ev) => setGettingStartedOpen(!gettingStartedOpen)}
-            css={navButtonStyles(false)}
-          >
-            <IconQuestion css={helpIconStyles} />
-            Help
-          </button>
+          {appType !== 'admin' && (
+            <button
+              onClick={(_ev) => setGettingStartedOpen(!gettingStartedOpen)}
+              css={navButtonStyles(false)}
+            >
+              <IconQuestion css={helpIconStyles} />
+              Help
+            </button>
+          )}
         </div>
       </div>
       {currentPanel && (
@@ -768,6 +771,7 @@ function NavBar({ appType, height }: Props) {
               {currentPanel.value === 'publish' && (
                 <Publish appType={appType} />
               )}
+              {currentPanel.value === 'save' && <Save appType={appType} />}
             </div>
           </div>
         </div>

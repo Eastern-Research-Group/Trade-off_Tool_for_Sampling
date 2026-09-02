@@ -1,8 +1,6 @@
 /** @jsxImportSource @emotion/react */
 
 import { Fragment, useContext, useEffect, useState } from 'react';
-import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
-import Graphic from '@arcgis/core/Graphic';
 import { css } from '@emotion/react';
 import IconEdit from '~icons/fa7-solid/edit';
 import IconPlus from '~icons/fa7-solid/plus';
@@ -15,11 +13,9 @@ import { EditContaminationMapCharacterization } from 'components/EditLayerMetaDa
 // config
 import { PolygonSymbol } from 'config/sampleAttributes';
 // contexts
-import { DialogContext } from 'contexts/Dialog';
 import Select from 'components/Select';
 import { SketchContext } from 'contexts/Sketch';
 // styles
-import { isDecon } from 'config/navigation';
 import { reactSelectStyles } from 'styles';
 // types
 import { EditsType, LayerEditsType } from 'types/Edits';
@@ -27,9 +23,7 @@ import { LayerType } from 'types/Layer';
 // utils
 import {
   createLayerEditTemplate,
-  generateUUID,
   getDefaultSamplingMaskLayer,
-  updateLayerEdits,
 } from 'utils/sketchUtils';
 
 // --- styles ---
@@ -86,7 +80,6 @@ const verticalCenterTextStyles = css`
 // --- components ---
 
 function StagingAreas() {
-  const { setOptions } = useContext(DialogContext);
   const {
     defaultSymbols,
     edits,
@@ -94,30 +87,30 @@ function StagingAreas() {
     layersInitialized,
     map,
     setAoiSketchLayer,
+    setContamMapLayer,
     setDefaultSymbolSingle,
     setEdits,
     setLayers,
-    setStagingAreaLayer,
-    stagingAreaLayer,
+    contamMapLayer,
   } = useContext(SketchContext);
 
   const [addScenarioVisible, setAddScenarioVisible] = useState(false);
   const [editScenarioVisible, setEditScenarioVisible] = useState(false);
   const [stagingLayers, setStagingLayers] = useState<LayerType[]>([]);
-  const [lastStagingAreaLayer, setLastStagingAreaLayer] =
+  const [lastContamMapLayer, setLastContamMapLayer] =
     useState<LayerType | null>(null);
 
   useEffect(() => {
-    if (!stagingAreaLayer) {
+    if (!contamMapLayer) {
       setEditScenarioVisible(false);
       return;
     }
 
     const hasAoiGraphics =
-      stagingAreaLayer?.sketchLayer?.type === 'graphics' &&
-      stagingAreaLayer.sketchLayer.graphics.length > 0;
+      contamMapLayer?.sketchLayer?.type === 'graphics' &&
+      contamMapLayer.sketchLayer.graphics.length > 0;
     if (!hasAoiGraphics) setEditScenarioVisible(true);
-  }, [stagingAreaLayer]);
+  }, [contamMapLayer]);
 
   const [initializedLayers, setInitializedLayers] = useState(false);
   useEffect(() => {
@@ -134,7 +127,7 @@ function StagingAreas() {
   const [initializedLayer, setInitializedDeconLayer] = useState(false);
   useEffect(() => {
     if (
-      stagingAreaLayer ||
+      contamMapLayer ||
       initializedLayer ||
       !initializedLayers ||
       !layersInitialized ||
@@ -145,7 +138,7 @@ function StagingAreas() {
     setInitializedDeconLayer(true);
 
     if (stagingLayers.length > 0) {
-      setStagingAreaLayer(stagingLayers[0]);
+      setContamMapLayer(stagingLayers[0]);
     } else {
       const newAoiSketchLayer = getDefaultSamplingMaskLayer(
         '',
@@ -164,7 +157,7 @@ function StagingAreas() {
         };
       });
 
-      setStagingAreaLayer(newAoiSketchLayer);
+      setContamMapLayer(newAoiSketchLayer);
 
       const tLayers = [...layers, newAoiSketchLayer];
 
@@ -183,14 +176,14 @@ function StagingAreas() {
     map,
     setEdits,
     setLayers,
-    setStagingAreaLayer,
-    stagingAreaLayer,
+    setContamMapLayer,
+    contamMapLayer,
     stagingLayers,
   ]);
 
   useEffect(() => {
-    setAoiSketchLayer(stagingAreaLayer);
-  }, [stagingAreaLayer, setAoiSketchLayer]);
+    setAoiSketchLayer(contamMapLayer);
+  }, [contamMapLayer, setAoiSketchLayer]);
 
   function handleAdd() {
     if (!map) return;
@@ -212,8 +205,8 @@ function StagingAreas() {
       };
     });
 
-    setLastStagingAreaLayer(stagingAreaLayer);
-    setStagingAreaLayer(newAoiSketchLayer);
+    setLastContamMapLayer(contamMapLayer);
+    setContamMapLayer(newAoiSketchLayer);
 
     const tLayers = [...layers];
     if (newAoiSketchLayer) tLayers.push(newAoiSketchLayer);
@@ -227,16 +220,16 @@ function StagingAreas() {
   }
 
   function handleDelete(lastDeconSketchLayer?: LayerType | null) {
-    if (!stagingAreaLayer) return;
+    if (!contamMapLayer) return;
 
-    const idsToDelete: string[] = [stagingAreaLayer.layerId];
+    const idsToDelete: string[] = [contamMapLayer.layerId];
 
     const newLayers = stagingLayers.filter(
-      (layer) => stagingAreaLayer.layerId !== layer.layerId,
+      (layer) => contamMapLayer.layerId !== layer.layerId,
     );
     setStagingLayers(newLayers);
-    if (lastDeconSketchLayer) setStagingAreaLayer(lastDeconSketchLayer);
-    else setStagingAreaLayer(newLayers.length > 0 ? newLayers[0] : null);
+    if (lastDeconSketchLayer) setContamMapLayer(lastDeconSketchLayer);
+    else setContamMapLayer(newLayers.length > 0 ? newLayers[0] : null);
 
     // remove all of the child layers
     setLayers((layers) => {
@@ -247,7 +240,7 @@ function StagingAreas() {
     const newEdits: EditsType = {
       count: edits.count + 1,
       edits: edits.edits.filter(
-        (item) => item.layerId !== stagingAreaLayer.layerId,
+        (item) => item.layerId !== contamMapLayer.layerId,
       ),
     };
     setEdits(newEdits);
@@ -256,7 +249,7 @@ function StagingAreas() {
 
     // remove the scenario from the map
     const mapLayer = map.layers.find(
-      (layer) => layer.id === stagingAreaLayer?.layerId,
+      (layer) => layer.id === contamMapLayer?.layerId,
     );
     if (mapLayer) map.remove(mapLayer);
   }
@@ -265,150 +258,8 @@ function StagingAreas() {
     (edit) =>
       edit.type === 'layer' &&
       edit.layerType === 'Contamination Map' &&
-      edit.layerId === stagingAreaLayer?.layerId,
+      edit.layerId === contamMapLayer?.layerId,
   ) as LayerEditsType | undefined;
-
-  const cutFromOverlappingGraphics = () => {
-    if (
-      !stagingAreaLayer?.sketchLayer ||
-      stagingAreaLayer.sketchLayer.type !== 'graphics'
-    ) {
-      return;
-    }
-
-    const graphicsLayer = stagingAreaLayer.sketchLayer;
-    const graphics = graphicsLayer.graphics
-      .toArray()
-      .filter((graphic) => graphic.geometry?.type === 'polygon');
-
-    if (graphics.length < 2) return;
-
-    const originalFeatureIds = new Set(
-      graphics.map((graphic) => graphic.attributes?.PERMANENT_IDENTIFIER),
-    );
-    const workingGraphics = [...graphics];
-
-    const updatedGraphics: __esri.Graphic[] = [];
-    const addedGraphics: __esri.Graphic[] = [];
-
-    // Loop through all polygons and cut overlaps so smaller polygons cut holes in larger ones.
-    for (let i = 0; i < workingGraphics.length; i++) {
-      const firstGraphic = workingGraphics[i];
-      const firstGeometry = firstGraphic.geometry;
-      if (!firstGeometry || firstGeometry.type !== 'polygon') continue;
-      const firstPolygon = firstGeometry as __esri.Polygon;
-
-      for (let j = i + 1; j < workingGraphics.length; j++) {
-        const secondGraphic = workingGraphics[j];
-        const secondGeometry = secondGraphic.geometry;
-        if (!secondGeometry || secondGeometry.type !== 'polygon') continue;
-        const secondPolygon = secondGeometry as __esri.Polygon;
-
-        if (!geometryEngine.intersects(firstPolygon, secondPolygon)) {
-          continue;
-        }
-
-        const firstArea = Math.abs(
-          geometryEngine.planarArea(firstPolygon, 'square-meters') || 0,
-        );
-        const secondArea = Math.abs(
-          geometryEngine.planarArea(secondPolygon, 'square-meters') || 0,
-        );
-
-        if (firstArea === 0 || secondArea === 0) continue;
-        if (Math.abs(firstArea - secondArea) < 0.000001) continue;
-
-        const targetGraphic =
-          firstArea > secondArea ? firstGraphic : secondGraphic;
-        const targetPolygon =
-          firstArea > secondArea ? firstPolygon : secondPolygon;
-        const cutterPolygon =
-          firstArea > secondArea ? secondPolygon : firstPolygon;
-
-        const difference = geometryEngine.difference(
-          targetPolygon,
-          cutterPolygon,
-        );
-        if (!difference) continue;
-
-        const splitGeometries = Array.isArray(difference)
-          ? difference
-          : [difference];
-        if (splitGeometries.length === 0) continue;
-
-        targetGraphic.geometry = splitGeometries[0] as __esri.Polygon;
-
-        const targetId = targetGraphic.attributes?.PERMANENT_IDENTIFIER;
-        if (
-          targetId &&
-          originalFeatureIds.has(targetId) &&
-          !updatedGraphics.some(
-            (graphic) =>
-              graphic.attributes?.PERMANENT_IDENTIFIER ===
-              targetGraphic.attributes?.PERMANENT_IDENTIFIER,
-          )
-        ) {
-          updatedGraphics.push(targetGraphic);
-        }
-
-        for (
-          let partIndex = 1;
-          partIndex < splitGeometries.length;
-          partIndex++
-        ) {
-          const newGraphic = new Graphic({
-            attributes: {
-              ...targetGraphic.attributes,
-              PERMANENT_IDENTIFIER: generateUUID(),
-              GLOBALID: generateUUID(),
-            },
-            geometry: splitGeometries[partIndex],
-            popupTemplate: targetGraphic.popupTemplate,
-            symbol: targetGraphic.symbol,
-          });
-          addedGraphics.push(newGraphic);
-          workingGraphics.push(newGraphic);
-        }
-      }
-    }
-
-    if (updatedGraphics.length === 0 && addedGraphics.length === 0) {
-      setOptions({
-        title: 'No overlaps found',
-        ariaLabel: 'No overlaps found',
-        description:
-          'The selected contamination feature does not overlap any other features in the active layer.',
-      });
-      return;
-    }
-
-    if (addedGraphics.length > 0) graphicsLayer.addMany(addedGraphics);
-
-    const appType = isDecon() ? 'decon' : 'sampling';
-    setEdits((edits) => {
-      let editsCopy = edits;
-      if (updatedGraphics.length > 0) {
-        editsCopy = updateLayerEdits({
-          appType,
-          edits: editsCopy,
-          layer: stagingAreaLayer,
-          type: 'update',
-          changes: updatedGraphics,
-        });
-      }
-      if (addedGraphics.length > 0) {
-        editsCopy = updateLayerEdits({
-          appType,
-          edits: editsCopy,
-          layer: stagingAreaLayer,
-          type: 'add',
-          changes: addedGraphics,
-        });
-      }
-
-      return editsCopy;
-    });
-  };
 
   // TODO create defaultSymbol for contam map
   return (
@@ -430,13 +281,6 @@ function StagingAreas() {
           Click Save to keep your layer metadata in sync.
         </p>
 
-        <button
-          className="usa-button usa-button--outline"
-          onClick={cutFromOverlappingGraphics}
-        >
-          Cut Selected Feature Out of Others
-        </button>
-
         <div css={iconButtonContainerStyles}>
           <div css={verticalCenterTextStyles}>
             <label htmlFor="suitability-aoi-select-input">
@@ -445,7 +289,7 @@ function StagingAreas() {
           </div>
           <div css={layerButtonContainerStyles}>
             <div>
-              {stagingAreaLayer && (
+              {contamMapLayer && (
                 <Fragment>
                   <button
                     css={iconButtonStyles}
@@ -456,7 +300,7 @@ function StagingAreas() {
                     <span className="sr-only">Delete Layer</span>
                   </button>
 
-                  {stagingAreaLayer.status !== 'published' && (
+                  {contamMapLayer.status !== 'published' && (
                     <button
                       css={iconButtonStyles}
                       title={editScenarioVisible ? 'Cancel' : 'Edit Layer'}
@@ -484,7 +328,7 @@ function StagingAreas() {
                     handleAdd();
                   } else {
                     // delete the newly added layer
-                    handleDelete(lastStagingAreaLayer);
+                    handleDelete(lastContamMapLayer);
                   }
                 }}
               >
@@ -503,8 +347,8 @@ function StagingAreas() {
           styles={reactSelectStyles as any}
           isDisabled={addScenarioVisible || editScenarioVisible}
           options={stagingLayers}
-          value={stagingAreaLayer}
-          onChange={(ev) => setStagingAreaLayer(ev as LayerType)}
+          value={contamMapLayer}
+          onChange={(ev) => setContamMapLayer(ev as LayerType)}
         />
       </div>
 
@@ -512,8 +356,8 @@ function StagingAreas() {
         <EditContaminationMapCharacterization
           aoiLayer={stagingAreaEdits}
           disabled={
-            stagingAreaLayer?.sketchLayer?.type === 'graphics' &&
-            stagingAreaLayer.sketchLayer.graphics.length === 0
+            contamMapLayer?.sketchLayer?.type === 'graphics' &&
+            contamMapLayer.sketchLayer.graphics.length === 0
           }
           editVisible={addScenarioVisible || editScenarioVisible}
           onSave={(saveResults) => {
@@ -534,7 +378,7 @@ function StagingAreas() {
             }}
             onContinue={() => {}}
             replaceGraphics={false}
-            sketchLayer={stagingAreaLayer?.sketchLayer}
+            sketchLayer={contamMapLayer?.sketchLayer}
           />
         </EditContaminationMapCharacterization>
       )}

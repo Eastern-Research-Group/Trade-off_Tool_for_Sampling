@@ -1,6 +1,8 @@
 import IconCalculator from '~icons/fa7-solid/calculator';
 import IconCog from '~icons/fa7-solid/cog';
 import IconLayerGroup from '~icons/fa7-solid/layer-group';
+import IconPencil from '~icons/fa7-solid/pencil';
+import IconPlus from '~icons/fa7-solid/plus';
 import IconThumbtack from '~icons/fa7-solid/thumbtack';
 import IconUpload from '~icons/fa7-solid/upload';
 import IconWrench from '~icons/fa7-solid/wrench';
@@ -79,22 +81,17 @@ export const deconPanels: PanelType[] = [
 export const adminPanels: PanelType[] = [
   {
     value: 'addData',
-    label: 'Add Data',
-    Icon: IconLayerGroup,
+    label: 'Add Contam Map',
+    Icon: IconPlus,
   },
   {
     value: 'additionalTools',
     label: 'Contam Map',
-    Icon: IconWrench,
+    Icon: IconPencil,
   },
   {
-    value: 'configureOutput',
-    label: 'Configure Output',
-    Icon: IconCog,
-  },
-  {
-    value: 'publish',
-    label: 'Publish Output',
+    value: 'save',
+    label: 'Save',
     Icon: IconUpload,
   },
 ];
@@ -180,7 +177,8 @@ export type PanelValueType =
   | 'decon'
   | 'calculate'
   | 'configureOutput'
-  | 'publish';
+  | 'publish'
+  | 'save';
 
 export type PanelType = {
   value: PanelValueType;

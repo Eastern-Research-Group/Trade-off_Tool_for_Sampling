@@ -122,7 +122,7 @@ function AdditionalTools({ appType }: Props) {
       <div css={sectionContainer}>
         <NavigationButton
           currentPanel="additionalTools"
-          includeSkipToPublish={true}
+          includeSkipToPublish={appType !== 'admin'}
         />
       </div>
     </div>

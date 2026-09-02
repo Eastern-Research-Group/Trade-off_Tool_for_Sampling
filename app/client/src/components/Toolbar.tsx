@@ -43,6 +43,7 @@ import { LayerType } from 'types/Layer';
 import { AppType } from 'types/Navigation';
 // styles
 import { appTheme, isDecon } from 'styles';
+import { isAdmin } from 'config/navigation';
 import {
   DefaultSymbolsType,
   PolygonSymbol,
@@ -1073,7 +1074,7 @@ function Toolbar({ appType }: Props) {
               <label htmlFor="dimension-3d">3D</label>
             </fieldset>
 
-            {!isDecon() && (
+            {!isDecon() && !isAdmin() && (
               <fieldset css={fieldsetStyles}>
                 <legend>
                   Shape
@@ -1160,26 +1161,28 @@ function Toolbar({ appType }: Props) {
               </Fragment>
             )}
 
-            <label css={switchLabelContainer}>
-              <span css={switchLabel}>Training Mode</span>
-              <Switch
-                checked={trainingMode}
-                onChange={(checked) => setTrainingMode(checked)}
-                ariaLabel="Training Mode"
-                onColor="#90ee90"
-                onHandleColor="#129c12"
-              />
-              <InfoIcon
-                cssStyles={infoIconStyles}
-                id="training-mode-switch"
-                tooltip={
-                  appType === 'decon'
-                    ? 'When Training Mode is enabled, the tool will simulate decontamination<br/>by creating a new contamination map reflecting decreased contamination<br/>based on the efficacy of selected decontamination technologies using<br/>the original contamination map values that are associated with a sampling plan.<br/>This allows users to test the effectiveness of a decon plan in a training setting.'
-                    : 'When Training Mode is enabled, the “Contamination Map”<br/>layer type option is enabled on the “Add Layer from File”<br/>of the “Add Data” tab and the “Include Contamination Map”<br/>option is enabled on the “Calculate Resources” tab. When<br/>Training Mode is enabled, the tool will simulate receiving<br/>analytical results by intersecting the contamination map<br/>layer values with sample points to allow users to test the<br/>effectiveness of a sampling plan in a training setting.'
-                }
-                place="bottom"
-              />
-            </label>
+            {!isAdmin() && (
+              <label css={switchLabelContainer}>
+                <span css={switchLabel}>Training Mode</span>
+                <Switch
+                  checked={trainingMode}
+                  onChange={(checked) => setTrainingMode(checked)}
+                  ariaLabel="Training Mode"
+                  onColor="#90ee90"
+                  onHandleColor="#129c12"
+                />
+                <InfoIcon
+                  cssStyles={infoIconStyles}
+                  id="training-mode-switch"
+                  tooltip={
+                    appType === 'decon'
+                      ? 'When Training Mode is enabled, the tool will simulate decontamination<br/>by creating a new contamination map reflecting decreased contamination<br/>based on the efficacy of selected decontamination technologies using<br/>the original contamination map values that are associated with a sampling plan.<br/>This allows users to test the effectiveness of a decon plan in a training setting.'
+                      : 'When Training Mode is enabled, the “Contamination Map”<br/>layer type option is enabled on the “Add Layer from File”<br/>of the “Add Data” tab and the “Include Contamination Map”<br/>option is enabled on the “Calculate Resources” tab. When<br/>Training Mode is enabled, the tool will simulate receiving<br/>analytical results by intersecting the contamination map<br/>layer values with sample points to allow users to test the<br/>effectiveness of a sampling plan in a training setting.'
+                  }
+                  place="bottom"
+                />
+              </label>
+            )}
 
             <label css={switchLabelContainer}>
               <span css={switchLabel}>Auto Zoom</span>
