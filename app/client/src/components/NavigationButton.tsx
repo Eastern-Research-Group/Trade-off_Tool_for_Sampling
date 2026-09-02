@@ -6,7 +6,9 @@ import { css } from '@emotion/react';
 import { NavigationContext } from 'contexts/Navigation';
 // types
 import {
+  adminPanels,
   deconPanels,
+  isAdmin,
   isDecon,
   PanelValueType,
   samplingPanels,
@@ -32,7 +34,11 @@ function NavigationButton({
 }: Props) {
   const { setGoTo } = useContext(NavigationContext);
 
-  const panelConfig = isDecon() ? deconPanels : samplingPanels;
+  const panelConfig = isAdmin()
+    ? adminPanels
+    : isDecon()
+      ? deconPanels
+      : samplingPanels;
   const currentIndex = panelConfig.findIndex(
     (panel) => panel.value === currentPanel,
   );

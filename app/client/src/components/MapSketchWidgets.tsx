@@ -530,6 +530,11 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
   useEffect(() => {
     if (!aoiSketchVM) return;
 
+    // For contamination-map sketch layers, prefer popup interaction over
+    // immediate vertex-edit activation on click.
+    aoiSketchVM.updateOnGraphicClick =
+      aoiSketchLayer?.layerType !== 'Contamination Map';
+
     if (
       ['additionalTools', 'decon', 'locateSamples', 'calculate'].includes(
         currentPanel?.value ?? '',
@@ -633,7 +638,8 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
           if (
             id?.includes('-sampling-mask') ||
             id?.includes('decon-mask') ||
-            id?.includes('staging-aoi')
+            id?.includes('staging-aoi') ||
+            id?.includes('contamination-map-aoi')
           ) {
             deactivateButtons();
           }
@@ -670,6 +676,21 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
               GLOBALID: uuid,
               OBJECTID: -1,
               TYPE: layerType,
+            };
+          } else if (id.includes('contamination-map-aoi')) {
+            layerType = 'Contamination Map';
+            const customAttributes = (sketchViewModel as any)
+              .totsDefaultAttributes;
+
+            graphic.attributes = {
+              PERMANENT_IDENTIFIER: uuid,
+              GLOBALID: uuid,
+              OBJECTID: -1,
+              TYPE: layerType,
+              CONTAMTYPE: 'chemical',
+              CONTAMVAL: 0,
+              CONTAMUNIT: 'cfu',
+              ...(customAttributes ?? {}),
             };
           } else {
             graphic.attributes = {
@@ -739,10 +760,16 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
 
           firstPoint = null;
 
-          if (appType === 'sampling' && !id.includes('-sampling-mask')) {
+          if (
+            (appType === 'sampling' && !id.includes('-sampling-mask')) ||
+            id.includes('contamination-map-aoi')
+          ) {
             // start next graphic
             setTimeout(() => {
-              sketchViewModel.create(graphic.attributes.ShapeType);
+              const createType = id.includes('contamination-map-aoi')
+                ? 'polygon'
+                : graphic.attributes.ShapeType;
+              sketchViewModel.create(createType);
             }, 100);
           }
           if (appType === 'decon') sketchViewModel.cancel();

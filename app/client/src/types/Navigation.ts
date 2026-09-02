@@ -1,7 +1,7 @@
 // types
 import { LayerTypeName } from 'types/Layer';
 
-export type AppType = 'decon' | 'sampling';
+export type AppType = 'admin' | 'decon' | 'sampling';
 
 export type LayerTypeOption = {
   label: string;

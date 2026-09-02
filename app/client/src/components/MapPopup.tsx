@@ -238,6 +238,35 @@ function MapPopup({
       setSaveStatus('none');
   }, [graphicElevation, elevation, saveStatus]);
 
+  const [graphicContamValue, setGraphicContamValue] = useState<number | null>(
+    null,
+  );
+  const [contamValue, setContamValue] = useState<number | null>(null);
+  useEffect(() => {
+    let allSame = true;
+    const firstValue = features?.[0]?.graphic?.attributes?.CONTAMVAL;
+    features.forEach((feature) => {
+      const tempValue = feature?.graphic?.attributes?.CONTAMVAL;
+      if (firstValue !== tempValue) allSame = false;
+    });
+
+    if (allSame && graphicContamValue !== (firstValue ?? null)) {
+      setGraphicContamValue(firstValue ?? null);
+      setContamValue(firstValue ?? null);
+      setSaveStatus('none');
+    }
+  }, [features, graphicContamValue]);
+
+  useEffect(() => {
+    setContamValue(graphicContamValue);
+  }, [features, graphicContamValue]);
+
+  useEffect(() => {
+    if (graphicContamValue !== contamValue && saveStatus === 'success') {
+      setSaveStatus('none');
+    }
+  }, [graphicContamValue, contamValue, saveStatus]);
+
   const [showMore, setShowMore] = useState(false);
 
   if (features?.length === 0) return null;
@@ -264,6 +293,13 @@ function MapPopup({
   const activeLayerId = activeLayer?.id
     .replace('-points', '')
     .replace('-hybrid', '');
+  const hasContamValueField = Object.prototype.hasOwnProperty.call(
+    features?.[0]?.graphic?.attributes ?? {},
+    'CONTAMVAL',
+  );
+  const isContaminationMapLayer =
+    (selectedLayer?.layerType === 'Contamination Map' || hasContamValueField) &&
+    appType === 'admin';
 
   // get the notes character limit from the defaultFields
   let notesCharacterLimit = 2000;
@@ -321,58 +357,93 @@ function MapPopup({
       )}
       {includeControls && activeLayer?.title !== 'Sketched Sampling Mask' && (
         <Fragment>
-          <div css={inputContainerStyles}>
-            <label htmlFor="layer-change-select-input">Layer:</label>
-            <Select
-              id="layer-change-select"
-              inputId="layer-change-select-input"
-              value={selectedLayer}
-              onChange={(ev) => {
-                setSaveStatus('none');
-                setSelectedLayer(ev as LayerType);
-              }}
-              options={layerOptions}
-              menuPortalTarget={document.body}
-              styles={reactSelectStyles as any}
-            />
-          </div>
-          <div>
-            <label htmlFor="graphic-elevation">Elevation (m): </label>
-            <br />
-            <input
-              id="graphic-elevation"
-              type="number"
-              css={noteStyles}
-              value={elevation}
-              onChange={(ev) => {
-                setSaveStatus('none');
-                setElevation(ev.target.valueAsNumber);
-              }}
-            />
-          </div>
-          <div>
-            <label htmlFor="graphic-note">Note: </label>
-            <br />
-            <textarea
-              id="graphic-note"
-              css={noteStyles}
-              value={note}
-              maxLength={notesCharacterLimit}
-              placeholder={
-                !allNotesEmpty && !allNotesSame && fieldInfos.length === 0
-                  ? `${appType === 'decon' ? 'Decon applications' : 'Samples'} have different notes...`
-                  : ''
-              }
-              onChange={(ev) => {
-                setSaveStatus('none');
-                setNote(ev.target.value);
-              }}
-            />
-            <br />
-            <span>
-              {note.length} / {notesCharacterLimit} characters
-            </span>
-          </div>
+          {isContaminationMapLayer ? (
+            <div>
+              <label htmlFor="graphic-contam-value">Activity: </label>
+              <br />
+              <input
+                id="graphic-contam-value"
+                type="number"
+                css={noteStyles}
+                value={contamValue ?? ''}
+                onChange={(ev) => {
+                  setSaveStatus('none');
+                  const value = ev.target.value;
+                  setContamValue(value === '' ? null : Number(value));
+                }}
+              />
+            </div>
+          ) : (
+            <Fragment>
+              <div>
+                <label htmlFor="graphic-contam-value">Activity: </label>
+                <br />
+                <input
+                  id="graphic-contam-value"
+                  type="number"
+                  css={noteStyles}
+                  value={contamValue ?? ''}
+                  onChange={(ev) => {
+                    setSaveStatus('none');
+                    const value = ev.target.value;
+                    setContamValue(value === '' ? null : Number(value));
+                  }}
+                />
+              </div>
+              <div css={inputContainerStyles}>
+                <label htmlFor="layer-change-select-input">Layer:</label>
+                <Select
+                  id="layer-change-select"
+                  inputId="layer-change-select-input"
+                  value={selectedLayer}
+                  onChange={(ev) => {
+                    setSaveStatus('none');
+                    setSelectedLayer(ev as LayerType);
+                  }}
+                  options={layerOptions}
+                  menuPortalTarget={document.body}
+                  styles={reactSelectStyles as any}
+                />
+              </div>
+              <div>
+                <label htmlFor="graphic-elevation">Elevation (m): </label>
+                <br />
+                <input
+                  id="graphic-elevation"
+                  type="number"
+                  css={noteStyles}
+                  value={elevation}
+                  onChange={(ev) => {
+                    setSaveStatus('none');
+                    setElevation(ev.target.valueAsNumber);
+                  }}
+                />
+              </div>
+              <div>
+                <label htmlFor="graphic-note">Note: </label>
+                <br />
+                <textarea
+                  id="graphic-note"
+                  css={noteStyles}
+                  value={note}
+                  maxLength={notesCharacterLimit}
+                  placeholder={
+                    !allNotesEmpty && !allNotesSame && fieldInfos.length === 0
+                      ? `${appType === 'decon' ? 'Decon applications' : 'Samples'} have different notes...`
+                      : ''
+                  }
+                  onChange={(ev) => {
+                    setSaveStatus('none');
+                    setNote(ev.target.value);
+                  }}
+                />
+                <br />
+                <span>
+                  {note.length} / {notesCharacterLimit} characters
+                </span>
+              </div>
+            </Fragment>
+          )}
           {!allNotesEmpty &&
             graphicNote !== note &&
             fieldInfos.length === 0 && (
@@ -390,7 +461,8 @@ function MapPopup({
               disabled={
                 graphicNote === note &&
                 activeLayerId === selectedLayer?.layerId &&
-                graphicElevation === elevation
+                graphicElevation === elevation &&
+                graphicContamValue === contamValue
               }
               onClick={async (_ev) => {
                 // set the notes
@@ -407,6 +479,13 @@ function MapPopup({
                       setGeometryZValues(feature.graphic.geometry, elevation);
                     });
                     setGraphicElevation(elevation);
+                  }
+
+                  if (graphicContamValue !== contamValue) {
+                    features.forEach((feature) => {
+                      feature.graphic.attributes['CONTAMVAL'] = contamValue;
+                    });
+                    setGraphicContamValue(contamValue);
                   }
 
                   // move the graphic if it is on a different layer
@@ -427,7 +506,10 @@ function MapPopup({
                       'Move',
                       selectedLayer,
                     );
-                  } else if (graphicElevation !== elevation) {
+                  } else if (
+                    graphicElevation !== elevation ||
+                    graphicContamValue !== contamValue
+                  ) {
                     onClick(
                       appType,
                       edits,

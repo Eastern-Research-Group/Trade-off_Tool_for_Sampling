@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
 
 import { css } from '@emotion/react';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { Fragment, useContext, useEffect, useState } from 'react';
 // components
 import FilePanel from 'components/FilePanel';
 import SearchPanel from 'components/SearchPanel';
@@ -63,20 +63,27 @@ function AddData({ appType }: Props) {
     <div css={panelContainer}>
       <div>
         <h2>Add Data</h2>
-        <label htmlFor="add-data-select" className="sr-only">
-          From
-        </label>
-        <Select
-          inputId="add-data-select"
-          css={panelSelectStyles}
-          styles={reactSelectStyles as any}
-          value={location}
-          onChange={(ev) => setLocation(ev as LocationType)}
-          options={addFromOptions}
-        />
-        {location.value === 'search' && <SearchPanel appType={appType} />}
-        {location.value === 'url' && <URLPanel />}
-        {location.value === 'file' && <FilePanel appType={appType} />}
+
+        {appType === 'admin' ? (
+          <FilePanel appType={appType} />
+        ) : (
+          <Fragment>
+            <label htmlFor="add-data-select" className="sr-only">
+              From
+            </label>
+            <Select
+              inputId="add-data-select"
+              css={panelSelectStyles}
+              styles={reactSelectStyles as any}
+              value={location}
+              onChange={(ev) => setLocation(ev as LocationType)}
+              options={addFromOptions}
+            />
+            {location.value === 'search' && <SearchPanel appType={appType} />}
+            {location.value === 'url' && <URLPanel />}
+            {location.value === 'file' && <FilePanel appType={appType} />}
+          </Fragment>
+        )}
       </div>
       <NavigationButton currentPanel="addData" />
     </div>

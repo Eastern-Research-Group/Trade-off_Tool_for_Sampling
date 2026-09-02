@@ -304,7 +304,11 @@ function FilePanel({ appType }: Props) {
   const [
     layerType,
     setLayerType, //
-  ] = useState<LayerSelectType | null>(null);
+  ] = useState<LayerSelectType | null>(
+    appType === 'admin'
+      ? (layerOptions.find((o) => o.value === 'Contamination Map') ?? null)
+      : null,
+  );
 
   // Handle navigation options
   useEffect(() => {
@@ -973,8 +977,14 @@ function FilePanel({ appType }: Props) {
     );
     setNewLayerName(layerName);
 
-    const visible = layerType.value === 'Contamination Map' ? false : true;
-    const listMode = layerType.value === 'Contamination Map' ? 'hide' : 'show';
+    const visible =
+      layerType.value === 'Contamination Map' && appType !== 'admin'
+        ? false
+        : true;
+    const listMode =
+      layerType.value === 'Contamination Map' && appType !== 'admin'
+        ? 'hide'
+        : 'show';
     const layerUuid = generateUUID();
     const graphicsLayer = new GraphicsLayer({
       id: layerUuid,
@@ -1240,7 +1250,10 @@ function FilePanel({ appType }: Props) {
       }
 
       // zoom to the layer unless it is a contamination map
-      if (graphics.length > 0 && layerType.value !== 'Contamination Map') {
+      if (
+        graphics.length > 0 &&
+        (layerType.value !== 'Contamination Map' || appType === 'admin')
+      ) {
         if (selectedScenario && groupLayer && isSamplesOrVsp) {
           if (layerToAdd.sketchLayer) groupLayer.add(layerToAdd.sketchLayer);
           if (layerToAdd.pointsLayer) {
@@ -1485,27 +1498,31 @@ function FilePanel({ appType }: Props) {
       (option) => option.value !== 'Samples',
     );
   }
-  if (!trainingMode)
+  if (!trainingMode && appType !== 'admin')
     selectLayerOptions = selectLayerOptions.filter(
       (option) => option.value !== 'Contamination Map',
     );
 
   return (
     <div css={searchContainerStyles}>
-      <label htmlFor="layer-type-select-input">Layer Type</label>
-      <Select
-        id="layer-type-select"
-        inputId="layer-type-select-input"
-        css={selectStyles}
-        styles={reactSelectStyles as any}
-        value={layerType}
-        onChange={(ev) => {
-          setLayerType(ev as LayerSelectType);
-          setUploadStatus('');
-          setError(null);
-        }}
-        options={selectLayerOptions}
-      />
+      {appType !== 'admin' && (
+        <Fragment>
+          <label htmlFor="layer-type-select-input">Layer Type</label>
+          <Select
+            id="layer-type-select"
+            inputId="layer-type-select-input"
+            css={selectStyles}
+            styles={reactSelectStyles as any}
+            value={layerType}
+            onChange={(ev) => {
+              setLayerType(ev as LayerSelectType);
+              setUploadStatus('');
+              setError(null);
+            }}
+            options={selectLayerOptions}
+          />
+        </Fragment>
+      )}
       {!layerType ? (
         <Fragment>
           <p css={sectionParagraph}>Locate the file you want to import.</p>

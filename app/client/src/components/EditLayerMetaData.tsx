@@ -1341,6 +1341,233 @@ export function EditAoiCharacterization({
   );
 }
 
+// --- components (EditContaminationMapCharacterization) ---
+type EditContaminationMapProps = {
+  aoiLayer: LayerEditsType;
+  children?: ReactNode;
+  disabled?: boolean;
+  editVisible?: boolean;
+  initialStatus?: SaveStatusType;
+  onSave?: (saveResults?: SaveResultsType) => void;
+};
+
+export function EditContaminationMapCharacterization({
+  aoiLayer,
+  children,
+  disabled = false,
+  editVisible,
+  initialStatus = 'none',
+  onSave,
+}: EditContaminationMapProps) {
+  const {
+    portal,
+    signedIn, //
+  } = useContext(AuthenticationContext);
+  const { setEdits, setLayers } = useContext(SketchContext);
+  const { setManualConfigureOutput } = useContext(PublishContext);
+
+  const [aoiCharName, setAoiCharName] = useState('');
+  const [aoiCharDescription, setAoiCharDescription] = useState('');
+
+  const [
+    saveStatus,
+    setSaveStatus, //
+  ] = useState<SaveResultsType>({
+    status: initialStatus,
+    name: '',
+  });
+
+  useEffect(() => {
+    setSaveStatus({
+      status: initialStatus,
+      name: aoiLayer.name,
+    });
+  }, [aoiLayer, initialStatus]);
+
+  const [lastAoiLayer, setLastAoiLayer] = useState<LayerEditsType | null>(null);
+  useEffect(() => {
+    if (aoiLayer.layerId === lastAoiLayer?.layerId) return;
+    setAoiCharName(aoiLayer.name);
+    setAoiCharDescription(aoiLayer.description ?? '');
+    setLastAoiLayer(aoiLayer);
+  }, [aoiLayer, lastAoiLayer]);
+
+  useEffect(() => {
+    setSaveStatus({
+      status: initialStatus,
+      name: aoiLayer.name,
+    });
+  }, [aoiCharName, aoiCharDescription, aoiLayer, initialStatus]);
+
+  const handleSave = () => {
+    // set edits
+    setEdits((edits) => {
+      const aoiLayerEdit = edits.edits.find(
+        (edit) =>
+          edit.layerId === aoiLayer.layerId &&
+          edit.type === 'layer' &&
+          edit.layerType === 'Contamination Map',
+      ) as LayerEditsType | undefined;
+      if (!aoiLayerEdit) return edits;
+
+      aoiLayerEdit.name = aoiCharName;
+      aoiLayerEdit.label = aoiCharName;
+      aoiLayerEdit.description = aoiCharDescription;
+
+      return {
+        count: edits.count + 1,
+        edits: edits.edits,
+      };
+    });
+
+    // set layers
+    setLayers((layers) => {
+      const aoiLayerEdit = layers.find(
+        (layer) => layer.layerId === aoiLayer.layerId,
+      );
+      if (!aoiLayerEdit) return layers;
+
+      aoiLayerEdit.label = aoiCharName;
+      aoiLayerEdit.name = aoiCharName;
+      if (aoiLayerEdit.sketchLayer)
+        aoiLayerEdit.sketchLayer.title = aoiCharName;
+
+      return layers;
+    });
+
+    // set selected aoi chars
+    setManualConfigureOutput((output) => {
+      const aoiChar = output?.selectedStagingAreas?.find(
+        (char) => char.value === aoiLayer.layerId,
+      );
+      if (aoiChar) aoiChar.label = aoiCharName;
+      return output;
+    });
+
+    const saveStatus: SaveResultsType = {
+      status: 'success',
+      name: aoiCharName,
+    };
+    setSaveStatus(saveStatus);
+    if (onSave) onSave(saveStatus);
+  };
+
+  return (
+    <Fragment>
+      {(editVisible === undefined || editVisible) && (
+        <Fragment>
+          <label htmlFor="contamination-map-name-input">
+            Contamination Map Name
+          </label>
+          <input
+            id="contamination-map-name-input"
+            css={inputStyles}
+            maxLength={90}
+            placeholder="Enter Contamination Map Name"
+            value={aoiCharName}
+            onChange={(ev) => setAoiCharName(ev.target.value)}
+          />
+          <label htmlFor="contamination-map-description-input">
+            Contamination Map Description
+          </label>
+          <input
+            id="contamination-map-description-input"
+            css={inputStyles}
+            maxLength={2048}
+            placeholder="Enter Contamination Map Description (2048 characters)"
+            value={aoiCharDescription}
+            onChange={(ev) => setAoiCharDescription(ev.target.value)}
+          />
+        </Fragment>
+      )}
+
+      {children}
+
+      {saveStatus.status === 'fetching' && <LoadingSpinner />}
+      {saveStatus.status === 'failure' &&
+        webServiceErrorMessage(saveStatus.error)}
+      {saveStatus.status === 'name-not-available' &&
+        scenarioNameTakenMessage(saveStatus.name)}
+      {saveStatus.status === 'invalid-characters' &&
+        scenarioNameInvalidMessage(saveStatus.name)}
+      <div css={saveButtonContainerStyles}>
+        <button
+          css={saveButtonStyles(
+            saveStatus.status === 'success' ? 'none' : saveStatus.status,
+          )}
+          onClick={() => {
+            setSaveStatus({
+              status: 'fetching',
+              name: aoiCharName,
+            });
+
+            // if the user is signed in, go ahead and check if the
+            // service (scenario) name is availble before continuing
+            isServiceNameAvailable(portal, signedIn, aoiCharName)
+              .then((res: any) => {
+                if (res.error) {
+                  const saveStatus: SaveResultsType = {
+                    status: 'failure',
+                    name: aoiCharName,
+                    error: {
+                      error: createErrorObject(res),
+                      message: res.error.message,
+                    },
+                  };
+                  setSaveStatus(saveStatus);
+                  if (onSave) onSave(saveStatus);
+                  return;
+                }
+
+                if (!res.available) {
+                  const saveStatus: SaveResultsType = {
+                    status: res.problem ?? 'name-not-available',
+                    name: aoiCharName,
+                  };
+                  setSaveStatus(saveStatus);
+                  if (onSave) onSave(saveStatus);
+                  return;
+                }
+
+                handleSave();
+              })
+              .catch((err: any) => {
+                console.error('isServiceNameAvailable error', err);
+                const saveStatus: SaveResultsType = {
+                  status: 'failure',
+                  name: aoiCharName,
+                  error: {
+                    error: createErrorObject(err),
+                    message: err.message,
+                  },
+                };
+                setSaveStatus(saveStatus);
+                if (onSave) onSave(saveStatus);
+
+                window.logErrorToGa(err);
+              });
+          }}
+          disabled={
+            disabled ||
+            (Boolean(children) && !aoiCharName) ||
+            (!Boolean(children) &&
+              aoiLayer.name === aoiCharName &&
+              aoiLayer.description === aoiCharDescription)
+          }
+        >
+          {failedStatuses.includes(saveStatus.status) ? (
+            <Fragment>
+              <IconExclamationTriangle /> Error
+            </Fragment>
+          ) : (
+            'Save'
+          )}
+        </button>
+      </div>
+    </Fragment>
+  );
+}
+
 // --- components (EditStagingAreaCharacterization) ---
 type EditStagingAreaProps = {
   aoiLayer: LayerEditsType;
