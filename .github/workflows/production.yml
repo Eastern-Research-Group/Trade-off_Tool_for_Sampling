@@ -64,6 +64,9 @@ jobs:
         run: |
           VITE_ARCGIS_CLIENT_ID="$VITE_ARCGIS_CLIENT_ID" \
             npm run build
+            cd build
+            cp -r * ../../server/app/public
+            rm -rf *
         working-directory: app/client
 
       - name: Remove unnecessary server app files
