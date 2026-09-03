@@ -1,3 +1,2 @@
-Sitemap: https://tots.epa.gov/sitemap.xml
 User-agent: *
-Disallow:
+Allow: /
