@@ -3,12 +3,12 @@ import { createHtmlPlugin } from 'vite-plugin-html';
 import Icons from 'unplugin-icons/vite';
 import istanbul from 'vite-plugin-istanbul';
 import react from '@vitejs/plugin-react';
-import viteTsconfigPaths from 'vite-tsconfig-paths';
 import { version } from './package.json';
 
 // https://vitejs.dev/config/
 export default ({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
+  const { VITE_SUBPATH } = process.env;
 
   const productionOnlyPlugins = [];
   if (mode === 'production') {
@@ -28,16 +28,18 @@ export default ({ mode }) => {
   }
 
   return defineConfig({
-    base: '/',
+    base: VITE_SUBPATH ? `${VITE_SUBPATH}/` : '/',
     build: {
-      outDir: 'build',
+      outDir: '../server/app/public',
+      emptyOutDir: false,
       sourcemap: true,
       rollupOptions: {
         output: {
           entryFileNames: `static/js/[name]-[hash].${version}.js`,
           chunkFileNames: `static/js/[name]-[hash].${version}.js`,
-          assetFileNames: ({ name }) => {
-            const css = /\.(css)$/.test(name ?? '');
+          assetFileNames: ({ names }) => {
+            const name = names?.[0] || '';
+            const css = /\.(css)$/.test(name);
             const font = /\.(woff|woff2|eot|ttf|otf)$/.test(name ?? '');
             const media = /\.(png|jpe?g|gif|svg|webp|webm|mp3)$/.test(name ?? ""); // prettier-ignore
             const type = css ? 'css/' : font ? 'fonts/' : media ? 'media/' : '';
@@ -52,12 +54,12 @@ export default ({ mode }) => {
     optimizeDeps: {
       include: ['react', 'react-dom'],
     },
+    resolve: {
+      tsconfigPaths: true,
+    },
     plugins: [
       react({
         jsxImportSource: '@emotion/react',
-        babel: {
-          plugins: ['@emotion/babel-plugin'],
-        },
       }),
       Icons({
         compiler: 'jsx',
@@ -67,7 +69,6 @@ export default ({ mode }) => {
         cypress: true,
         requireEnv: false,
       }),
-      viteTsconfigPaths(),
       ...productionOnlyPlugins,
     ],
     server: {

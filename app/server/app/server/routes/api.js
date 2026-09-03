@@ -123,18 +123,13 @@ module.exports = function (app) {
 
   // --- get static content from S3
   router.get('/lookupFiles', (req, res) => {
+    const metadataObj = logger.populateMetdataObjFromRequest(req);
     const { isLocal, isTest } = getEnvironment();
     const isLocalTest = isLocal || isTest;
     const s3BucketUrl = app.get('s3_bucket_url');
 
     // NOTE: static content files found in `app/server/app/public/data` directory
-    getFile(
-      s3BucketUrl,
-      'data/config/defaultGsg.gsg',
-      isLocalTest,
-      'arraybuffer',
-      'binary',
-    )
+    getFile(s3BucketUrl, 'data/config/defaultGsg.gsg', isLocalTest, 'arraybuffer', 'binary')
       .then((gsg) => {
         return isLocalTest ? gsg : gsg.data;
       })

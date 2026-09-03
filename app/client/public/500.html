@@ -7,10 +7,12 @@
     <meta name="MobileOptimized" content="width" />
     <meta name="HandheldFriendly" content="true" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Trade-off Tool for Sampling (TOTS) | US EPA</title>
+    <title>
+      Trade-off Tool for Sampling (TOTS)| Internal Server Error | US EPA
+    </title>
 
-    <link rel="canonical" href="" />
-    <link rel="shortlink" href="" />
+    <link rel="canonical" href="https://tots.epa.gov/500.html" />
+    <link rel="shortlink" href="https://tots.epa.gov/500.html" />
 
     <!--googleoff: snippet-->
     <meta name="keywords" content="" />
@@ -153,399 +155,16 @@
       crossorigin="anonymous"
     />
 
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#0071bc" />
     <!--googleoff: all-->
     <link rel="stylesheet" media="all" href="/epa-template-files/css/epa.css" />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css?family=Roboto+Slab&display=swap"
-    />
 
+    <!-- Style overrides for the EPA template -->
     <style>
-      /* bootstrap overrides */
-      a {
-        color: #0071bc;
-      }
-
-      body {
-        font-family:
-          'Source Sans Pro Web', 'Helvetica Neue', 'Helvetica', 'Roboto',
-          'Arial', sans-serif;
-      }
-
-      /* epa template overrides */
-      button {
-        background-color: #0071bc;
-        border: 0;
-        border-radius: 3px;
-        color: #fff;
-        cursor: pointer;
-        display: inline-block;
-        font-weight: bold;
-        line-height: 1;
-        margin: 0 0 1.5em;
-        padding: 0.5882em 1.1765em;
-        text-align: center;
-        text-decoration: none;
-        vertical-align: baseline;
-        white-space: normal;
-      }
-
-      button:not([disabled]):focus {
-        outline: none;
-      }
-
-      li {
-        margin-bottom: unset;
-      }
-
-      ul {
-        margin: unset;
-      }
-
-      ul:last-child {
-        margin-bottom: unset;
-      }
-
-      strong {
-        font-weight: bold;
-      }
-
-      table {
-        font-size: inherit;
-      }
-
-      table td,
-      table th {
-        background-color: inherit;
-        border: 0;
-        border-top: 1px solid #dee2e6;
-      }
-
-      table thead th {
-        background-color: inherit;
-      }
-
-      .disclaimer {
-        background: #f1f1f1;
-        display: block;
-        font-family:
-          'Source Sans Pro', 'Helvetica Neue', 'Helvetica', 'Roboto', 'Arial',
-          sans-serif;
-        font-size: 15px;
-        margin: 0 0 1.5em;
-        padding: 0.75em 1.5em;
-        word-wrap: break-word;
-      }
-
-      .exit-disclaimer {
-        background-color: #aeb0b5;
-        border-radius: 3px;
-        color: #323a45 !important;
-        display: inline-block;
-        font-size: 88.2352941176%;
-        margin: 0 0.3333333333em;
-        padding: 0.0666666667em 0.4666666667em;
-        text-decoration: none;
-        text-transform: uppercase;
-      }
-
-      .external-link__tag {
-        display: inline-block;
-        font-size: 0.675rem;
-        margin-left: 0.25em;
-        padding: 0 0.5em;
-        text-decoration: none;
-      }
-
-      .l-header {
-        z-index: 90;
-      }
-
-      .unsupportedMessageContainer {
-        position: -webkit-sticky; /* Safari */
-        position: sticky;
-        top: 0;
-        z-index: 90;
-        display: none;
-        width: calc(100% + 34px);
-        margin-left: -17px;
-      }
-
-      .unsupportedErrorBox {
-        padding: 1rem;
-        text-align: center;
-        border-color: #f5c6cb;
-        color: #721c24;
-        background-color: #f8d7da;
-      }
-
-      .unsupportedMessage {
-        margin-right: 1rem;
-      }
-
-      .unsupportedCloseButton {
-        position: absolute;
-        top: 0;
-        right: 0;
-        padding: 0;
-        border: none;
-        border-radius: 0;
-        width: 1.5rem;
-        height: 1.5rem;
-        color: white;
-        background-color: rgba(0, 0, 0, 0.5);
-      }
-
-      @media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
-        /* IE10 and IE11 styles */
-        .unsupportedMessageContainer {
-          display: block;
-        }
-      }
-
-      .usa-tag:only-of-type,
-      .new:only-of-type::before {
-        margin-right: 0;
-      }
-
-      .usa-tag,
-      .new::before {
-        font-family:
-          Source Sans Pro Web,
-          'Noto Sans Arabic',
-          'Noto Sans BN homepage',
-          'Noto Sans GU homepage',
-          'Noto Sans KR homepage',
-          'Noto Sans SC homepage',
-          'Noto Sans BN',
-          'Noto Sans GU',
-          'Noto Sans KR',
-          'Noto Sans SC',
-          'Noto Sans TC',
-          'Helvetica Neue',
-          Helvetica,
-          Arial,
-          sans;
-        font-size: 0.93rem;
-        color: #fff;
-        text-transform: uppercase;
-        background-color: #565c65;
-        border-radius: 2px;
-        margin-right: 0.25rem;
-        padding: 1px 0.5rem;
-      }
-
-      .u-visually-hidden {
-        clip: rect(1px, 1px, 1px, 1px) !important;
-        height: 1px !important;
-        overflow: hidden !important;
-        position: absolute !important;
-        width: 1px !important;
-        word-wrap: normal !important;
+      [tabindex='-1']:focus {
+        outline: none !important;
       }
     </style>
-
-    <!-- IE9 and below styles -->
-    <!--[if IE]>
-      <style>
-        .unsupportedMessageContainer {
-          display: block;
-        }
-      </style>
-    <![endif]-->
-
-    <!-- Set the page title dynamically -->
-    <script>
-      // map pathnames to a formatted title for SEO purposes
-      const pathnameMapping = {
-        default: {
-          title: 'Trade-off Tool for Sampling (TOTS) | US EPA',
-          description:
-            'Trade-off Tool for Sampling (TOTS) is JavaScript Web Mapping application to create a sampling strategy for chemical and radiological contamination characterization easily accessible to field collection applications via the EPA GeoPlatform.',
-          webArea: 'TOTS',
-        },
-        admin: {
-          title: 'TOTS Admin | US EPA',
-          description:
-            'TOTS Admin is JavaScript Web Mapping application to create a decontamination strategy for chemical and radiological contamination characterization easily accessible to the EPA GeoPlatform.',
-          webArea: 'TOTS Admin',
-        },
-        decon: {
-          title:
-            'Trade-off Tool for Decontamination Strategies (TODS) | US EPA',
-          description:
-            'Trade-off Tool for Decontamination Strategies (TODS) is JavaScript Web Mapping application to create a decontamination strategy for chemical and radiological contamination characterization easily accessible to the EPA GeoPlatform.',
-          webArea: 'TODS',
-        },
-      };
-
-      function setMetaItem(attribute, attributeValue, content) {
-        // remove old dc title tags if necessary
-        let oldTag = document.querySelector(
-          '[' + attribute + "='" + attributeValue + "']",
-        );
-        if (oldTag) oldTag.remove();
-
-        // create dc title tag
-        const newTag = document.createElement('meta');
-        newTag.setAttribute(attribute, attributeValue);
-        newTag.content = content;
-        document.getElementsByTagName('head')[0].appendChild(newTag);
-      }
-
-      // update page title and description using mapping
-      function setPageInfo(pathnameMapping) {
-        const pathname = window.location.pathname.split('/')[1];
-        const pageInfo = pathnameMapping[pathname] || pathnameMapping.default;
-        document.title = pageInfo.title;
-
-        setMetaItem('name', 'DC.title', pageInfo.title);
-        setMetaItem('name', 'description', pageInfo.description);
-        setMetaItem('name', 'DC.description', pageInfo.description);
-        setMetaItem('property', 'WebArea', pageInfo.webArea);
-        setMetaItem('property', 'og:title', pageInfo.title);
-      }
-
-      setPageInfo(pathnameMapping); // set page title when page loads
-
-      // set page title when window location changes
-      window.addEventListener('locationchange', function (event) {
-        setPageInfo(pathnameMapping);
-      });
-    </script>
-
-    <script>
-      /**
-       * This script is used for displaying a "browser unsupported"
-       * message. This script polls for the unsupported-browser-message
-       * div, when available it then checks the browser version and
-       * displays the message if necessary.
-       */
-      const appId =
-        window.location.pathname.endsWith('/decon') ||
-        window.location.pathname.endsWith('/decon/')
-          ? 'tods'
-          : 'tots';
-
-      const viteSubpath = '%VITE_SUBPATH%';
-      const baseUrl =
-        window.location.origin +
-        (viteSubpath !== '%VITE_SUBPATH%' ? viteSubpath : '');
-      function unsupportedBrowserMessage() {
-        const unsupportedMessage = document.getElementById(
-          `unsupported-browser-message-${appId}`,
-        );
-
-        if (unsupportedMessage) {
-          // If fetch is supported, hide the unsupported browser message until
-          // we can get the supported browsers lookup file.
-          if ('fetch' in window) {
-            unsupportedMessage.style.display = 'none';
-          }
-
-          // Parse the user agent string to determine which browser the user is using.
-          const { browserName, browserVersion } = (function () {
-            const ua = navigator.userAgent;
-
-            let item;
-            let M =
-              ua.match(
-                /(opera|chrome|safari|firefox|edg|msie|trident(?=\/))\/?\s*(\d+)/i,
-              ) || [];
-            if (/trident/i.test(M[1])) {
-              item = /\brv[ :]+(\d+)/g.exec(ua) || [];
-              return {
-                browserName: 'IE',
-                browserVersion: parseInt(item[1]) || 0,
-              };
-            }
-            if (M[1] === 'Chrome') {
-              item = ua.match(/\b(Edg)\/(\d+)/);
-              if (item != null) {
-                item = item.slice(1);
-                return {
-                  browserName: item[0].replace('Edg', 'Edge'),
-                  browserVersion: parseInt(item[1]) || 0,
-                };
-              }
-            }
-
-            M = M[2]
-              ? [M[1], M[2]]
-              : [navigator.appName, navigator.appVersion, '-?'];
-            if ((item = ua.match(/version\/(\d+)/i)) != null)
-              M.splice(1, 1, item[1]);
-
-            return {
-              browserName: M[0],
-              browserVersion: parseInt(M[1]) || 0,
-            };
-          })();
-
-          // fetch the supported browser list lookup file
-          const url = `${baseUrl}/api/supportedBrowsers`;
-          fetch(url)
-            .then((response) => {
-              if (response.status === 200) {
-                // parse the json
-                response.json().then((json) => {
-                  let browserSupported = false;
-
-                  // determine if the user's browser is supported
-                  if (
-                    browserName === 'Chrome' &&
-                    browserVersion >= json.chrome
-                  ) {
-                    browserSupported = true;
-                  }
-                  if (
-                    browserName === 'Firefox' &&
-                    browserVersion >= json.firefox
-                  ) {
-                    browserSupported = true;
-                  }
-                  if (
-                    browserName === 'Safari' &&
-                    browserVersion >= json.safari
-                  ) {
-                    browserSupported = true;
-                  }
-                  if (browserName === 'Edge' && browserVersion >= json.edge) {
-                    browserSupported = true;
-                  }
-
-                  // hide/show the unsupported browser message
-                  unsupportedMessage.style.display = browserSupported
-                    ? 'none'
-                    : 'block';
-                });
-              } else {
-                // show the unsupported browser message
-                unsupportedMessage.style.display = 'block';
-              }
-            })
-            .catch((err) => {
-              console.error(err);
-
-              // show the unsupported browser message
-              unsupportedMessage.style.display = 'block';
-            });
-        } else {
-          setTimeout(unsupportedBrowserMessage, 15);
-        }
-      }
-
-      // Allows the user to close the unsupported message.
-      function hideUnsupportedMessage() {
-        const unsupportedMessage = document.getElementById(
-          `unsupported-browser-message-${appId}`,
-        );
-        unsupportedMessage.style.display = 'none';
-      }
-
-      unsupportedBrowserMessage();
-    </script>
 
     <!-- Google Tag Manager -->
     <script>
@@ -561,211 +180,9 @@
       })(window, document, 'script', 'dataLayer', 'GTM-L8ZB');
     </script>
     <!-- End Google Tag Manager -->
-
-    <!-- Google Analytics (GA4) -->
-    <script>
-      const loc = window.location;
-
-      function configureGoogleAnalytics(id, debug = false) {
-        const gaScript = document.createElement('script');
-        gaScript.async = 1;
-        gaScript.src = `//www.googletagmanager.com/gtag/js?id=${id}`;
-
-        const firstScript = document.getElementsByTagName('script')[0];
-        firstScript.parentNode.insertBefore(gaScript, firstScript);
-
-        window.dataLayer = window.dataLayer || [];
-        window.gtag =
-          window.gtag ||
-          function () {
-            dataLayer.push(arguments);
-          };
-
-        gtag('js', new Date());
-
-        const options = { ...(debug && { debug_mode: true }) };
-        gtag('config', id, options);
-      }
-
-      // get origin for mapping calls
-      const origin =
-        loc.hostname === 'localhost'
-          ? `${loc.protocol}//${loc.hostname}:3002`
-          : loc.origin;
-
-      // initialize the googleAnalyticsMapping window object so the calls to get
-      // the services lookup file are logged.
-      window.googleAnalyticsMapping = [
-        {
-          wildcardUrl: `${origin}/api/lookupFiles`,
-          name: 's3 lookup - Config Files',
-        },
-      ];
-
-      let trackingId;
-      // Wrapper for logging to GA
-      function logToGa(name, parameters = {}) {
-        if (!window.gtag) return;
-
-        gtag('event', name, {
-          ...parameters,
-          ...(trackingId && { send_to: trackingId }),
-        });
-      }
-
-      function logErrorToGa(err, fatal = false) {
-        const description =
-          err instanceof Error
-            ? `${err.name}:${err.message}:${err.stack}`
-            : err;
-        window.logToGa('exception', {
-          description,
-          event_label: description,
-          fatal,
-        });
-      }
-
-      // Configure analytics destinations.
-      if (
-        window.location.hostname === 'tots.epa.gov' ||
-        window.location.hostname === 'tots-prod.app.cloud.gov'
-      ) {
-        //EPA (Production)
-        trackingId = 'G-2SEC4V3SK9';
-        configureGoogleAnalytics(trackingId);
-      } else if (window.location.hostname === 'tots-stage.app.cloud.gov') {
-        // Stage
-        trackingId = 'G-LN1VKQS4H5';
-        configureGoogleAnalytics(trackingId);
-      } else if (
-        window.location.hostname === 'tots-dev.app.cloud.gov' ||
-        window.location.hostname === 'localhost'
-      ) {
-        // Dev
-        trackingId = 'G-1H8Z9C3ZRX';
-        configureGoogleAnalytics(trackingId, true);
-      }
-
-      // create the locationChange event
-      const locationChangeEvent = new Event('locationchange');
-
-      // create the location change event listener
-      window.addEventListener('locationchange', function (event) {
-        logToGa('page_view', {
-          page_location: window.location,
-        });
-      });
-
-      // Modify the pushState, replaceState and popState events so they
-      // will trigger the locationchange event.
-      const pushState = history.pushState;
-      history.pushState = function () {
-        pushState.apply(history, arguments);
-        window.dispatchEvent(locationChangeEvent);
-      };
-      const replaceState = history.replaceState;
-      history.replaceState = function () {
-        replaceState.apply(this, arguments);
-        window.dispatchEvent(locationChangeEvent);
-      };
-      window.addEventListener('popstate', function () {
-        window.dispatchEvent(locationChangeEvent);
-      });
-
-      function wildcardIncludes(str, rule) {
-        const escapeRegex = (str) =>
-          str.replace(/([.*+?^=!:${}()|\]\\])/g, '\\$1');
-        return new RegExp(
-          '^' + rule.split('*').map(escapeRegex).join('.*') + '$',
-        ).test(str);
-      }
-
-      window.addEventListener('click', function (event) {
-        //Button clicks
-        if (event.target.onclick && event.target.textContent) {
-          const text = event.target.textContent.trim();
-          const title = event.target.title.trim();
-
-          //Log to Google Analytics
-          const action = title
-            ? 'ord-tots1-' + text + ' - ' + title
-            : 'ord-tots1-' + text;
-          logToGa('button_click', {
-            event_action: action,
-            event_category: 'buttonClick',
-            event_label: window.location.pathname,
-          });
-        }
-
-        //Link clicks
-        if (
-          event.target.tagName.toLowerCase() === 'a' &&
-          event.target.target === '_blank'
-        ) {
-          const href = event.target.href;
-
-          // combine the web service and map service mappings
-          const mapping = window.googleAnalyticsMapping;
-          let name = '';
-          mapping.forEach((item) => {
-            if (!name && wildcardIncludes(href, item.wildcardUrl)) {
-              name = item.name;
-            }
-          });
-          const action =
-            'ord-tots1-' + (name ? name : event.target.text.trim());
-
-          const extension = href.split('.').pop;
-          const category =
-            window.location.hostname === event.target.hostname
-              ? //Part of the application
-                extension === '.pdf' || extension === '.zip'
-                ? 'Download'
-                : 'Internal'
-              : 'External'; //External EPA Hyperlink
-
-          //Log to Google Analytics
-          logToGa('link_click', {
-            event_action: action,
-            event_category: category,
-            event_label: href,
-          });
-        }
-      });
-
-      window.addEventListener('error', function (event) {
-        window.logErrorToGa(event.error ?? event.message, true);
-
-        return true;
-      });
-    </script>
-    <!-- End Google Analytics-->
   </head>
 
   <body class="" id="#top">
-    <!-- Hide header and footer elements if coming from iframe -->
-    <script>
-      const queryString = window.location.search;
-      const urlParams = new URLSearchParams(queryString);
-      if (urlParams.get('iframe') === 'true') {
-        document.querySelector('body').classList.add('iframe');
-      }
-    </script>
-    <style>
-      .iframe > section,
-      .iframe > aside,
-      .iframe > header,
-      .iframe > footer {
-        display: none;
-      }
-      @media (min-height: 675px) {
-        body {
-          overflow-y: hidden;
-        }
-      }
-    </style>
-    <!-- End hide header and footer elements if coming from iframe -->
-
     <!-- Google Tag Manager -->
     <noscript>
       <iframe
@@ -881,8 +298,6 @@
         </div>
       </div>
     </section>
-
-    <section class="usa-site-alert"></section>
 
     <header id="usa-header" class="l-header js-header-search">
       <div class="usa-overlay"></div>
@@ -1171,112 +586,39 @@
         </nav>
       </div>
     </header>
-    <!--
-      The `tabindex="-1"` was removed from the <section> element below
-      because that was causing the Esri search box on the locate tab
-      to not work.
-    -->
+
     <main id="main-content" class="main" role="main" tabindex="-1">
-      <div class="main-column clearfix">
-        <!--googleon:all-->
-        <div class="panel-pane pane-node-content" style="margin-bottom: 0">
-          <div class="pane-content">
-            <div class="node node-page clearfix view-mode-full">
-              <noscript>
-                You need to enable JavaScript to run this app.
-              </noscript>
-              <div
-                id="unsupported-browser-message-tots"
-                class="unsupportedMessageContainer"
-              >
-                <div class="unsupportedErrorBox">
-                  <div class="unsupportedMessage">
-                    <strong
-                      >You are using a browser that is not supported. Trade-off
-                      Tool for Sampling (TOTS) works best on the latest verions
-                      of Chrome, Safari, Edge, or Firfox.</strong
-                    >
-                    <br />
-                    Trade-off Tool for Sampling (TOTS) utilizes Esri's ArcGIS
-                    JavaScript API for advanced mapping features, which are not
-                    supported by this browser. For more information visit the
-                    following links:
-                    <a
-                      href="https://developers.arcgis.com/javascript/latest/system-requirements/#:~:text=Supported%20browsers&text=Firefox%2093%20or%20later,Safari%2014%20or%20later"
-                      >ArcGIS API for JavaScript System Requirements</a
-                    >
-                    and
-                    <a
-                      href="https://www.esri.com/arcgis-blog/products/arcgis/announcements/so-long-internet-explorer-11/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      >So Long Internet Explorer</a
-                    >.
-                    <a
-                      class="exit-disclaimer"
-                      href="https://www.epa.gov/home/exit-epa"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      EXIT
-                    </a>
-                  </div>
-                  <button
-                    class="unsupportedCloseButton"
-                    onClick="hideUnsupportedMessage();"
-                  >
-                    x
-                  </button>
-                </div>
+      <div class="l-page">
+        <div class="l-constrain">
+          <div class="l-page__header">
+            <div class="l-page__header-first">
+              <div class="web-area-title">
+                Trade-off Tool for Sampling (TOTS)
               </div>
-              <div
-                id="unsupported-browser-message-tods"
-                class="unsupportedMessageContainer"
-              >
-                <div class="unsupportedErrorBox">
-                  <div class="unsupportedMessage">
-                    <strong
-                      >You are using a browser that is not supported. Trade-off
-                      Tool for Decontamination Strategies (TODS) works best on
-                      the latest verions of Chrome, Safari, Edge, or
-                      Firfox.</strong
-                    >
-                    <br />
-                    Trade-off Tool for Decontamination Strategies (TODS)
-                    utilizes Esri's ArcGIS JavaScript API for advanced mapping
-                    features, which are not supported by this browser. For more
-                    information visit the following links:
-                    <a
-                      href="https://developers.arcgis.com/javascript/latest/system-requirements/#:~:text=Supported%20browsers&text=Firefox%2093%20or%20later,Safari%2014%20or%20later"
-                      >ArcGIS API for JavaScript System Requirements</a
-                    >
-                    and
-                    <a
-                      href="https://www.esri.com/arcgis-blog/products/arcgis/announcements/so-long-internet-explorer-11/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      >So Long Internet Explorer</a
-                    >.
-                    <a
-                      class="exit-disclaimer"
-                      href="https://www.epa.gov/home/exit-epa"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      EXIT
-                    </a>
-                  </div>
-                  <button
-                    class="unsupportedCloseButton"
-                    onClick="hideUnsupportedMessage();"
-                  >
-                    x
-                  </button>
-                </div>
-              </div>
-              <div id="root"></div>
+            </div>
+            <div
+              class="l-page__header-last display-flex flex-align-end flex-column"
+            >
+              <a class="menu-link" href="mailto:cgp@epa.gov">CONTACT US</a>
             </div>
           </div>
+
+          <article class="article" style="margin: 2rem 0; text-align: center">
+            <h1 class="page-title" style="font-size: 1.75rem; font-weight: 500">
+              Unfortunately, this web application is not available at this time.
+            </h1>
+            <div class="main-column">
+              <p style="padding-bottom: 0">
+                <a
+                  href="https://www.epa.gov/emergency-response-research/forms/contact-us-about-emergency-response-homeland-security-research"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Contact Us</a
+                >
+                if the problem persists.
+              </p>
+            </div>
+          </article>
         </div>
       </div>
     </main>
@@ -1531,12 +873,6 @@
       </div>
     </footer>
 
-    <a href="#top" class="back-to-top" title="Back to top" aria-hidden="true">
-      <svg class="back-to-top__icon" role="img" aria-label="">
-        <use href="/epa-template-files/images/sprite.artifact.svg#angle"></use>
-      </svg>
-    </a>
-
     <script src="/epa-template-files/js/once.min.js"></script>
     <script src="/epa-template-files/js/common.min.js"></script>
     <script src="/epa-template-files/js/scripts.min.js"></script>
@@ -1573,7 +909,5 @@
         fill: #fff;
       }
     </style>
-
-    <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>

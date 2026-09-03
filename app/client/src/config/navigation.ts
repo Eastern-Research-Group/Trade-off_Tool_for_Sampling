@@ -9,8 +9,8 @@ import IconWrench from '~icons/fa7-solid/wrench';
 // types
 import { LayerTypeOption } from 'types/Navigation';
 
-export const isAdmin = () => window.location.pathname.startsWith('/admin');
-export const isDecon = () => window.location.pathname.startsWith('/decon');
+export const isAdmin = () => window.location.pathname.endsWith('/admin') || window.location.pathname.endsWith('/admin/');
+export const isDecon = () => window.location.pathname.endsWith('/decon') || window.location.pathname.endsWith('/decon/');
 
 export const samplingPanels: PanelType[] = [
   {

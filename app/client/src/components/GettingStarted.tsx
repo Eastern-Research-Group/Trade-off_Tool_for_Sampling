@@ -14,6 +14,7 @@ import { useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 // styles
 import { colors, isDecon } from 'styles';
+import { getFullBaseUrl } from '../utils/utils';
 
 // --- styles (GettingStarted) ---
 const linkStyles = css`
@@ -65,9 +66,8 @@ type Props = {
 };
 
 function GettingStarted({ isOpen, children }: Props) {
-  const { VITE_SERVER_URL } = import.meta.env;
+  const baseUrl = getFullBaseUrl();
   const { simulationMode } = useContext(NavigationContext);
-  const baseUrl = VITE_SERVER_URL || window.location.origin;
   const services = useLookupFiles().data.services;
 
   const app = isDecon() ? 'tods' : 'tots';

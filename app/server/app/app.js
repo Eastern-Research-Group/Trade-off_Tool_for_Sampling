@@ -112,14 +112,16 @@ Enable CORS for local environment proxy use
 if (isLocal || isTest) {
   app.use(function (req, res, next) {
     res.header('Access-Control-Allow-Origin', '*');
-    res.header(
-      'Access-Control-Allow-Headers',
-      'Origin, X-Requested-With, Content-Type, Accept',
-    );
-    res.header('X-Frame-Options', 'allow-from http://localhost:3000/');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     next();
   });
 }
+
+// Set X-Frame-Options to sameorigin for all environments to use in response/slime city
+app.use(function (req, res, next) {
+  res.header('X-Frame-Options', 'SAMEORIGIN');
+  next();
+});
 
 function getUnauthorizedResponse(req) {
   return req.auth ? 'Invalid credentials' : 'No credentials provided';

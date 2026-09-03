@@ -221,6 +221,7 @@ export function useSessionStorage(appType: AppType) {
   useLayerSelectionsStorage(dbInitialized);
   useGenerateRandomMaskStorage(dbInitialized);
   useCalculateSettingsStorage(dbInitialized);
+  useCalculateResultsStorage(dbInitialized);
   useCurrentTabSettings(dbInitialized);
   useBasemapStorage2d(dbInitialized);
   useBasemapStorage3d(dbInitialized);
@@ -1319,6 +1320,47 @@ function useCalculateSettingsStorage(dbInitialized: boolean) {
     readDone,
     setOptions,
   ]);
+}
+
+// Uses browser storage for holding the current calculate settings.
+function useCalculateResultsStorage(dbInitialized: boolean) {
+  const key = 'calculate_results';
+  const { setOptions } = useContext(DialogContext);
+  const { calculateResults, setCalculateResults, calculateResultsDecon, setCalculateResultsDecon } =
+    useContext(CalculateContext);
+
+  type CalculateResultsType = {
+    calculateResults: object;
+    calculateResultsDecon: object;
+  };
+
+  // Reads the calculate settings from browser storage.
+  const [readInitialized, setReadInitialized] = useState(false);
+  const [readDone, setReadDone] = useState(false);
+  useEffect(() => {
+    if (!dbInitialized || readInitialized) return;
+
+    setReadInitialized(true);
+    readFromStorage(key).then((settings: CalculateResultsType | null | undefined) => {
+      setReadDone(true);
+      if (!settings) return;
+
+      setCalculateResults(settings.calculateResults);
+      setCalculateResultsDecon(settings.calculateResultsDecon);
+    });
+  }, [dbInitialized, readInitialized, setCalculateResults, setCalculateResultsDecon]);
+
+  // Saves the calculate settings to browser storage
+  useEffect(() => {
+    if (!readDone) return;
+
+    const settings: CalculateResultsType = {
+      calculateResults,
+      calculateResultsDecon,
+    };
+
+    writeToStorage(key, settings, setOptions);
+  }, [calculateResults, calculateResultsDecon, readDone, setOptions]);
 }
 
 // Uses browser storage for holding the current tab and current tab's options.
