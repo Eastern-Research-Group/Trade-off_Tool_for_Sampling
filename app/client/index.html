@@ -422,12 +422,16 @@
        * div, when available it then checks the browser version and
        * displays the message if necessary.
        */
-      const appId = window.location.pathname.endsWith('/decon')
-        ? 'tods'
-        : 'tots';
+      const appId =
+        window.location.pathname.endsWith('/decon') ||
+        window.location.pathname.endsWith('/decon/')
+          ? 'tods'
+          : 'tots';
 
-      const viteSubpath = "%VITE_SUBPATH%";
-      const baseUrl = window.location.origin + (viteSubpath !== "%VITE_SUBPATH%" ? viteSubpath : '');
+      const viteSubpath = '%VITE_SUBPATH%';
+      const baseUrl =
+        window.location.origin +
+        (viteSubpath !== '%VITE_SUBPATH%' ? viteSubpath : '');
       function unsupportedBrowserMessage() {
         const unsupportedMessage = document.getElementById(
           `unsupported-browser-message-${appId}`,
