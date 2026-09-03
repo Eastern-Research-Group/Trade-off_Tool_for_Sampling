@@ -106,10 +106,6 @@ const sectionContainer = css`
   padding: 20px;
 `;
 
-const sectionContainerMessageWidthOnly = css`
-  padding: 0 10px;
-`;
-
 const layerSelectStyles = css`
   margin-bottom: 10px;
 `;
@@ -177,12 +173,13 @@ const iconButtonStyles = css`
 `;
 
 const deleteButtonStyles = css`
-  width: 125px;
+  height: 70px;
+  width: 95px;
   margin-bottom: 0;
-  padding: 0.25em 0;
+  padding: 0.25em;
   color: black;
   background-color: white;
-  border-radius: 0;
+  border: 1px solid #ccc;
   line-height: 16px;
   text-decoration-line: none;
   font-weight: bold;
@@ -440,13 +437,15 @@ function CreateDeconPlan() {
       <div>
         <div css={sectionContainer}>
           <h2 css={headerStyles}>Create Decon Plan</h2>
-          <div css={headerContainer}>
-            <button css={deleteButtonStyles} onClick={startOver}>
-              <IconRedoAlt />
-              <br />
-              Start Over
-            </button>
-          </div>
+          {!simulationMode && (
+            <div css={headerContainer}>
+              <button css={deleteButtonStyles} onClick={startOver}>
+                <IconRedoAlt />
+                <br />
+                Start Over
+              </button>
+            </div>
+          )}
         </div>
         <div css={lineSeparatorStyles} />
         <div css={sectionContainer}>
@@ -744,13 +743,11 @@ function CreateDeconPlan() {
               </p>
 
               {simulationMode && (
-                <div css={sectionContainerMessageWidthOnly}>
-                  <MessageBox
-                    title="Training Tip"
-                    message="Areas of interest represent decision units. Different areas may require different treatment strategies because they contain different surfaces, infrastructure, or contamination conditions."
-                    severity="training"
-                  />
-                </div>
+                <MessageBox
+                  title="Training Tip"
+                  message="Areas of interest represent decision units. Different areas may require different treatment strategies because they contain different surfaces, infrastructure, or contamination conditions."
+                  severity="training"
+                />
               )}
 
               <div>
