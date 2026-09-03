@@ -359,6 +359,7 @@ function NavBar({ appType, height }: Props) {
     setPanelExpanded,
     resultsExpanded,
     setResultsExpanded,
+    simulationMode,
   } = useContext(NavigationContext);
   const {
     defaultConfigureOutput,
@@ -379,13 +380,33 @@ function NavBar({ appType, height }: Props) {
 
   useAutoConfigureOutput();
 
-  const [panels] = useState(
+  const [panels, setPanels] = useState(
     appType === 'admin'
       ? adminPanels
       : appType === 'decon'
         ? deconPanels
         : samplingPanels,
   );
+
+  useEffect(() => {
+    function updatePanels() {
+      const newPanels = (
+        appType === 'admin'
+          ? adminPanels
+          : appType === 'decon'
+            ? deconPanels
+            : samplingPanels
+      ).filter(
+        (p) =>
+          !simulationMode ||
+          (simulationMode && !['configureOutput', 'publish'].includes(p.value)),
+      );
+
+      if (JSON.stringify(newPanels) !== JSON.stringify(panels))
+        setPanels(newPanels);
+    }
+    updatePanels();
+  }, [appType, panels, simulationMode]);
 
   const toggleExpand = useCallback(
     (panel: PanelType, panelIndex: number) => {

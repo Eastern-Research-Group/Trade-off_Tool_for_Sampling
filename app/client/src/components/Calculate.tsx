@@ -186,6 +186,13 @@ function getOperationSummary(
 }
 
 // --- styles (Calculate) ---
+const containerStyles = css`
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-top: 10px;
+`;
+
 const inputStyles = css`
   width: 100%;
   height: 36px;
@@ -193,6 +200,38 @@ const inputStyles = css`
   padding-left: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
+`;
+
+const simulationModalOverlayStyles = css`
+  &[data-reach-dialog-overlay] {
+    z-index: 101;
+    background-color: ${colors.black(0.75)};
+  }
+`;
+
+const simulationModalStyles = css`
+  color: ${colors.black()};
+  background-color: ${colors.white()};
+
+  &[data-reach-dialog-content] {
+    position: relative;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    padding: 1.5rem;
+    width: auto;
+    max-width: 35rem;
+  }
+`;
+
+const simulationModalButtonContainerStyles = css`
+  display: flex;
+  justify-content: space-between;
+
+  button {
+    margin-bottom: 0;
+  }
 `;
 
 const submitButtonContainerStyles = css`
@@ -777,6 +816,8 @@ function Calculate({ appType }: Props) {
     };
   }, [setUpdateContextValues]);
 
+  const [isSimulationModalOpen, setIsSimulationModalOpen] = useState(false);
+
   return (
     <div css={panelContainer}>
       <div>
@@ -1065,8 +1106,66 @@ function Calculate({ appType }: Props) {
         </div>
       )}
 
+      <DialogOverlay
+        css={simulationModalOverlayStyles}
+        isOpen={isSimulationModalOpen}
+        onDismiss={() => setIsSimulationModalOpen(false)}
+      >
+        <DialogContent
+          css={simulationModalStyles}
+          aria-label="Decontamination plan guidance"
+        >
+          {appType === 'sampling' && (
+            <p>
+              Your sampling strategy has identified contamination conditions
+              that will drive decontamination decisions for the response area.
+              Click Next to move on to the Decon phase.
+            </p>
+          )}
+          {appType === 'decon' && (
+            <p>
+              A decontamination plan is a decision model, not a final answer.
+              Consider whether additional sampling may be needed to verify
+              remediation effectiveness; otherwise, click Next to move on to the
+              Waste phase.
+            </p>
+          )}
+          <div css={simulationModalButtonContainerStyles}>
+            <button
+              onClick={() => {
+                setIsSimulationModalOpen(false);
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                setIsSimulationModalOpen(false);
+
+                // TODO: Move to the next phase.
+              }}
+            >
+              Next
+            </button>
+          </div>
+        </DialogContent>
+      </DialogOverlay>
+
       <div css={sectionContainer}>
-        <NavigationButton currentPanel="calculate" />
+        {simulationMode ? (
+          <div css={containerStyles}>
+            <button
+              onClick={(_ev) => {
+                setIsSimulationModalOpen(true);
+                // TODO
+              }}
+            >
+              Next
+            </button>
+          </div>
+        ) : (
+          <NavigationButton currentPanel="calculate" />
+        )}
       </div>
     </div>
   );
