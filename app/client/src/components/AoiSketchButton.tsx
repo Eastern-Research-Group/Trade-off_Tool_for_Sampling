@@ -18,7 +18,7 @@ import { activateSketchButton, updateLayerEdits } from 'utils/sketchUtils';
 // --- styles (Calculate) ---
 const sketchAoiTextStyles = css`
   display: flex;
-  justify-content: space-between;
+  gap: 0.25rem;
   align-items: center;
   svg {
     font-size: 20px;
@@ -30,6 +30,9 @@ const sketchAoiButtonStyles = css`
   background-color: white;
   color: black;
   margin-bottom: 0.5rem;
+  width: 100%;
+  border: 1px solid #ccc;
+
   &:hover,
   &:focus {
     background-color: #e7f6f8;
