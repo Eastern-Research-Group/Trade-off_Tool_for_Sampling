@@ -232,12 +232,13 @@ const iconButtonStyles = css`
 `;
 
 const deleteButtonStyles = css`
-  width: 75px;
+  height: 80px;
+  width: 95px;
   margin-bottom: 0;
-  padding: 0.25em 0;
+  padding: 0.25em;
   color: black;
   background-color: white;
-  border-radius: 0;
+  border: 1px solid #ccc;
   line-height: 16px;
   text-decoration-line: none;
   font-weight: bold;
@@ -487,11 +488,19 @@ function LocateSamples() {
         <div css={sectionContainer}>
           <h2 css={headerStyles}>Create Plan</h2>
           <div css={headerContainer}>
-            <button css={deleteButtonStyles} onClick={startOver}>
-              <IconRedoAlt />
-              <br />
-              Start Over
-            </button>
+            {simulationMode ? (
+              <div
+                css={css`
+                  width: 75px;
+                `}
+              />
+            ) : (
+              <button css={deleteButtonStyles} onClick={startOver}>
+                <IconRedoAlt />
+                <br />
+                Start Over
+              </button>
+            )}
             <button
               css={deleteButtonStyles}
               onClick={() => {

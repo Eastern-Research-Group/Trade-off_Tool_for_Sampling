@@ -43,6 +43,7 @@ import { LayerType } from 'types/Layer';
 import { AppType } from 'types/Navigation';
 // styles
 import { appTheme, isDecon } from 'styles';
+import { isAdmin } from 'config/navigation';
 import {
   DefaultSymbolsType,
   PolygonSymbol,
@@ -1018,10 +1019,13 @@ function Toolbar({ appType }: Props) {
   return (
     <div css={toolBarStyles} data-testid="tots-toolbar">
       <h1 css={toolBarTitle}>
-        Trade-off Tool for{' '}
-        {appType === 'decon'
-          ? 'Decontamination Strategies (TODS)'
-          : 'Sampling (TOTS)'}{' '}
+        {appType === 'admin' && 'TOTS Admin '}
+        {appType !== 'admin' && 'Trade-off Tool for '}
+        {appType === 'admin'
+          ? ''
+          : appType === 'decon'
+            ? 'Decontamination Strategies (TODS)'
+            : 'Sampling (TOTS)'}{' '}
         {simulationMode
           ? '- SIMULATION MODE'
           : trainingMode
@@ -1078,7 +1082,7 @@ function Toolbar({ appType }: Props) {
               <label htmlFor="dimension-3d">3D</label>
             </fieldset>
 
-            {!isDecon() && (
+            {!isDecon() && !isAdmin() && (
               <fieldset css={fieldsetStyles}>
                 <legend>
                   Shape
@@ -1165,7 +1169,7 @@ function Toolbar({ appType }: Props) {
               </Fragment>
             )}
 
-            {!simulationMode && (
+            {!isAdmin() && !simulationMode && (
               <label css={switchLabelContainer}>
                 <span css={switchLabel}>Training Mode</span>
                 <Switch

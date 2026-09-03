@@ -40,7 +40,8 @@ type Props = {
 };
 
 function MapMouseEvents({ appType, mapView, sceneView }: Props) {
-  const { setTablePanelSelectedTab } = useContext(NavigationContext);
+  const { currentPanel, setTablePanelSelectedTab } =
+    useContext(NavigationContext);
   const {
     displayDimensions,
     sampleAttributes,
@@ -58,35 +59,33 @@ function MapMouseEvents({ appType, mapView, sceneView }: Props) {
           const graphic = getGraphicFromResponse(res);
           if (!graphic) {
             setSelectedSampleIds([]);
-            return;
-          }
+          } else {
+            const PERMANENT_IDENTIFIER =
+              graphic.attributes.PERMANENT_IDENTIFIER;
+            const DECISIONUNITUUID = graphic.attributes.DECISIONUNITUUID;
+            setSelectedSampleIds((selectedSampleIds) => {
+              if (
+                selectedSampleIds.findIndex(
+                  (item) => item.PERMANENT_IDENTIFIER === PERMANENT_IDENTIFIER,
+                ) !== -1
+              ) {
+                return selectedSampleIds.filter(
+                  (item) => item.PERMANENT_IDENTIFIER !== PERMANENT_IDENTIFIER,
+                );
+              }
 
-          const PERMANENT_IDENTIFIER = graphic.attributes.PERMANENT_IDENTIFIER;
-          const DECISIONUNITUUID = graphic.attributes.DECISIONUNITUUID;
-          setSelectedSampleIds((selectedSampleIds) => {
-            if (
-              selectedSampleIds.findIndex(
-                (item) => item.PERMANENT_IDENTIFIER === PERMANENT_IDENTIFIER,
-              ) !== -1
-            ) {
-              return selectedSampleIds.filter(
-                (item) => item.PERMANENT_IDENTIFIER !== PERMANENT_IDENTIFIER,
-              );
-            }
+              return [
+                // ...selectedSampleIds, // Uncomment this line to allow multiple selections
+                {
+                  PERMANENT_IDENTIFIER,
+                  DECISIONUNITUUID,
+                  selection_method: 'sample-click',
+                  graphic,
+                },
+              ];
+            });
 
-            return [
-              // ...selectedSampleIds, // Uncomment this line to allow multiple selections
-              {
-                PERMANENT_IDENTIFIER,
-                DECISIONUNITUUID,
-                selection_method: 'sample-click',
-                graphic,
-              },
-            ];
-          });
-
-          // switch table panel tabs
-          if (graphic) {
+            // switch table panel tabs
             if (graphic.attributes.DECISIONUNITUUID)
               setTablePanelSelectedTab('samples');
             else setTablePanelSelectedTab('buildings');
@@ -145,16 +144,19 @@ function MapMouseEvents({ appType, mapView, sceneView }: Props) {
           curIds.sort();
 
           // open the popup
-          if (
-            popupItems.length > 0 &&
-            curIds.toString() !== newIds.toString()
-          ) {
-            // find these graphics in the sketchLayer and open them
-            const sketchPopupItems = sketchVMG?.layer?.graphics?.filter((g) =>
-              newIds.includes(g.attributes.PERMANENT_IDENTIFIER),
+          if (popupItems.length > 0) {
+            // only auto-enter vertex update mode while editing plan samples.
+            const canAutoUpdateSketch = ['locateSamples', 'decon'].includes(
+              currentPanel?.value ?? '',
             );
-            if (sketchPopupItems && sketchPopupItems.length > 0)
-              sketchVMG?.update(sketchPopupItems.toArray());
+            if (canAutoUpdateSketch) {
+              const sketchPopupItems = sketchVMG?.layer?.graphics?.filter((g) =>
+                newIds.includes(g.attributes.PERMANENT_IDENTIFIER),
+              );
+              if (sketchPopupItems && sketchPopupItems.length > 0) {
+                sketchVMG?.update(sketchPopupItems.toArray());
+              }
+            }
 
             const firstGeometry = popupItems[0].geometry as any;
             view.popup = new Popup({
@@ -173,7 +175,7 @@ function MapMouseEvents({ appType, mapView, sceneView }: Props) {
           window.logErrorToGa(err);
         });
     },
-    [setSelectedSampleIds, setTablePanelSelectedTab],
+    [currentPanel, setSelectedSampleIds, setTablePanelSelectedTab],
   );
 
   // Sets up the map mouse events when the component initializes

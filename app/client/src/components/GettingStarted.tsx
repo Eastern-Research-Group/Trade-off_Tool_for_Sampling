@@ -1,10 +1,17 @@
 /** @jsxImportSource @emotion/react */
 
-import React, { Fragment, ReactNode, useEffect, useState } from 'react';
+import React, {
+  Fragment,
+  ReactNode,
+  useEffect,
+  useState,
+  useContext,
+} from 'react';
 import { css } from '@emotion/react';
 import { DialogOverlay, DialogContent } from '@reach/dialog';
 // context
 import { useLookupFiles } from 'contexts/LookupFiles';
+import { NavigationContext } from 'contexts/Navigation';
 // styles
 import { colors, isDecon } from 'styles';
 import { getFullBaseUrl } from '../utils/utils';
@@ -60,6 +67,7 @@ type Props = {
 
 function GettingStarted({ isOpen, children }: Props) {
   const baseUrl = getFullBaseUrl();
+  const { simulationMode } = useContext(NavigationContext);
   const services = useLookupFiles().data.services;
 
   const app = isDecon() ? 'tods' : 'tots';
@@ -145,17 +153,21 @@ function GettingStarted({ isOpen, children }: Props) {
                 support conducting “what-if” scenarios. Detailed results can be
                 downloaded into a Microsoft Excel spreadsheet.
               </li>
-              <li>
-                <strong>Configure Output</strong> – Log into the ArcGIS Online
-                account to use this feature. Configure what TOTS output is
-                published to your ArcGIS Online account. Options include adding
-                a web map, incorporating user-defined attributes, and/or
-                publishing custom sample types.
-              </li>
-              <li>
-                <strong>Publish Output</strong> – Save and/or share TOTS output
-                to your ArcGIS Online account.
-              </li>
+              {!simulationMode && (
+                <Fragment>
+                  <li>
+                    <strong>Configure Output</strong> – Log into the ArcGIS
+                    Online account to use this feature. Configure what TOTS
+                    output is published to your ArcGIS Online account. Options
+                    include adding a web map, incorporating user-defined
+                    attributes, and/or publishing custom sample types.
+                  </li>
+                  <li>
+                    <strong>Publish Output</strong> – Save and/or share TOTS
+                    output to your ArcGIS Online account.
+                  </li>
+                </Fragment>
+              )}
             </ul>
           </Fragment>
         ) : (
@@ -313,15 +325,19 @@ function GettingStarted({ isOpen, children }: Props) {
                   </li>
                 </ol>
               </li>
-              <li>
-                <strong>Configure Output</strong>
-                <ol>
-                  <li>Click Next to continue.</li>
-                </ol>
-              </li>
-              <li>
-                <strong>Publish Output</strong>
-              </li>
+              {!simulationMode && (
+                <Fragment>
+                  <li>
+                    <strong>Configure Output</strong>
+                    <ol>
+                      <li>Click Next to continue.</li>
+                    </ol>
+                  </li>
+                  <li>
+                    <strong>Publish Output</strong>
+                  </li>
+                </Fragment>
+              )}
             </ul>
           </Fragment>
         )}

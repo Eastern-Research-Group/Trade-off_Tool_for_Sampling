@@ -6,7 +6,9 @@ import { css } from '@emotion/react';
 import { NavigationContext } from 'contexts/Navigation';
 // types
 import {
+  adminPanels,
   deconPanels,
+  isAdmin,
   isDecon,
   PanelValueType,
   samplingPanels,
@@ -30,9 +32,15 @@ function NavigationButton({
   currentPanel,
   includeSkipToPublish = false,
 }: Props) {
-  const { setGoTo } = useContext(NavigationContext);
+  const { setGoTo, simulationMode } = useContext(NavigationContext);
 
-  const panelConfig = isDecon() ? deconPanels : samplingPanels;
+  const panelConfig = (
+    isAdmin() ? adminPanels : isDecon() ? deconPanels : samplingPanels
+  ).filter(
+    (p) =>
+      !simulationMode ||
+      (simulationMode && !['configureOutput', 'publish'].includes(p.value)),
+  );
   const currentIndex = panelConfig.findIndex(
     (panel) => panel.value === currentPanel,
   );
@@ -41,7 +49,7 @@ function NavigationButton({
   if (!nextPanel) return null;
   return (
     <div css={containerStyles}>
-      {includeSkipToPublish && (
+      {includeSkipToPublish && !simulationMode && (
         <button onClick={(_ev) => setGoTo('publish')}>Skip to Publish</button>
       )}
       <button onClick={(_ev) => setGoTo(nextPanel)}>Next</button>

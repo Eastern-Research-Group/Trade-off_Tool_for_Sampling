@@ -18,6 +18,7 @@ import * as urlUtils from '@arcgis/core/core/urlUtils';
 import 'regenerator-runtime';
 // routes
 import ErrorPage from 'routes/404';
+import Admin from 'routes/Admin';
 import Decon from 'routes/Decon';
 import Sampling from 'routes/Sampling';
 // components
@@ -184,6 +185,7 @@ const router = createBrowserRouter(
     { path: '/', element: <Sampling /> },
     { path: '/sampling', element: <Sampling /> },
     { path: '/decon', element: <Decon /> },
+    { path: '/admin', element: <Admin /> },
     { path: '*', element: <ErrorPage /> },
   ],
   { basename: VITE_SUBPATH ?? '/' },

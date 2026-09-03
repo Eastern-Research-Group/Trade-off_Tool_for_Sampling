@@ -189,6 +189,8 @@ const sketchAoiButtonStyles = css`
   background-color: white;
   color: black;
   margin-bottom: 0.5rem;
+  width: 100%;
+  border: 1px solid #ccc;
 
   &:hover,
   &:focus {
@@ -199,7 +201,7 @@ const sketchAoiButtonStyles = css`
 
 const sketchAoiTextStyles = css`
   display: flex;
-  justify-content: space-between;
+  gap: 0.25rem;
   align-items: center;
 
   svg {

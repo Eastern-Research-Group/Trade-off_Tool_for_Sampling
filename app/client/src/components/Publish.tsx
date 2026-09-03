@@ -137,38 +137,6 @@ const publishButtonStyles = css`
   }
 `;
 
-const simulationModalOverlayStyles = css`
-  &[data-reach-dialog-overlay] {
-    z-index: 101;
-    background-color: ${colors.black(0.75)};
-  }
-`;
-
-const simulationModalStyles = css`
-  color: ${colors.black()};
-  background-color: ${colors.white()};
-
-  &[data-reach-dialog-content] {
-    position: relative;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    margin: 0;
-    padding: 1.5rem;
-    width: auto;
-    max-width: 35rem;
-  }
-`;
-
-const simulationModalButtonContainerStyles = css`
-  display: flex;
-  justify-content: space-between;
-
-  button {
-    margin-bottom: 0;
-  }
-`;
-
 const referenceLayerListStyles = (appType: 'decon' | 'sampling') => css`
   margin-left: ${appType === 'sampling' ? 40 : 20}px;
 `;
@@ -280,7 +248,6 @@ function Publish({ appType }: Props) {
 
   // Checks browser storage to determine if the user clicked publish and logged in.
   const [publishButtonClicked, setPublishButtonClicked] = useState(false);
-  const [isSimulationModalOpen, setIsSimulationModalOpen] = useState(false);
   const [continueInitialized, setContinueInitialized] = useState(false);
   useEffect(() => {
     if (continueInitialized) return;
@@ -2985,71 +2952,15 @@ function Publish({ appType }: Props) {
           );
         })}
 
-      <DialogOverlay
-        css={simulationModalOverlayStyles}
-        isOpen={isSimulationModalOpen}
-        onDismiss={() => setIsSimulationModalOpen(false)}
-      >
-        <DialogContent
-          css={simulationModalStyles}
-          aria-label="Decontamination plan guidance"
-        >
-          {appType === 'sampling' && (
-            <p>
-              Your sampling strategy has identified contamination conditions
-              that will drive decontamination decisions for the response area.
-              Click Next to move on to the Decon phase.
-            </p>
-          )}
-          {appType === 'decon' && (
-            <p>
-              A decontamination plan is a decision model, not a final answer.
-              Consider whether additional sampling may be needed to verify
-              remediation effectiveness; otherwise, click Next to move on to the
-              Waste phase.
-            </p>
-          )}
-          <div css={simulationModalButtonContainerStyles}>
-            <button
-              onClick={() => {
-                setIsSimulationModalOpen(false);
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                setIsSimulationModalOpen(false);
-
-                // TODO: Move to the next phase.
-              }}
-            >
-              Next
-            </button>
-          </div>
-        </DialogContent>
-      </DialogOverlay>
-
-      <div css={publishButtonContainerStyles}>
-        {simulationMode && (
-          <button
-            disabled={publishResponse.status === 'fetching'}
-            css={publishButtonStyles}
-            onClick={() => {
-              setIsSimulationModalOpen(true);
-            }}
-          >
-            Publish
-          </button>
-        )}
-        {(includePlan ||
-          includeCustomSampleTypes ||
-          includeAoiCharacterization ||
-          includeStagingAreas) &&
-          isPublishPlanReady &&
-          isPublishSamplesReady &&
-          isPublishAoiCharReady &&
-          isPublishStagingAreaReady && (
+      {(includePlan ||
+        includeCustomSampleTypes ||
+        includeAoiCharacterization ||
+        includeStagingAreas) &&
+        isPublishPlanReady &&
+        isPublishSamplesReady &&
+        isPublishAoiCharReady &&
+        isPublishStagingAreaReady && (
+          <div css={publishButtonContainerStyles}>
             <button
               disabled={publishResponse.status === 'fetching'}
               css={publishButtonStyles}
@@ -3059,8 +2970,8 @@ function Publish({ appType }: Props) {
             >
               Publish
             </button>
-          )}
-      </div>
+          </div>
+        )}
     </div>
   );
 }

@@ -183,6 +183,8 @@ type SketchType = {
   >;
   deconOperation: LayerType | null;
   setDeconOperation: Dispatch<SetStateAction<LayerType | null>>;
+  contamMapLayer: LayerType | null;
+  setContamMapLayer: Dispatch<SetStateAction<LayerType | null>>;
   stagingAreaLayer: LayerType | null;
   setStagingAreaLayer: Dispatch<SetStateAction<LayerType | null>>;
   siteAssessmentPlanLayer: LayerType | null;
@@ -306,6 +308,8 @@ export const SketchContext = createContext<SketchType>({
   setDeconSketchLayer: () => {},
   deconOperation: null,
   setDeconOperation: () => {},
+  contamMapLayer: null,
+  setContamMapLayer: () => {},
   stagingAreaLayer: null,
   setStagingAreaLayer: () => {},
   siteAssessmentPlanLayer: null,
@@ -451,6 +455,7 @@ export function SketchProvider({ children }: Props) {
   const [deconSketchLayer, setDeconSketchLayer] =
     useState<LayerAoiAnalysisEditsType | null>(null);
   const [deconOperation, setDeconOperation] = useState<LayerType | null>(null);
+  const [contamMapLayer, setContamMapLayer] = useState<LayerType | null>(null);
   const [stagingAreaLayer, setStagingAreaLayer] = useState<LayerType | null>(
     null,
   );
@@ -766,6 +771,8 @@ export function SketchProvider({ children }: Props) {
         setDeconSketchLayer,
         deconOperation,
         setDeconOperation,
+        contamMapLayer,
+        setContamMapLayer,
         stagingAreaLayer,
         setStagingAreaLayer,
         siteAssessmentPlanLayer,

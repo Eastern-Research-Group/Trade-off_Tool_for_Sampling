@@ -1,13 +1,16 @@
 import IconCalculator from '~icons/fa7-solid/calculator';
 import IconCog from '~icons/fa7-solid/cog';
 import IconLayerGroup from '~icons/fa7-solid/layer-group';
+import IconPencil from '~icons/fa7-solid/pencil';
+import IconPlus from '~icons/fa7-solid/plus';
 import IconThumbtack from '~icons/fa7-solid/thumbtack';
 import IconUpload from '~icons/fa7-solid/upload';
 import IconWrench from '~icons/fa7-solid/wrench';
 // types
 import { LayerTypeOption } from 'types/Navigation';
 
-export const isDecon = () => window.location.pathname.endsWith('/decon');
+export const isAdmin = () => window.location.pathname.endsWith('/admin') || window.location.pathname.endsWith('/admin/');
+export const isDecon = () => window.location.pathname.endsWith('/decon') || window.location.pathname.endsWith('/decon/');
 
 export const samplingPanels: PanelType[] = [
   {
@@ -71,6 +74,24 @@ export const deconPanels: PanelType[] = [
   {
     value: 'publish',
     label: 'Publish Output',
+    Icon: IconUpload,
+  },
+];
+
+export const adminPanels: PanelType[] = [
+  {
+    value: 'addData',
+    label: 'Add Contam Map',
+    Icon: IconPlus,
+  },
+  {
+    value: 'additionalTools',
+    label: 'Contam Map',
+    Icon: IconPencil,
+  },
+  {
+    value: 'save',
+    label: 'Save',
     Icon: IconUpload,
   },
 ];
@@ -156,7 +177,8 @@ export type PanelValueType =
   | 'decon'
   | 'calculate'
   | 'configureOutput'
-  | 'publish';
+  | 'publish'
+  | 'save';
 
 export type PanelType = {
   value: PanelValueType;

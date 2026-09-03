@@ -11,13 +11,14 @@ import { DialogContext } from 'contexts/Dialog';
 import { SketchContext } from 'contexts/Sketch';
 // types
 import { AppType } from 'types/Navigation';
+import { LayerTypeName } from 'types/Layer';
 // utils
 import { activateSketchButton, updateLayerEdits } from 'utils/sketchUtils';
 
 // --- styles (Calculate) ---
 const sketchAoiTextStyles = css`
   display: flex;
-  justify-content: space-between;
+  gap: 0.25rem;
   align-items: center;
   svg {
     font-size: 20px;
@@ -29,6 +30,9 @@ const sketchAoiButtonStyles = css`
   background-color: white;
   color: black;
   margin-bottom: 0.5rem;
+  width: 100%;
+  border: 1px solid #ccc;
+
   &:hover,
   &:focus {
     background-color: #e7f6f8;
@@ -38,11 +42,12 @@ const sketchAoiButtonStyles = css`
 
 // --- components ---
 
-const BUTTON_ID = 'staging-aoi';
-
 type Props = {
   className?: string;
   label?: string;
+  buttonId?: string;
+  sketchLayerType?: LayerTypeName;
+  defaultAttributes?: { [key: string]: any };
   onContinue?: () => void;
   replaceGraphics?: boolean;
   sketchLayer?:
@@ -55,6 +60,9 @@ type Props = {
 function AoiSketchButton({
   className,
   label = 'Draw Staging Area Boundary',
+  buttonId = 'staging-aoi',
+  sketchLayerType = 'Staging Area Mask',
+  defaultAttributes,
   onContinue,
   replaceGraphics = false,
   sketchLayer,
@@ -83,15 +91,22 @@ function AoiSketchButton({
       if (!aoiSketchVM) return;
 
       aoiSketchVM.polygonSymbol = defaultSymbols.symbols[
-        'Staging Area Mask'
+        sketchLayerType
       ] as any;
+
+      // Let the create handler know which attributes to apply to new graphics.
+      if (defaultAttributes) {
+        (aoiSketchVM as any).totsDefaultAttributes = defaultAttributes;
+      } else {
+        (aoiSketchVM as any).totsDefaultAttributes = null;
+      }
 
       // save changes from other sketchVM and disable to prevent
       // interference
       if (sketchVM) sketchVM[displayDimensions].cancel();
 
       // make the style of the button active
-      const wasSet = activateSketchButton(BUTTON_ID);
+      const wasSet = activateSketchButton(buttonId);
 
       if (wasSet) {
         // let the user draw/place the shape
@@ -156,7 +171,7 @@ function AoiSketchButton({
 
   return (
     <button
-      id={BUTTON_ID}
+      id={buttonId}
       title={label}
       className={`sketch-button ${className}`}
       onClick={sketchAoiButtonClick}

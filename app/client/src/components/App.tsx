@@ -544,7 +544,7 @@ function App({ appType }: Props) {
 
   return (
     <div className="tots" ref={totsRef}>
-      <SplashScreen />
+      {appType !== 'admin' && <SplashScreen />}
       <div css={appStyles(offset)}>
         <div css={containerStyles}>
           {appLoading && (
