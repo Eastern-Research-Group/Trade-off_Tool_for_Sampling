@@ -428,10 +428,8 @@
           ? 'tods'
           : 'tots';
 
-      const viteSubpath = '%VITE_SUBPATH%';
-      const baseUrl =
-        window.location.origin +
-        (viteSubpath !== '%VITE_SUBPATH%' ? viteSubpath : '');
+      const viteSubpath = "%VITE_SUBPATH%";
+      const baseUrl = `${window.location.origin}${viteSubpath !== "\%VITE_SUBPATH\%" ? viteSubpath : ''}`;
       function unsupportedBrowserMessage() {
         const unsupportedMessage = document.getElementById(
           `unsupported-browser-message-${appId}`,
