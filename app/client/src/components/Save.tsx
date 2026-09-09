@@ -271,7 +271,10 @@ function Save({ appType }: Props) {
 
     return {
       graphics: graphicsLayer.graphics.toArray(),
-      json: JSON.stringify(layerEdits),
+      json: JSON.stringify({
+        ...layerEdits,
+        visible: false,
+      }),
     };
   };
 
