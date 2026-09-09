@@ -81,6 +81,8 @@ const verticalCenterTextStyles = css`
 
 function StagingAreas() {
   const {
+    aoiSketchVM,
+    contamMapLayer,
     defaultSymbols,
     edits,
     layers,
@@ -91,7 +93,6 @@ function StagingAreas() {
     setDefaultSymbolSingle,
     setEdits,
     setLayers,
-    contamMapLayer,
   } = useContext(SketchContext);
 
   const [addScenarioVisible, setAddScenarioVisible] = useState(false);
@@ -364,6 +365,7 @@ function StagingAreas() {
             if (saveResults?.status !== 'success') return;
             setAddScenarioVisible(false);
             setEditScenarioVisible(false);
+            aoiSketchVM.cancel();
           }}
         >
           <AoiSketchButton

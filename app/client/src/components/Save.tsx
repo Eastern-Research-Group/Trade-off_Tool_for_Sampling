@@ -1,6 +1,7 @@
 /** @jsxImportSource @emotion/react */
 
 import { useContext } from 'react';
+import saveAs from 'file-saver';
 import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import Graphic from '@arcgis/core/Graphic';
 import { css } from '@emotion/react';
@@ -39,7 +40,7 @@ type Props = {
 
 function Save({ appType }: Props) {
   const { setOptions } = useContext(DialogContext);
-  const { contamMapLayer, setEdits } = useContext(SketchContext);
+  const { contamMapLayer, edits, setEdits } = useContext(SketchContext);
 
   const cutFromOverlappingGraphics = () => {
     if (
@@ -49,12 +50,18 @@ function Save({ appType }: Props) {
       return;
     }
 
+    let editsCopy = edits;
+    const layerEdits = editsCopy.edits.find(
+      (edit) => edit.layerId === contamMapLayer.layerId,
+    );
+
     const graphicsLayer = contamMapLayer.sketchLayer;
     const graphics = graphicsLayer.graphics
       .toArray()
       .filter((graphic) => graphic.geometry?.type === 'polygon');
 
-    if (graphics.length < 2) return;
+    if (graphics.length < 2)
+      return { graphics, json: JSON.stringify(layerEdits) };
 
     const originalFeatureIds = new Set(
       graphics.map((graphic) => graphic.attributes?.PERMANENT_IDENTIFIER),
@@ -152,49 +159,64 @@ function Save({ appType }: Props) {
 
     if (addedGraphics.length > 0) graphicsLayer.addMany(addedGraphics);
 
-    setEdits((edits) => {
-      let editsCopy = edits;
-      if (updatedGraphics.length > 0) {
-        editsCopy = updateLayerEdits({
-          appType,
-          edits: editsCopy,
-          layer: contamMapLayer,
-          type: 'update',
-          changes: updatedGraphics,
-        });
-      }
-      if (addedGraphics.length > 0) {
-        editsCopy = updateLayerEdits({
-          appType,
-          edits: editsCopy,
-          layer: contamMapLayer,
-          type: 'add',
-          changes: addedGraphics,
-        });
-      }
+    if (updatedGraphics.length > 0) {
+      editsCopy = updateLayerEdits({
+        appType,
+        edits: editsCopy,
+        layer: contamMapLayer,
+        type: 'update',
+        changes: updatedGraphics,
+      });
+    }
+    if (addedGraphics.length > 0) {
+      editsCopy = updateLayerEdits({
+        appType,
+        edits: editsCopy,
+        layer: contamMapLayer,
+        type: 'add',
+        changes: addedGraphics,
+      });
+    }
+    setEdits(editsCopy);
 
-      return editsCopy;
-    });
-
-    return graphicsLayer.graphics.toArray();
+    return {
+      graphics: graphicsLayer.graphics.toArray(),
+      json: JSON.stringify(
+        editsCopy.edits.find((edit) => edit.layerId === contamMapLayer.layerId),
+      ),
+    };
   };
 
   return (
     <div css={panelContainer}>
       <h2>Save</h2>
       <div css={sectionContainer}>
-        <p>Placeholder...</p>
+        <p>
+          Click the "Save" button to download the contamination map as a JSON
+          file.
+        </p>
+        <p>
+          <strong>Contamination Map: </strong>
+          {contamMapLayer?.name}
+        </p>
       </div>
 
       <div css={publishButtonContainerStyles}>
         <button
           // disabled={publishResponse.status === 'fetching'}
           css={publishButtonStyles}
-          onClick={() => {
-            const graphics = cutFromOverlappingGraphics();
+          onClick={async () => {
+            if (!contamMapLayer) return;
 
-            // TODO save output
-            console.log('graphics: ', graphics);
+            const output = cutFromOverlappingGraphics();
+            console.log('output: ', output);
+
+            if (!output) return;
+
+            saveAs(
+              new Blob([output.json], { type: 'application/json' }),
+              `${contamMapLayer?.name}_contamination_map.json`,
+            );
           }}
         >
           Save
