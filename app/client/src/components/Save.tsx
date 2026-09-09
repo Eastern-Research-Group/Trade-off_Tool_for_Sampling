@@ -1,12 +1,12 @@
 /** @jsxImportSource @emotion/react */
 
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import saveAs from 'file-saver';
 import * as geometryEngine from '@arcgis/core/geometry/geometryEngine';
 import Graphic from '@arcgis/core/Graphic';
 import { css } from '@emotion/react';
 import { AppType } from 'types/Navigation';
-import { DialogContext } from 'contexts/Dialog';
+import MessageBox from 'components/MessageBox';
 import { SketchContext } from 'contexts/Sketch';
 import { generateUUID, updateLayerEdits } from 'utils/sketchUtils';
 
@@ -39,29 +39,118 @@ type Props = {
 };
 
 function Save({ appType }: Props) {
-  const { setOptions } = useContext(DialogContext);
   const { contamMapLayer, edits, setEdits } = useContext(SketchContext);
+
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const getContaminationFeatureId = (graphic: __esri.Graphic) =>
+    graphic.attributes?.PERMANENT_IDENTIFIER;
+
+  const ensureContaminationAttributes = (graphic: __esri.Graphic) => {
+    const permanentId = graphic.attributes?.PERMANENT_IDENTIFIER;
+    const globalId = graphic.attributes?.GLOBALID;
+
+    graphic.attributes = {
+      TYPE: 'Contamination Map',
+      CONTAMTYPE: 'chemical',
+      CONTAMVAL: 0,
+      CONTAMUNIT: 'cfu',
+      ...(graphic.attributes ?? {}),
+      PERMANENT_IDENTIFIER: permanentId ?? generateUUID(),
+      GLOBALID: globalId ?? generateUUID(),
+      OBJECTID: graphic.attributes?.OBJECTID ?? -1,
+    };
+  };
+
+  const getLayerFeatureIds = (layerEdits: any) => {
+    const ids = new Set<string>();
+    ['adds', 'updates', 'published'].forEach((key) => {
+      layerEdits?.[key]?.forEach((feature: any) => {
+        const id = feature.attributes?.PERMANENT_IDENTIFIER;
+        if (id) ids.add(id);
+      });
+    });
+
+    return ids;
+  };
+
+  const syncGraphicsToEdits = (graphics: __esri.Graphic[]) => {
+    let editsCopy = edits;
+    let layerEdits = editsCopy.edits.find(
+      (edit) => edit.layerId === contamMapLayer?.layerId,
+    );
+
+    const trackedIds = getLayerFeatureIds(layerEdits);
+    const missingGraphics = graphics.filter((graphic) => {
+      const id = getContaminationFeatureId(graphic);
+      return id && !trackedIds.has(id);
+    });
+
+    const hasMissingGraphics = missingGraphics.length > 0;
+
+    if (hasMissingGraphics && contamMapLayer) {
+      editsCopy = updateLayerEdits({
+        appType,
+        edits: editsCopy,
+        layer: contamMapLayer,
+        type: 'add',
+        changes: missingGraphics,
+      });
+      layerEdits = editsCopy.edits.find(
+        (edit) => edit.layerId === contamMapLayer.layerId,
+      );
+    }
+
+    return { editsCopy, layerEdits, hasMissingGraphics };
+  };
 
   const cutFromOverlappingGraphics = () => {
     if (
       !contamMapLayer?.sketchLayer ||
       contamMapLayer.sketchLayer.type !== 'graphics'
     ) {
+      setErrorMessage(
+        'No contamination layer selected. Please select a contamination map and try again.',
+      );
       return;
     }
-
-    let editsCopy = edits;
-    const layerEdits = editsCopy.edits.find(
-      (edit) => edit.layerId === contamMapLayer.layerId,
-    );
 
     const graphicsLayer = contamMapLayer.sketchLayer;
     const graphics = graphicsLayer.graphics
       .toArray()
       .filter((graphic) => graphic.geometry?.type === 'polygon');
 
-    if (graphics.length < 2)
+    if (graphics.length === 0) {
+      setErrorMessage(
+        'No graphics found in the contamination layer. Please add graphics and try again.',
+      );
+      return;
+    }
+
+    if (
+      graphics.some(
+        (graphic) =>
+          !graphic.attributes?.CONTAMVAL || graphic.attributes.CONTAMVAL <= 0,
+      )
+    ) {
+      setErrorMessage(
+        'One or more graphics have a Activity (Contamination Value) of less than or equal to 0 or are missing Activity. Please enter a Activity for all graphics and retry.',
+      );
+      return;
+    }
+
+    setErrorMessage('');
+
+    graphics.forEach(ensureContaminationAttributes);
+
+    const syncResult = syncGraphicsToEdits(graphics);
+    let { editsCopy, layerEdits } = syncResult;
+    const { hasMissingGraphics } = syncResult;
+
+    if (graphics.length < 2) {
+      if (hasMissingGraphics) setEdits(editsCopy);
       return { graphics, json: JSON.stringify(layerEdits) };
+    }
 
     const originalFeatureIds = new Set(
       graphics.map((graphic) => graphic.attributes?.PERMANENT_IDENTIFIER),
@@ -148,13 +237,8 @@ function Save({ appType }: Props) {
     }
 
     if (updatedGraphics.length === 0 && addedGraphics.length === 0) {
-      setOptions({
-        title: 'No overlaps found',
-        ariaLabel: 'No overlaps found',
-        description:
-          'The selected contamination feature does not overlap any other features in the active layer.',
-      });
-      return;
+      if (hasMissingGraphics) setEdits(editsCopy);
+      return { graphics, json: JSON.stringify(layerEdits) };
     }
 
     if (addedGraphics.length > 0) graphicsLayer.addMany(addedGraphics);
@@ -167,6 +251,9 @@ function Save({ appType }: Props) {
         type: 'update',
         changes: updatedGraphics,
       });
+      layerEdits = editsCopy.edits.find(
+        (edit) => edit.layerId === contamMapLayer.layerId,
+      );
     }
     if (addedGraphics.length > 0) {
       editsCopy = updateLayerEdits({
@@ -176,14 +263,15 @@ function Save({ appType }: Props) {
         type: 'add',
         changes: addedGraphics,
       });
+      layerEdits = editsCopy.edits.find(
+        (edit) => edit.layerId === contamMapLayer.layerId,
+      );
     }
     setEdits(editsCopy);
 
     return {
       graphics: graphicsLayer.graphics.toArray(),
-      json: JSON.stringify(
-        editsCopy.edits.find((edit) => edit.layerId === contamMapLayer.layerId),
-      ),
+      json: JSON.stringify(layerEdits),
     };
   };
 
@@ -222,6 +310,13 @@ function Save({ appType }: Props) {
           Save
         </button>
       </div>
+      {errorMessage && (
+        <MessageBox
+          title="Missing Data"
+          message={errorMessage}
+          severity="error"
+        />
+      )}
     </div>
   );
 }

@@ -614,6 +614,12 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
         const { graphic } = event;
         if (!graphic) return;
 
+        if (event.state === 'cancel') {
+          (sketchViewModel as any).totsActiveCreateId = null;
+          firstPoint = null;
+          return;
+        }
+
         if (!firstPoint && graphic.geometry) {
           if (graphic.geometry.type === 'point') {
             firstPoint = graphic.geometry as __esri.Point;
@@ -634,7 +640,9 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
         async function processSketchEvent() {
           // get the button and it's id
           const button = document.querySelector('.sketch-button-selected');
-          const id = (button && button.id)?.replace('draw-sample-', '');
+          const selectedId = (button && button.id)?.replace('draw-sample-', '');
+          const activeCreateId = (sketchViewModel as any).totsActiveCreateId;
+          const id = selectedId || activeCreateId;
           if (
             id?.includes('-sampling-mask') ||
             id?.includes('decon-mask') ||
@@ -645,6 +653,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
           }
 
           if (!id) {
+            (sketchViewModel as any).totsActiveCreateId = null;
             sketchViewModel.cancel();
             return;
           }
@@ -760,17 +769,24 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
 
           firstPoint = null;
 
-          if (
+          const shouldContinueCreating =
             (appType === 'sampling' && !id.includes('-sampling-mask')) ||
-            id.includes('contamination-map-aoi')
-          ) {
+            id.includes('contamination-map-aoi');
+          if (shouldContinueCreating) {
             // start next graphic
             setTimeout(() => {
+              (sketchViewModel as any).totsActiveCreateId = id.includes(
+                'contamination-map-aoi',
+              )
+                ? id
+                : null;
               const createType = id.includes('contamination-map-aoi')
                 ? 'polygon'
                 : graphic.attributes.ShapeType;
               sketchViewModel.create(createType);
             }, 100);
+          } else {
+            (sketchViewModel as any).totsActiveCreateId = null;
           }
           if (appType === 'decon') sketchViewModel.cancel();
         }
