@@ -1,7 +1,7 @@
 const path = require('node:path');
 
 function checkClientRouteExists(req, res, next) {
-  const clientRoutes = ['decon', 'sampling'];
+  const clientRoutes = ['admin', 'decon', 'sampling'];
 
   if (
     req.path !== '/' &&
