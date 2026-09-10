@@ -3135,6 +3135,37 @@ function setRenderer(
   };
 }
 
+function setGraphicsRenderer(
+  layer: __esri.GraphicsLayer,
+  technologyTypes: SampleTypesS3,
+) {
+  const renderer = technologyTypes.todsSampleRenderer;
+
+  layer.graphics.forEach((graphic) => {
+    const rawValue = graphic.attributes.CONTAMVAL;
+
+    const contaminationValue =
+      rawValue === null || rawValue === undefined || rawValue === ''
+        ? NaN
+        : Number(rawValue);
+    const classBreak = renderer.classBreakInfos.find(
+      (classBreakInfo: any) =>
+        Number.isFinite(contaminationValue) &&
+        contaminationValue >= classBreakInfo.minValue &&
+        contaminationValue <=
+          (classBreakInfo.maxValue === 'MAX_INTEGER'
+            ? Number.MAX_SAFE_INTEGER
+            : classBreakInfo.maxValue),
+    );
+    const symbol = classBreak?.symbol ?? renderer.defaultSymbol;
+
+    graphic.symbol = {
+      ...symbol,
+      type: graphic.geometry.type === 'point' ? 'simple-marker' : 'simple-fill',
+    };
+  });
+}
+
 /**
  * Waits for layer and sub layers to load.
  *
@@ -3178,14 +3209,22 @@ export async function applyRendererForTotsLayer(
   if (layer.type === 'feature') {
     setRenderer(layer as __esri.FeatureLayer, technologyTypes);
   }
+  if (layer.type === 'graphics') {
+    setGraphicsRenderer(layer as __esri.GraphicsLayer, technologyTypes);
+  }
   if (layer.type === 'group') {
     for (const l of (layer as __esri.GroupLayer).layers) {
       await loadLayer(l);
-      setRenderer(
-        l as __esri.FeatureLayer,
-        technologyTypes,
-        l.title.includes('-points'),
-      );
+      if (l.type === 'feature') {
+        setRenderer(
+          l as __esri.FeatureLayer,
+          technologyTypes,
+          l.title.includes('-points'),
+        );
+      }
+      if (l.type === 'graphics') {
+        setGraphicsRenderer(l as __esri.GraphicsLayer, technologyTypes);
+      }
       if (l.title.endsWith('-contamination-map')) {
         l.visible = false;
         l.listMode = 'hide';

@@ -194,7 +194,7 @@ function Publish({ appType }: Props) {
   );
   const { calculateResults, calculateResultsDecon, contaminationMap } =
     useContext(CalculateContext);
-  const { goToOptions, setGoToOptions, simulationMode, trainingMode } =
+  const { goToOptions, setGoToOptions, trainingMode } =
     useContext(NavigationContext);
   const {
     defaultConfigureOutput,

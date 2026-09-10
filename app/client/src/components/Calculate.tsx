@@ -63,6 +63,7 @@ import {
   removeZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
+import { copySamplingPlanToDeconSession } from 'utils/browserStorage';
 import { delay, formatNumber, parseSmallFloat } from 'utils/utils';
 // styles
 import { colors, reactSelectStyles } from 'styles';
@@ -1013,7 +1014,7 @@ function Calculate({ appType }: Props) {
           />
         </div>
 
-        {appType === 'sampling' && trainingMode && (
+        {appType === 'sampling' && trainingMode && !simulationMode && (
           <Fragment>
             <div css={sectionContainer}>
               <p>
@@ -1086,6 +1087,36 @@ function Calculate({ appType }: Props) {
             </AccordionList>
           </Fragment>
         )}
+
+        {appType === 'sampling' && simulationMode && (
+          <div css={sectionContainer}>
+            <MessageBox
+              title="Training Tip"
+              severity="training"
+              message={`You can check if your sampling plan captured the contamination zone by clicking "Analyze Sample Results".`}
+            />
+            {contaminationResults.status === 'fetching' && <LoadingSpinner />}
+            {contaminationResults.status === 'failure' &&
+              webServiceErrorMessage(contaminationResults.error)}
+            {contaminationResults.status === 'no-map' &&
+              noContaminationMapMessage}
+            {contaminationResults.status === 'no-layer' && noSampleLayerMessage}
+            {contaminationResults.status === 'no-graphics' && noSamplesMessage}
+            {contaminationResults.status === 'no-contamination-graphics' &&
+              noContaminationGraphicsMessage}
+            {contaminationResults.status === 'success' &&
+              contaminationResults?.data &&
+              contaminationResults.data.length > -1 &&
+              contaminationHitsSuccessMessage(contaminationResults.data.length)}
+
+            <button
+              css={submitButtonStyles}
+              onClick={runContaminationCalculation}
+            >
+              Analyze Sample Results
+            </button>
+          </div>
+        )}
       </div>
 
       {appType === 'sampling' && (
@@ -1139,10 +1170,17 @@ function Calculate({ appType }: Props) {
               Cancel
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
                 setIsSimulationModalOpen(false);
 
-                // TODO: Move to the next phase.
+                if (appType === 'sampling') {
+                  await copySamplingPlanToDeconSession();
+                }
+
+                window.parent.postMessage(
+                  { action: 'ADVANCE_TAB' },
+                  window.location.origin,
+                );
               }}
             >
               Next
@@ -1154,14 +1192,7 @@ function Calculate({ appType }: Props) {
       <div css={sectionContainer}>
         {simulationMode ? (
           <div css={containerStyles}>
-            <button
-              onClick={(_ev) => {
-                setIsSimulationModalOpen(true);
-                // TODO
-              }}
-            >
-              Next
-            </button>
+            <button onClick={() => setIsSimulationModalOpen(true)}>Next</button>
           </div>
         ) : (
           <NavigationButton currentPanel="calculate" />

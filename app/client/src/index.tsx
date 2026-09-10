@@ -69,6 +69,8 @@ declare global {
     totsLayers: LayerType[];
     totsPortalLayers: PortalLayerType[];
     totsSampleAttributes: any;
+    totsSimulationMode: boolean;
+    totsTechnologyTypes: any;
   }
 }
 

@@ -8,8 +8,6 @@ import React, { createContext, ReactNode, useContext } from 'react';
 import { fetchCheck } from 'utils/fetchUtils';
 // types
 import { LayerProps } from 'types/Misc';
-// config
-import { isDecon } from 'config/navigation';
 import { getFullBaseUrl } from '../utils/utils';
 
 type State = {
@@ -176,55 +174,53 @@ function useLookupFiles() {
         });
         data.technologyTypes.deconWasteFactors = deconWasteFactors;
 
-        if (isDecon()) {
-          sampleAttributes = data.technologyTypes.deconAttributes;
-        } else {
-          data.sampleMetadata.forEach((record) => {
-            sampleAttributes[record.TYPE] = {
-              ...record,
-              AA: null,
-              ALC: parseNumeric(record.ALC),
-              AMC: parseNumeric(record.AMC),
-              CONTAMTYPE: null,
-              CONTAMUNIT: null,
-              CONTAMVAL: null,
-              CREATEDDATE: null,
-              DECISIONUNIT: null,
-              DECISIONUNITSORT: 0,
-              DECISIONUNITUUID: null,
-              ENABLED: parseBoolean(record.ENABLED),
-              GLOBALID: null,
-              INNOVATIVE: parseBoolean(record.INNOVATIVE),
-              LOD_NON: parseNumeric(record.LOD_NON),
-              LOD_P: parseNumeric(record.LOD_P),
-              MCPS: parseNumeric(record.MCPS),
-              Notes: '',
-              OBJECTID: -1,
-              ORGANIZATION: null,
-              PERMANENT_IDENTIFIER: null,
-              POINT_STYLE: record.Point_Style,
-              SA: parseNumeric(record.SA),
-              ShapeType: record.ShapeType.toLowerCase(),
-              TCPS: parseNumeric(record.TCPS),
-              TTA: parseNumeric(record.TTA),
-              TTC: parseNumeric(record.TTC),
-              TTPK: parseNumeric(record.TTPK),
-              TTPS: parseNumeric(record.TTPS),
-              TYPEUUID: record.TYPE,
-              UPDATEDDATE: null,
-              USERNAME: null,
-              WVPS: parseNumeric(record.WVPS),
-              WWPS: parseNumeric(record.WWPS),
-            };
-            delete sampleAttributes[record.TYPE].Point_Style;
-          });
+        // build sample type attributes even in decon for supporting the
+        // layer styling
+        data.sampleMetadata.forEach((record) => {
+          sampleAttributes[record.TYPE] = {
+            ...record,
+            AA: null,
+            ALC: parseNumeric(record.ALC),
+            AMC: parseNumeric(record.AMC),
+            CONTAMTYPE: null,
+            CONTAMUNIT: null,
+            CONTAMVAL: null,
+            CREATEDDATE: null,
+            DECISIONUNIT: null,
+            DECISIONUNITSORT: 0,
+            DECISIONUNITUUID: null,
+            ENABLED: parseBoolean(record.ENABLED),
+            GLOBALID: null,
+            INNOVATIVE: parseBoolean(record.INNOVATIVE),
+            LOD_NON: parseNumeric(record.LOD_NON),
+            LOD_P: parseNumeric(record.LOD_P),
+            MCPS: parseNumeric(record.MCPS),
+            Notes: '',
+            OBJECTID: -1,
+            ORGANIZATION: null,
+            PERMANENT_IDENTIFIER: null,
+            POINT_STYLE: record.Point_Style,
+            SA: parseNumeric(record.SA),
+            ShapeType: record.ShapeType.toLowerCase(),
+            TCPS: parseNumeric(record.TCPS),
+            TTA: parseNumeric(record.TTA),
+            TTC: parseNumeric(record.TTC),
+            TTPK: parseNumeric(record.TTPK),
+            TTPS: parseNumeric(record.TTPS),
+            TYPEUUID: record.TYPE,
+            UPDATEDDATE: null,
+            USERNAME: null,
+            WVPS: parseNumeric(record.WVPS),
+            WWPS: parseNumeric(record.WWPS),
+          };
+          delete sampleAttributes[record.TYPE].Point_Style;
+        });
 
-          data.technologyTypes.sampleAttributes = sampleAttributes;
-        }
+        data.technologyTypes.sampleAttributes = sampleAttributes;
 
         const sampleSelectOptions: SampleSelectType[] = [];
         Object.keys(sampleAttributes).forEach((key) => {
-          if (!isDecon() && !sampleAttributes[key].ENABLED) return;
+          if (!sampleAttributes[key].ENABLED) return;
           const value = sampleAttributes[key].TYPEUUID;
           const label = sampleAttributes[key].TYPE;
           const isInnovative = sampleAttributes[key].INNOVATIVE;

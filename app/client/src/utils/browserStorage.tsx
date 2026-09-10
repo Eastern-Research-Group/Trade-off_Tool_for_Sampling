@@ -190,6 +190,73 @@ export async function readFromStorage(key: string) {
   return (await db.table(dataTableName).get(`${sessionId}-${key}`))?.value;
 }
 
+export async function copySamplingPlanToDeconSession() {
+  const samplingSessionId = sessionStorage.getItem('tots-session-id');
+  if (!samplingSessionId) return;
+
+  let deconSessionId = sessionStorage.getItem('tods-session-id');
+  if (!deconSessionId) {
+    deconSessionId = generateUUID();
+    sessionStorage.setItem('tods-session-id', deconSessionId);
+  }
+
+  const samplingPlan = await db
+    .table(dataTableName)
+    .get(`${samplingSessionId}-edits`);
+  if (!samplingPlan) return;
+
+  await db.table(dataTableName).put({
+    key: `${deconSessionId}-edits`,
+    value: structuredClone(samplingPlan.value),
+  });
+
+  const samplingSymbols = await db
+    .table(dataTableName)
+    .get(`${samplingSessionId}-polygon_symbol`);
+  if (samplingSymbols?.value?.symbols) {
+    const deconSymbols = await db
+      .table(dataTableName)
+      .get(`${deconSessionId}-polygon_symbol`);
+
+    const baseCategories = [
+      'Area of Interest',
+      'Contamination Map',
+      'Samples',
+      'Site Conceptual Model Mask',
+      'Staging Area Mask',
+    ];
+    const mergedSymbols = { ...(deconSymbols?.value?.symbols ?? {}) };
+    Object.keys(samplingSymbols.value.symbols).forEach((key) => {
+      if (baseCategories.includes(key)) return;
+      mergedSymbols[key] = samplingSymbols.value.symbols[key];
+    });
+
+    await db.table(dataTableName).put({
+      key: `${deconSessionId}-polygon_symbol`,
+      value: {
+        symbols: mergedSymbols,
+        editCount: (deconSymbols?.value?.editCount ?? 0) + 1,
+      },
+    });
+  }
+
+  const keysToCopy = [
+    'user_defined_sample_options',
+    'user_defined_sample_attributes',
+  ];
+  for (const key of keysToCopy) {
+    const row = await db
+      .table(dataTableName)
+      .get(`${samplingSessionId}-${key}`);
+    if (!row) continue;
+
+    await db.table(dataTableName).put({
+      key: `${deconSessionId}-${key}`,
+      value: structuredClone(row.value),
+    });
+  }
+}
+
 // Finds the layer by the layer id
 function getLayerById(layers: LayerType[], id: string) {
   const index = layers.findIndex((layer) => layer.layerId === id);
@@ -360,7 +427,7 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
   );
   const { setCalculateResultsDecon } = useContext(CalculateContext);
   const { setOptions } = useContext(DialogContext);
-  const { setAppLoading } = useContext(NavigationContext);
+  const { setAppLoading, simulationMode } = useContext(NavigationContext);
   const {
     defaultSymbols,
     edits,
@@ -375,6 +442,8 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
   } = useContext(SketchContext);
   const getPopupTemplate = useDynamicPopup(appType);
   const { addTotsLayerAutoSelect } = useTotsLayerAdder(appType);
+  const lookupFiles = useLookupFiles();
+  const technologyTypes = lookupFiles.data.technologyTypes;
 
   const [urlIdsToAdd, setUrlIdsToAdd] = useState<string[]>([]);
 
@@ -388,6 +457,16 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
       !symbolsInitialized ||
       !dbInitialized ||
       readInitialized
+    )
+      return;
+
+    // wait for technologyTypes so the CONTAMVAL-based decon renderer can
+    // be applied to samples copied into the decon session, not just ones
+    // added later via the Add Data tab
+    if (
+      appType === 'decon' &&
+      simulationMode &&
+      lookupFiles.status !== 'success'
     )
       return;
 
@@ -484,6 +563,14 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
             });
             scenarioLayers.push(...layers);
 
+            if (appType === 'decon' && simulationMode) {
+              // apply to the polygon, points, and hybrid layers since any
+              // of them can be the one actually displayed
+              layers.forEach((l) =>
+                applyRendererForTotsLayer(l, technologyTypes),
+              );
+            }
+
             if (layer.layerType === 'Decon Mask') {
               layers[0].visible = false;
               layers[0].elevationInfo = { mode: 'on-the-ground' };
@@ -575,7 +662,33 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
     setLayers,
     setLayersInitialized,
     symbolsInitialized,
+    appType,
+    simulationMode,
+    technologyTypes,
+    lookupFiles.status,
   ]);
+
+  // re-applies the CONTAMVAL-based decon renderer whenever simulation mode
+  // or technologyTypes become ready after the layers were already loaded
+  // (e.g. plans copied into the decon session via IndexedDB), since the
+  // initial edits read above can run before those values are available.
+  useEffect(() => {
+    if (
+      appType !== 'decon' ||
+      !simulationMode ||
+      !layersInitialized ||
+      !technologyTypes?.todsSampleRenderer
+    )
+      return;
+
+    layers.forEach((layer) => {
+      if (layer.layerType !== 'Samples' && layer.layerType !== 'VSP') return;
+
+      [layer.sketchLayer, layer.pointsLayer, layer.hybridLayer].forEach((l) => {
+        if (l) applyRendererForTotsLayer(l, technologyTypes);
+      });
+    });
+  }, [appType, layers, layersInitialized, simulationMode, technologyTypes]);
 
   // Saves the edits to browser storage everytime they change
   useEffect(() => {
@@ -1326,8 +1439,12 @@ function useCalculateSettingsStorage(dbInitialized: boolean) {
 function useCalculateResultsStorage(dbInitialized: boolean) {
   const key = 'calculate_results';
   const { setOptions } = useContext(DialogContext);
-  const { calculateResults, setCalculateResults, calculateResultsDecon, setCalculateResultsDecon } =
-    useContext(CalculateContext);
+  const {
+    calculateResults,
+    setCalculateResults,
+    calculateResultsDecon,
+    setCalculateResultsDecon,
+  } = useContext(CalculateContext);
 
   type CalculateResultsType = {
     calculateResults: object;
@@ -1341,14 +1458,21 @@ function useCalculateResultsStorage(dbInitialized: boolean) {
     if (!dbInitialized || readInitialized) return;
 
     setReadInitialized(true);
-    readFromStorage(key).then((settings: CalculateResultsType | null | undefined) => {
-      setReadDone(true);
-      if (!settings) return;
+    readFromStorage(key).then(
+      (settings: CalculateResultsType | null | undefined) => {
+        setReadDone(true);
+        if (!settings) return;
 
-      setCalculateResults(settings.calculateResults);
-      setCalculateResultsDecon(settings.calculateResultsDecon);
-    });
-  }, [dbInitialized, readInitialized, setCalculateResults, setCalculateResultsDecon]);
+        setCalculateResults(settings.calculateResults);
+        setCalculateResultsDecon(settings.calculateResultsDecon);
+      },
+    );
+  }, [
+    dbInitialized,
+    readInitialized,
+    setCalculateResults,
+    setCalculateResultsDecon,
+  ]);
 
   // Saves the calculate settings to browser storage
   useEffect(() => {

@@ -21,6 +21,7 @@ import Switch from 'components/Switch';
 // contexts
 import { AuthenticationContext } from 'contexts/Authentication';
 import { CalculateContext } from 'contexts/Calculate';
+import { useLookupFiles } from 'contexts/LookupFiles';
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // utils
@@ -123,37 +124,63 @@ function buildLegendListItem(event: any, view: __esri.MapView) {
     });
   }
   if (layer?.layerType === 'Samples' || layer?.layerType === 'VSP') {
-    subtitle = 'Sample Type';
+    const todsSampleRenderer = window.totsTechnologyTypes?.todsSampleRenderer;
+    if (isDecon() && window.totsSimulationMode && todsSampleRenderer) {
+      // in decon simulation mode, samples are color coded by CONTAMVAL
+      // rather than by sample type
+      subtitle = 'Contamination Level';
 
-    window.totsAllSampleOptions?.forEach((option: SampleSelectType) => {
-      const attributes = window.totsSampleAttributes[option.value];
-      const style =
-        isPoints || (isHybrid && attributes.ShapeType === 'point')
-          ? attributes?.POINT_STYLE || null
-          : null;
-      if (
-        Object.prototype.hasOwnProperty.call(
-          defaultSymbols.symbols,
-          option.value,
-        )
-      ) {
-        legendItems.push({
-          value: option.value,
-          title: option.label,
-          symbol: defaultSymbols.symbols[option.value],
-          style,
-          type: 'polygon',
+      [...todsSampleRenderer.classBreakInfos]
+        .reverse()
+        .forEach((classBreakInfo: any) => {
+          legendItems.push({
+            value: classBreakInfo.label,
+            title: classBreakInfo.label,
+            symbol: { type: 'simple-fill', ...classBreakInfo.symbol },
+            style: 'circle',
+            type: 'polygon',
+          });
         });
-      } else {
-        legendItems.push({
-          value: 'Samples',
-          title: option.label,
-          symbol: defaultSymbols.symbols['Samples'],
-          style,
-          type: 'polygon',
-        });
-      }
-    });
+      legendItems.push({
+        value: 'Non-detect',
+        title: todsSampleRenderer.defaultLabel,
+        symbol: { type: 'simple-fill', ...todsSampleRenderer.defaultSymbol },
+        style: 'circle',
+        type: 'polygon',
+      });
+    } else {
+      subtitle = 'Sample Type';
+
+      window.totsAllSampleOptions?.forEach((option: SampleSelectType) => {
+        const attributes = window.totsSampleAttributes[option.value];
+        const style =
+          isPoints || (isHybrid && attributes.ShapeType === 'point')
+            ? attributes?.POINT_STYLE || null
+            : null;
+        if (
+          Object.prototype.hasOwnProperty.call(
+            defaultSymbols.symbols,
+            option.value,
+          )
+        ) {
+          legendItems.push({
+            value: option.value,
+            title: option.label,
+            symbol: defaultSymbols.symbols[option.value],
+            style,
+            type: 'polygon',
+          });
+        } else {
+          legendItems.push({
+            value: 'Samples',
+            title: option.label,
+            symbol: defaultSymbols.symbols['Samples'],
+            style,
+            type: 'polygon',
+          });
+        }
+      });
+    }
   }
   if (layer?.layerType === 'Decon Mask') {
     legendItems.push({
@@ -530,6 +557,18 @@ function Toolbar({ appType }: Props) {
   const { setContaminationMap } = useContext(CalculateContext);
   const { simulationMode, trainingMode, setTrainingMode } =
     useContext(NavigationContext);
+  const technologyTypes = useLookupFiles().data.technologyTypes;
+
+  // Sync totsSimulationMode/totsTechnologyTypes variables on the window
+  // object. This is a workaround to an issue where these values are not
+  // available within esri event handlers (e.g. the legend builder).
+  useEffect(() => {
+    window.totsSimulationMode = simulationMode;
+  }, [simulationMode]);
+  useEffect(() => {
+    window.totsTechnologyTypes = technologyTypes;
+  }, [technologyTypes]);
+
   const {
     autoZoom,
     setAutoZoom,
@@ -579,7 +618,7 @@ function Toolbar({ appType }: Props) {
   useEffect(() => {
     if (oAuthInfo) return;
 
-    const baseUrl = getFullBaseUrl();
+    const baseUrl = getFullBaseUrl(true);
 
     const info = new OAuthInfo({
       appId: import.meta.env.VITE_ARCGIS_CLIENT_ID,
@@ -1026,11 +1065,7 @@ function Toolbar({ appType }: Props) {
           : appType === 'decon'
             ? 'Decontamination Strategies (TODS)'
             : 'Sampling (TOTS)'}{' '}
-        {simulationMode
-          ? '- SIMULATION MODE'
-          : trainingMode
-            ? ' - TRAINING MODE'
-            : ''}
+        {trainingMode && !simulationMode ? ' - TRAINING MODE' : ''}
       </h1>
       <div css={toolBarButtonsStyles}>
         <div>
