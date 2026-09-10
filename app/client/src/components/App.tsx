@@ -243,6 +243,7 @@ function App({ appType }: Props) {
     setTablePanelSelectedTab,
     tableShowSelectedScenarioOnly,
     setTableShowSelectedScenarioOnly,
+    simulationMode,
     trainingMode,
   } = useContext(NavigationContext);
   const {
@@ -544,7 +545,11 @@ function App({ appType }: Props) {
 
   return (
     <div className="tots" ref={totsRef}>
-      {appType !== 'admin' && <SplashScreen />}
+      {appType !== 'admin' &&
+        !simulationMode &&
+        !window.location.search.includes('simulationmode=true') && (
+          <SplashScreen />
+        )}
       <div css={appStyles(offset)}>
         <div css={containerStyles}>
           {appLoading && (
