@@ -260,7 +260,7 @@ function FilePanel({ appType }: Props) {
   const { setContaminationMap } = useContext(CalculateContext);
   const { setOptions } = useContext(DialogContext);
   const { sampleTypes } = useContext(LookupFilesContext);
-  const { goToOptions, setGoToOptions, trainingMode } =
+  const { goToOptions, setGoToOptions, simulationMode, trainingMode } =
     useContext(NavigationContext);
   const {
     defaultSymbols,
@@ -1498,7 +1498,11 @@ function FilePanel({ appType }: Props) {
       (option) => option.value !== 'Samples',
     );
   }
-  if (!trainingMode && appType !== 'admin')
+  if (
+    (!trainingMode ||
+      (simulationMode && !window.location.search.includes('devMode=true'))) &&
+    appType !== 'admin'
+  )
     selectLayerOptions = selectLayerOptions.filter(
       (option) => option.value !== 'Contamination Map',
     );
