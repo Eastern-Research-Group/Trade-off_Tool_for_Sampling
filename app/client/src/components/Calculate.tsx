@@ -1155,10 +1155,10 @@ function Calculate({ appType }: Props) {
           )}
           {appType === 'decon' && (
             <p>
-              A decontamination plan is a decision model, not a final answer.
-              Consider whether additional sampling may be needed to verify
-              remediation effectiveness; otherwise, click Next to move on to the
-              Waste phase.
+              A decontamination plan is a decision model, and users may need to
+              consider whether additional sampling is needed to verify
+              decontamination effectiveness; otherwise, click Next to move on to
+              the Waste phase.
             </p>
           )}
           <div css={simulationModalButtonContainerStyles}>
