@@ -94,7 +94,7 @@ function CalculateResults() {
     calculateResults,
     contaminationMap, //
   } = useContext(CalculateContext);
-  const { trainingMode } = useContext(NavigationContext);
+  const { simulationMode } = useContext(NavigationContext);
   const {
     aoiSketchLayer,
     displayDimensions,
@@ -106,7 +106,8 @@ function CalculateResults() {
     siteAssessmentPlanLayer,
   } = useContext(SketchContext);
   const showSamplingEfficacy =
-    trainingMode &&
+    simulationMode &&
+    window.location.search.includes('devMode=true') &&
     siteAssessmentPlanLayer?.sketchLayer?.type === 'graphics' &&
     siteAssessmentPlanLayer?.sketchLayer?.graphics?.length > 0;
 
