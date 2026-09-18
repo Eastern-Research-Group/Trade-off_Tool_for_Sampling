@@ -743,9 +743,9 @@
   <body class="" id="#top">
     <!-- Hide header and footer elements if coming from iframe -->
     <script>
-      const queryString = window.location.search;
+      const queryString = window.location.search.toLowerCase();
       const urlParams = new URLSearchParams(queryString);
-      if (urlParams.get('iframe') === 'true') {
+      if (urlParams.get('simulationmode') === 'true') {
         document.querySelector('body').classList.add('iframe');
       }
     </script>

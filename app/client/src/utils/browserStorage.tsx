@@ -367,8 +367,6 @@ function useSimulationModeStorage(dbInitialized: boolean) {
       if (simulationModeParam !== null) setSimulationMode(simulationModeParam);
       else setSimulationMode(Boolean(simulationMode));
 
-      removeUrlParams('simulationMode');
-
       setReadDone(true);
     });
   }, [dbInitialized, readInitialized, setSimulationMode]);

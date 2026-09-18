@@ -308,7 +308,14 @@ function App({ appType }: Props) {
   useEffect(() => {
     if (sizeCheckInitialized) return;
 
-    if (width < 1024 || height < 600) {
+    const simulationModeParam = window.location.search
+      .toLowerCase()
+      .includes('simulationmode=true');
+    if (
+      (width < 1024 || height < 600) &&
+      !simulationModeParam &&
+      !simulationMode
+    ) {
       setOptions({
         title: '',
         ariaLabel: 'Small Screen Warning',
@@ -318,7 +325,7 @@ function App({ appType }: Props) {
     }
 
     setSizeCheckInitialized(true);
-  }, [width, height, sizeCheckInitialized, setOptions]);
+  }, [width, height, sizeCheckInitialized, setOptions, simulationMode]);
 
   const [totsDiv, setTotsDiv] = useState<HTMLDivElement | null>(null);
   const totsRef = useCallback((node: HTMLDivElement) => {
