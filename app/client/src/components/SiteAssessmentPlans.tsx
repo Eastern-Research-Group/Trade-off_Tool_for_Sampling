@@ -10,10 +10,12 @@ import IconTrashAlt from '~icons/fa7-solid/trash-alt';
 import AoiSketchButton from 'components/AoiSketchButton';
 import ColorPicker from 'components/ColorPicker';
 import { EditSiteAssessmentPlan } from 'components/EditLayerMetaData';
+import MessageBox from 'components/MessageBox';
+import Select from 'components/Select';
 // config
 import { PolygonSymbol } from 'config/sampleAttributes';
 // contexts
-import Select from 'components/Select';
+import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // styles
 import { reactSelectStyles } from 'styles';
@@ -80,6 +82,7 @@ const verticalCenterTextStyles = css`
 // --- components ---
 
 function SiteAssessmentPlans() {
+  const { simulationMode } = useContext(NavigationContext);
   const {
     aoiSketchVM,
     defaultSymbols,
@@ -322,6 +325,14 @@ function SiteAssessmentPlans() {
         />
 
         <p>Placeholder...</p>
+
+        {simulationMode && (
+          <MessageBox
+            title="Training Tip"
+            message="Consider why this area matters. Boundaries should reflect likely contamination pathways, operational priorities, and decision needs."
+            severity="training"
+          />
+        )}
 
         <div css={iconButtonContainerStyles}>
           <div css={verticalCenterTextStyles}>

@@ -1058,14 +1058,6 @@ function GenerateSamples({ id, type }: GenerateSamplesProps) {
             </p>
           )}
 
-          {simulationMode && generateRandomMode === 'draw' && (
-            <MessageBox
-              title="Training Tip"
-              message="Consider why this area matters. Boundaries should reflect likely contamination pathways, operational priorities, and decision needs."
-              severity="training"
-            />
-          )}
-
           <div>
             <input
               id={`${id}-draw-aoi`}
