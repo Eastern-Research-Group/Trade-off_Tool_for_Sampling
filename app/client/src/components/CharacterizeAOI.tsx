@@ -50,6 +50,7 @@ import {
   scenarioNameTakenMessage,
   webServiceErrorMessage,
 } from 'config/errorMessages';
+
 function getAoiLayer(
   deconSketchLayer: LayerAoiAnalysisEditsType,
   layers: LayerType[],
@@ -1679,19 +1680,19 @@ function CharacterizeAOI({
                   }
                 />
               )}
-              {simulationMode &&
-                aoiCharacterizationData.status === 'success' && (
-                  <MessageBox
-                    title="Training Tip"
-                    message="Effective decontamination requires understanding what is contaminated. Buildings, vegetation/soil, asphalt, and concrete may respond differently to remediation technologies."
-                    severity="training"
-                  />
-                )}
             </Fragment>
           )}
 
           <hr />
         </Fragment>
+      )}
+
+      {simulationMode && aoiCharacterizationData.status === 'success' && (
+        <MessageBox
+          title="Training Tip"
+          message="Effective decontamination requires understanding what is contaminated. Buildings, vegetation/soil, asphalt, and concrete may respond differently to remediation technologies."
+          severity="training"
+        />
       )}
     </Fragment>
   );

@@ -1895,14 +1895,6 @@ function DeconSelectionPopup({
           />
         )}
 
-        {simulationMode && (
-          <MessageBox
-            title="Training Tip"
-            message="Additional decontamination rounds may improve confidence but also increase time, cost, and waste generation."
-            severity="training"
-          />
-        )}
-
         <strong>Select estimation approach:</strong>
 
         <div css={radioGroupStyles}>
@@ -1949,6 +1941,14 @@ function DeconSelectionPopup({
           </a>{' '}
           is also available to review.
         </p>
+
+        {selectedApproach === 'Advanced' && simulationMode && (
+          <MessageBox
+            title="Training Tip"
+            message="Additional decontamination rounds may improve confidence but also increase time, cost, and waste generation."
+            severity="training"
+          />
+        )}
 
         <ReactTableEditable
           id={generateUUID()}

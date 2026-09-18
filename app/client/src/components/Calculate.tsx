@@ -1131,7 +1131,7 @@ function Calculate({ appType }: Props) {
         <div css={sectionContainerMessageWidthOnly}>
           <MessageBox
             title="Training Tip"
-            message="Consider why this area matters. Boundaries should reflect likely contamination pathways, operational priorities, and decision needs."
+            message="The best sampling plan is not always the largest plan. Evaluate whether extra samples provide enough additional confidence to justify the resource demands."
             severity="training"
           />
         </div>
