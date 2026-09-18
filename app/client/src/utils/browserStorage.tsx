@@ -190,7 +190,7 @@ export async function readFromStorage(key: string) {
   return (await db.table(dataTableName).get(`${sessionId}-${key}`))?.value;
 }
 
-export async function copySamplingPlanToDeconSession() {
+export async function copySamplingPlanToDeconSession(selectedPlanId: string) {
   const samplingSessionId = sessionStorage.getItem('tots-session-id');
   if (!samplingSessionId) return;
 
@@ -209,7 +209,13 @@ export async function copySamplingPlanToDeconSession() {
     .table(dataTableName)
     .get(`${deconSessionId}-edits`);
   const existingEdits = (deconPlan?.value?.edits ?? []) as EditsType['edits'];
-  const samplingEdits = (samplingPlan.value?.edits ?? []) as EditsType['edits'];
+  const samplingEdits = (
+    (samplingPlan.value?.edits ?? []) as EditsType['edits']
+  ).filter(
+    (edit) => edit.type === 'scenario' && edit.layerId === selectedPlanId,
+  );
+  if (samplingEdits.length === 0) return;
+
   const existingEditKeys = new Set(
     existingEdits.map((edit) => `${edit.type}:${edit.layerId}`),
   );

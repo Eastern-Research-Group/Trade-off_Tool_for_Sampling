@@ -1173,8 +1173,13 @@ function Calculate({ appType }: Props) {
               onClick={async () => {
                 setIsSimulationModalOpen(false);
 
-                if (appType === 'sampling') {
-                  await copySamplingPlanToDeconSession();
+                if (
+                  appType === 'sampling' &&
+                  selectedScenario?.type === 'scenario'
+                ) {
+                  await copySamplingPlanToDeconSession(
+                    selectedScenario.layerId,
+                  );
                 }
 
                 window.parent.postMessage(
