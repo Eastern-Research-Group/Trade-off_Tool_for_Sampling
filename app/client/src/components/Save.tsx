@@ -52,7 +52,7 @@ function Save({ appType }: Props) {
 
     graphic.attributes = {
       TYPE: 'Contamination Map',
-      CONTAMTYPE: 'chemical',
+      CONTAMTYPE: 'biological',
       CONTAMVAL: 0,
       CONTAMUNIT: 'cfu',
       ...(graphic.attributes ?? {}),

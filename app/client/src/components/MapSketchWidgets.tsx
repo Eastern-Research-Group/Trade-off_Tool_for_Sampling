@@ -638,6 +638,9 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
         }
 
         async function processSketchEvent() {
+          const view = sketchViewModel.view;
+          if (!view || !view.map) return;
+
           // get the button and it's id
           const button = document.querySelector('.sketch-button-selected');
           const selectedId = (button && button.id)?.replace('draw-sample-', '');
@@ -696,7 +699,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
               GLOBALID: uuid,
               OBJECTID: -1,
               TYPE: layerType,
-              CONTAMTYPE: 'chemical',
+              CONTAMTYPE: 'biological',
               CONTAMVAL: 0,
               CONTAMUNIT: 'cfu',
               ...(customAttributes ?? {}),
@@ -728,7 +731,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
 
           // update the z values
           await setZValues({
-            map: sketchViewModel.view.map,
+            map: view.map,
             graphic,
             zRefParam: firstPoint,
             zOverride: terrain3dUseElevationGlobal ? null : 0,
@@ -766,6 +769,18 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
 
           // save the graphic
           sketchEventSetter(event);
+
+          if (id.includes('contamination-map-aoi')) {
+            const geometry = graphic.geometry as __esri.Geometry;
+            view.popup = new Popup({
+              features: [graphic],
+              location:
+                geometry.type === 'point'
+                  ? geometry
+                  : (geometry as __esri.Polygon).centroid,
+              visible: true,
+            });
+          }
 
           firstPoint = null;
 

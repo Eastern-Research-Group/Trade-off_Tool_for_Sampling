@@ -374,7 +374,7 @@ function StagingAreas() {
             buttonId="contamination-map-aoi"
             sketchLayerType="Contamination Map"
             defaultAttributes={{
-              CONTAMTYPE: 'chemical',
+              CONTAMTYPE: 'biological',
               CONTAMVAL: 0,
               CONTAMUNIT: 'cfu',
             }}
