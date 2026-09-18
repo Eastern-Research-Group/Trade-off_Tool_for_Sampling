@@ -60,8 +60,9 @@ export const errorBoundaryMessage = (error: Error) => (
     title="Error"
     message={
       <Fragment>
-        Something went wrong. Please contact the application owner, Timothy Boe,
-        at <a href="mailto:boe.timothy@epa.gov.">boe.timothy@epa.gov.</a>.
+        Something went wrong. Please contact the application owner, Erin
+        Silvestri, at{' '}
+        <a href="mailto:silvestri.erin@epa.gov">silvestri.erin@epa.gov</a>.
         Please include as much detail related to the sequence of interactions
         that triggered the error with your message.
         <br />

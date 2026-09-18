@@ -13,11 +13,20 @@
     "exemptionText": null
   },
   "repositoryURL": "https://github.com/USEPA/Trade-off_Tool_for_Sampling",
-  "languages": ["React", "JavaScript", "Node.js", "ArcGIS API for JavaScript"],
-  "tags": ["EPA", "TOTS", "Trade-off Tool for Sampling"],
+  "languages": [
+    "React",
+    "JavaScript",
+    "Node.js",
+    "ArcGIS API for JavaScript"
+  ],
+  "tags": [
+    "EPA",
+    "TOTS",
+    "Trade-off Tool for Sampling"
+  ],
   "contact": {
     "name": "TOTS Team",
-    "email": "boe.timothy@epa.gov",
+    "email": "silvestri.erin@epa.gov",
     "contactPage": "https://www.epa.gov/homeland-security-research/forms/contact-us-about-homeland-security-research"
   }
 }
