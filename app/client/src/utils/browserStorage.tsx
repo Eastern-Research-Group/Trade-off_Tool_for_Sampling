@@ -205,9 +205,30 @@ export async function copySamplingPlanToDeconSession() {
     .get(`${samplingSessionId}-edits`);
   if (!samplingPlan) return;
 
+  const deconPlan = await db
+    .table(dataTableName)
+    .get(`${deconSessionId}-edits`);
+  const existingEdits = (deconPlan?.value?.edits ?? []) as EditsType['edits'];
+  const samplingEdits = (samplingPlan.value?.edits ?? []) as EditsType['edits'];
+  const existingEditKeys = new Set(
+    existingEdits.map((edit) => `${edit.type}:${edit.layerId}`),
+  );
+  const copiedEdits = samplingEdits.filter((edit) => {
+    const key = `${edit.type}:${edit.layerId}`;
+    if (existingEditKeys.has(key)) return false;
+    existingEditKeys.add(key);
+    return true;
+  });
+
   await db.table(dataTableName).put({
     key: `${deconSessionId}-edits`,
-    value: structuredClone(samplingPlan.value),
+    value: {
+      ...(deconPlan?.value ?? {}),
+      count:
+        Math.max(deconPlan?.value?.count ?? 0, samplingPlan.value?.count ?? 0) +
+        1,
+      edits: structuredClone([...existingEdits, ...copiedEdits]),
+    },
   });
 
   const samplingSymbols = await db

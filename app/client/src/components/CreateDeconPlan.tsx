@@ -1282,7 +1282,7 @@ function CreateDeconPlan() {
                   showOnEdit={true}
                 />
 
-                {trainingMode && (
+                {trainingMode && !simulationMode && (
                   <div>
                     <label htmlFor="contamination-map-select-input">
                       Contamination map
