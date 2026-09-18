@@ -366,10 +366,10 @@
           webArea: 'TOTS',
         },
         admin: {
-          title: 'TOTS Admin | US EPA',
+          title: 'TOTS Define Contamination for Training | US EPA',
           description:
-            'TOTS Admin is JavaScript Web Mapping application to create a decontamination strategy for chemical and radiological contamination characterization easily accessible to the EPA GeoPlatform.',
-          webArea: 'TOTS Admin',
+            'TOTS Define Contamination for Training is JavaScript Web Mapping application to create a decontamination strategy for chemical and radiological contamination characterization easily accessible to the EPA GeoPlatform.',
+          webArea: 'TOTS Define Contamination for Training',
         },
         decon: {
           title:
@@ -428,8 +428,8 @@
           ? 'tods'
           : 'tots';
 
-      const viteSubpath = "%VITE_SUBPATH%";
-      const baseUrl = `${window.location.origin}${viteSubpath !== "\%VITE_SUBPATH\%" ? viteSubpath : ''}`;
+      const viteSubpath = '%VITE_SUBPATH%';
+      const baseUrl = `${window.location.origin}${viteSubpath !== '\%VITE_SUBPATH\%' ? viteSubpath : ''}`;
       function unsupportedBrowserMessage() {
         const unsupportedMessage = document.getElementById(
           `unsupported-browser-message-${appId}`,

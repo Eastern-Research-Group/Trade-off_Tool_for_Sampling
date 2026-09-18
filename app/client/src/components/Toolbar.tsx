@@ -1058,7 +1058,7 @@ function Toolbar({ appType }: Props) {
   return (
     <div css={toolBarStyles} data-testid="tots-toolbar">
       <h1 css={toolBarTitle}>
-        {appType === 'admin' && 'TOTS Admin '}
+        {appType === 'admin' && 'TOTS Define Contamination for Training '}
         {appType !== 'admin' && 'Trade-off Tool for '}
         {appType === 'admin'
           ? ''
