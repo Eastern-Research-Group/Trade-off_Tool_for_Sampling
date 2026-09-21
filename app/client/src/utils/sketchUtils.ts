@@ -249,7 +249,6 @@ export async function createBuffer(graphic: __esri.Graphic) {
   // use the extent to make the buffer a square
   const projectedPolygon = new Polygon({
     spatialReference: center.spatialReference,
-    centroid: center,
     rings: [
       [
         [ptBuff.extent.xmin, ptBuff.extent.ymin, center.z],

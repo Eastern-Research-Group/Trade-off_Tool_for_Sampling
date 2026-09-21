@@ -789,7 +789,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
             id.includes('contamination-map-aoi');
           if (shouldContinueCreating) {
             // start next graphic
-            setTimeout(() => {
+            requestAnimationFrame(() => {
               (sketchViewModel as any).totsActiveCreateId = id.includes(
                 'contamination-map-aoi',
               )
