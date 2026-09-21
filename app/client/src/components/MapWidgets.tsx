@@ -226,7 +226,8 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
       !map ||
       !selectedScenario ||
       selectedScenario.type !== 'scenario' ||
-      selectedScenario.layers.length === 0
+      selectedScenario.layers.length === 0 ||
+      window.location.pathname.startsWith('/decon')
     ) {
       return;
     }
