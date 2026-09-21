@@ -1073,7 +1073,8 @@ function useMapPositionStorage(dbInitialized: boolean) {
   const key = 'map_scene_position';
 
   const { setOptions } = useContext(DialogContext);
-  const { mapView, sceneView } = useContext(SketchContext);
+  const { displayDimensions, mapView, sceneView } = useContext(SketchContext);
+  const [storedCamera, setStoredCamera] = useState<any>(null);
 
   // Retreives the map position and zoom level from browser storage when the app loads
   const [readInitialized, setReadInitialized] = useState(false);
@@ -1088,6 +1089,7 @@ function useMapPositionStorage(dbInitialized: boolean) {
         return;
       }
 
+      setStoredCamera(camera);
       if (!sceneView.camera) sceneView.camera = {} as any;
       sceneView.camera.fov = camera.fov;
       sceneView.camera.heading = camera.heading;
@@ -1100,7 +1102,26 @@ function useMapPositionStorage(dbInitialized: boolean) {
     });
   }, [dbInitialized, readInitialized, sceneView]);
 
-  // Saves the map position and zoom level to browser storage whenever it changes
+  // Reapply the saved 3D camera after the map container switches to the
+  // SceneView during display-mode restoration.
+  useEffect(() => {
+    if (!storedCamera || displayDimensions !== '3d' || !sceneView) return;
+
+    const timeout = setTimeout(() => {
+      if (!sceneView.container) return;
+      if (!sceneView.camera) sceneView.camera = {} as any;
+      sceneView.camera.fov = storedCamera.fov;
+      sceneView.camera.heading = storedCamera.heading;
+      sceneView.camera.position = geometryJsonUtils.fromJSON(
+        storedCamera.position,
+      ) as __esri.Point;
+      sceneView.camera.tilt = storedCamera.tilt;
+    });
+
+    return () => clearTimeout(timeout);
+  }, [displayDimensions, sceneView, storedCamera]);
+
+  // Saves the 3D camera to browser storage whenever it changes.
   const [
     watchExtentInitialized,
     setWatchExtentInitialized, //
@@ -1109,21 +1130,14 @@ function useMapPositionStorage(dbInitialized: boolean) {
     if (!mapView || !sceneView || watchExtentInitialized) return;
 
     reactiveUtils.watch(
-      () => mapView.center,
-      () => {
-        if (!mapView.center) return;
-        const cameraObj = {
-          fov: sceneView.camera?.fov,
-          heading: sceneView.camera?.heading,
-          position: mapView.center.toJSON(),
-          tilt: sceneView.camera?.tilt,
-        };
-        writeToStorage(key, cameraObj, setOptions);
-      },
-    );
-
-    reactiveUtils.watch(
-      () => sceneView.camera,
+      () => [
+        sceneView.camera?.fov,
+        sceneView.camera?.heading,
+        sceneView.camera?.position?.x,
+        sceneView.camera?.position?.y,
+        sceneView.camera?.position?.z,
+        sceneView.camera?.tilt,
+      ],
       () => {
         if (!sceneView.camera) return;
         const cameraObj = {
