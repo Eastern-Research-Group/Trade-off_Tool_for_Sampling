@@ -227,7 +227,8 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
       !selectedScenario ||
       selectedScenario.type !== 'scenario' ||
       selectedScenario.layers.length === 0 ||
-      window.location.pathname.startsWith('/decon')
+      window.location.pathname.endsWith('/decon') ||
+      window.location.pathname.endsWith('/decon/')
     ) {
       return;
     }
