@@ -100,6 +100,7 @@ function SiteAssessmentPlans() {
 
   const [addScenarioVisible, setAddScenarioVisible] = useState(false);
   const [editScenarioVisible, setEditScenarioVisible] = useState(false);
+  const [saveComplete, setSaveComplete] = useState(false);
   const [siteAssessmentPlanLayers, setSiteAssessmentPlanLayers] = useState<
     LayerType[]
   >([]);
@@ -324,7 +325,13 @@ function SiteAssessmentPlans() {
           }}
         />
 
-        <p>Placeholder...</p>
+        <p>
+          Create a site conceptual model to reflect the boundary of where you
+          think contamination exists based on the results of your sampling
+          efforts. Enter a name and optional description. Click the Draw
+          Contamination AOI Boundary to enable drawing on the map. Click Save
+          when you are finished. Click Next to proceed.{' '}
+        </p>
 
         {simulationMode && (
           <MessageBox
@@ -429,18 +436,24 @@ function SiteAssessmentPlans() {
             if (saveResults?.status !== 'success') return;
             setAddScenarioVisible(false);
             setEditScenarioVisible(false);
+            setSaveComplete(true);
           }}
         >
           <AoiSketchButton
             className="margin-top-1"
             label="Draw Contamination AOI Boundary"
-            onContinue={() => {
-              // TODO
-            }}
             replaceGraphics={false}
             sketchLayer={siteAssessmentPlanLayer?.sketchLayer}
           />
         </EditSiteAssessmentPlan>
+      )}
+
+      {saveComplete && (
+        <MessageBox
+          title="Save Complete"
+          severity="info"
+          message="The site conceptual model has been successfully saved."
+        />
       )}
     </div>
   );

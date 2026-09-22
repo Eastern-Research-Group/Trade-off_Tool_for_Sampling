@@ -818,6 +818,54 @@ function Calculate({ appType }: Props) {
   }, [setUpdateContextValues]);
 
   const [isSimulationModalOpen, setIsSimulationModalOpen] = useState(false);
+  const [showSimulationValidationMessage, setShowSimulationValidationMessage] =
+    useState(false);
+
+  const selectedScenarioEdit = edits.edits.find(
+    (edit) =>
+      edit.type === 'scenario' && edit.layerId === selectedScenario?.layerId,
+  ) as ScenarioEditsType | undefined;
+  const hasSiteConceptualModel =
+    (siteAssessmentPlanLayer?.sketchLayer?.type === 'graphics' &&
+      siteAssessmentPlanLayer.sketchLayer.graphics.length > 0) ||
+    layers.some(
+      (layer) =>
+        layer.layerType === 'Site Conceptual Model Mask' &&
+        layer.sketchLayer?.type === 'graphics' &&
+        layer.sketchLayer.graphics.length > 0,
+    ) ||
+    edits.edits.some(
+      (edit) =>
+        edit.type === 'layer' &&
+        edit.layerType === 'Site Conceptual Model Mask' &&
+        (edit.adds.length > 0 ||
+          edit.updates.length > 0 ||
+          edit.published.length > 0),
+    );
+  const hasAnalyzedSampleResults =
+    contaminationResults.status === 'success' ||
+    selectedScenarioEdit?.hasContaminationRan === true ||
+    (selectedScenario?.type === 'scenario' &&
+      selectedScenario.hasContaminationRan === true);
+
+  function handleSimulationNextClick() {
+    if (
+      appType === 'sampling' &&
+      (!hasSiteConceptualModel || !hasAnalyzedSampleResults)
+    ) {
+      setShowSimulationValidationMessage(true);
+      return;
+    }
+
+    setShowSimulationValidationMessage(false);
+    setIsSimulationModalOpen(true);
+  }
+
+  useEffect(() => {
+    if (hasSiteConceptualModel && hasAnalyzedSampleResults) {
+      setShowSimulationValidationMessage(false);
+    }
+  }, [hasAnalyzedSampleResults, hasSiteConceptualModel]);
 
   return (
     <div css={panelContainer}>
@@ -1147,11 +1195,23 @@ function Calculate({ appType }: Props) {
           aria-label="Decontamination plan guidance"
         >
           {appType === 'sampling' && (
-            <p>
-              Your sampling strategy has identified contamination conditions
-              that will drive decontamination decisions for the response area.
-              Click Next to move on to the Decon phase.
-            </p>
+            <Fragment>
+              {contaminationResults?.data &&
+              contaminationResults?.data?.length > 0 ? (
+                <p>
+                  Your sampling strategy has identified contamination conditions
+                  that will drive decontamination decisions for the response
+                  area. Click Next to move on to the Decon phase.
+                </p>
+              ) : (
+                <p>
+                  Your sampling strategy did not identify contamination.
+                  Consider completing additional sampling to inform
+                  decontamination decisions for the response area. Click Next to
+                  move on to the Decon phase.
+                </p>
+              )}
+            </Fragment>
           )}
           {appType === 'decon' && (
             <p>
@@ -1196,9 +1256,18 @@ function Calculate({ appType }: Props) {
 
       <div css={sectionContainer}>
         {simulationMode ? (
-          <div css={containerStyles}>
-            <button onClick={() => setIsSimulationModalOpen(true)}>Next</button>
-          </div>
+          <Fragment>
+            {showSimulationValidationMessage && appType === 'sampling' && (
+              <MessageBox
+                title="Activity Required"
+                severity="warning"
+                message="Create a site conceptual model and analyze sample results before continuing."
+              />
+            )}
+            <div css={containerStyles}>
+              <button onClick={handleSimulationNextClick}>Next</button>
+            </div>
+          </Fragment>
         ) : (
           <NavigationButton currentPanel="calculate" />
         )}
