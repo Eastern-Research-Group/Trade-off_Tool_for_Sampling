@@ -3233,3 +3233,61 @@ export async function applyRendererForTotsLayer(
 
   layer.visible = true;
 }
+
+/**
+ * Serializes a graphics or group layer into a plain object.
+ *
+ * @param layer - layer to serialize
+ * @returns - serialized layer object
+ */
+export function serializeLayer(layer: __esri.GraphicsLayer | __esri.GroupLayer) {
+  if (layer.type === 'group') {
+    return serializeGroupLayer(layer);
+  }
+
+  if (layer.type === 'graphics') {
+    return serializeGraphicsLayer(layer);
+  }
+
+  throw new Error(`Unsupported layer type: ${layer.type}`);
+}
+
+/**
+ * Serializes a graphics layer into a plain object.
+ *
+ * @param layer - layer to serialize
+ * @returns - serialized layer object
+ */
+function serializeGraphicsLayer(layer: __esri.GraphicsLayer) {
+  return {
+    type: 'graphics',
+    id: layer.id,
+    title: layer.title,
+    visible: layer.visible,
+    opacity: layer.opacity,
+    listMode: layer.listMode,
+
+    renderer: layer.renderer ? layer.renderer.toJSON() : undefined,
+
+    graphics: layer.graphics.toArray().map((graphic) => graphic.toJSON()),
+  };
+}
+
+/**
+ * Serializes a group layer into a plain object.
+ *
+ * @param layer - layer to serialize
+ * @returns - serialized layer object
+ */
+function serializeGroupLayer(layer: __esri.GroupLayer) {
+  return {
+    type: 'group',
+    id: layer.id,
+    title: layer.title,
+    visible: layer.visible,
+    opacity: layer.opacity,
+    listMode: layer.listMode,
+
+    layers: layer.layers.toArray().map(serializeLayer),
+  };
+}

@@ -600,6 +600,7 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
           groupLayer.addMany(scenarioLayers);
 
           graphicsLayers.push(groupLayer);
+          editsLayer.serializedLayers = graphicsLayers.map((layer) => serializeLayer(layer));
         }
         // scenarios need to be added to a group layer first
         if (editsLayer.type === 'layer-decon') {
