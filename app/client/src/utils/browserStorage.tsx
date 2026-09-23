@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react';
 import Dexie from 'dexie';
+import Camera from '@arcgis/core/Camera';
 import CSVLayer from '@arcgis/core/layers/CSVLayer';
 import Extent from '@arcgis/core/geometry/Extent';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
@@ -1047,10 +1048,11 @@ function useMapExtentStorage(dbInitialized: boolean) {
   useEffect(() => {
     if (!mapView || !sceneView || watchExtentInitialized) return;
 
+    // The hidden view is suspended, so only the one on screen writes its extent.
     reactiveUtils.when(
       () => mapView.stationary,
       () => {
-        if (mapView && mapView.extent && mapView.stationary) {
+        if (mapView.extent && mapView.stationary && !mapView.suspended) {
           writeToStorage(key2d, mapView.extent.toJSON(), setOptions);
         }
       },
@@ -1058,7 +1060,7 @@ function useMapExtentStorage(dbInitialized: boolean) {
     reactiveUtils.watch(
       () => sceneView.stationary,
       () => {
-        if (sceneView && sceneView.extent && sceneView.stationary) {
+        if (sceneView.extent && sceneView.stationary && !sceneView.suspended) {
           writeToStorage(key3d, sceneView.extent.toJSON(), setOptions);
         }
       },
@@ -1073,8 +1075,7 @@ function useMapPositionStorage(dbInitialized: boolean) {
   const key = 'map_scene_position';
 
   const { setOptions } = useContext(DialogContext);
-  const { displayDimensions, mapView, sceneView } = useContext(SketchContext);
-  const [storedCamera, setStoredCamera] = useState<any>(null);
+  const { mapView, sceneView } = useContext(SketchContext);
 
   // Retreives the map position and zoom level from browser storage when the app loads
   const [readInitialized, setReadInitialized] = useState(false);
@@ -1089,37 +1090,19 @@ function useMapPositionStorage(dbInitialized: boolean) {
         return;
       }
 
-      setStoredCamera(camera);
-      if (!sceneView.camera) sceneView.camera = {} as any;
-      sceneView.camera.fov = camera.fov;
-      sceneView.camera.heading = camera.heading;
-      sceneView.camera.position = geometryJsonUtils.fromJSON(
-        camera.position,
-      ) as __esri.Point;
-      sceneView.camera.tilt = camera.tilt;
+      // A camera set before the view is ready is discarded.
+      reactiveUtils.whenOnce(() => sceneView.ready).then(() => {
+        sceneView.camera = new Camera({
+          fov: camera.fov,
+          heading: camera.heading,
+          position: geometryJsonUtils.fromJSON(camera.position) as __esri.Point,
+          tilt: camera.tilt,
+        });
 
-      setReadDone(true);
+        setReadDone(true);
+      });
     });
   }, [dbInitialized, readInitialized, sceneView]);
-
-  // Reapply the saved 3D camera after the map container switches to the
-  // SceneView during display-mode restoration.
-  useEffect(() => {
-    if (!storedCamera || displayDimensions !== '3d' || !sceneView) return;
-
-    const timeout = setTimeout(() => {
-      if (!sceneView.container) return;
-      if (!sceneView.camera) sceneView.camera = {} as any;
-      sceneView.camera.fov = storedCamera.fov;
-      sceneView.camera.heading = storedCamera.heading;
-      sceneView.camera.position = geometryJsonUtils.fromJSON(
-        storedCamera.position,
-      ) as __esri.Point;
-      sceneView.camera.tilt = storedCamera.tilt;
-    });
-
-    return () => clearTimeout(timeout);
-  }, [displayDimensions, sceneView, storedCamera]);
 
   // Saves the 3D camera to browser storage whenever it changes.
   const [

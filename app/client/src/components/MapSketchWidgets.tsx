@@ -8,7 +8,6 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { createRoot } from 'react-dom/client';
 import Collection from '@arcgis/core/core/Collection';
 import Point from '@arcgis/core/geometry/Point';
 import PopupTemplate from '@arcgis/core/PopupTemplate';
@@ -30,6 +29,7 @@ import { AppType } from 'types/Navigation';
 import { PolygonSymbol, SelectedSampleType } from 'config/sampleAttributes';
 // utils
 import { use3dSketch, useDynamicPopup } from 'utils/hooks';
+import { createReactContent } from 'utils/shadowDom';
 import {
   convertToPoint,
   createBuffer,
@@ -360,9 +360,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
           />
         );
 
-        // wrap the content for esri
-        const contentContainer = document.createElement('div');
-        createRoot(contentContainer).render(content);
+        const contentContainer = createReactContent(content);
 
         view.popup = new Popup({
           location:

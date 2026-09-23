@@ -987,31 +987,6 @@ function Toolbar({ appType }: Props) {
     });
   }, [displayGeometryType, layers]);
 
-  // Switches between 2d and 3d
-  useEffect(() => {
-    if (!mapView || !sceneView) return;
-
-    if (displayDimensions === '2d') {
-      if (!sceneView.viewpoint || !sceneView.container || !sceneView.map)
-        return;
-      mapView.viewpoint = sceneView.viewpoint.clone();
-      mapView.container = sceneView.container;
-      mapView.map = sceneView.map;
-
-      sceneView.container = null as any;
-      sceneView.map = null as any;
-    } else {
-      if (!mapView.container || !mapView.map) return;
-      if (mapView.viewpoint) sceneView.viewpoint = mapView.viewpoint?.clone();
-      if (sceneView.camera) sceneView.camera.tilt = 0.5;
-      sceneView.container = mapView.container;
-      sceneView.map = mapView.map;
-
-      mapView.container = null as any;
-      mapView.map = null as any;
-    }
-  }, [mapView, sceneView, displayDimensions]);
-
   // Get the elevation layer
   const [elevLayer, setElevLayer] = useState<__esri.ElevationLayer | null>(
     null,

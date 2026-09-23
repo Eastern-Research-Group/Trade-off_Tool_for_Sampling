@@ -1,7 +1,6 @@
 /** @jsxImportSource @emotion/react */
 
 import { useContext, useEffect, useState } from 'react';
-import { createRoot } from 'react-dom/client';
 import { css } from '@emotion/react';
 import Search from '@arcgis/core/widgets/Search';
 import Handles from '@arcgis/core/core/Handles';
@@ -11,6 +10,8 @@ import ScaleBar from '@arcgis/core/widgets/ScaleBar';
 // contexts
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
+// utils
+import { createReactContent } from 'utils/shadowDom';
 // config
 import { isDecon } from 'config/navigation';
 
@@ -97,7 +98,6 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
   } = useContext(SketchContext);
 
   // Creates and adds the home widget to the map.
-  // Also moves the zoom widget to the top-right
   useEffect(() => {
     if (!mapView || !sceneView || !setHomeWidget || homeWidget) return;
 
@@ -133,13 +133,9 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
       popupEnabled: false,
     });
 
+    // zoom, navigation toggle and compass are rendered by Map as components
     mapView.ui.add(widget2d, { position: 'top-right', index: 0 });
-    mapView.ui.move('zoom', { position: 'top-right', index: 3 });
-
     sceneView.ui.add(widget3d, { position: 'top-right', index: 0 });
-    sceneView.ui.move('zoom', { position: 'top-right', index: 3 });
-    sceneView.ui.move('navigation-toggle', { position: 'top-right', index: 4 });
-    sceneView.ui.move('compass', { position: 'top-right', index: 5 });
 
     setSearchWidget({
       '2d': widget2d,
@@ -181,24 +177,22 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
     }
 
     // add measurement widget to 2d view
-    const node2d = document.createElement('div');
-    mapView.ui.add(node2d, { position: 'top-right', index: 1 });
-    createRoot(node2d).render(
+    const node2d = createReactContent(
       <CustomMeasurementWidget
         displayDimensions={displayDimensions}
         measurementWidget={measurementWidget}
       />,
     );
+    mapView.ui.add(node2d, { position: 'top-right', index: 1 });
 
     // add measurement widget to 3d view
-    const node3d = document.createElement('div');
-    sceneView.ui.add(node3d, { position: 'top-right', index: 1 });
-    createRoot(node3d).render(
+    const node3d = createReactContent(
       <CustomMeasurementWidget
         displayDimensions={displayDimensions}
         measurementWidget={measurementWidget}
       />,
     );
+    sceneView.ui.add(node3d, { position: 'top-right', index: 1 });
 
     return function cleanup() {
       mapView?.ui.remove(node2d);
