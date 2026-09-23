@@ -54,7 +54,9 @@ import { useDynamicPopup, useTotsLayerAdder } from 'utils/hooks';
 import {
   applyRendererForTotsLayer,
   createLayer,
+  findLayerInEdits,
   generateUUID,
+  serializeLayer,
 } from 'utils/sketchUtils';
 import {
   getEnvironment,
@@ -317,6 +319,7 @@ export function useSessionStorage(appType: AppType) {
   useGsgFileStorage(dbInitialized);
   useSimulationModeStorage(dbInitialized);
   useTrainingModeStorage(dbInitialized);
+  useSerializedLayersStorage(dbInitialized);
 }
 
 // Uses browser storage for holding graphics color.
@@ -600,7 +603,6 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
           groupLayer.addMany(scenarioLayers);
 
           graphicsLayers.push(groupLayer);
-          editsLayer.serializedLayers = graphicsLayers.map((layer) => serializeLayer(layer));
         }
         // scenarios need to be added to a group layer first
         if (editsLayer.type === 'layer-decon') {
@@ -769,6 +771,44 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
 
     performWork();
   }, [addTotsLayerAutoSelect, portal, setAppLoading, signedIn, urlIdsToAdd]);
+}
+
+function useSerializedLayersStorage(dbInitialized: boolean) {
+  const key = 'serialized_layers';
+  const { setOptions } = useContext(DialogContext);
+  const { simulationMode } = useContext(NavigationContext);
+  const { edits, layersInitialized, map } = useContext(SketchContext);
+
+  // serializes graphics layers and group layers to indexeddb when in simulation mode
+  useEffect(() => {
+    if (!dbInitialized || !layersInitialized || !map) return;
+
+    const simulationModeParam = window.location.search
+      .toLowerCase()
+      .includes('simulationmode=true');
+    if (!simulationMode || !simulationModeParam) return;
+
+    const layersToSerialize = map.layers.toArray().filter((layer) => {
+      const layerInEdits = findLayerInEdits(edits.edits, layer.id);
+      return (
+        ['feature', 'graphics', 'group'].includes(layer.type) &&
+        (layerInEdits.scenarioIndex !== -1 || layerInEdits.layerIndex !== -1)
+      );
+    });
+
+    writeToStorage(
+      key,
+      layersToSerialize.map((layer) => serializeLayer(layer)),
+      setOptions,
+    );
+  }, [
+    dbInitialized,
+    edits,
+    map,
+    layersInitialized,
+    setOptions,
+    simulationMode,
+  ]);
 }
 
 // Uses browser storage for holding the reference layers that have been added.

@@ -3240,7 +3240,9 @@ export async function applyRendererForTotsLayer(
  * @param layer - layer to serialize
  * @returns - serialized layer object
  */
-export function serializeLayer(layer: __esri.GraphicsLayer | __esri.GroupLayer) {
+export function serializeLayer(
+  layer: __esri.GraphicsLayer | __esri.GroupLayer,
+) {
   if (layer.type === 'group') {
     return serializeGroupLayer(layer);
   }
@@ -3259,6 +3261,18 @@ export function serializeLayer(layer: __esri.GraphicsLayer | __esri.GroupLayer) 
  * @returns - serialized layer object
  */
 function serializeGraphicsLayer(layer: __esri.GraphicsLayer) {
+  const graphics = layer.graphics?.toArray() ?? [];
+  const attributes = graphics.reduce(
+    (allAttributes, graphic) => ({
+      ...allAttributes,
+      ...graphic.attributes,
+    }),
+    {},
+  );
+  const popupTemplate = Object.keys(attributes).length
+    ? getSimplePopupTemplate(attributes)
+    : undefined;
+
   return {
     type: 'graphics',
     id: layer.id,
@@ -3268,8 +3282,9 @@ function serializeGraphicsLayer(layer: __esri.GraphicsLayer) {
     listMode: layer.listMode,
 
     renderer: layer.renderer ? layer.renderer.toJSON() : undefined,
+    popupTemplate,
 
-    graphics: layer.graphics.toArray().map((graphic) => graphic.toJSON()),
+    graphics: graphics.map((graphic) => graphic.toJSON()),
   };
 }
 
