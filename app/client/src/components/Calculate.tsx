@@ -331,6 +331,7 @@ function Calculate({ appType }: Props) {
   } = useContext(CalculateContext);
 
   const getPopupTemplate = useDynamicPopup(appType);
+  const [siteModelOpen, setSiteModelOpen] = useState(false);
 
   // sync the inputs with settings pulled from AGO
   const [pageInitialized, setPageInitialized] = useState(false);
@@ -807,6 +808,7 @@ function Calculate({ appType }: Props) {
     }
 
     setEdits(editsCopy);
+    setSiteModelOpen(true);
   }
 
   // Run calculations when the user exits this tab, by updating
@@ -880,13 +882,20 @@ function Calculate({ appType }: Props) {
               support conducting "what-if" scenarios. Click{' '}
               <strong>View Detailed Results</strong> to display a detailed
               summary of the results.{' '}
-              {trainingMode && (
+              {simulationMode && (
+                <Fragment>
+                  Click <strong>Analyze Sample Results</strong> to simulate
+                  receiving laboratory analysis results of your samples. Any
+                  positive results will be highlighted on the map.
+                </Fragment>
+              )}
+              {!simulationMode && trainingMode && (
                 <Fragment>
                   If you have a contamination map layer, click{' '}
                   <strong>Analyze Sample Results</strong> to see if any of your
                   samples would have resulted in contamination hits.{' '}
                 </Fragment>
-              )}
+              )}{' '}
               Click <strong>Next</strong> to configure your output.
             </p>
           )}
@@ -1168,7 +1177,10 @@ function Calculate({ appType }: Props) {
       </div>
 
       {appType === 'sampling' && (
-        <AccordionItem title="Create Site Conceptual Model(s)">
+        <AccordionItem
+          title="Create Site Conceptual Model(s)"
+          isOpenParam={siteModelOpen}
+        >
           <div css={sectionContainer}>
             <SiteAssessmentPlans />
           </div>
