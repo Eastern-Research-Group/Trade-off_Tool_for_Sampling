@@ -16,6 +16,8 @@ import PortalItem from '@arcgis/core/portal/PortalItem';
 import SceneView from '@arcgis/core/views/SceneView';
 import Viewpoint from '@arcgis/core/Viewpoint';
 import '@arcgis/map-components/components/arcgis-map';
+import '@arcgis/map-components/components/arcgis-measurement';
+import '@arcgis/map-components/components/arcgis-scale-bar';
 import '@arcgis/map-components/components/arcgis-scene';
 // components
 import MapMouseEvents from 'components/MapMouseEvents';
@@ -187,7 +189,6 @@ function moveSceneUiComponents(view: __esri.SceneView) {
   view.ui.move('compass', { position: 'top-right', index: 5 });
 }
 
-
 // Builds the map shared by the 2d and 3d views.
 function createTotsMap(appType: AppType) {
   const layers: __esri.Layer[] = [];
@@ -304,6 +305,30 @@ function Map({ appType, height }: Props) {
   const [mapViewReady, setMapViewReady] = useState(false);
   const [sceneViewReady, setSceneViewReady] = useState(false);
   const bothReady = mapViewReady && sceneViewReady;
+
+  // The measurement components live in the views, but Mapwidgets owns the buttons.
+  const [measurement2d, setMeasurement2d] =
+    useState<HTMLArcgisMeasurementElement | null>(null);
+  const [measurement3d, setMeasurement3d] =
+    useState<HTMLArcgisMeasurementElement | null>(null);
+
+  const initMeasurement2d = useCallback(
+    (el: HTMLArcgisMeasurementElement | null) => {
+      setMeasurement2d(el);
+      // Wraps a core widget in a shadow root of its own, which needs the theme as well.
+      el?.componentOnReady().then(() => adoptEsriStyles(el.shadowRoot));
+    },
+    [],
+  );
+
+  const initMeasurement3d = useCallback(
+    (el: HTMLArcgisMeasurementElement | null) => {
+      setMeasurement3d(el);
+      // Wraps a core widget in a shadow root of its own, which needs the theme as well.
+      el?.componentOnReady().then(() => adoptEsriStyles(el.shadowRoot));
+    },
+    [],
+  );
 
   const handleMapViewReady = useCallback(() => {
     const el = mapElRef.current;
@@ -427,7 +452,16 @@ function Map({ appType, height }: Props) {
               spatialReferenceLocked={true}
               zoom={DEFAULT_ZOOM}
               onarcgisViewReadyChange={handleMapViewReady}
-            />
+            >
+              {/* the corner lays out in reverse */}
+              <arcgis-measurement
+                areaUnit="imperial"
+                linearUnit="imperial"
+                ref={initMeasurement2d}
+                slot="bottom-right"
+              />
+              <arcgis-scale-bar slot="bottom-right" unit="dual" />
+            </arcgis-map>
             <arcgis-scene
               autoDestroyDisabled={true}
               center={DEFAULT_CENTER}
@@ -438,12 +472,25 @@ function Map({ appType, height }: Props) {
               ref={initSceneEl}
               zoom={DEFAULT_ZOOM}
               onarcgisViewReadyChange={handleSceneViewReady}
-            />
+            >
+              <arcgis-measurement
+                areaUnit="imperial"
+                linearUnit="imperial"
+                ref={initMeasurement3d}
+                slot="bottom-right"
+              />
+            </arcgis-scene>
           </Fragment>
         )}
         {map && mapView && sceneView && (
           <Fragment>
-            <MapWidgets map={map} mapView={mapView} sceneView={sceneView} />
+            <MapWidgets
+              map={map}
+              mapView={mapView}
+              measurement2d={measurement2d}
+              measurement3d={measurement3d}
+              sceneView={sceneView}
+            />
             <MapSketchWidgets
               appType={appType}
               mapView={mapView}

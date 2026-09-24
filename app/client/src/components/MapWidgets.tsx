@@ -5,15 +5,11 @@ import { css } from '@emotion/react';
 import Search from '@arcgis/core/widgets/Search';
 import Handles from '@arcgis/core/core/Handles';
 import Home from '@arcgis/core/widgets/Home';
-import Measurement from '@arcgis/core/widgets/Measurement';
-import ScaleBar from '@arcgis/core/widgets/ScaleBar';
 // contexts
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
 // utils
 import { createReactContent } from 'utils/shadowDom';
-// config
-import { isDecon } from 'config/navigation';
 
 type SearchWidgetType = {
   '2d': Search;
@@ -81,10 +77,18 @@ const measurementContainerStyles = css`
 type Props = {
   map: __esri.Map;
   mapView: __esri.MapView;
+  measurement2d: HTMLArcgisMeasurementElement | null;
+  measurement3d: HTMLArcgisMeasurementElement | null;
   sceneView: __esri.SceneView;
 };
 
-function MapWidgets({ map, mapView, sceneView }: Props) {
+function MapWidgets({
+  map,
+  mapView,
+  measurement2d,
+  measurement3d,
+  sceneView,
+}: Props) {
   const { trainingMode } = useContext(NavigationContext);
   const {
     edits,
@@ -143,53 +147,26 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
     });
   }, [mapView, sceneView, searchWidget]);
 
-  // Initialize the measurement widget
-  const [measurementWidget, setMeasurementWidget] =
-    useState<Measurement | null>(null);
+  // Display the buttons that drive the measurement components
   useEffect(() => {
-    if (!mapView || !sceneView || measurementWidget) return;
+    if (!mapView || !sceneView || !measurement2d || !measurement3d) return;
 
-    const widget = new Measurement({
-      areaUnit: 'imperial',
-      linearUnit: 'imperial',
-      view: mapView,
-    });
+    // start over when switching dimensions
+    measurement2d.clear();
+    measurement3d.clear();
 
-    setMeasurementWidget(widget);
-  }, [displayDimensions, mapView, measurementWidget, sceneView]);
-
-  // Display the measurement widget on the screen
-  useEffect(() => {
-    if (!mapView || !sceneView || !measurementWidget) return;
-
-    // sync the measurement widget settings to 2d/3d
-    measurementWidget.clear();
-    measurementWidget.view = displayDimensions === '3d' ? sceneView : mapView;
-    if (displayDimensions === '3d') {
-      mapView.ui.remove(measurementWidget);
-      sceneView.ui.add(measurementWidget, {
-        position: 'bottom-right',
-        index: 0,
-      });
-    } else {
-      sceneView.ui.remove(measurementWidget);
-      mapView.ui.add(measurementWidget, { position: 'bottom-right', index: 1 });
-    }
-
-    // add measurement widget to 2d view
     const node2d = createReactContent(
       <CustomMeasurementWidget
-        displayDimensions={displayDimensions}
-        measurementWidget={measurementWidget}
+        displayDimensions="2d"
+        measurementWidget={measurement2d}
       />,
     );
     mapView.ui.add(node2d, { position: 'top-right', index: 1 });
 
-    // add measurement widget to 3d view
     const node3d = createReactContent(
       <CustomMeasurementWidget
-        displayDimensions={displayDimensions}
-        measurementWidget={measurementWidget}
+        displayDimensions="3d"
+        measurementWidget={measurement3d}
       />,
     );
     sceneView.ui.add(node3d, { position: 'top-right', index: 1 });
@@ -198,20 +175,7 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
       mapView?.ui.remove(node2d);
       sceneView?.ui.remove(node3d);
     };
-  }, [displayDimensions, mapView, measurementWidget, sceneView]);
-
-  // Creates and adds the scale bar widget to the map
-  const [scaleBar, setScaleBar] = useState<__esri.ScaleBar | null>(null);
-  useEffect(() => {
-    if (!mapView || scaleBar) return;
-
-    const newScaleBar = new ScaleBar({
-      view: mapView,
-      unit: 'dual',
-    });
-    mapView.ui.add(newScaleBar, { position: 'bottom-right', index: 1 });
-    setScaleBar(newScaleBar);
-  }, [mapView, scaleBar]);
+  }, [displayDimensions, mapView, measurement2d, measurement3d, sceneView]);
 
   // Gets the graphics to be highlighted and highlights them
   const [handles] = useState(new Handles());
@@ -407,7 +371,7 @@ function CustomWidgetButton({
 
 type CustomMeasurementWidgetProps = {
   displayDimensions: '2d' | '3d';
-  measurementWidget: Measurement;
+  measurementWidget: HTMLArcgisMeasurementElement;
 };
 
 function CustomMeasurementWidget({
@@ -417,6 +381,11 @@ function CustomMeasurementWidget({
   const [activeTool, setActiveTool] = useState<'area' | 'distance' | null>(
     null,
   );
+
+  // The component reserves space even with nothing to show, hide it when inactive.
+  useEffect(() => {
+    measurementWidget.style.display = activeTool ? '' : 'none';
+  }, [activeTool, measurementWidget]);
 
   return (
     <div css={measurementContainerStyles}>
