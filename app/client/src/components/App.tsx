@@ -261,6 +261,28 @@ function App({ appType }: Props) {
 
   useSessionStorage(appType);
 
+  useEffect(() => {
+    const simulationModeParam = window.location.search
+      .toLowerCase()
+      .includes('simulationmode=true');
+
+    if (appType !== 'decon' || !simulationMode || !simulationModeParam) return;
+
+    function handleAdvanceTab(event: MessageEvent) {
+      if (
+        event.origin !== window.location.origin ||
+        event.data?.action !== 'ADVANCE_TAB'
+      )
+        return;
+
+      console.log('ADVANCE_TAB: ', window.location.pathname);
+      window.location.reload();
+    }
+
+    window.parent.addEventListener('message', handleAdvanceTab);
+    return () => window.parent.removeEventListener('message', handleAdvanceTab);
+  }, [appType, simulationMode]);
+
   const { height, width } = useWindowSize();
 
   const [mapDiv, setMapDiv] = useState<HTMLDivElement | null>(null);

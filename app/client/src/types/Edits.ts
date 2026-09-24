@@ -115,6 +115,7 @@ export type LayerAoiAnalysisEditsType = {
   };
   deconTechSelections: any[];
   gsgFile?: any;
+  serializedLayers?: SerializedLayerType[];
 };
 
 export type AreaByMediaType = {
@@ -180,6 +181,21 @@ export type ScenarioDeconEditsType = {
   referenceLayersTable: ReferenceLayersTableType;
 };
 
+type SerializedGraphic = {
+  graphic: any;
+};
+
+export type SerializedLayerType = {
+  type: string;
+  id: number;
+  title?: string;
+  visible?: boolean;
+  opacity?: number;
+  listMode?: string;
+  graphics?: SerializedGraphic[];
+  layers?: SerializedLayerType[];
+};
+
 export type ScenarioEditsType = {
   type: 'scenario';
   id: number; // scenario layer id
@@ -220,6 +236,7 @@ export type ScenarioEditsType = {
   importedAoiLayer?: LayerEditsType | null;
   aoiLayerMode?: '' | 'draw' | 'file';
   gsgFile?: any;
+  serializedLayers?: SerializedLayerType[];
 };
 
 export type LayerEditsType = {
@@ -244,6 +261,7 @@ export type LayerEditsType = {
   updates: FeatureEditsType[]; // features to update
   deletes: DeleteFeatureType[]; // features to delete
   published: FeatureEditsType[]; // features as they are on AGOL
+  serializedLayers?: SerializedLayerType[];
 };
 
 export type FeatureEditsType = {
