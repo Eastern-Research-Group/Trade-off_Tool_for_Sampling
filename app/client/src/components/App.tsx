@@ -262,7 +262,11 @@ function App({ appType }: Props) {
   useSessionStorage(appType);
 
   useEffect(() => {
-    if (appType !== 'decon' || !simulationMode) return;
+    const simulationModeParam = window.location.search
+      .toLowerCase()
+      .includes('simulationmode=true');
+
+    if (appType !== 'decon' || !simulationMode || !simulationModeParam) return;
 
     function handleAdvanceTab(event: MessageEvent) {
       if (
@@ -271,6 +275,7 @@ function App({ appType }: Props) {
       )
         return;
 
+      console.log('ADVANCE_TAB: ', window.location.pathname);
       window.location.reload();
     }
 
