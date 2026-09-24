@@ -261,6 +261,23 @@ function App({ appType }: Props) {
 
   useSessionStorage(appType);
 
+  useEffect(() => {
+    if (appType !== 'decon' || !simulationMode) return;
+
+    function handleAdvanceTab(event: MessageEvent) {
+      if (
+        event.origin !== window.location.origin ||
+        event.data?.action !== 'ADVANCE_TAB'
+      )
+        return;
+
+      window.location.reload();
+    }
+
+    window.parent.addEventListener('message', handleAdvanceTab);
+    return () => window.parent.removeEventListener('message', handleAdvanceTab);
+  }, [appType, simulationMode]);
+
   const { height, width } = useWindowSize();
 
   const [mapDiv, setMapDiv] = useState<HTMLDivElement | null>(null);
