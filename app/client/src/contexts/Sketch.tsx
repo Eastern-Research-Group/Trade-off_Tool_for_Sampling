@@ -41,8 +41,8 @@ export const hazardousOptions: { label: string; value: string }[] = [
 ];
 
 type HomeWidgetType = {
-  '2d': __esri.Home;
-  '3d': __esri.Home;
+  '2d': HTMLArcgisHomeElement;
+  '3d': HTMLArcgisHomeElement;
 };
 
 export type SketchViewModelType = {
@@ -132,8 +132,8 @@ export type GsgFiles = {
 };
 
 type BasemapWidget = {
-  '2d': __esri.BasemapGallery;
-  '3d': __esri.BasemapGallery;
+  '2d': HTMLArcgisBasemapGalleryElement;
+  '3d': HTMLArcgisBasemapGalleryElement;
 };
 
 type SketchType = {

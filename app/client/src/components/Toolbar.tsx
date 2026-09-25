@@ -1,18 +1,24 @@
 /** @jsxImportSource @emotion/react */
 
-import React, { Fragment, useContext, useEffect, useState } from 'react';
+import React, {
+  Fragment,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import { createRoot } from 'react-dom/client';
 import { css } from '@emotion/react';
-import BasemapGallery from '@arcgis/core/widgets/BasemapGallery';
 import Collection from '@arcgis/core/core/Collection';
 import IdentityManager from '@arcgis/core/identity/IdentityManager';
 import LayerList from '@arcgis/core/widgets/LayerList';
-import Legend from '@arcgis/core/widgets/Legend';
 import OAuthInfo from '@arcgis/core/identity/OAuthInfo';
 import Portal from '@arcgis/core/portal/Portal';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 import Slider from '@arcgis/core/widgets/Slider';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
+import '@arcgis/map-components/components/arcgis-basemap-gallery';
+import '@arcgis/map-components/components/arcgis-legend';
 import IconSignInAlt from '~icons/fa7-solid/sign-in-alt';
 import IconSignOutAlt from '~icons/fa7-solid/sign-out-alt';
 // components
@@ -28,6 +34,7 @@ import { SketchContext } from 'contexts/Sketch';
 import { getEnvironmentStringParam } from 'utils/arcGisRestUtils';
 import { fetchCheck } from 'utils/fetchUtils';
 import { buildingColors, imageAnalysisSymbols } from 'utils/hooks';
+import { adoptEsriStyles } from 'utils/shadowDom';
 import {
   findLayerInEdits,
   getElevationLayer,
@@ -340,19 +347,19 @@ function buildLegendListItem(event: any, view: __esri.MapView) {
       open: true,
     };
   } else {
-    const legendContainer = document.createElement('div');
-    const legend: any = new Legend({
-      container: legendContainer,
-      view,
-      layerInfos: [
-        {
-          layer: item.layer,
-          title: item.title,
-        } as any,
-      ],
-    });
+    const legend = document.createElement('arcgis-legend');
+    legend.view = view;
+    legend.layerInfos = [
+      {
+        layer: item.layer,
+        title: item.title,
+      } as any,
+    ];
+    // wraps a core widget in a shadow root of its own, which needs the theme
+    legend.componentOnReady().then(() => adoptEsriStyles(legend.shadowRoot));
+
     container.append(slider.domNode);
-    container.append(legend.domNode);
+    container.append(legend);
 
     // don't show legend twice
     item.panel = {
@@ -572,6 +579,7 @@ function Toolbar({ appType }: Props) {
   const {
     autoZoom,
     setAutoZoom,
+    basemapWidget,
     setBasemapWidget,
     defaultSymbols,
     edits,
@@ -897,22 +905,34 @@ function Toolbar({ appType }: Props) {
 
   // Create the basemap toolbar widget
   const [basemapVisible, setBasemapVisible] = useState(false);
-  const [basemapInitialized, setBasemapInitialized] = useState(false);
-  useEffect(() => {
-    if (!mapView || !sceneView || basemapInitialized) return;
+  const [basemap2d, setBasemap2d] =
+    useState<HTMLArcgisBasemapGalleryElement | null>(null);
+  const [basemap3d, setBasemap3d] =
+    useState<HTMLArcgisBasemapGalleryElement | null>(null);
 
-    setBasemapWidget({
-      '2d': new BasemapGallery({
-        container: 'basemap-container-2d',
-        view: mapView,
-      }),
-      '3d': new BasemapGallery({
-        container: 'basemap-container-3d',
-        view: sceneView,
-      }),
-    });
-    setBasemapInitialized(true);
-  }, [mapView, basemapInitialized, setBasemapWidget, sceneView]);
+  // Each gallery wraps a core widget in a shadow root of its own, which needs
+  // the theme as well.
+  const initBasemap2d = useCallback(
+    (el: HTMLArcgisBasemapGalleryElement | null) => {
+      setBasemap2d(el);
+      el?.componentOnReady().then(() => adoptEsriStyles(el.shadowRoot));
+    },
+    [],
+  );
+
+  const initBasemap3d = useCallback(
+    (el: HTMLArcgisBasemapGalleryElement | null) => {
+      setBasemap3d(el);
+      el?.componentOnReady().then(() => adoptEsriStyles(el.shadowRoot));
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!basemap2d || !basemap3d || basemapWidget) return;
+
+    setBasemapWidget({ '2d': basemap2d, '3d': basemap3d });
+  }, [basemap2d, basemap3d, basemapWidget, setBasemapWidget]);
 
   // Switches the layer list and basemap widgets between 2D and 3D
   useEffect(() => {
@@ -986,31 +1006,6 @@ function Toolbar({ appType }: Props) {
       }
     });
   }, [displayGeometryType, layers]);
-
-  // Switches between 2d and 3d
-  useEffect(() => {
-    if (!mapView || !sceneView) return;
-
-    if (displayDimensions === '2d') {
-      if (!sceneView.viewpoint || !sceneView.container || !sceneView.map)
-        return;
-      mapView.viewpoint = sceneView.viewpoint.clone();
-      mapView.container = sceneView.container;
-      mapView.map = sceneView.map;
-
-      sceneView.container = null as any;
-      sceneView.map = null as any;
-    } else {
-      if (!mapView.container || !mapView.map) return;
-      if (mapView.viewpoint) sceneView.viewpoint = mapView.viewpoint?.clone();
-      if (sceneView.camera) sceneView.camera.tilt = 0.5;
-      sceneView.container = mapView.container;
-      sceneView.map = mapView.map;
-
-      mapView.container = null as any;
-      mapView.map = null as any;
-    }
-  }, [mapView, sceneView, displayDimensions]);
 
   // Get the elevation layer
   const [elevLayer, setElevLayer] = useState<__esri.ElevationLayer | null>(
@@ -1253,13 +1248,15 @@ function Toolbar({ appType }: Props) {
             Basemap{' '}
           </button>
           <div css={floatContainerStyles(basemapVisible, '137px')}>
-            <div
-              id="basemap-container-2d"
+            <arcgis-basemap-gallery
+              ref={initBasemap2d}
               style={{ display: displayDimensions === '2d' ? 'block' : 'none' }}
+              view={mapView}
             />
-            <div
-              id="basemap-container-3d"
+            <arcgis-basemap-gallery
+              ref={initBasemap3d}
               style={{ display: displayDimensions === '3d' ? 'block' : 'none' }}
+              view={sceneView}
             />
           </div>
         </div>

@@ -10,7 +10,6 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { createRoot } from 'react-dom/client';
 import Collection from '@arcgis/core/core/Collection';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
@@ -119,6 +118,7 @@ import {
   setZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
+import { createReactContent } from 'utils/shadowDom';
 import { parseSmallFloat, removeUrlParams, sentenceJoin } from 'utils/utils';
 // config
 import { sampleIssuesPopupMessage } from 'config/errorMessages';
@@ -3285,11 +3285,7 @@ export function useDynamicPopup(appType: AppType) {
       />
     );
 
-    // wrap the content for esri
-    const contentContainer = document.createElement('div');
-    createRoot(contentContainer).render(content);
-
-    return contentContainer;
+    return createReactContent(content);
   };
 
   /**
