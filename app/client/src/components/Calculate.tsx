@@ -808,7 +808,7 @@ function Calculate({ appType }: Props) {
     }
 
     setEdits(editsCopy);
-    setSiteModelOpen(true);
+    if (simulationMode) setSiteModelOpen(true);
   }
 
   // Run calculations when the user exits this tab, by updating
@@ -1180,6 +1180,7 @@ function Calculate({ appType }: Props) {
         <AccordionItem
           title="Create Site Conceptual Model(s)"
           isOpenParam={siteModelOpen}
+          onChange={() => setSiteModelOpen(!siteModelOpen)}
         >
           <div css={sectionContainer}>
             <SiteAssessmentPlans />
