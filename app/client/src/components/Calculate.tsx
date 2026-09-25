@@ -287,8 +287,13 @@ type Props = {
 };
 
 function Calculate({ appType }: Props) {
-  const { setGoTo, setGoToOptions, simulationMode, trainingMode } =
-    useContext(NavigationContext);
+  const {
+    setGoTo,
+    setGoToOptions,
+    setResultsExpanded,
+    simulationMode,
+    trainingMode,
+  } = useContext(NavigationContext);
   const {
     edits,
     setEdits,
@@ -1056,6 +1061,7 @@ function Calculate({ appType }: Props) {
               css={submitButtonStyles}
               onClick={() => {
                 if (appType === 'sampling') {
+                  setResultsExpanded(true);
                   runCalculation();
                   setViewResultsClicked(true);
                 }

@@ -449,16 +449,16 @@ function NavBar({ appType, height }: Props) {
   }, [goTo, panels, setGoTo, toggleExpand]);
 
   useEffect(() => {
-    if (calculateResults.status !== 'none') {
+    if (calculateResults.panelOpen) {
       setResultsExpanded(true);
     }
-  }, [calculateResults, setResultsExpanded]);
+  }, [calculateResults.panelOpen, setResultsExpanded]);
 
   useEffect(() => {
-    if (calculateResultsDecon.status !== 'none') {
+    if (calculateResultsDecon.panelOpen) {
       setResultsExpanded(true);
     }
-  }, [calculateResultsDecon, setResultsExpanded]);
+  }, [calculateResultsDecon.panelOpen, setResultsExpanded]);
 
   // determine how far to the right the expand/collapse buttons should be
   let expandLeft = navPanelWidth;
