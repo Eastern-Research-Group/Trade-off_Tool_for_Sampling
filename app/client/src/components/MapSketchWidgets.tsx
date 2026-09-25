@@ -785,7 +785,9 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
           firstPoint = null;
 
           const shouldContinueCreating =
-            (appType === 'sampling' && !id.includes('-sampling-mask')) ||
+            (appType === 'sampling' &&
+              !id.includes('-sampling-mask') &&
+              !id.includes('staging-aoi')) ||
             id.includes('contamination-map-aoi');
           if (shouldContinueCreating) {
             // start next graphic
