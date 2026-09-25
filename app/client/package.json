@@ -34,7 +34,6 @@
     "@emotion/cache": "11.14.0",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
-    "@esri/calcite-components": "3.3.3",
     "@iconify-json/fa7-solid": "1.2.3",
     "@reach/dialog": "0.18.0",
     "@reach/tabs": "0.18.0",
