@@ -132,8 +132,8 @@ export type GsgFiles = {
 };
 
 type BasemapWidget = {
-  '2d': __esri.BasemapGallery;
-  '3d': __esri.BasemapGallery;
+  '2d': HTMLArcgisBasemapGalleryElement;
+  '3d': HTMLArcgisBasemapGalleryElement;
 };
 
 type SketchType = {

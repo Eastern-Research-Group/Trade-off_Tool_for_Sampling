@@ -1091,16 +1091,20 @@ function useMapPositionStorage(dbInitialized: boolean) {
       }
 
       // A camera set before the view is ready is discarded.
-      reactiveUtils.whenOnce(() => sceneView.ready).then(() => {
-        sceneView.camera = new Camera({
-          fov: camera.fov,
-          heading: camera.heading,
-          position: geometryJsonUtils.fromJSON(camera.position) as __esri.Point,
-          tilt: camera.tilt,
-        });
+      reactiveUtils
+        .whenOnce(() => sceneView.ready)
+        .then(() => {
+          sceneView.camera = new Camera({
+            fov: camera.fov,
+            heading: camera.heading,
+            position: geometryJsonUtils.fromJSON(
+              camera.position,
+            ) as __esri.Point,
+            tilt: camera.tilt,
+          });
 
-        setReadDone(true);
-      });
+          setReadDone(true);
+        });
     });
   }, [dbInitialized, readInitialized, sceneView]);
 
@@ -1600,11 +1604,11 @@ function useBasemapStorage2d(dbInitialized: boolean) {
       }
 
       // create the watch handler for finding the selected basemap
-      const newWatchHandle = basemapWidget['2d'].watch(
-        'source.basemaps.length',
+      const newWatchHandle = reactiveUtils.watch(
+        () => basemapWidget['2d'].source?.basemaps?.length,
         (newValue) => {
           // wait for the basemaps to be populated
-          if (newValue === 0) return;
+          if (!newValue) return;
 
           setReadDone(true);
 
@@ -1643,10 +1647,14 @@ function useBasemapStorage2d(dbInitialized: boolean) {
       return;
     }
 
-    basemapWidget['2d'].watch('activeBasemap.portalItem.id', (newValue) => {
-      if (!newValue) return;
-      writeToStorage(key, newValue, setOptions);
-    });
+    reactiveUtils.watch(
+      () =>
+        (basemapWidget['2d'].activeBasemap as __esri.Basemap)?.portalItem?.id,
+      (newValue) => {
+        if (!newValue) return;
+        writeToStorage(key, newValue, setOptions);
+      },
+    );
 
     setWatchBasemapInitialized(true);
   }, [basemapWidget, readDone, setOptions, watchBasemapInitialized]);
@@ -1686,11 +1694,11 @@ function useBasemapStorage3d(dbInitialized: boolean) {
       }
 
       // create the watch handler for finding the selected basemap
-      const newWatchHandle = basemapWidget['3d'].watch(
-        'source.basemaps.length',
+      const newWatchHandle = reactiveUtils.watch(
+        () => basemapWidget['3d'].source?.basemaps?.length,
         (newValue) => {
           // wait for the basemaps to be populated
-          if (newValue === 0) return;
+          if (!newValue) return;
 
           setReadDone(true);
 
@@ -1729,10 +1737,14 @@ function useBasemapStorage3d(dbInitialized: boolean) {
       return;
     }
 
-    basemapWidget['3d'].watch('activeBasemap.portalItem.id', (newValue) => {
-      if (!newValue) return;
-      writeToStorage(key, newValue, setOptions);
-    });
+    reactiveUtils.watch(
+      () =>
+        (basemapWidget['3d'].activeBasemap as __esri.Basemap)?.portalItem?.id,
+      (newValue) => {
+        if (!newValue) return;
+        writeToStorage(key, newValue, setOptions);
+      },
+    );
 
     setWatchBasemapInitialized(true);
   }, [basemapWidget, readDone, setOptions, watchBasemapInitialized]);

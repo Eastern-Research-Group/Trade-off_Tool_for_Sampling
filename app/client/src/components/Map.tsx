@@ -312,7 +312,7 @@ function Map({ appType, height }: Props) {
     if (!home2d || !home3d || homeWidget) return;
 
     setHomeWidget({ '2d': home2d, '3d': home3d });
-  }, [home2d, home3d, homeWidget]);
+  }, [home2d, home3d, homeWidget, setHomeWidget]);
 
   const initMeasurement2d = useCallback(
     (el: HTMLArcgisMeasurementElement | null) => {
