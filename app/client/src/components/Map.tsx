@@ -160,14 +160,12 @@ const viewStyles = (active: boolean, bothReady: boolean) => {
   `;
 };
 
-// Slotted children each carry a bottom margin, which an empty container would
-// still take up. Generating no box leaves the spacing to the widget inside.
+// Slotted children each carry a bottom margin, which an empty container would still take up.
 const sketchContainerStyles = css`
   display: contents;
 `;
 
-// React re-applies a property whenever its identity changes, so these have to be
-// stable references or the map jumps back to them on every re-render.
+// Stable references so the map doesn't jump on every re-render.
 const DEFAULT_CENTER = '-95, 37';
 const DEFAULT_ZOOM = 3;
 // The view autocasts this, filling in the remaining options.
@@ -242,8 +240,7 @@ function Map({ appType, height }: Props) {
     setSceneViewForArea,
   } = useContext(SketchContext);
 
-  // Creates the map shared by both views. Guarding on the context map, which
-  // outlives a remount of this component, keeps it to one.
+  // Creates the map shared by both views.
   useEffect(() => {
     if (map) return;
 
@@ -269,9 +266,8 @@ function Map({ appType, height }: Props) {
     );
   }, [sceneViewForArea, setSceneViewForArea]);
 
-  // The view exists on the element long before it is ready. Publishing it now
-  // lets the widgets attach while it loads, rather than gating them on a view
-  // that never finishes loading where 3d isn't supported.
+  // The view exists on the element long before it is ready.
+  // Publish it now so the widgets can attach while it loads.
   const initMapEl = useCallback(
     (el: HTMLArcgisMapElement | null) => {
       mapElRef.current = el;
@@ -370,9 +366,8 @@ function Map({ appType, height }: Props) {
     };
   }, [setMapView, setSceneView]);
 
-  // Carries the camera position across when switching dimensions. The views
-  // arrive separately, so this has to key off the dimension actually changing,
-  // not off the effect running.
+  // Carries the camera position across when switching dimensions.
+  // Key this off the dimension actually changing.
   const lastDimensions = useRef(displayDimensions);
   useEffect(() => {
     if (!mapView || !sceneView) return;

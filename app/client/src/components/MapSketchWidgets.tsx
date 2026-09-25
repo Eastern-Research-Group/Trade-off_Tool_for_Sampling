@@ -177,13 +177,12 @@ function MapSketchWidgets({
     terrain3dUseElevationGlobal = terrain3dUseElevation;
   }, [terrain3dUseElevation]);
 
-  // Creates the sketch widget used for selecting/moving/deleting samples
+  // Creates the sketch view models used for selecting/moving/deleting samples
   // Also creates an event handler for keeping track of changes
   const [updateGraphics, setUpdateGraphics] = useState<__esri.Graphic[]>([]);
   useEffect(() => {
     if (!mapView || !sketchLayer || sketchVM) return;
 
-    // Only 2d has a widget, so watch the view models to cover both dimensions.
     function watchUpdateGraphics(svm: __esri.SketchViewModel) {
       const tempSvm = svm as any;
       window.sampleSketchVmInternalLayerId = tempSvm._internalGraphicsLayer.id;
@@ -260,8 +259,7 @@ function MapSketchWidgets({
     sketchVM,
   ]);
 
-  // Renders the sketch widget into the container Map slots into the view, so it
-  // lines up with the components instead of landing in the view's own ui.
+  // Renders the sketch widget into the container Map slots into the view.
   const [sketchWidget, setSketchWidget] = useState<Sketch | null>(null);
   useEffect(() => {
     if (!mapView || !sketchContainer || !sketchVM || sketchWidget) return;
