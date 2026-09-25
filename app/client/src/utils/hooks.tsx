@@ -2134,7 +2134,6 @@ export function useCalculateDeconPlan() {
     sceneViewForArea,
     selectedScenario,
     setEdits,
-    setEfficacyResults,
     setJsonDownload,
   } = useContext(SketchContext);
   const lookupFiles = useLookupFiles().data;
@@ -2676,6 +2675,8 @@ export function useCalculateDeconPlan() {
         TOTAL_COST: totalDeconCost,
         TOTAL_TIME: Math.round(totalDeconTime * 10) / 10,
         'Contamination Type': '',
+        PERCENT_CONTAMINATED_AREA_DECON_APPLIED: null,
+        PERCENT_CONTAMINATION_REMOVED: null,
         resultsTable: jsonDownloadSummarized,
       };
 
@@ -3109,6 +3110,118 @@ export function useCalculateDeconPlan() {
         });
         contamMapUpdated.addMany(newContamGraphics);
       }
+
+      if (trainingMode) {
+        const totalCfu = async (graphics: __esri.Graphic[]) =>
+          (
+            await Promise.all(
+              graphics.map(async (graphic) => {
+                const area = await calculateArea(graphic, sceneViewForArea);
+                const cfuM2 = Number(graphic.attributes?.CONTAMVAL);
+                return typeof area === 'number' && Number.isFinite(cfuM2)
+                  ? area * cfuM2
+                  : 0;
+              }),
+            )
+          ).reduce((total, cfu) => total + cfu, 0);
+
+        const initialCfu = await totalCfu(contaminationGraphicsClone);
+        const finalCfu = await totalCfu(
+          newContamGraphics.length > 0
+            ? newContamGraphics
+            : contaminationGraphicsClone,
+        );
+        const plumeGeometries = contaminationGraphicsClone
+          .filter((graphic) => Number(graphic.attributes?.CONTAMVAL) > 0)
+          .map((graphic) => graphic.geometry)
+          .filter((geometry) => !!geometry) as __esri.GeometryUnion[];
+        const deconGeometries = linkedDeconOperations.flatMap((deconOp) => {
+          const hasDeconTechnology = deconOp.deconTechSelections?.some(
+            (selection) =>
+              selection.deconTech && selection.deconTech.value !== 'none',
+          );
+          if (!hasDeconTechnology) return [];
+
+          const characterization = linkedAoiCharacterizations.find(
+            (item) => item.layerId === deconOp.analysisLayerId,
+          );
+          const deconMask = characterization?.layers.find(
+            (layer) => layer.layerType === 'Decon Mask',
+          );
+          const deconLayer = layers.find(
+            (layer) => layer.layerId === deconMask?.layerId,
+          );
+          return deconLayer?.sketchLayer?.type === 'graphics'
+            ? deconLayer.sketchLayer.graphics
+                .toArray()
+                .map((graphic) => graphic.geometry)
+                .filter((geometry) => !!geometry)
+            : [];
+        }) as __esri.GeometryUnion[];
+        const plumeGeometry =
+          plumeGeometries.length > 0
+            ? geometryEngine.union(plumeGeometries)
+            : null;
+        const deconGeometry =
+          deconGeometries.length > 0
+            ? geometryEngine.union(deconGeometries)
+            : null;
+        const plumeArea = plumeGeometry
+          ? await calculateArea(
+              new Graphic({ geometry: plumeGeometry }),
+              sceneViewForArea,
+            )
+          : 0;
+        const appliedGeometryResult =
+          plumeGeometry && deconGeometry
+            ? geometryEngine.intersect(plumeGeometry, deconGeometry)
+            : null;
+        const appliedGeometry = Array.isArray(appliedGeometryResult)
+          ? geometryEngine.union(appliedGeometryResult)
+          : appliedGeometryResult;
+        const appliedArea = appliedGeometry
+          ? await calculateArea(
+              new Graphic({ geometry: appliedGeometry }),
+              sceneViewForArea,
+            )
+          : 0;
+
+        const percentContaminationRemoved =
+          initialCfu > 0
+            ? Math.max(
+                0,
+                Math.min(100, ((initialCfu - finalCfu) / initialCfu) * 100),
+              )
+            : 0;
+        const percentContaminatedAreaApplied =
+          typeof plumeArea === 'number' &&
+          typeof appliedArea === 'number' &&
+          plumeArea > 0
+            ? Math.max(0, Math.min(100, (appliedArea / plumeArea) * 100))
+            : 0;
+
+        setCalculateResultsDecon((results) => {
+          if (!results.data) return results;
+          if (
+            results.data.PERCENT_CONTAMINATION_REMOVED ===
+              percentContaminationRemoved &&
+            results.data.PERCENT_CONTAMINATED_AREA_DECON_APPLIED ===
+              percentContaminatedAreaApplied
+          ) {
+            return results;
+          }
+
+          return {
+            ...results,
+            data: {
+              ...results.data,
+              PERCENT_CONTAMINATION_REMOVED: percentContaminationRemoved,
+              PERCENT_CONTAMINATED_AREA_DECON_APPLIED:
+                percentContaminatedAreaApplied,
+            },
+          };
+        });
+      }
     }
 
     performCalculations();
@@ -3122,7 +3235,7 @@ export function useCalculateDeconPlan() {
     sampleAttributesDecon,
     sceneViewForArea,
     selectedScenario,
-    setEfficacyResults,
+    setCalculateResultsDecon,
     technologyTypes,
     trainingMode,
   ]);

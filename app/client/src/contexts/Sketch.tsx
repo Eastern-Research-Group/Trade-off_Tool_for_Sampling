@@ -234,8 +234,6 @@ type SketchType = {
 
   resultsOpen: boolean;
   setResultsOpen: Dispatch<SetStateAction<boolean>>;
-  efficacyResults: any;
-  setEfficacyResults: Dispatch<SetStateAction<any>>;
   governmentLandsLayerVisible: boolean;
   setGovernmentLandsLayerVisible: Dispatch<SetStateAction<boolean>>;
   parcelLayerVisible: boolean;
@@ -351,8 +349,6 @@ export const SketchContext = createContext<SketchType>({
 
   resultsOpen: false,
   setResultsOpen: () => {},
-  efficacyResults: null,
-  setEfficacyResults: () => {},
   governmentLandsLayerVisible: true,
   setGovernmentLandsLayerVisible: () => {},
   parcelLayerVisible: true,
@@ -501,7 +497,6 @@ export function SketchProvider({ children }: Props) {
   const [terrain3dVisible, setTerrain3dVisible] = useState(true);
   const [viewUnderground3d, setViewUnderground3d] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(false);
-  const [efficacyResults, setEfficacyResults] = useState(null);
   const [governmentLandsLayerVisible, setGovernmentLandsLayerVisible] =
     useState(true);
   const [parcelLayerVisible, setParcelLayerVisible] = useState(true);
@@ -814,8 +809,6 @@ export function SketchProvider({ children }: Props) {
 
         resultsOpen,
         setResultsOpen,
-        efficacyResults,
-        setEfficacyResults,
         governmentLandsLayerVisible,
         setGovernmentLandsLayerVisible,
         parcelLayerVisible,

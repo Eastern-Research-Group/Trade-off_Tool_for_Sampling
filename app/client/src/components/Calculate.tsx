@@ -1683,6 +1683,33 @@ function CalculateResultsPopup({
         calculateResultsDecon.data['WASTE_WEIGHT_TOTAL'],
       ).toLocaleString();
 
+      if (
+        devMode &&
+        trainingMode &&
+        calculateResultsDecon.data[
+          'PERCENT_CONTAMINATED_AREA_DECON_APPLIED'
+        ] !== null &&
+        calculateResultsDecon.data['PERCENT_CONTAMINATION_REMOVED'] !== null
+      ) {
+        summarySheet.getCell(8, 3).font = labelFont;
+        summarySheet.getCell(8, 3).value = 'Percentage of Plume Detected (%)';
+        summarySheet.getCell(8, 4).font = defaultFont;
+        summarySheet.getCell(8, 4).alignment = rightAlignment;
+        summarySheet.getCell(8, 4).value = Math.round(
+          calculateResultsDecon.data[
+            'PERCENT_CONTAMINATED_AREA_DECON_APPLIED'
+          ] ?? 0,
+        ).toLocaleString();
+        summarySheet.getCell(9, 3).font = labelFont;
+        summarySheet.getCell(9, 3).value =
+          'Percentage of Contamination Removed (%)';
+        summarySheet.getCell(9, 4).font = defaultFont;
+        summarySheet.getCell(9, 4).alignment = rightAlignment;
+        summarySheet.getCell(9, 4).value = Math.round(
+          calculateResultsDecon.data['PERCENT_CONTAMINATION_REMOVED'] ?? 0,
+        ).toLocaleString();
+      }
+
       summarySheet.mergeCells(14, 3, 14, 4);
       summarySheet.getCell(14, 3).alignment = columnTitleAlignment;
       summarySheet.getCell(14, 3).font = labelFont;
@@ -2696,6 +2723,37 @@ function CalculateResultsPopup({
                     calculateResultsDecon.data['WASTE_WEIGHT_TOTAL'],
                   ).toLocaleString()}
                 </div>
+                {devMode &&
+                  trainingMode &&
+                  calculateResultsDecon.data[
+                    'PERCENT_CONTAMINATED_AREA_DECON_APPLIED'
+                  ] !== null &&
+                  calculateResultsDecon.data[
+                    'PERCENT_CONTAMINATION_REMOVED'
+                  ] !== null && (
+                    <>
+                      <div>
+                        <strong>Percentage of Plume Detected:</strong>{' '}
+                        {formatNumber(
+                          calculateResultsDecon.data[
+                            'PERCENT_CONTAMINATED_AREA_DECON_APPLIED'
+                          ],
+                          2,
+                        )}
+                        %
+                      </div>
+                      <div>
+                        <strong>Percentage of Contamination Removed:</strong>{' '}
+                        {formatNumber(
+                          calculateResultsDecon.data[
+                            'PERCENT_CONTAMINATION_REMOVED'
+                          ],
+                          2,
+                        )}
+                        %
+                      </div>
+                    </>
+                  )}
               </div>
             </div>
           )}

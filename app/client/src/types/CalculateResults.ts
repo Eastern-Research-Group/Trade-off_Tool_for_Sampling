@@ -55,6 +55,8 @@ export type CalculateResultsDeconDataType = {
   WASTE_VOLUME_TOTAL: number;
   WASTE_WEIGHT_TOTAL: number;
   'Contamination Type': string;
+  PERCENT_CONTAMINATED_AREA_DECON_APPLIED: number | null;
+  PERCENT_CONTAMINATION_REMOVED: number | null;
   resultsTable: JsonDownloadType[];
 };
 
