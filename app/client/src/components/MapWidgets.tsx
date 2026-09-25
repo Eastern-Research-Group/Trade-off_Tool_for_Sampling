@@ -1,181 +1,28 @@
 /** @jsxImportSource @emotion/react */
 
 import { useContext, useEffect, useState } from 'react';
-import { css } from '@emotion/react';
-import Search from '@arcgis/core/widgets/Search';
 import Handles from '@arcgis/core/core/Handles';
-import Home from '@arcgis/core/widgets/Home';
 // contexts
 import { NavigationContext } from 'contexts/Navigation';
 import { SketchContext } from 'contexts/Sketch';
-// utils
-import { createReactContent } from 'utils/shadowDom';
-
-type SearchWidgetType = {
-  '2d': Search;
-  '3d': Search;
-};
-
-const buttonSharedStyles = css`
-  margin: 8.5px;
-  font-size: 15px;
-  text-align: center;
-  vertical-align: middle;
-`;
-
-const buttonStyle = css`
-  ${buttonSharedStyles}
-  background-color: white;
-  color: #6e6e6e;
-`;
-
-const buttonActiveStyle = css`
-  ${buttonSharedStyles}
-  background-color: #999696;
-  color: black;
-`;
-
-const buttonHoverStyle = css`
-  ${buttonSharedStyles}
-  background-color: #f0f0f0;
-  color: black;
-  cursor: pointer;
-`;
-
-const divSharedStyles = css`
-  height: 32px;
-  width: 32px;
-`;
-
-const divStyle = css`
-  ${divSharedStyles}
-  background-color: white;
-`;
-
-const divActiveStyle = css`
-  ${divSharedStyles}
-  background-color: #999696;
-  color: black;
-
-  &:focus {
-    outline: none;
-  }
-`;
-
-const divHoverStyle = css`
-  ${divSharedStyles}
-  background-color: #f0f0f0;
-  cursor: pointer;
-`;
-
-const measurementContainerStyles = css`
-  display: flex;
-  gap: 5px;
-`;
 
 // --- components (MapWidgets) ---
 type Props = {
   map: __esri.Map;
   mapView: __esri.MapView;
-  measurement2d: HTMLArcgisMeasurementElement | null;
-  measurement3d: HTMLArcgisMeasurementElement | null;
   sceneView: __esri.SceneView;
 };
 
-function MapWidgets({
-  map,
-  mapView,
-  measurement2d,
-  measurement3d,
-  sceneView,
-}: Props) {
+function MapWidgets({ map, mapView, sceneView }: Props) {
   const { trainingMode } = useContext(NavigationContext);
   const {
     edits,
-    homeWidget,
-    setHomeWidget,
     selectedSampleIds,
     selectedScenario,
     displayGeometryType,
     layers,
     displayDimensions,
   } = useContext(SketchContext);
-
-  // Creates and adds the home widget to the map.
-  useEffect(() => {
-    if (!mapView || !sceneView || !setHomeWidget || homeWidget) return;
-
-    const widget2d = new Home({ view: mapView });
-    mapView.ui.add(widget2d, { position: 'top-right', index: 2 });
-
-    const widget3d = new Home({ view: sceneView });
-    sceneView.ui.add(widget3d, { position: 'top-right', index: 2 });
-
-    setHomeWidget({
-      '2d': widget2d,
-      '3d': widget3d,
-    });
-  }, [mapView, homeWidget, setHomeWidget, sceneView]);
-
-  // Initialize the search widget
-  const [searchWidget, setSearchWidget] = useState<SearchWidgetType | null>(
-    null,
-  );
-  useEffect(() => {
-    if (!mapView || !sceneView || searchWidget) return;
-
-    const widget2d = new Search({
-      view: mapView,
-      locationEnabled: true,
-      label: 'Search',
-      popupEnabled: false,
-    });
-    const widget3d = new Search({
-      view: sceneView,
-      locationEnabled: true,
-      label: 'Search',
-      popupEnabled: false,
-    });
-
-    // zoom, navigation toggle and compass are rendered by Map as components
-    mapView.ui.add(widget2d, { position: 'top-right', index: 0 });
-    sceneView.ui.add(widget3d, { position: 'top-right', index: 0 });
-
-    setSearchWidget({
-      '2d': widget2d,
-      '3d': widget3d,
-    });
-  }, [mapView, sceneView, searchWidget]);
-
-  // Display the buttons that drive the measurement components
-  useEffect(() => {
-    if (!mapView || !sceneView || !measurement2d || !measurement3d) return;
-
-    // start over when switching dimensions
-    measurement2d.clear();
-    measurement3d.clear();
-
-    const node2d = createReactContent(
-      <CustomMeasurementWidget
-        displayDimensions="2d"
-        measurementWidget={measurement2d}
-      />,
-    );
-    mapView.ui.add(node2d, { position: 'top-right', index: 1 });
-
-    const node3d = createReactContent(
-      <CustomMeasurementWidget
-        displayDimensions="3d"
-        measurementWidget={measurement3d}
-      />,
-    );
-    sceneView.ui.add(node3d, { position: 'top-right', index: 1 });
-
-    return function cleanup() {
-      mapView?.ui.remove(node2d);
-      sceneView?.ui.remove(node3d);
-    };
-  }, [displayDimensions, mapView, measurement2d, measurement3d, sceneView]);
 
   // Gets the graphics to be highlighted and highlights them
   const [handles] = useState(new Handles());
@@ -330,96 +177,6 @@ function MapWidgets({
   ]);
 
   return null;
-}
-
-type CustomWidgetButtonProps = {
-  active: boolean;
-  iconClass: string;
-  onClick: Function;
-  title: string;
-};
-
-function CustomWidgetButton({
-  active,
-  iconClass,
-  onClick,
-  title,
-}: CustomWidgetButtonProps) {
-  const [hover, setHover] = useState(false);
-
-  return (
-    <div
-      title={title}
-      css={active ? divActiveStyle : hover ? divHoverStyle : divStyle}
-      onMouseOver={() => setHover(true)}
-      onMouseOut={() => setHover(false)}
-      onClick={() => onClick()}
-      onKeyDown={() => onClick()}
-      role="button"
-      tabIndex={0}
-    >
-      <span
-        aria-hidden="true"
-        className={iconClass}
-        css={
-          active ? buttonActiveStyle : hover ? buttonHoverStyle : buttonStyle
-        }
-      />
-    </div>
-  );
-}
-
-type CustomMeasurementWidgetProps = {
-  displayDimensions: '2d' | '3d';
-  measurementWidget: HTMLArcgisMeasurementElement;
-};
-
-function CustomMeasurementWidget({
-  displayDimensions,
-  measurementWidget,
-}: CustomMeasurementWidgetProps) {
-  const [activeTool, setActiveTool] = useState<'area' | 'distance' | null>(
-    null,
-  );
-
-  // The component reserves space even with nothing to show, hide it when inactive.
-  useEffect(() => {
-    measurementWidget.style.display = activeTool ? '' : 'none';
-  }, [activeTool, measurementWidget]);
-
-  return (
-    <div css={measurementContainerStyles}>
-      <CustomWidgetButton
-        active={activeTool === 'distance'}
-        iconClass="esri-icon esri-icon-measure-line"
-        title="Distance Measurement Tool"
-        onClick={() => {
-          setActiveTool('distance');
-
-          measurementWidget.activeTool =
-            displayDimensions === '2d' ? 'distance' : 'direct-line';
-        }}
-      />
-      <CustomWidgetButton
-        active={activeTool === 'area'}
-        iconClass="esri-icon esri-icon-measure-area"
-        title="Area Measurement Tool"
-        onClick={() => {
-          setActiveTool('area');
-          measurementWidget.activeTool = 'area';
-        }}
-      />
-      <CustomWidgetButton
-        active={false}
-        iconClass="esri-icon esri-icon-close"
-        title="Clear Measurements"
-        onClick={() => {
-          setActiveTool(null);
-          measurementWidget.clear();
-        }}
-      />
-    </div>
-  );
 }
 
 export default MapWidgets;
