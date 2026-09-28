@@ -7850,8 +7850,6 @@ export function useTotsLayerAdder(appType: AppType) {
     portal: __esri.Portal | null,
     setStatus: (status: string) => void = () => {},
   ) {
-    if (!portal) return;
-
     // determine whether the layer has a tots sample layer or not
     // and add the layer accordingly
     const categories = result?.categories;
