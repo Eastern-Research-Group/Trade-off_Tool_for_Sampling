@@ -182,8 +182,8 @@ function GenerateSamples({ id, type }: GenerateSamplesProps) {
     `${id}-percentConfidence`,
     '95',
   );
-  const [percentComplient, setPercentComplient] = useMemoryState<string>(
-    `${id}-percentComplient`,
+  const [percentCompliant, setPercentCompliant] = useMemoryState<string>(
+    `${id}-percentCompliant`,
     '99',
   );
   const [percentX, setPercentX] = useState<number | null>(null);
@@ -920,7 +920,7 @@ function GenerateSamples({ id, type }: GenerateSamplesProps) {
       if (!sampleType) return;
 
       const aoisFull: AoiType[] = [];
-      const complientFloat = parseFloat(percentComplient);
+      const compliantFloat = parseFloat(percentCompliant);
       const confidenceFloat = parseFloat(percentConfidence);
       const sampleArea = sampleAttributes[sampleType.value as any].SA;
       let totalAoiArea = 0;
@@ -935,7 +935,7 @@ function GenerateSamples({ id, type }: GenerateSamplesProps) {
         // n ~= [0.5(1 - a^(1/V))(2N - V + 1)]
         const N = Math.floor(area / sampleArea); // grid definition
         const a = 1 - confidenceFloat / 100;
-        const b = 1 - complientFloat / 100;
+        const b = 1 - compliantFloat / 100;
         const V = Math.max(1, b * N);
         const numSamples = Math.ceil(
           0.5 * (1 - Math.pow(a, 1 / V)) * (2 * N - V + 1),
@@ -976,7 +976,7 @@ function GenerateSamples({ id, type }: GenerateSamplesProps) {
     if (type === 'statistic') getAoiAreas(aois);
   }, [
     aois,
-    percentComplient,
+    percentCompliant,
     percentConfidence,
     sampleAttributes,
     sampleType,
@@ -1008,12 +1008,12 @@ function GenerateSamples({ id, type }: GenerateSamplesProps) {
   useEffect(() => {
     const messages: string[] = [];
     validateDecimalInput(messages, percentConfidence, 'Percent Confidence');
-    validateDecimalInput(messages, percentComplient, 'Percent Complient');
+    validateDecimalInput(messages, percentCompliant, 'Percent Compliant');
     setValidationMessages(messages);
 
     setPercentX(null);
     setPercentY(null);
-  }, [percentComplient, percentConfidence]);
+  }, [percentCompliant, percentConfidence]);
 
   function validateDecimalInput(
     messages: string[],
@@ -1054,7 +1054,7 @@ function GenerateSamples({ id, type }: GenerateSamplesProps) {
               placing samples or select "Use Imported Area of Interest" to use
               an Area of Interest file to place samples. Select a Sample Type
               from the menu and specify the "Percent Confidence and "Percent
-              Area Clear/Complient". Click Submit to add samples.
+              Area Clear/Compliant". Click Submit to add samples.
             </p>
           )}
 
@@ -1218,8 +1218,8 @@ function GenerateSamples({ id, type }: GenerateSamplesProps) {
                       css={inputStyles}
                       required
                       type="text"
-                      value={percentComplient}
-                      onChange={(ev) => setPercentComplient(ev.target.value)}
+                      value={percentCompliant}
+                      onChange={(ev) => setPercentCompliant(ev.target.value)}
                     />
                   </label>
 

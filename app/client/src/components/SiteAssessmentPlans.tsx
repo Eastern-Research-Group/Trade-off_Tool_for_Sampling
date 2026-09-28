@@ -326,11 +326,14 @@ function SiteAssessmentPlans() {
         />
 
         <p>
-          Create a site conceptual model to reflect the boundary of where you
-          think contamination exists based on the results of your sampling
-          efforts. Enter a name and optional description. Click the Draw
-          Contamination AOI Boundary to enable drawing on the map. Click Save
-          when you are finished. Click Next to proceed.{' '}
+          Use the simulated sampling results to create a site conceptual model.{' '}
+          {simulationMode
+            ? 'Confirm the default name and enter an'
+            : 'Enter a name and'}{' '}
+          optional description. Click the "Draw Contamination AOI Boundary" to
+          enable drawing on the map and draw the estimated boundary of
+          contamination. Click Save when you are finished. Click Next to proceed
+          {simulationMode ? ' to Decon' : ''}.{' '}
         </p>
 
         {simulationMode && (
