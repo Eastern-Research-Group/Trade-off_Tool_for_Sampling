@@ -33,7 +33,7 @@ export default ({ mode }) => {
       outDir: '../server/app/public',
       emptyOutDir: false,
       sourcemap: true,
-      rollupOptions: {
+      rolldownOptions: {
         output: {
           entryFileNames: `static/js/[name]-[hash].${version}.js`,
           chunkFileNames: `static/js/[name]-[hash].${version}.js`,
@@ -44,6 +44,43 @@ export default ({ mode }) => {
             const media = /\.(png|jpe?g|gif|svg|webp|webm|mp3)$/.test(name ?? ""); // prettier-ignore
             const type = css ? 'css/' : font ? 'fonts/' : media ? 'media/' : '';
             return `static/${type}[name]-[hash].${version}[extname]`;
+          },
+          // Group specific arcgis chunks to avoid large number of tiny files
+          codeSplitting: {
+            groups: [
+              {
+                name: 'calcite',
+                test: /node_modules\/@esri\/calcite-components/i,
+              },
+              {
+                name: 'arcgis-views-3d',
+                test: /node_modules\/@arcgis\/core\/views\/(3d|SceneView)/,
+              },
+              {
+                name: 'arcgis-views-2d',
+                test: /node_modules\/@arcgis\/core\/views\/(2d|MapView|View2D)/,
+              },
+              {
+                name: 'arcgis-views-ui',
+                test: /node_modules\/@arcgis\/core\/views\/ui/,
+              },
+              {
+                name: 'arcgis-views-core',
+                test: /node_modules\/@arcgis\/core\/views/,
+              },
+              {
+                name: 'arcgis-layers',
+                test: /node_modules\/@arcgis\/core\/layers/,
+              },
+              {
+                name: 'arcgis-geometry',
+                test: /node_modules\/@arcgis\/core\/geometry/,
+              },
+              {
+                name: 'arcgis-core',
+                test: /node_modules\/@arcgis\/core/,
+              },
+            ],
           },
         },
       },
