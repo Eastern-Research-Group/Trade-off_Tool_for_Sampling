@@ -39,6 +39,7 @@ import {
   getEnvironmentString,
   logCallToGoogleAnalytics,
 } from 'utils/fetchUtils';
+import { esriStyles } from 'utils/shadowDom';
 import { getEnvironment } from 'utils/utils';
 // config
 import { totsNotAvailableMessage } from 'config/errorMessages';
@@ -132,24 +133,7 @@ const globalStyles = css`
     overflow: hidden;
   }
 
-  .esri-popup__main-container {
-    min-width: 460px !important;
-  }
-
-  .esri-popup__action-text {
-    display: none;
-  }
-
-  .esri-widget,
-  .esri-widget--button {
-    &:focus {
-      outline: none;
-    }
-  }
-
-  .esri-sketch {
-    margin-bottom: 10px;
-  }
+  ${esriStyles}
 `;
 
 /** Custom hook to display the Expert Query disclaimer banner for development/staging */

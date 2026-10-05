@@ -2,6 +2,7 @@
 
 import React, {
   Fragment,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -11,17 +12,27 @@ import { css } from '@emotion/react';
 import Basemap from '@arcgis/core/Basemap';
 import EsriMap from '@arcgis/core/Map';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
-import MapView from '@arcgis/core/views/MapView';
 import PortalItem from '@arcgis/core/portal/PortalItem';
 import SceneView from '@arcgis/core/views/SceneView';
 import Viewpoint from '@arcgis/core/Viewpoint';
+import '@arcgis/map-components/components/arcgis-compass';
+import '@arcgis/map-components/components/arcgis-home';
+import '@arcgis/map-components/components/arcgis-map';
+import '@arcgis/map-components/components/arcgis-measurement';
+import '@arcgis/map-components/components/arcgis-navigation-toggle';
+import '@arcgis/map-components/components/arcgis-scale-bar';
+import '@arcgis/map-components/components/arcgis-scene';
+import '@arcgis/map-components/components/arcgis-search';
+import '@arcgis/map-components/components/arcgis-zoom';
 // components
 import MapMouseEvents from 'components/MapMouseEvents';
 import MapSketchWidgets from 'components/MapSketchWidgets';
 import MapWidgets from 'components/MapWidgets';
+import MeasurementButtons from 'components/MeasurementButtons';
 // contexts
 import { SketchContext } from 'contexts/Sketch';
 // utils
+import { adoptEsriStyles } from 'utils/shadowDom';
 import { getGraphicsArray } from 'utils/sketchUtils';
 // types
 import { PortalLayerType } from 'types/Layer';
@@ -126,21 +137,79 @@ function sortMapLayers(
 }
 
 // --- styles (Map) ---
-const mapStyles = (height: number) => {
+// Styles for esri's own markup live in utils/shadowDom.tsx, since the views
+// render in a shadow root this doesn't reach.
+const mapContainerStyles = (height: number) => {
   return css`
+    position: relative;
     height: ${height}px;
     background-color: whitesmoke;
-
-    .esri-sketch__info-section,
-    .esri-sketch__feature-count-badge {
-      width: 100%;
-    }
-
-    .esri-sketch__info-section:last-of-type {
-      display: none !important;
-    }
   `;
 };
+
+// A view whose container measures 0x0 never becomes ready, so the inactive view
+// stays laid out until both are ready, then drops out of the render loop.
+const viewStyles = (active: boolean, bothReady: boolean) => {
+  const hidden = bothReady ? 'display: none;' : 'visibility: hidden;';
+  return css`
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    width: 100%;
+    ${active ? '' : hidden}
+  `;
+};
+
+// Slotted children each carry a bottom margin, which an empty container would still take up.
+const sketchContainerStyles = css`
+  display: contents;
+`;
+
+// Stable references so the map doesn't jump on every re-render.
+const DEFAULT_CENTER = '-95, 37';
+const DEFAULT_ZOOM = 3;
+// The view autocasts this, filling in the remaining options.
+const HIGHLIGHT_OPTIONS = {
+  color: '#32C5FD',
+  fillOpacity: 1,
+} as __esri.HighlightOptionsProperties as __esri.HighlightOptions;
+
+function configureViewPopup(view: __esri.MapView | __esri.SceneView) {
+  if (view.popup) view.popup.defaultPopupTemplateEnabled = true;
+}
+
+// Builds the map shared by the 2d and 3d views.
+function createTotsMap(appType: AppType) {
+  const layers: __esri.Layer[] = [];
+  if (appType === 'decon') {
+    layers.push(
+      ...[
+        new GraphicsLayer({
+          id: 'deconResults',
+          title: 'Decontamination Results',
+          visible: false,
+          listMode: 'hide',
+        }),
+        new GraphicsLayer({
+          id: 'contaminationMapUpdated',
+          title: 'Contamination Map (Updated)',
+          visible: false,
+          listMode: 'hide',
+        }),
+      ],
+    );
+  }
+
+  return new EsriMap({
+    basemap: new Basemap({
+      portalItem: new PortalItem({
+        id: '22fb75c0fa5a4c88b8ca4c4b8ae5c90b',
+      }),
+    }),
+    ground: 'world-elevation',
+    layers,
+  });
+}
 
 // --- components (Map) ---
 type Props = {
@@ -149,7 +218,8 @@ type Props = {
 };
 
 function Map({ appType, height }: Props) {
-  const mapRef = useRef<HTMLDivElement>(null);
+  const mapElRef = useRef<HTMLArcgisMapElement | null>(null);
+  const sceneElRef = useRef<HTMLArcgisSceneElement | null>(null);
 
   const {
     aoiSketchLayer,
@@ -161,82 +231,29 @@ function Map({ appType, height }: Props) {
     mapView,
     portalLayers,
     sceneView,
+    sceneViewForArea,
     sketchLayer,
+    setHomeWidget,
     setMap,
     setMapView,
     setSceneView,
     setSceneViewForArea,
   } = useContext(SketchContext);
 
-  // Creates the map and view
+  // Creates the map shared by both views.
   useEffect(() => {
-    if (!mapRef.current) return;
-    if (mapView || sceneView) return;
+    if (map) return;
 
-    const layers: __esri.Layer[] = [];
-    if (appType === 'decon') {
-      layers.push(
-        ...[
-          new GraphicsLayer({
-            id: 'deconResults',
-            title: 'Decontamination Results',
-            visible: false,
-            listMode: 'hide',
-          }),
-          new GraphicsLayer({
-            id: 'contaminationMapUpdated',
-            title: 'Contamination Map (Updated)',
-            visible: false,
-            listMode: 'hide',
-          }),
-        ],
-      );
-    }
+    setMap(createTotsMap(appType));
+  }, [appType, map, setMap]);
 
-    const newMap = new EsriMap({
-      basemap: new Basemap({
-        portalItem: new PortalItem({
-          id: '22fb75c0fa5a4c88b8ca4c4b8ae5c90b',
-        }),
-      }),
-      ground: 'world-elevation',
-      layers,
-    });
-    setMap(newMap);
+  // Create a hidden scene view that is only for calculating
+  // area of 3D geometry. This is to work around an issue
+  // where area of 3D geometry could not be calculated when
+  // 2D mode is selected.
+  useEffect(() => {
+    if (sceneViewForArea) return;
 
-    const viewParams: any = {
-      container: mapRef.current,
-      map: newMap,
-      spatialReferenceLocked: true,
-      center: [-95, 37],
-      zoom: 3,
-      popup: {
-        defaultPopupTemplateEnabled: true,
-        maxInlineActions: 5,
-      },
-      highlightOptions: {
-        color: '#32C5FD',
-        fillOpacity: 1,
-      },
-    };
-
-    const view = new MapView(viewParams);
-
-    setMapView(view);
-
-    viewParams.map = undefined as any;
-    viewParams.container = undefined as any;
-    const scene = new SceneView({
-      ...viewParams,
-      qualityProfile: 'high',
-    });
-
-    setSceneView(scene);
-
-    // Create a hidden scene view that is only for calculating
-    // area of 3D geometry. This is to work around an issue
-    // where area of 3D geometry could not be calculated when
-    // 2D mode is selected.
     setSceneViewForArea(
       new SceneView({
         container: 'hidden-scene-view',
@@ -247,15 +264,128 @@ function Map({ appType, height }: Props) {
         qualityProfile: 'low',
       }),
     );
-  }, [
-    appType,
-    mapView,
-    sceneView,
-    setMap,
-    setMapView,
-    setSceneView,
-    setSceneViewForArea,
-  ]);
+  }, [sceneViewForArea, setSceneViewForArea]);
+
+  // The view exists on the element long before it is ready.
+  // Publish it now so the widgets can attach while it loads.
+  const initMapEl = useCallback(
+    (el: HTMLArcgisMapElement | null) => {
+      mapElRef.current = el;
+      if (el) setMapView(el.view);
+    },
+    [setMapView],
+  );
+
+  const initSceneEl = useCallback(
+    (el: HTMLArcgisSceneElement | null) => {
+      sceneElRef.current = el;
+      if (el) setSceneView(el.view);
+    },
+    [setSceneView],
+  );
+
+  const [mapViewReady, setMapViewReady] = useState(false);
+  const [sceneViewReady, setSceneViewReady] = useState(false);
+  const bothReady = mapViewReady && sceneViewReady;
+
+  const [measurement2d, setMeasurement2d] =
+    useState<HTMLArcgisMeasurementElement | null>(null);
+  const [measurement3d, setMeasurement3d] =
+    useState<HTMLArcgisMeasurementElement | null>(null);
+  // MapSketchWidgets owns the sketch widget, but it belongs in the view.
+  const [sketchContainer, setSketchContainer] = useState<HTMLDivElement | null>(
+    null,
+  );
+  const [home2d, setHome2d] = useState<HTMLArcgisHomeElement | null>(null);
+  const [home3d, setHome3d] = useState<HTMLArcgisHomeElement | null>(null);
+
+  // Starts over when switching dimensions
+  const [prevDisplayDimensions, setPrevDisplayDimensions] =
+    useState(displayDimensions);
+  if (displayDimensions !== prevDisplayDimensions) {
+    setPrevDisplayDimensions(displayDimensions);
+    measurement2d?.clear();
+    measurement3d?.clear();
+  }
+
+  useEffect(() => {
+    if (!home2d || !home3d || homeWidget) return;
+
+    setHomeWidget({ '2d': home2d, '3d': home3d });
+  }, [home2d, home3d, homeWidget, setHomeWidget]);
+
+  const initMeasurement2d = useCallback(
+    (el: HTMLArcgisMeasurementElement | null) => {
+      setMeasurement2d(el);
+      // Wraps a core widget in a shadow root of its own, which needs the theme as well.
+      el?.componentOnReady().then(() => adoptEsriStyles(el.shadowRoot));
+    },
+    [],
+  );
+
+  const initMeasurement3d = useCallback(
+    (el: HTMLArcgisMeasurementElement | null) => {
+      setMeasurement3d(el);
+      // Wraps a core widget in a shadow root of its own, which needs the theme as well.
+      el?.componentOnReady().then(() => adoptEsriStyles(el.shadowRoot));
+    },
+    [],
+  );
+
+  const handleMapViewReady = useCallback(() => {
+    const el = mapElRef.current;
+    if (!el?.view?.ready) return; // ignore the not-ready edge
+
+    adoptEsriStyles(el.shadowRoot);
+    configureViewPopup(el.view);
+    setMapViewReady(true);
+  }, []);
+
+  const handleSceneViewReady = useCallback(() => {
+    const el = sceneElRef.current;
+    if (!el?.view?.ready) return; // ignore the not-ready edge
+
+    adoptEsriStyles(el.shadowRoot);
+    configureViewPopup(el.view);
+    setSceneViewReady(true);
+  }, []);
+
+  // Destroying a view destroys its map, and both views share one, so hand the
+  // map back first.
+  useEffect(() => {
+    return function cleanup() {
+      [mapElRef.current, sceneElRef.current].forEach((el) => {
+        if (!el) return;
+
+        el.view.map = null as any;
+        el.destroy();
+      });
+
+      setMapView(null);
+      setSceneView(null);
+    };
+  }, [setMapView, setSceneView]);
+
+  // Carries the camera position across when switching dimensions.
+  // Key this off the dimension actually changing.
+  const lastDimensions = useRef(displayDimensions);
+  useEffect(() => {
+    if (!mapView || !sceneView) return;
+    if (lastDimensions.current === displayDimensions) return;
+
+    lastDimensions.current = displayDimensions;
+
+    if (displayDimensions === '2d') {
+      if (sceneView.viewpoint) mapView.viewpoint = sceneView.viewpoint.clone();
+    } else {
+      if (mapView.viewpoint) sceneView.viewpoint = mapView.viewpoint.clone();
+      if (sceneView.camera) {
+        const camera = sceneView.camera.clone();
+        camera.tilt = 0.5;
+        sceneView.camera = camera;
+      }
+    }
+  }, [displayDimensions, mapView, sceneView]);
 
   // Creates a watch event that is used for reordering the layers
   const [watchInitialized, setWatchInitialized] = useState(false);
@@ -308,7 +438,87 @@ function Map({ appType, height }: Props) {
 
   return (
     <Fragment>
-      <div ref={mapRef} css={mapStyles(height)} data-testid="tots-map">
+      <div css={mapContainerStyles(height)} data-testid="tots-map">
+        {map && (
+          <Fragment>
+            <arcgis-map
+              autoDestroyDisabled={true}
+              center={DEFAULT_CENTER}
+              css={viewStyles(displayDimensions === '2d', bothReady)}
+              highlightOptions={HIGHLIGHT_OPTIONS}
+              map={map}
+              ref={initMapEl}
+              spatialReferenceLocked={true}
+              zoom={DEFAULT_ZOOM}
+              onarcgisViewReadyChange={handleMapViewReady}
+            >
+              {/* the top corners lay out top to bottom */}
+              <arcgis-search
+                label="Search"
+                popupDisabled={true}
+                slot="top-right"
+              />
+              {/* MapSketchWidgets renders the sketch widget in here, so that it
+              stacks with the components rather than in the view's own ui */}
+              <div
+                css={sketchContainerStyles}
+                ref={setSketchContainer}
+                slot="top-right"
+              />
+              <div slot="top-right">
+                <MeasurementButtons
+                  displayDimensions="2d"
+                  measurementWidget={measurement2d}
+                />
+              </div>
+              <arcgis-home ref={setHome2d} slot="top-right" />
+              <arcgis-zoom slot="top-right" />
+
+              {/* the bottom corners lay out in reverse */}
+              <arcgis-measurement
+                areaUnit="imperial"
+                linearUnit="imperial"
+                ref={initMeasurement2d}
+                slot="bottom-right"
+              />
+              <arcgis-scale-bar slot="bottom-right" unit="dual" />
+            </arcgis-map>
+            <arcgis-scene
+              autoDestroyDisabled={true}
+              center={DEFAULT_CENTER}
+              css={viewStyles(displayDimensions === '3d', bothReady)}
+              highlightOptions={HIGHLIGHT_OPTIONS}
+              map={map}
+              qualityProfile="high"
+              ref={initSceneEl}
+              zoom={DEFAULT_ZOOM}
+              onarcgisViewReadyChange={handleSceneViewReady}
+            >
+              <arcgis-search
+                label="Search"
+                popupDisabled={true}
+                slot="top-right"
+              />
+              <div slot="top-right">
+                <MeasurementButtons
+                  displayDimensions="3d"
+                  measurementWidget={measurement3d}
+                />
+              </div>
+              <arcgis-home ref={setHome3d} slot="top-right" />
+              <arcgis-zoom slot="top-right" />
+              <arcgis-navigation-toggle slot="top-right" />
+              <arcgis-compass slot="top-right" />
+
+              <arcgis-measurement
+                areaUnit="imperial"
+                linearUnit="imperial"
+                ref={initMeasurement3d}
+                slot="bottom-right"
+              />
+            </arcgis-scene>
+          </Fragment>
+        )}
         {map && mapView && sceneView && (
           <Fragment>
             <MapWidgets map={map} mapView={mapView} sceneView={sceneView} />
@@ -316,6 +526,7 @@ function Map({ appType, height }: Props) {
               appType={appType}
               mapView={mapView}
               sceneView={sceneView}
+              sketchContainer={sketchContainer}
             />
             <MapMouseEvents
               appType={appType}

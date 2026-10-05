@@ -8,7 +8,6 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { createRoot } from 'react-dom/client';
 import Collection from '@arcgis/core/core/Collection';
 import Point from '@arcgis/core/geometry/Point';
 import PopupTemplate from '@arcgis/core/PopupTemplate';
@@ -30,6 +29,7 @@ import { AppType } from 'types/Navigation';
 import { PolygonSymbol, SelectedSampleType } from 'config/sampleAttributes';
 // utils
 import { use3dSketch, useDynamicPopup } from 'utils/hooks';
+import { createReactContent } from 'utils/shadowDom';
 import {
   convertToPoint,
   createBuffer,
@@ -41,11 +41,6 @@ import {
   setZValues,
   updateLayerEdits,
 } from 'utils/sketchUtils';
-
-type SketchWidgetType = {
-  '2d': Sketch;
-  '3d': Sketch;
-};
 
 let terrain3dUseElevationGlobal = true;
 
@@ -139,9 +134,15 @@ type Props = {
   appType: AppType;
   mapView: __esri.MapView;
   sceneView: __esri.SceneView;
+  sketchContainer: HTMLDivElement | null;
 };
 
-function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
+function MapSketchWidgets({
+  appType,
+  mapView,
+  sceneView,
+  sketchContainer,
+}: Props) {
   const { userInfo } = useContext(AuthenticationContext);
   const { currentPanel, trainingMode, getTrainingMode } =
     useContext(NavigationContext);
@@ -176,46 +177,22 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
     terrain3dUseElevationGlobal = terrain3dUseElevation;
   }, [terrain3dUseElevation]);
 
-  // Creates the sketch widget used for selecting/moving/deleting samples
+  // Creates the sketch view models used for selecting/moving/deleting samples
   // Also creates an event handler for keeping track of changes
-  const [sketchWidget, setSketchWidget] = useState<SketchWidgetType | null>(
-    null,
-  );
   const [updateGraphics, setUpdateGraphics] = useState<__esri.Graphic[]>([]);
   useEffect(() => {
-    if (!mapView || !sketchLayer || sketchWidget) return;
+    if (!mapView || !sketchLayer || sketchVM) return;
 
-    function buildWidget(
-      view: __esri.MapView | __esri.SceneView,
-      layer: LayerType,
-      svm: __esri.SketchViewModel,
-    ) {
+    function watchUpdateGraphics(svm: __esri.SketchViewModel) {
       const tempSvm = svm as any;
       window.sampleSketchVmInternalLayerId = tempSvm._internalGraphicsLayer.id;
 
-      const widget = new Sketch({
-        availableCreateTools: [],
-        layer:
-          layer.sketchLayer?.type === 'graphics'
-            ? layer.sketchLayer
-            : undefined,
-        view,
-        viewModel: svm as any,
-        visibleElements: {
-          duplicateButton: false,
-          settingsMenu: false,
-          undoRedoMenu: false,
-        },
-      });
-
       reactiveUtils.watch(
-        () => widget.updateGraphics.length,
+        () => svm.updateGraphics.length,
         () => {
-          setUpdateGraphics(widget.updateGraphics.toArray());
+          setUpdateGraphics(svm.updateGraphics.toArray());
         },
       );
-
-      return widget;
     }
 
     const defaultSymbolKey =
@@ -239,8 +216,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
         featureSources: [],
       },
     });
-    const widget2d = buildWidget(mapView, sketchLayer, svm2d);
-    mapView.ui.add(widget2d, { position: 'top-right', index: 1 });
+    watchUpdateGraphics(svm2d);
 
     const svm3d = new SketchViewModel({
       layer:
@@ -267,15 +243,11 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
         ],
       },
     });
-    const widget3d = buildWidget(sceneView, sketchLayer, svm3d);
+    watchUpdateGraphics(svm3d);
 
     setSketchVM({
       '2d': svm2d,
       '3d': svm3d,
-    });
-    setSketchWidget({
-      '2d': widget2d,
-      '3d': widget3d,
     });
   }, [
     appType,
@@ -284,14 +256,38 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
     sceneView,
     sketchLayer,
     setSketchVM,
-    sketchWidget,
+    sketchVM,
   ]);
+
+  // Renders the sketch widget into the container Map slots into the view.
+  const [sketchWidget, setSketchWidget] = useState<Sketch | null>(null);
+  useEffect(() => {
+    if (!mapView || !sketchContainer || !sketchVM || sketchWidget) return;
+
+    setSketchWidget(
+      new Sketch({
+        availableCreateTools: [],
+        container: sketchContainer,
+        layer:
+          sketchLayer?.sketchLayer?.type === 'graphics'
+            ? sketchLayer.sketchLayer
+            : undefined,
+        view: mapView,
+        viewModel: sketchVM['2d'] as any,
+        visibleElements: {
+          duplicateButton: false,
+          settingsMenu: false,
+          undoRedoMenu: false,
+        },
+      }),
+    );
+  }, [mapView, sketchContainer, sketchLayer, sketchVM, sketchWidget]);
 
   // Opens a popup for when multiple samples are selected at once
   useEffect(() => {
-    if (!mapView || !sceneView || !sketchLayer || !sketchWidget) return;
+    if (!mapView || !sceneView || !sketchLayer || !sketchVM) return;
 
-    const sketchWidgetLocal = sketchWidget[displayDimensions];
+    const activeSketchVM = sketchVM[displayDimensions];
 
     const newSelectedSampleIds = updateGraphics.map((feature) => {
       return {
@@ -306,7 +302,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
     // with the sketch tools
     const popupItems: __esri.Graphic[] = [];
     const newIds: string[] = [];
-    sketchWidgetLocal.updateGraphics.forEach((graphic: any) => {
+    activeSketchVM.updateGraphics.forEach((graphic: any) => {
       popupItems.push(graphic);
 
       // get a list of graphic ids
@@ -360,9 +356,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
           />
         );
 
-        // wrap the content for esri
-        const contentContainer = document.createElement('div');
-        createRoot(contentContainer).render(content);
+        const contentContainer = createReactContent(content);
 
         view.popup = new Popup({
           location:
@@ -411,7 +405,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
     setEdits,
     setSelectedSampleIds,
     sketchLayer,
-    sketchWidget,
+    sketchVM,
     updateGraphics,
   ]);
 
@@ -445,8 +439,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
     ) {
       sketchVM['2d'].layer = sketchLayer.sketchLayer;
       sketchVM['3d'].layer = sketchLayer.sketchLayer;
-      if (sketchWidget) sketchWidget['2d'].layer = sketchLayer.sketchLayer;
-      if (sketchWidget) sketchWidget['3d'].layer = sketchLayer.sketchLayer;
+      if (sketchWidget) sketchWidget.layer = sketchLayer.sketchLayer;
     } else {
       // disable the sketch vm for any panel other than locateSamples
       sketchVM['2d'].layer = null as unknown as __esri.GraphicsLayer;
@@ -1178,8 +1171,7 @@ function MapSketchWidgets({ appType, mapView, sceneView }: Props) {
 
     sketchVM['2d'].layer = sketchLayer.sketchLayer;
     sketchVM['3d'].layer = sketchLayer.sketchLayer;
-    if (sketchWidget) sketchWidget['2d'].layer = sketchLayer.sketchLayer;
-    if (sketchWidget) sketchWidget['3d'].layer = sketchLayer.sketchLayer;
+    if (sketchWidget) sketchWidget.layer = sketchLayer.sketchLayer;
   }, [currentPanel, aoiUpdateSketchEvent, sketchVM, sketchLayer, sketchWidget]);
 
   // Updates the popupTemplates when trainingMode is toggled on/off
