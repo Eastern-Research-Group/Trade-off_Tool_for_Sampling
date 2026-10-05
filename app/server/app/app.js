@@ -31,20 +31,6 @@ app.use(
 );
 
 /****************************************************************
- Instruct web browsers to disable caching
- ****************************************************************/
-app.use(function (req, res, next) {
-  res.setHeader('Surrogate-Control', 'no-store');
-  res.setHeader(
-    'Cache-Control',
-    'no-store, no-cache, must-revalidate, proxy-revalidate',
-  );
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-  next();
-});
-
-/****************************************************************
  Revoke unneeded and potentially harmful HTTP methods
  ****************************************************************/
 app.use(function (req, res, next) {
@@ -211,7 +197,23 @@ if (isLocal || process.env.CF_INSTANCE_INDEX === '0') {
 require('./server/routes')(app);
 
 // serve static assets normally
-app.use(express.static(__dirname + '/public'));
+// aggressively cache vite assets since they are hashed (avoiding index.html)
+const publicPath = path.resolve(__dirname, './public');
+
+app.use(
+  express.static(publicPath, {
+    maxAge: '1y',
+    immutable: true,
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('index.html')) {
+        res.setHeader('Surrogate-Control', 'no-store');
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+    },
+  }),
+);
 
 // Ensure that requested client route exists (otherwise send 404).
 app.use(checkClientRouteExists);
