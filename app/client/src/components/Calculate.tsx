@@ -1696,7 +1696,8 @@ function CalculateResultsPopup({
         calculateResultsDecon.data[
           'PERCENT_CONTAMINATED_AREA_DECON_APPLIED'
         ] !== null &&
-        calculateResultsDecon.data['PERCENT_CONTAMINATION_REMOVED'] !== null
+        calculateResultsDecon.data['PERCENT_CONTAMINATION_REMOVED'] !== null &&
+        calculateResultsDecon.data['PERCENT_AREA_BELOW_LOD'] !== null
       ) {
         summarySheet.getCell(8, 3).font = labelFont;
         summarySheet.getCell(8, 3).value = 'Percentage of Plume Detected (%)';
@@ -1708,11 +1709,18 @@ function CalculateResultsPopup({
           ] ?? 0,
         ).toLocaleString();
         summarySheet.getCell(9, 3).font = labelFont;
-        summarySheet.getCell(9, 3).value =
-          'Percentage of Contamination Removed (%)';
+        summarySheet.getCell(9, 3).value = 'Percentage of Area Below LOD (%)';
         summarySheet.getCell(9, 4).font = defaultFont;
         summarySheet.getCell(9, 4).alignment = rightAlignment;
         summarySheet.getCell(9, 4).value = Math.round(
+          calculateResultsDecon.data['PERCENT_AREA_BELOW_LOD'] ?? 0,
+        ).toLocaleString();
+        summarySheet.getCell(10, 3).font = labelFont;
+        summarySheet.getCell(10, 3).value =
+          'Percentage of Contamination Removed (%)';
+        summarySheet.getCell(10, 4).font = defaultFont;
+        summarySheet.getCell(10, 4).alignment = rightAlignment;
+        summarySheet.getCell(10, 4).value = Math.round(
           calculateResultsDecon.data['PERCENT_CONTAMINATION_REMOVED'] ?? 0,
         ).toLocaleString();
       }
@@ -2737,7 +2745,9 @@ function CalculateResultsPopup({
                   ] !== null &&
                   calculateResultsDecon.data[
                     'PERCENT_CONTAMINATION_REMOVED'
-                  ] !== null && (
+                  ] !== null &&
+                  calculateResultsDecon.data['PERCENT_AREA_BELOW_LOD'] !==
+                    null && (
                     <>
                       <div>
                         <strong>Percentage of Plume Detected:</strong>{' '}
@@ -2750,14 +2760,24 @@ function CalculateResultsPopup({
                         %
                       </div>
                       <div>
-                        <strong>Percentage of Contamination Removed:</strong>{' '}
+                        <strong>
+                          Percentage of Area Below Limit of Detection (LOD):
+                        </strong>{' '}
                         {formatNumber(
-                          calculateResultsDecon.data[
-                            'PERCENT_CONTAMINATION_REMOVED'
-                          ],
+                          calculateResultsDecon.data['PERCENT_AREA_BELOW_LOD'],
                           2,
                         )}
                         %
+                        <div>
+                          <strong>Percentage of Contamination Removed:</strong>{' '}
+                          {formatNumber(
+                            calculateResultsDecon.data[
+                              'PERCENT_CONTAMINATION_REMOVED'
+                            ],
+                            2,
+                          )}
+                          %
+                        </div>
                       </div>
                     </>
                   )}

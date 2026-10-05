@@ -57,6 +57,7 @@ export type CalculateResultsDeconDataType = {
   'Contamination Type': string;
   PERCENT_CONTAMINATED_AREA_DECON_APPLIED: number | null;
   PERCENT_CONTAMINATION_REMOVED: number | null;
+  PERCENT_AREA_BELOW_LOD: number | null;
   resultsTable: JsonDownloadType[];
 };
 
