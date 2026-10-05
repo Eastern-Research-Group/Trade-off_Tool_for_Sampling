@@ -2677,6 +2677,7 @@ export function useCalculateDeconPlan() {
         'Contamination Type': '',
         PERCENT_CONTAMINATED_AREA_DECON_APPLIED: null,
         PERCENT_CONTAMINATION_REMOVED: null,
+        PERCENT_AREA_BELOW_LOD: null,
         resultsTable: jsonDownloadSummarized,
       };
 
@@ -2989,6 +2990,7 @@ export function useCalculateDeconPlan() {
                   new Graphic({
                     attributes: {
                       ...contamGraphic.attributes,
+                      CONTAMVALLOD: contamGraphic.attributes.CONTAMVAL,
                       EXTERIOR: null,
                       INTERIOR: null,
                       BRICK: null,
@@ -3023,6 +3025,7 @@ export function useCalculateDeconPlan() {
                   attributes: {
                     ...contamGraphic.attributes,
                     CONTAMVAL, // plume reductions
+                    CONTAMVALLOD: newCfu,
                     EXTERIOR: CONTAMVALEXTERIOR,
                     INTERIOR: CONTAMVALINTERIOR,
                     BRICK: CONTAMVALBRICK,
@@ -3125,16 +3128,40 @@ export function useCalculateDeconPlan() {
             )
           ).reduce((total, cfu) => total + cfu, 0);
 
-        const initialCfu = await totalCfu(contaminationGraphicsClone);
-        const finalCfu = await totalCfu(
-          newContamGraphics.length > 0
+        const limitOfDetection = 100;
+        const finalContaminationGraphics =
+          contamMapUpdated?.graphics.toArray() ??
+          (newContamGraphics.length > 0
             ? newContamGraphics
-            : contaminationGraphicsClone,
-        );
+            : contaminationGraphicsClone);
+        const initialCfu = await totalCfu(contaminationGraphicsClone);
+        const finalCfu = await totalCfu(finalContaminationGraphics);
         const plumeGeometries = contaminationGraphicsClone
           .filter((graphic) => Number(graphic.attributes?.CONTAMVAL) > 0)
           .map((graphic) => graphic.geometry)
           .filter((geometry) => !!geometry) as __esri.GeometryUnion[];
+        const updatedContaminationAreas = await Promise.all(
+          finalContaminationGraphics.map(async (graphic) => {
+            const area = await calculateArea(graphic, sceneViewForArea);
+            const contaminationValue = Number(
+              graphic.attributes?.CONTAMVALLOD ?? graphic.attributes?.CONTAMVAL,
+            );
+            return {
+              area: typeof area === 'number' ? Math.abs(area) : 0,
+              belowLod:
+                Number.isFinite(contaminationValue) &&
+                contaminationValue < limitOfDetection,
+            };
+          }),
+        );
+        const updatedContaminationArea = updatedContaminationAreas.reduce(
+          (total, item) => total + item.area,
+          0,
+        );
+        const belowLodArea = updatedContaminationAreas.reduce(
+          (total, item) => total + (item.belowLod ? item.area : 0),
+          0,
+        );
         const deconGeometries = linkedDeconOperations.flatMap((deconOp) => {
           const hasDeconTechnology = deconOp.deconTechSelections?.some(
             (selection) =>
@@ -3193,6 +3220,13 @@ export function useCalculateDeconPlan() {
                 Math.min(100, ((initialCfu - finalCfu) / initialCfu) * 100),
               )
             : 0;
+        const percentAreaBelowLod =
+          updatedContaminationArea > 0
+            ? Math.max(
+                0,
+                Math.min(100, (belowLodArea / updatedContaminationArea) * 100),
+              )
+            : 0;
         const percentContaminatedAreaApplied =
           typeof plumeArea === 'number' &&
           typeof appliedArea === 'number' &&
@@ -3205,6 +3239,7 @@ export function useCalculateDeconPlan() {
           if (
             results.data.PERCENT_CONTAMINATION_REMOVED ===
               percentContaminationRemoved &&
+            results.data.PERCENT_AREA_BELOW_LOD === percentAreaBelowLod &&
             results.data.PERCENT_CONTAMINATED_AREA_DECON_APPLIED ===
               percentContaminatedAreaApplied
           ) {
@@ -3216,6 +3251,7 @@ export function useCalculateDeconPlan() {
             data: {
               ...results.data,
               PERCENT_CONTAMINATION_REMOVED: percentContaminationRemoved,
+              PERCENT_AREA_BELOW_LOD: percentAreaBelowLod,
               PERCENT_CONTAMINATED_AREA_DECON_APPLIED:
                 percentContaminatedAreaApplied,
             },
