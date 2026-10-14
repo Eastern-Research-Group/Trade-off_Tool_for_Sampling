@@ -214,9 +214,13 @@ export async function copySamplingPlanToDeconSession(selectedPlanId: string) {
   const samplingEdits = (
     (samplingPlan.value?.edits ?? []) as EditsType['edits']
   ).filter(
-    (edit) => edit.type === 'scenario' && edit.layerId === selectedPlanId,
+    (edit) =>
+      (edit.type === 'scenario' && edit.layerId === selectedPlanId) ||
+      (edit.type === 'layer' &&
+        edit.layerType === 'Site Conceptual Model Mask'),
   );
   if (samplingEdits.length === 0) return;
+  const samplingEditsId = samplingEdits.map((edit) => edit.layerId);
 
   await db.table(dataTableName).put({
     key: `${deconSessionId}-edits`,
@@ -225,7 +229,12 @@ export async function copySamplingPlanToDeconSession(selectedPlanId: string) {
       count:
         Math.max(deconPlan?.value?.count ?? 0, samplingPlan.value?.count ?? 0) +
         1,
-      edits: structuredClone([...existingEdits, ...samplingEdits]),
+      edits: structuredClone([
+        ...existingEdits.filter(
+          (edit) => !samplingEditsId.includes(edit.layerId),
+        ),
+        ...samplingEdits,
+      ]),
     },
   });
 
