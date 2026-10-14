@@ -1556,6 +1556,23 @@ export function useCalculatePlan(appType: AppType) {
   // Reset the calculateResults context variable, whenever anything
   // changes that will cause a re-calculation.
   const [calcGraphics, setCalcGraphics] = useState<__esri.Graphic[]>([]);
+  const savedSpatialResults = useRef<CalculateResultsDataType | null>(null);
+  const spatialInputsHaveLoaded = useRef(false);
+  useEffect(() => {
+    const results = calculateResults.data;
+    if (!results) return;
+
+    const hasSpatialResults =
+      results.AREA_PLUMES !== null ||
+      results.AREA_PLUME_COVERED_BY_SITE_ASSESSMENT_PLAN !== null ||
+      results.AREA_SITE_ASSESSMENT_PLAN !== null ||
+      results.AREA_SITE_ASSESSMENT_PLAN_NOT_COVERING_PLUME !== null ||
+      results.PCT_AREA_SAMPLED !== null ||
+      results.PCT_PLUME_COVERED_BY_SITE_ASSESSMENT_PLAN !== null ||
+      results.PCT_SITE_ASSESSMENT_PLAN_NOT_COVERING_PLUME !== null;
+    if (hasSpatialResults) savedSpatialResults.current = results;
+  }, [calculateResults.data]);
+
   useEffect(() => {
     if (appType !== 'sampling') return;
 
@@ -1971,6 +1988,16 @@ export function useCalculatePlan(appType: AppType) {
       limitingFactor = 'Analysis';
     }
 
+    const spatialInputsAreAvailable =
+      contaminationMap?.sketchLayer?.type === 'graphics' &&
+      siteAssessmentPlanLayer?.sketchLayer?.type === 'graphics' &&
+      siteAssessmentPlanLayer.sketchLayer.graphics.length > 0;
+    if (spatialInputsAreAvailable) spatialInputsHaveLoaded.current = true;
+    const preservedSpatialResults =
+      !spatialInputsAreAvailable && !spatialInputsHaveLoaded.current
+        ? savedSpatialResults.current
+        : null;
+
     const resultObject: CalculateResultsDataType = {
       // assign input parameters
       'User Specified Number of Available Teams for Sampling': numSamplingTeams,
@@ -1999,17 +2026,24 @@ export function useCalculatePlan(appType: AppType) {
 
       // spatial items
       'User Specified Total AOI': userSpecifiedAOI,
-      PCT_AREA_SAMPLED: percentAreaSampled,
+      PCT_AREA_SAMPLED:
+        preservedSpatialResults?.PCT_AREA_SAMPLED ?? percentAreaSampled,
       PCT_PLUME_COVERED_BY_SITE_ASSESSMENT_PLAN:
+        preservedSpatialResults?.PCT_PLUME_COVERED_BY_SITE_ASSESSMENT_PLAN ??
         percentPlumeCoveredBySiteAssessmentPlan,
       AREA_PLUME_COVERED_BY_SITE_ASSESSMENT_PLAN:
+        preservedSpatialResults?.AREA_PLUME_COVERED_BY_SITE_ASSESSMENT_PLAN ??
         areaPlumeCoveredBySiteAssessmentPlan,
       AREA_SITE_ASSESSMENT_PLAN_NOT_COVERING_PLUME:
+        preservedSpatialResults?.AREA_SITE_ASSESSMENT_PLAN_NOT_COVERING_PLUME ??
         areaSiteAssessmentPlanNotCoveringPlume,
       PCT_SITE_ASSESSMENT_PLAN_NOT_COVERING_PLUME:
+        preservedSpatialResults?.PCT_SITE_ASSESSMENT_PLAN_NOT_COVERING_PLUME ??
         percentSiteAssessmentPlanNotCoveringPlume,
-      AREA_PLUMES: areaPlumes,
-      AREA_SITE_ASSESSMENT_PLAN: areaSiteAssessmentPlan,
+      AREA_PLUMES: preservedSpatialResults?.AREA_PLUMES ?? areaPlumes,
+      AREA_SITE_ASSESSMENT_PLAN:
+        preservedSpatialResults?.AREA_SITE_ASSESSMENT_PLAN ??
+        areaSiteAssessmentPlan,
 
       // sampling
       TOTAL_SAMPLING_TIME: samplingTimeHours,

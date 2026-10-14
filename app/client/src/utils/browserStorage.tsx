@@ -590,7 +590,11 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
             });
             scenarioLayers.push(...layers);
 
-            if (appType === 'decon' && simulationMode) {
+            if (
+              appType === 'decon' &&
+              simulationMode &&
+              ['Samples', 'VSP'].includes(layer.layerType)
+            ) {
               // apply to the polygon, points, and hybrid layers since any
               // of them can be the one actually displayed
               layers.forEach((l) =>

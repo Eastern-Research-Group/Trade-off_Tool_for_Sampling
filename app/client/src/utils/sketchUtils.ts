@@ -2624,6 +2624,7 @@ export function updateLayerEdits({
   editsLayer.editType = type;
 
   // set the hasContaminationRan value (default is false)
+  editsLayer.hasContaminationRan = hasContaminationRan;
   if (editsScenario?.type === 'scenario')
     editsScenario.hasContaminationRan = hasContaminationRan;
 

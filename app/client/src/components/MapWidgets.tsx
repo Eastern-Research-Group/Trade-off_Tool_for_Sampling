@@ -7,6 +7,7 @@ import Search from '@arcgis/core/widgets/Search';
 import Handles from '@arcgis/core/core/Handles';
 import Home from '@arcgis/core/widgets/Home';
 import Measurement from '@arcgis/core/widgets/Measurement';
+import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 import ScaleBar from '@arcgis/core/widgets/ScaleBar';
 // contexts
 import { NavigationContext } from 'contexts/Navigation';
@@ -84,7 +85,7 @@ type Props = {
 };
 
 function MapWidgets({ map, mapView, sceneView }: Props) {
-  const { trainingMode } = useContext(NavigationContext);
+  const { simulationMode, trainingMode } = useContext(NavigationContext);
   const {
     edits,
     homeWidget,
@@ -226,7 +227,6 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
       !map ||
       !selectedScenario ||
       selectedScenario.type !== 'scenario' ||
-      selectedScenario.layers.length === 0 ||
       window.location.pathname.endsWith('/decon') ||
       window.location.pathname.endsWith('/decon/')
     ) {
@@ -240,42 +240,58 @@ function MapWidgets({ map, mapView, sceneView }: Props) {
       console.error(e);
     }
 
-    // find the group layer
-    const groupLayer = map.findLayerById(
-      selectedScenario.layerId,
-    ) as __esri.GroupLayer;
+    let cancelled = false;
+    const view = displayDimensions === '3d' ? sceneView : mapView;
+    reactiveUtils
+      .whenOnce(() => !view.updating)
+      .then(() => {
+        if (cancelled || (!simulationMode && !trainingMode)) return;
 
-    // Get any graphics that have a contam value
-    if (trainingMode && groupLayer) {
-      groupLayer.layers.forEach((layer) => {
-        if (layer.type !== 'graphics') return;
+        const scenarioLayers = layers.filter(
+          (layer) => layer.parentLayer?.id === selectedScenario.layerId,
+        );
+        scenarioLayers.forEach((layer) => {
+          [layer.sketchLayer, layer.pointsLayer, layer.hybridLayer].forEach(
+            (tempLayer) => {
+              if (tempLayer?.type !== 'graphics') return;
 
-        const highlightGraphics: __esri.Graphic[] = [];
-        const tempLayer = layer as __esri.GraphicsLayer;
-        tempLayer.graphics.forEach((graphic) => {
-          if (graphic.attributes.CONTAMVAL) {
-            highlightGraphics.push(graphic);
-          }
-        });
+              const highlightGraphics: __esri.Graphic[] = [];
+              tempLayer.graphics.forEach((graphic) => {
+                if (graphic.attributes.CONTAMVAL) {
+                  highlightGraphics.push(graphic);
+                }
+              });
 
-        // Highlight the graphics with a contam value
-        if (highlightGraphics.length === 0) return;
+              // Highlight the graphics with a contam value
+              if (highlightGraphics.length === 0) return;
 
-        const view = displayDimensions === '3d' ? sceneView : mapView;
-        view.whenLayerView(tempLayer).then((layerView) => {
-          const handle = layerView.highlight(highlightGraphics);
-          handles.add(handle, group);
+              view
+                .whenLayerView(tempLayer)
+                .then((layerView) => {
+                  if (cancelled) return;
+                  const handle = layerView.highlight(highlightGraphics);
+                  handles.add(handle, group);
+                })
+                .catch((error) => console.error(error));
+            },
+          );
         });
       });
-    }
+
+    return function cleanup() {
+      cancelled = true;
+    };
   }, [
     displayDimensions,
+    displayGeometryType,
     map,
     handles,
     edits,
+    layers,
     selectedScenario,
     mapView,
     sceneView,
+    simulationMode,
     trainingMode,
   ]);
 

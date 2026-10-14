@@ -541,6 +541,43 @@ function Calculate({ appType }: Props) {
     setContaminationResults, //
   ] = useState<ContaminationResultsType>({ status: 'none', data: null });
 
+  useEffect(() => {
+    if (
+      appType !== 'sampling' ||
+      contaminationResults.status !== 'none' ||
+      selectedScenario?.type !== 'scenario' ||
+      !selectedScenario.hasContaminationRan
+    ) {
+      return;
+    }
+
+    const contaminationHits = layers.flatMap((layer) => {
+      if (
+        layer.parentLayer?.id !== selectedScenario.layerId ||
+        layer.sketchLayer?.type !== 'graphics'
+      ) {
+        return [];
+      }
+
+      return layer.sketchLayer.graphics
+        .toArray()
+        .filter((graphic) => Number(graphic.attributes.CONTAMVAL) > 0)
+        .map((graphic) => ({
+          attributes: {
+            CONTAMTYPE: graphic.attributes.CONTAMTYPE,
+            CONTAMUNIT: graphic.attributes.CONTAMUNIT,
+            CONTAMVAL: graphic.attributes.CONTAMVAL,
+            PERMANENT_IDENTIFIER: graphic.attributes.PERMANENT_IDENTIFIER,
+          },
+        }));
+    });
+
+    setContaminationResults({
+      status: 'success',
+      data: contaminationHits,
+    });
+  }, [appType, contaminationResults.status, layers, selectedScenario]);
+
   // Call the GP Server to run calculations against the contamination
   // map.
   async function runContaminationCalculation() {
