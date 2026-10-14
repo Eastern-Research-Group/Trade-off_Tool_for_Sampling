@@ -197,6 +197,9 @@ function SiteAssessmentPlans() {
         'Site Conceptual Model Mask',
         true,
       );
+      newAoiSketchLayer.listMode = 'hide-children';
+      if (newAoiSketchLayer.sketchLayer)
+        newAoiSketchLayer.sketchLayer.listMode = 'hide-children';
       const newAoiEdits = createLayerEditTemplate(newAoiSketchLayer, 'add');
       newAoiEdits.description = '';
 
