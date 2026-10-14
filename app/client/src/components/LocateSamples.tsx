@@ -1443,7 +1443,9 @@ function LocateSamples() {
                     relevant notes. Click Save. Repeat these steps to continue
                     adding targeted samples. Use the "Add Multiple Random
                     Samples" feature below to add more than one sample point at
-                    a time.
+                    a time.{' '}
+                    {simulationMode &&
+                      'Use the Settings menu to control the visibility of sample points using point, polygon, and hybrid modes.'}
                   </p>
                   <div css={sketchGroupingStyles}>
                     {simulationMode &&
