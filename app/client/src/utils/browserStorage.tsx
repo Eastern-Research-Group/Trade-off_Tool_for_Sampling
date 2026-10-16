@@ -233,7 +233,13 @@ export async function copySamplingPlanToDeconSession(selectedPlanId: string) {
         ...existingEdits.filter(
           (edit) => !samplingEditsId.includes(edit.layerId),
         ),
-        ...samplingEdits,
+        ...samplingEdits.map((edit) => ({
+          ...edit,
+          listMode:
+            edit.layerType === 'Site Conceptual Model Mask'
+              ? 'hide-children'
+              : edit.listMode,
+        })),
       ]),
     },
   });
@@ -527,6 +533,11 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
       edits.edits.forEach((editsLayer) => {
         portalIdsAdded.push(editsLayer.portalId);
 
+        const listMode =
+          editsLayer.layerType === 'Site Conceptual Model Mask'
+            ? 'hide-children'
+            : editsLayer.listMode;
+
         // add layer edits directly
         if (editsLayer.type === 'layer') {
           graphicsLayers.push(
@@ -550,7 +561,7 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
                 ? editsLayer.name
                 : editsLayer.scenarioName,
             visible: editsLayer.visible,
-            listMode: editsLayer.listMode,
+            listMode,
           });
 
           newLayers.push({
@@ -567,7 +578,7 @@ function useEditsLayerStorage(dbInitialized: boolean, appType: AppType) {
             addedFrom: 'sketch',
             status: editsLayer.status,
             visible: editsLayer.visible,
-            listMode: editsLayer.listMode,
+            listMode,
             sort: 0,
             geometryType: 'esriGeometryPolygon',
             sketchLayer: groupLayer,
