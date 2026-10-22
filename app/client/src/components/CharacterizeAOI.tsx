@@ -96,7 +96,7 @@ function hasAoiGraphics(
 }
 
 const helpText = `
-  Select "Draw Area of Interest" to draw a boundary on your map to<br/>
+  Select "Draw Decon Area of Interest" to draw a boundary on your map to<br/>
   designate a decontamination zone or decision unit. The tool will<br/>
   retrieve and analyze building data and ground surface characteristics<br/>
   to inform decontamination strategy decisions. Click "Save and Submit" to<br/>
@@ -1443,7 +1443,7 @@ function CharacterizeAOI({
               css={sketchAoiButtonStyles}
             >
               <span css={sketchAoiTextStyles}>
-                <IconDrawPolygon /> <span>Draw Area of Interest</span>
+                <IconDrawPolygon /> <span>Draw Decon Area of Interest</span>
               </span>
             </button>
           )}
