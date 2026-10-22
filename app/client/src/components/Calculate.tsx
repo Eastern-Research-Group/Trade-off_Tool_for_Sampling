@@ -1271,10 +1271,10 @@ function Calculate({ appType }: Props) {
           )}
           {appType === 'decon' && (
             <p>
-              A decontamination plan is a decision model, and users may need to
-              consider whether additional sampling is needed to verify
-              decontamination effectiveness; otherwise, click Next to move on to
-              the Waste phase.
+              A decontamination plan is a decision model, and in practice response personnel may need to consider
+              whether additional sampling is needed to verify decontamination effectiveness. The ability to add
+              confirmation samples will be considered as a future simulation enhancement. Click Next to move on to the
+              Waste phase.
             </p>
           )}
           <div css={simulationModalButtonContainerStyles}>
