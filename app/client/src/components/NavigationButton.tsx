@@ -45,7 +45,8 @@ function NavigationButton({
   ).filter(
     (p) =>
       !simulationMode ||
-      (simulationMode && !['configureOutput', 'publish'].includes(p.value)),
+      (simulationMode &&
+        !['additionalTools', 'configureOutput', 'publish'].includes(p.value)),
   );
   const currentIndex = panelConfig.findIndex(
     (panel) => panel.value === currentPanel,
