@@ -450,6 +450,7 @@ function SiteAssessmentPlans() {
             label="Draw Contamination AOI Boundary"
             replaceGraphics={false}
             sketchLayer={siteAssessmentPlanLayer?.sketchLayer}
+            onClick={() => setSaveComplete(false)}
           />
         </EditSiteAssessmentPlan>
       )}
