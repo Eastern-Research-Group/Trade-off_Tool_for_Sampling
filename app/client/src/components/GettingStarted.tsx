@@ -322,8 +322,8 @@ function GettingStarted({ isOpen, children }: Props) {
                         in the text boxes).
                       </li>
                       <li>
-                        Click "Draw Area of Interest" to designate the boundary
-                        of your decontamination operation.
+                        Click "Draw Decon Area of Interest" to designate the
+                        boundary of your decontamination operation.
                         <ol>
                           <li>
                             Your cursor will turn into sketching mode to draw a
@@ -441,8 +441,8 @@ function GettingStarted({ isOpen, children }: Props) {
                 layer.
                 <ol>
                   <li>
-                    Click "Draw Area of Interest" to designate the boundary of
-                    your decontamination operation.
+                    Click "Draw Decon Area of Interest" to designate the
+                    boundary of your decontamination operation.
                     <ol>
                       <li>
                         Your cursor will turn into sketching mode to draw a

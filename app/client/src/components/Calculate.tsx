@@ -1219,7 +1219,7 @@ function Calculate({ appType }: Props) {
         )}
       </div>
 
-      {appType === 'sampling' && (
+      {appType === 'sampling' && simulationMode && (
         <AccordionItem
           title="Create Site Conceptual Model(s)"
           isOpenParam={siteModelOpen}

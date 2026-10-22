@@ -399,7 +399,10 @@ function NavBar({ appType, height }: Props) {
       ).filter(
         (p) =>
           !simulationMode ||
-          (simulationMode && !['configureOutput', 'publish'].includes(p.value)),
+          (simulationMode &&
+            !['additionalTools', 'configureOutput', 'publish'].includes(
+              p.value,
+            )),
       );
 
       if (JSON.stringify(newPanels) !== JSON.stringify(panels))

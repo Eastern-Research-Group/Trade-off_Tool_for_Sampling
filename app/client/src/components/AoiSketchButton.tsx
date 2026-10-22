@@ -48,6 +48,7 @@ type Props = {
   buttonId?: string;
   sketchLayerType?: LayerTypeName;
   defaultAttributes?: { [key: string]: any };
+  onClick?: () => void;
   onContinue?: () => void;
   replaceGraphics?: boolean;
   sketchLayer?:
@@ -63,6 +64,7 @@ function AoiSketchButton({
   buttonId = 'staging-aoi',
   sketchLayerType = 'Staging Area Mask',
   defaultAttributes,
+  onClick,
   onContinue,
   replaceGraphics = false,
   sketchLayer,
@@ -90,6 +92,7 @@ function AoiSketchButton({
     function startSketch() {
       if (!aoiSketchVM) return;
 
+      if (onClick) onClick();
       aoiSketchVM.polygonSymbol = defaultSymbols.symbols[
         sketchLayerType
       ] as any;

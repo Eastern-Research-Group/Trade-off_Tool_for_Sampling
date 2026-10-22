@@ -731,11 +731,11 @@ function CreateDeconPlan() {
                 quantify ground and building surfaces. For each decon operation
                 you include in your plan, select an AOI Decon Layer from the
                 dropdown or create a new AOI Decon Layer. An empty AOI Decon
-                layer is loaded by default. Select "Draw Area of Interest" to
-                designate the boundary of your decon operation. Click Save and
-                Submit. Once the tool retrieves the data, you can then click the
-                Select/Edit Decontamination Technology Selections to select a
-                decon strategy for each contamination scenario.
+                layer is loaded by default. Select "Draw Decon Area of Interest"
+                to designate the boundary of your decon operation. Click Save
+                and Submit. Once the tool retrieves the data, you can then click
+                the Select/Edit Decontamination Technology Selections to select
+                a decon strategy for each contamination scenario.
               </p>
               <p>
                 Use the available controls to link, add, edit, and/or delete

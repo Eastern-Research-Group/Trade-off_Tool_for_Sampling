@@ -294,7 +294,7 @@ export const contaminationHitsSuccessMessage = (numberOfHits: number) => (
   <MessageBox
     severity="info"
     title="Contamination Hits"
-    message={`${numberOfHits} sample(s) placed in contaminated areas`}
+    message={`Samples are highlighted in blue on the map if contamination was detected. ${numberOfHits} sample(s) placed in contaminated areas.`}
   />
 );
 
